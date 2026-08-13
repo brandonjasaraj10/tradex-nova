@@ -68,31 +68,20 @@ Deno.serve(async (req: Request) => {
 
     const payload: JournalLogRequest = await req.json();
 
-    let userId: string;
-    let supabaseClient;
-
-    if ((payload as any).user_id) {
-      userId = (payload as any).user_id;
-      supabaseClient = createClient(
-        Deno.env.get('SUPABASE_URL') ?? '',
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      );
-    } else {
-      supabaseClient = createClient(
-        Deno.env.get('SUPABASE_URL') ?? '',
-        Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-        {
-          global: {
-            headers: { Authorization: authHeader },
-          },
-        }
-      );
-      const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-      if (userError || !user) {
-        throw new Error('User not authenticated');
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: { Authorization: authHeader },
+        },
       }
-      userId = user.id;
+    );
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    if (userError || !user) {
+      throw new Error('User not authenticated');
     }
+    const userId = user.id;
 
     if (!payload.category) {
       return new Response(
