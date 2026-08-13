@@ -118,9 +118,22 @@ whatever was configured on the old cdyxs project).
    for the worker, so if a live copy still exists on Cloudflare outside
    this repo, it needs to be taken down manually from the Cloudflare
    dashboard — deleting the source file here doesn't reach it.
-6. Add rate limiting and a per-user daily quota to `nova-chat`. It's not
-   authenticated properly today, so anyone can hit it and run up the
-   Anthropic bill (switched from OpenAI — see the note below fix #5).
+6. **[DONE — commit `5007aa6`, migration `20260813215121`, deployed to
+   Trade X, 2026-08-13]** Add rate limiting and a per-user daily quota
+   to `nova-chat`. It wasn't authenticated properly — it trusted a
+   client-supplied `user_id` from the request body, which also made a
+   rate limit pointless on its own (trivially bypassed by sending a
+   different fake id each time), so fixing identity was bundled in.
+   Fixed: identity now comes from the verified JWT; added a 10/minute
+   burst cap and 100/day quota per user via an atomic Postgres function;
+   and — folded in after a cost question came up — added prompt
+   caching, since the system prompt + tools turned out to be ~12,145
+   tokens sent in full on every single message with no caching at all.
+   All three verified for real against Trade X: a spoofed body user_id
+   is ignored (usage lands on the real JWT user), the rate limiter caps
+   a rapid burst at exactly the configured limit, and caching was
+   confirmed with actual before/after `cache_read_input_tokens` numbers
+   from the API, not just "the code looks right."
 7. **[DONE — migration `20260813201659`, applied directly to Trade X,
    2026-08-13]** Fix the waitlist RLS policy — it allowed anyone,
    logged in or not, to read every collected email (`USING (true)`).
