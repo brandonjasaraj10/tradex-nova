@@ -3,9 +3,11 @@
 ## Project
 
 TradeX Nova — a trading journal SaaS. React/Vite frontend, Supabase backend,
-Stripe for payments, OpenAI powers the Nova AI chat feature. Pre-launch:
-zero real users yet. The domain tradexnova.com is currently lost/expired
-and needs to be re-purchased before there's a live public site again.
+Stripe for payments, Claude (Anthropic) powers the Nova AI chat feature —
+switched from OpenAI on 2026-08-13, see the note under "Fix order" below.
+Pre-launch: zero real users yet. The domain tradexnova.com is currently
+lost/expired and needs to be re-purchased before there's a live public
+site again.
 
 Git was initialized in this project on 2026-08-12 specifically so this
 cleanup work is reversible. `.env` is gitignored and confirmed never
@@ -118,7 +120,7 @@ whatever was configured on the old cdyxs project).
    dashboard — deleting the source file here doesn't reach it.
 6. Add rate limiting and a per-user daily quota to `nova-chat`. It's not
    authenticated properly today, so anyone can hit it and run up the
-   OpenAI bill.
+   Anthropic bill (switched from OpenAI — see the note below fix #5).
 7. **[DONE — migration `20260813201659`, applied directly to Trade X,
    2026-08-13]** Fix the waitlist RLS policy — it allowed anyone,
    logged in or not, to read every collected email (`USING (true)`).
@@ -134,6 +136,20 @@ whatever was configured on the old cdyxs project).
    deleting the file alone leaves the function live.
 9. Clean up the loose markdown files, `public_backup`, and the stray Vite
    timestamp file sitting in the project root.
+
+**[DONE — commit `621d5f5`, deployed to Trade X, 2026-08-13]** Not part of
+the original security list — a separate request to switch Nova's AI
+backend from OpenAI to Claude (Anthropic). `nova-chat` now calls Claude
+Sonnet 5 instead of OpenAI's gpt-4o. Nothing outside that one file
+changed — the frontend still gets back the exact same `{text,
+tool_calls}` shape it always did. Uses `ANTHROPIC_API_KEY` (a new secret,
+added to Trade X's Vault) instead of `OPENAI_API_KEY`. `nova-tts` and
+`process-voice-journal` still use OpenAI — they weren't touched since
+fix #8 deletes them entirely anyway. Verified end to end with a real key:
+plain chat replies work, and the full tool-calling round trip (Claude
+decides to log a journal entry → the entry actually gets written →
+Claude confirms in natural language) works correctly, HTML formatting
+rules and all.
 
 ## Before launch
 
