@@ -26,3 +26,6 @@ dist-ssr
 
 # Supabase CLI local cache (project link info, generated per machine)
 supabase/.temp
+
+# Vite crash-recovery config snapshots
+vite.config.ts.timestamp-*.mjs
