@@ -205,7 +205,28 @@ extracted structured JSON (symbol, direction, P&L, title).
 
 - Two-account test on every table: create two test accounts and confirm
   neither can see or touch the other's data, on every feature.
-- Terms of Service, Privacy Policy, and a not-financial-advice disclaimer.
+- **[DONE — commit `c565b80`, 2026-08-13]** Terms of Service, Privacy
+  Policy, and Risk Disclaimer already existed (`src/pages/TermsOfService
+  .tsx`, `PrivacyPolicy.tsx`, `RiskDisclaimer.tsx`) — reviewed for
+  accuracy against the current product, not rewritten from scratch.
+  Fixed: removed claims that TradeX actively syncs data with broker
+  APIs/MetaTrader (that feature was deleted in fix #8 and doesn't exist
+  right now — user's call to pull the language now and re-add when
+  broker sync actually ships again; this shifted Terms of Service
+  section numbering 7-18 down by one). Fixed a leftover
+  `privacy@tradexnova.com` contact reference in the Privacy Policy — the
+  other five contact blocks across all three pages already used
+  `tradenovaai@gmail.com`. Refreshed the "Last Updated" date on all
+  three (previously December 2024). Confirmed the "7-day free trial"
+  claim in Terms of Service is accurate and should stay as-is.
+  **Not fixed, tracked separately:** the Privacy Policy still says user
+  data is used to "train and improve NOVA AI models" — not true today
+  (Nova just calls Claude's API; no model training happens). User wants
+  to actually build that data-driven improvement pipeline rather than
+  change the wording, so the doc claim stays for now on the assumption
+  it becomes true. This is a real, separate engineering project (data
+  aggregation/anonymization pipeline), not a doc fix — needs its own
+  scoping whenever it's picked up.
 
 ## How to work with me
 
