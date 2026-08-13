@@ -15,7 +15,7 @@ export default function PrivacyPolicy() {
         </Link>
 
         <h1 className="text-4xl sm:text-5xl font-bold mb-4">Privacy Policy</h1>
-        <p className="text-gray-400 mb-8">Last Updated: December 9, 2024</p>
+        <p className="text-gray-400 mb-8">Last Updated: August 13, 2026</p>
 
         <div className="space-y-8 text-gray-300 leading-relaxed">
           <section>
@@ -70,7 +70,6 @@ export default function PrivacyPolicy() {
               <li>Creating and managing your account</li>
               <li>Providing trade journaling and analytics features</li>
               <li>Generating NOVA AI insights and recommendations</li>
-              <li>Syncing data with connected broker accounts</li>
               <li>Processing payments and managing subscriptions</li>
             </ul>
 
@@ -116,14 +115,7 @@ export default function PrivacyPolicy() {
               <li>Analytics providers: Usage analytics and monitoring</li>
             </ul>
 
-            <h3 className="text-xl font-semibold text-white mb-3 mt-6">4.2 Broker Integration Partners</h3>
-            <ul className="list-disc pl-6 space-y-2">
-              <li>MetaTrader API services for trade synchronization</li>
-              <li>Only with your explicit authorization</li>
-              <li>Limited to retrieving trade data (no execution rights)</li>
-            </ul>
-
-            <h3 className="text-xl font-semibold text-white mb-3 mt-6">4.3 Legal Requirements</h3>
+            <h3 className="text-xl font-semibold text-white mb-3 mt-6">4.2 Legal Requirements</h3>
             <p className="mb-4">We may disclose your information if required to:</p>
             <ul className="list-disc pl-6 space-y-2">
               <li>Comply with legal obligations or court orders</li>
@@ -132,7 +124,7 @@ export default function PrivacyPolicy() {
               <li>Respond to government requests</li>
             </ul>
 
-            <h3 className="text-xl font-semibold text-white mb-3 mt-6">4.4 Business Transfers</h3>
+            <h3 className="text-xl font-semibold text-white mb-3 mt-6">4.3 Business Transfers</h3>
             <p>
               In the event of a merger, acquisition, or sale of assets, your information may be transferred.
               We will notify you before your information becomes subject to a different privacy policy.
@@ -220,7 +212,7 @@ export default function PrivacyPolicy() {
             </div>
 
             <p className="mt-4">
-              To exercise these rights, contact us at privacy@tradexnova.com. We will respond within 30 days.
+              To exercise these rights, contact us at tradenovaai@gmail.com. We will respond within 30 days.
             </p>
           </section>
 

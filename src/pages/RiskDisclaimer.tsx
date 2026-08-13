@@ -18,7 +18,7 @@ export default function RiskDisclaimer() {
           <AlertTriangle className="w-8 h-8 text-blue-400" />
           <h1 className="text-4xl sm:text-5xl font-bold">Risk Disclaimer</h1>
         </div>
-        <p className="text-gray-400 mb-8">Last Updated: December 9, 2024</p>
+        <p className="text-gray-400 mb-8">Last Updated: August 13, 2026</p>
 
         <div className="bg-blue-500/10 border-2 border-blue-500/30 rounded-lg p-6 mb-8">
           <p className="font-bold text-blue-400 text-xl mb-4">IMPORTANT RISK WARNING</p>
