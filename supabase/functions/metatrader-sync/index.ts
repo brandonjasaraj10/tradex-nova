@@ -188,6 +188,23 @@ Deno.serve(async (req: Request) => {
         );
       }
 
+      const { data: ownedConnection } = await supabase
+        .from("user_broker_connections")
+        .select("id")
+        .eq("id", connection_id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (!ownedConnection) {
+        return new Response(
+          JSON.stringify({ error: "Connection not found" }),
+          {
+            status: 404,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+
       try {
         const result = await syncEngine.syncConnection(connection_id, mode || 'incremental', enable_audit === true);
         return new Response(JSON.stringify(result), {
