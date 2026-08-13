@@ -1,8 +1,11 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import Anthropic from "npm:@anthropic-ai/sdk@0.116.0";
 import { correctTradingTerms, TRADING_VOCABULARY_SYSTEM_PROMPT } from "../_shared/tradingVocabulary.ts";
 
-const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
+const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY ?? '' });
+const MODEL = 'claude-sonnet-5';
 
 const SYSTEM_PROMPT = `You are Nova, the AI trading assistant built into TradeX -- a comprehensive trading journal and performance analytics platform. You are not a generic chatbot. You are the intelligence layer of TradeX, deeply integrated with the user's trading data, journal entries, psychology logs, performance metrics, NOVA Score, confluences, and trading rules.
 
@@ -479,13 +482,11 @@ Key Principles:
 
 ${TRADING_VOCABULARY_SYSTEM_PROMPT}`;
 
-const TOOLS = [
+const TOOLS: Anthropic.Tool[] = [
   {
-    type: "function",
-    function: {
-      name: "log_journal_entry",
-      description: "AUTOMATICALLY log entries when users want to journal trades or emotions. Use this immediately when they describe trades, express emotions, or say 'log this'. Fill in ALL fields you can infer from context - be aggressive with smart defaults. Only skip fields if truly unknown.",
-      parameters: {
+    name: "log_journal_entry",
+    description: "AUTOMATICALLY log entries when users want to journal trades or emotions. Use this immediately when they describe trades, express emotions, or say 'log this'. Fill in ALL fields you can infer from context - be aggressive with smart defaults. Only skip fields if truly unknown.",
+    input_schema: {
         type: "object",
         properties: {
           category: {
@@ -638,15 +639,12 @@ const TOOLS = [
           }
         },
         required: ["category"]
-      }
     }
   },
   {
-    type: "function",
-    function: {
-      name: "analyze_trading_performance",
-      description: "Fetch comprehensive trading performance data and patterns for deep analysis. Use this when user asks about their performance, wants insights, feedback, or analysis of their trading. Returns statistics, patterns, rule compliance, emotional trends, and actionable insights.",
-      parameters: {
+    name: "analyze_trading_performance",
+    description: "Fetch comprehensive trading performance data and patterns for deep analysis. Use this when user asks about their performance, wants insights, feedback, or analysis of their trading. Returns statistics, patterns, rule compliance, emotional trends, and actionable insights.",
+    input_schema: {
         type: "object",
         properties: {
           days_back: {
@@ -659,7 +657,6 @@ const TOOLS = [
           }
         },
         required: []
-      }
     }
   }
 ];
@@ -764,8 +761,8 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    if (!OPENAI_API_KEY) {
-      throw new Error('OpenAI API key not configured');
+    if (!ANTHROPIC_API_KEY) {
+      throw new Error('Anthropic API key not configured');
     }
 
     const { messages, user, images }: RequestPayload = await req.json();
@@ -809,22 +806,22 @@ Deno.serve(async (req: Request) => {
         const lastMsg = correctedHistory[lastUserMsgIndex];
         const textContent = typeof lastMsg.content === 'string' ? lastMsg.content : '';
 
-        const contentArray: MessageContent[] = [
+        const contentArray: Anthropic.MessageParam['content'] = [
           { type: 'text', text: textContent + '\n\nIMPORTANT: Analyze the uploaded trade screenshot(s) and extract ALL visible trading information. Look carefully for:\n\n1. TRADE DETAILS: Symbol/pair, direction (long/short), entry price, stop loss, take profit\n2. RISK METRICS: Position size, risk amount, risk-to-reward ratio (calculate if SL and TP are visible)\n3. TIMING: Entry time (look for timestamps on the chart), exit time if visible, trade duration\n4. CHART INFO: Timeframe (1m, 5m, 15m, 1H, 4H, 1D, etc.), indicators present\n5. PRICE LEVELS: Support/resistance levels, key price zones\n6. TRADE OUTCOME: If this is an "after" screenshot, look for final P&L, win/loss result\n\nAfter analyzing, you MUST automatically log this trade to the journal using the log_journal_entry tool with ALL extracted data. Fill in every field you can identify from the screenshots. Be thorough and precise.' }
-        ];
+        ] as Anthropic.MessageParam['content'];
 
         // Add all images
         for (const imageUrl of images) {
-          contentArray.push({
-            type: 'image_url',
-            image_url: { url: imageUrl }
+          (contentArray as any[]).push({
+            type: 'image',
+            source: { type: 'url', url: imageUrl }
           });
         }
 
         correctedHistory[lastUserMsgIndex] = {
           ...lastMsg,
           content: contentArray
-        };
+        } as any;
       }
     }
 
@@ -855,49 +852,29 @@ Deno.serve(async (req: Request) => {
     const profileContext = formatProfileForAI(userProfile);
     const enhancedSystemPrompt = SYSTEM_PROMPT + profileContext;
 
-    const openaiMessages: Message[] = [
-      { role: 'system', content: enhancedSystemPrompt },
-      ...correctedHistory
-    ];
+    const claudeMessages: Anthropic.MessageParam[] = correctedHistory.map((m) => ({
+      role: m.role === 'assistant' ? 'assistant' : 'user',
+      content: m.content as any,
+    }));
 
-    let openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: openaiMessages,
-        max_tokens: 1200,
-        temperature: 0.9,
-        tools: TOOLS,
-        tool_choice: 'auto',
-      }),
+    let response = await anthropic.messages.create({
+      model: MODEL,
+      max_tokens: 1200,
+      output_config: { effort: 'medium' },
+      system: enhancedSystemPrompt,
+      messages: claudeMessages,
+      tools: TOOLS,
     });
 
-    if (!openaiResponse.ok) {
-      const errorData = await openaiResponse.json();
-      console.error('OpenAI API error:', errorData);
-      throw new Error(errorData.error?.message || 'OpenAI API request failed');
-    }
+    let textBlock = response.content.find((b): b is Anthropic.TextBlock => b.type === 'text');
+    const toolUseBlock = response.content.find((b): b is Anthropic.ToolUseBlock => b.type === 'tool_use');
 
-    let data = await openaiResponse.json();
-    let message = data.choices[0]?.message;
-
-    if (!message) {
-      console.error('No message in OpenAI response');
-      throw new Error('No message returned from OpenAI');
-    }
-
-    if (message?.tool_calls && message.tool_calls.length > 0) {
-      const toolCall = message.tool_calls[0];
-
-      if (toolCall.function.name === 'log_journal_entry') {
-        console.log('Tool call detected:', toolCall.function.name);
+    if (toolUseBlock) {
+      if (toolUseBlock.name === 'log_journal_entry') {
+        console.log('Tool call detected:', toolUseBlock.name);
 
         try {
-          const functionArgs = JSON.parse(toolCall.function.arguments);
+          const functionArgs = toolUseBlock.input as any;
           console.log('Function arguments:', functionArgs);
 
           const journalResponse = await fetch(
@@ -916,59 +893,41 @@ Deno.serve(async (req: Request) => {
           const journalResult = await journalResponse.json();
           console.log('Journal result:', journalResult);
 
-          openaiMessages.push({
-            role: 'assistant',
-            content: message.content ?? null,
-            tool_calls: message.tool_calls
-          } as any);
-
-          openaiMessages.push({
-            role: 'tool',
-            tool_call_id: toolCall.id,
-            content: JSON.stringify(journalResult)
-          } as any);
-
-          const secondResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${OPENAI_API_KEY}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              model: 'gpt-4o',
-              messages: openaiMessages,
-              max_tokens: 200,
-              temperature: 0.9,
-            }),
+          claudeMessages.push({ role: 'assistant', content: response.content });
+          claudeMessages.push({
+            role: 'user',
+            content: [{ type: 'tool_result', tool_use_id: toolUseBlock.id, content: JSON.stringify(journalResult) }],
           });
 
-          if (secondResponse.ok) {
-            const secondData = await secondResponse.json();
-            console.log('Second response:', JSON.stringify(secondData, null, 2));
-            if (secondData.choices[0]?.message) {
-              message = secondData.choices[0].message;
-            }
-          } else {
-            const errorData = await secondResponse.json();
-            console.error('Second OpenAI API call failed:', errorData);
+          const secondResponse = await anthropic.messages.create({
+            model: MODEL,
+            max_tokens: 200,
+            output_config: { effort: 'medium' },
+            system: enhancedSystemPrompt,
+            messages: claudeMessages,
+          });
+
+          const secondText = secondResponse.content.find((b): b is Anthropic.TextBlock => b.type === 'text');
+          if (secondText?.text) {
+            textBlock = secondText;
           }
 
-          if (!message?.content && journalResult.success) {
-            message = {
-              role: 'assistant',
-              content: functionArgs.category === 'psychology'
+          if (!textBlock?.text && journalResult.success) {
+            textBlock = {
+              type: 'text',
+              text: functionArgs.category === 'psychology'
                 ? 'Logged to your psychology journal!'
                 : 'Trade logged!'
-            } as any;
+            } as Anthropic.TextBlock;
           }
         } catch (toolError) {
           console.error('Error in tool processing:', toolError);
         }
-      } else if (toolCall.function.name === 'analyze_trading_performance') {
-        console.log('Analysis tool call detected:', toolCall.function.name);
+      } else if (toolUseBlock.name === 'analyze_trading_performance') {
+        console.log('Analysis tool call detected:', toolUseBlock.name);
 
         try {
-          const functionArgs = JSON.parse(toolCall.function.arguments);
+          const functionArgs = toolUseBlock.input as any;
           console.log('Analysis arguments:', functionArgs);
 
           const analysisResponse = await fetch(
@@ -994,73 +953,55 @@ Deno.serve(async (req: Request) => {
             win_rate: analysisResult.summary?.win_rate,
           });
 
-          openaiMessages.push({
-            role: 'assistant',
-            content: message.content ?? null,
-            tool_calls: message.tool_calls
-          } as any);
-
-          openaiMessages.push({
-            role: 'tool',
-            tool_call_id: toolCall.id,
-            content: JSON.stringify(analysisResult)
-          } as any);
-
-          const secondResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${OPENAI_API_KEY}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              model: 'gpt-4o',
-              messages: openaiMessages,
-              max_tokens: 2000,
-              temperature: 0.9,
-            }),
+          claudeMessages.push({ role: 'assistant', content: response.content });
+          claudeMessages.push({
+            role: 'user',
+            content: [{ type: 'tool_result', tool_use_id: toolUseBlock.id, content: JSON.stringify(analysisResult) }],
           });
 
-          if (secondResponse.ok) {
-            const secondData = await secondResponse.json();
-            console.log('Second response received for analysis');
-            if (secondData.choices[0]?.message) {
-              message = secondData.choices[0].message;
-            }
-          } else {
-            const errorData = await secondResponse.json();
-            console.error('Second OpenAI API call failed:', errorData);
+          const secondResponse = await anthropic.messages.create({
+            model: MODEL,
+            max_tokens: 2000,
+            output_config: { effort: 'medium' },
+            system: enhancedSystemPrompt,
+            messages: claudeMessages,
+          });
+
+          const secondText = secondResponse.content.find((b): b is Anthropic.TextBlock => b.type === 'text');
+          if (secondText?.text) {
+            textBlock = secondText;
           }
 
-          if (!message?.content) {
-            message = {
-              role: 'assistant',
-              content: 'I\'ve analyzed your trading data. Let me share what I found...'
-            } as any;
+          if (!textBlock?.text) {
+            textBlock = {
+              type: 'text',
+              text: 'I\'ve analyzed your trading data. Let me share what I found...'
+            } as Anthropic.TextBlock;
           }
         } catch (toolError) {
           console.error('Error in analysis tool processing:', toolError);
-          message = {
-            role: 'assistant',
-            content: 'I had trouble analyzing your trading data. This might be because you haven\'t logged enough trades yet. Try asking me again once you have a few more entries!'
-          } as any;
+          textBlock = {
+            type: 'text',
+            text: 'I had trouble analyzing your trading data. This might be because you haven\'t logged enough trades yet. Try asking me again once you have a few more entries!'
+          } as Anthropic.TextBlock;
         }
       }
     }
 
-    let text = message?.content;
+    let text = textBlock?.text;
 
     if (!text || text.trim() === '') {
-      console.error('Empty message content received from OpenAI');
+      console.error('Empty message content received from Claude');
       text = "I'm having a bit of trouble right now, but I'm here! Could you try asking me again or rephrase what you'd like help with?";
     }
 
     const responseData: any = { text };
 
-    if (message?.tool_calls && message.tool_calls.length > 0) {
-      responseData.tool_calls = message.tool_calls.map(tc => ({
-        name: tc.function.name,
-        arguments: tc.function.arguments
-      }));
+    if (toolUseBlock) {
+      responseData.tool_calls = [{
+        name: toolUseBlock.name,
+        arguments: JSON.stringify(toolUseBlock.input)
+      }];
     }
 
     return new Response(
