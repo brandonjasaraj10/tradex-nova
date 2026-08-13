@@ -106,10 +106,16 @@ whatever was configured on the old cdyxs project).
    ungated on purpose. Verified directly: an unsubscribed test account
    gets rejected with an RLS error on insert; the same account with an
    active subscription row passes through.
-5. Delete `setup-stripe-product` and the `cloudflare-worker` folder
-   entirely. The Stripe setup function has no login check at all, and the
-   Cloudflare worker is an open, unauthenticated proxy that can be pointed
-   at any URL.
+5. **[DONE — commit `9c5e770`, undeployed from Trade X, 2026-08-13]**
+   Delete `setup-stripe-product` and the `cloudflare-worker` folder
+   entirely. The Stripe setup function had no login check at all, and
+   the Cloudflare worker was an open, unauthenticated proxy that could
+   be pointed at any URL. Confirmed: broker/MetaTrader connections are
+   being removed as a feature entirely (see fix #8), so the worker had
+   no remaining purpose. **Caveat:** this repo had no deployment config
+   for the worker, so if a live copy still exists on Cloudflare outside
+   this repo, it needs to be taken down manually from the Cloudflare
+   dashboard — deleting the source file here doesn't reach it.
 6. Add rate limiting and a per-user daily quota to `nova-chat`. It's not
    authenticated properly today, so anyone can hit it and run up the
    OpenAI bill.
