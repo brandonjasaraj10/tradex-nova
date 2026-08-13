@@ -54,7 +54,7 @@ Deno.serve(async (req: Request) => {
       const { data: profile } = await supabase
         .from("user_profiles")
         .select("stripe_customer_id")
-        .eq("id", user.id)
+        .eq("user_id", user.id)
         .maybeSingle();
 
       if (profile?.stripe_customer_id) {
@@ -96,7 +96,7 @@ Deno.serve(async (req: Request) => {
       const { data: profile } = await supabase
         .from("user_profiles")
         .select("stripe_customer_id, first_name, last_name")
-        .eq("id", user.id)
+        .eq("user_id", user.id)
         .maybeSingle();
 
       if (profile?.stripe_customer_id) {

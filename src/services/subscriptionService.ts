@@ -16,12 +16,9 @@ export interface Subscription {
   stripe_subscription_id: string | null;
   stripe_price_id: string | null;
   status: 'trialing' | 'active' | 'past_due' | 'canceled' | 'incomplete' | 'incomplete_expired' | 'unpaid';
-  trial_start: string | null;
-  trial_end: string | null;
   current_period_start: string | null;
   current_period_end: string | null;
   cancel_at_period_end: boolean;
-  canceled_at: string | null;
   grace_period_end: string | null;
   created_at: string;
   updated_at: string;
@@ -151,11 +148,11 @@ export async function isSubscriptionActive(): Promise<boolean> {
 export async function getTrialDaysRemaining(): Promise<number | null> {
   const subscription = await getSubscription();
 
-  if (!subscription || !subscription.trial_end) {
+  if (!subscription || subscription.status !== 'trialing' || !subscription.current_period_end) {
     return null;
   }
 
-  const trialEnd = new Date(subscription.trial_end);
+  const trialEnd = new Date(subscription.current_period_end);
   const now = new Date();
   const daysRemaining = Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 

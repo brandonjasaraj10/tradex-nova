@@ -28,7 +28,6 @@ interface UserProfile {
 
 interface Subscription {
   status: string;
-  trial_end: string | null;
   current_period_end: string | null;
   cancel_at_period_end: boolean;
 }
@@ -84,7 +83,7 @@ export default function Settings() {
       const { data, error } = await supabase
         .from('user_profiles')
         .select('first_name, last_name, timezone, currency, date_format')
-        .eq('id', user.id)
+        .eq('user_id', user.id)
         .maybeSingle();
 
       if (error) throw error;
@@ -111,7 +110,7 @@ export default function Settings() {
     try {
       const { data, error } = await supabase
         .from('subscriptions')
-        .select('status, trial_end, current_period_end, cancel_at_period_end')
+        .select('status, current_period_end, cancel_at_period_end')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -246,12 +245,12 @@ export default function Settings() {
       const { error } = await supabase
         .from('user_profiles')
         .upsert({
-          id: user.id,
+          user_id: user.id,
           first_name: profile.first_name,
           last_name: profile.last_name,
           updated_at: new Date().toISOString()
         }, {
-          onConflict: 'id'
+          onConflict: 'user_id'
         });
 
       if (error) throw error;
@@ -304,13 +303,13 @@ export default function Settings() {
       const { error } = await supabase
         .from('user_profiles')
         .upsert({
-          id: user.id,
+          user_id: user.id,
           timezone: preferences.timezone,
           currency: preferences.currency,
           date_format: preferences.dateFormat,
           updated_at: new Date().toISOString()
         }, {
-          onConflict: 'id'
+          onConflict: 'user_id'
         });
 
       if (error) throw error;
@@ -576,10 +575,10 @@ export default function Settings() {
                         </div>
                       </div>
 
-                      {subscription.trial_end && new Date(subscription.trial_end) > new Date() && (
+                      {subscription.status === 'trialing' && subscription.current_period_end && (
                         <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
                           <p className="text-sm text-blue-300">
-                            Trial ends on {new Date(subscription.trial_end).toLocaleDateString()}
+                            Trial ends on {new Date(subscription.current_period_end).toLocaleDateString()}
                           </p>
                         </div>
                       )}
@@ -647,11 +646,11 @@ export default function Settings() {
                           {subscription?.status ? subscription.status.charAt(0).toUpperCase() + subscription.status.slice(1) : 'No subscription'}
                         </span>
                       </div>
-                      {subscription?.trial_end && (
+                      {subscription?.status === 'trialing' && subscription?.current_period_end && (
                         <div className="flex justify-between">
                           <span className="text-gray-400">Trial Ends</span>
                           <span className="text-white font-medium">
-                            {new Date(subscription.trial_end).toLocaleDateString()}
+                            {new Date(subscription.current_period_end).toLocaleDateString()}
                           </span>
                         </div>
                       )}

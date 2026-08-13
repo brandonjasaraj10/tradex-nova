@@ -221,7 +221,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
       const { data, error } = await supabase
         .from('user_profiles')
         .select('tour_completed')
-        .eq('id', user.id)
+        .eq('user_id', user.id)
         .maybeSingle();
 
       if (!error && data) {
@@ -251,7 +251,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
       await supabase
         .from('user_profiles')
         .update({ tour_completed: true })
-        .eq('id', user.id);
+        .eq('user_id', user.id);
     } catch (err) {
       console.error('Error marking tour completed:', err);
     }

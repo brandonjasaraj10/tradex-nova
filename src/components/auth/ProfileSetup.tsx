@@ -41,12 +41,12 @@ export default function ProfileSetup({ user, onComplete }: ProfileSetupProps) {
       const { error: profileError } = await supabase
         .from('user_profiles')
         .upsert({
-          id: user.id,
+          user_id: user.id,
           first_name: firstName.trim(),
           last_name: lastName.trim(),
           updated_at: new Date().toISOString()
         }, {
-          onConflict: 'id'
+          onConflict: 'user_id'
         });
 
       if (profileError) {

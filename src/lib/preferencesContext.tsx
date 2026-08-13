@@ -38,7 +38,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabase
         .from('user_profiles')
         .select('timezone, currency, date_format')
-        .eq('id', user.id)
+        .eq('user_id', user.id)
         .maybeSingle();
 
       if (error) throw error;
