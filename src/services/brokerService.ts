@@ -1,5 +1,4 @@
 import { supabase } from '../lib/supabase';
-import { metaApiService } from './metaApiService';
 
 export interface BrokerFromAPI {
   id: string;
@@ -115,39 +114,6 @@ export class BrokerService {
       console.log('🌐 Broker Service: Connecting broker...', params.broker_slug);
       console.log('📤 Request params:', { ...params, password: params.password ? '***' : undefined });
 
-      const propFirms = ['ftmo', 'the5ers', 'myforexfunds', 'thefundedtrader', 'trueforexfunds', 'fundednext', 'topstep', 'earn2trade'];
-      const isMetaTrader = params.broker_slug === 'metatrader-4' || params.broker_slug === 'metatrader-5';
-      const isPropFirm = propFirms.includes(params.broker_slug);
-      const usesMetaTrader = isMetaTrader || (isPropFirm && params.username && params.password && params.server);
-
-      if (usesMetaTrader) {
-        console.log('🔷 Using browser-based MetaApi connection (bypasses SSL issues)');
-
-        let platform: 'mt4' | 'mt5' = 'mt5';
-        if (params.broker_slug === 'metatrader-4') {
-          platform = 'mt4';
-        }
-
-        const result = await metaApiService.connectMetaTrader({
-          brokerId: params.broker_id,
-          accountName: params.account_name,
-          platform,
-          server: params.server!,
-          login: params.username!,
-          password: params.password!,
-        });
-
-        console.log('📥 MetaApi browser result:', result);
-
-        if (!result.success) {
-          console.error('❌ MetaApi connection failed:', result.error);
-          return { success: false, error: result.error };
-        }
-
-        console.log(`✅ Connected successfully! Imported ${result.tradesImported} trades`);
-        return { success: true };
-      }
-
       const headers = await this.getAuthHeaders();
       const response = await fetch(`${this.apiUrl}/connect`, {
         method: 'POST',
@@ -190,29 +156,6 @@ export class BrokerService {
 
   async syncConnection(connectionId: string, enableAudit: boolean = false): Promise<SyncResult & { audit?: any }> {
     try {
-      const connections = await this.getUserConnections();
-      const connection = connections.find(c => c.id === connectionId);
-
-      if (connection?.metaapi_account_id) {
-        console.log('🔷 Using browser-based MetaApi sync (bypasses SSL issues)');
-        try {
-          const tradesImported = await metaApiService.syncTrades(connectionId);
-          return {
-            success: true,
-            tradesImported,
-            tradesUpdated: 0,
-          };
-        } catch (error) {
-          console.error('Browser sync failed:', error);
-          return {
-            success: false,
-            tradesImported: 0,
-            tradesUpdated: 0,
-            error: error instanceof Error ? error.message : 'Unknown error',
-          };
-        }
-      }
-
       const headers = await this.getAuthHeaders();
       const response = await fetch(`${this.apiUrl}/sync`, {
         method: 'POST',
@@ -229,23 +172,6 @@ export class BrokerService {
         tradesUpdated: 0,
         error: error instanceof Error ? error.message : 'Unknown error',
       };
-    }
-  }
-
-  async diagnoseConnection(connectionId: string): Promise<any> {
-    try {
-      console.log('🔷 Using browser-based MetaApi diagnosis');
-      const status = await metaApiService.getAccountStatus(connectionId);
-      return {
-        connection_status: status.connectionStatus,
-        state: status.status,
-        message: status.connectionStatus === 'CONNECTED'
-          ? 'Account is connected and ready'
-          : `Account status: ${status.connectionStatus || status.status}`,
-      };
-    } catch (error) {
-      console.error('Error diagnosing connection:', error);
-      return { error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
 
