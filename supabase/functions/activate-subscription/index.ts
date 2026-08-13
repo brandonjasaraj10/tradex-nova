@@ -73,14 +73,10 @@ Deno.serve(async (req: Request) => {
       const subscriptionRecord = {
         stripe_customer_id: typeof stripeSub.customer === "string" ? stripeSub.customer : stripeSub.customer.id,
         stripe_subscription_id: stripeSub.id,
-        stripe_price_id: stripeSub.items.data[0]?.price?.id ?? null,
         status: stripeSub.status,
         current_period_start: new Date(stripeSub.current_period_start * 1000).toISOString(),
         current_period_end: new Date(stripeSub.current_period_end * 1000).toISOString(),
-        trial_start: stripeSub.trial_start ? new Date(stripeSub.trial_start * 1000).toISOString() : null,
-        trial_end: stripeSub.trial_end ? new Date(stripeSub.trial_end * 1000).toISOString() : null,
         cancel_at_period_end: stripeSub.cancel_at_period_end,
-        canceled_at: stripeSub.canceled_at ? new Date(stripeSub.canceled_at * 1000).toISOString() : null,
         updated_at: now.toISOString(),
       };
 
@@ -111,7 +107,6 @@ Deno.serve(async (req: Request) => {
           message: "Subscription synced from Stripe",
           subscription: {
             status: subscriptionRecord.status,
-            trial_end: subscriptionRecord.trial_end,
             current_period_end: subscriptionRecord.current_period_end,
           },
         }),
@@ -128,7 +123,6 @@ Deno.serve(async (req: Request) => {
         .from("subscriptions")
         .update({
           status: "canceled",
-          canceled_at: now.toISOString(),
           updated_at: now.toISOString(),
         })
         .eq("user_id", user.id);
