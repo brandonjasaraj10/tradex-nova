@@ -142,13 +142,37 @@ whatever was configured on the old cdyxs project).
    dropping the public SELECT policy entirely (signup/INSERT still
    works for everyone, matches how the form was already calling it —
    no `.select()` after insert, so nothing broke).
-8. Delete dead broker and voice code: `nova-tts`, `process-voice-journal`,
-   `broker-api`, `metatrader-sync`, `mt4-webhook`, `sync-all-brokers`,
-   plus `src/services/metaApiService.ts` and `brokerService.ts`. These
-   need to be un-deployed from Supabase too, not just deleted as files —
-   deleting the file alone leaves the function live.
+8. **[DONE — commit `84d93d7`, undeployed from Trade X, 2026-08-13]**
+   Delete dead broker code. **This turned out narrower than originally
+   listed** — checked with the user first, and confirmed: `nova-tts`
+   and `process-voice-journal` are both real, actively-used features
+   (voice chat with Nova, and voice-dictated journal entries) and were
+   NOT touched. `broker-api` and `brokerService.ts` also weren't
+   deleted — they turned out to be the shared backend for manual
+   account creation and CSV import too, not just MetaTrader live-sync,
+   and those are real features. What actually got deleted: the
+   MetaTrader auto-sync-only pieces — `metatrader-sync`, `mt4-webhook`,
+   `sync-all-brokers`, the shared MetaApi connector library nothing
+   else used, `metaApiService.ts`, and the three MetaApi-specific
+   branches inside `brokerService.ts` (none of which were reachable
+   from any UI component). **Known separate issue, not fixed here:**
+   manual account creation and CSV import are currently broken against
+   Trade X's real database — the live `brokers` table has different
+   columns than the code expects (`display_name`/`supported` vs.
+   `slug`/`status`/`category`) — same schema-drift pattern as
+   elsewhere in this doc. That's its own follow-up repair, deliberately
+   not bundled into this deletion.
 9. Clean up the loose markdown files, `public_backup`, and the stray Vite
    timestamp file sitting in the project root.
+10. **New, found during fix #8, not yet done:** fix `broker-api` and the
+    account-connection UI (`AccountSelector`, `BrokerConnectionsList`,
+    `CSVUpload`, `EditBalanceModal`) to work against Trade X's actual
+    `brokers` table columns. Right now manual account creation and CSV
+    statement import — both real, wanted features — are broken because
+    the code expects columns (`slug`, `status`, `category`,
+    `supports_auto_sync`) that don't exist on the live table (it
+    actually has `display_name`, `supported`). Not a security issue,
+    just broken functionality.
 
 **[DONE — commit `621d5f5`, deployed to Trade X, 2026-08-13]** Not part of
 the original security list — a separate request to switch Nova's AI
