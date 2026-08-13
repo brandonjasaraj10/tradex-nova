@@ -2,13 +2,49 @@
 
 ## Project
 
-TradeX Nova — a trading journal SaaS. React/Vite frontend, Supabase backend
-(managed via Bolt), Stripe for payments, OpenAI powers the Nova AI chat
-feature. Pre-launch: zero real users yet. Domain is tradexnova.com.
+TradeX Nova — a trading journal SaaS. React/Vite frontend, Supabase backend,
+Stripe for payments, OpenAI powers the Nova AI chat feature. Pre-launch:
+zero real users yet. The domain tradexnova.com is currently lost/expired
+and needs to be re-purchased before there's a live public site again.
 
 Git was initialized in this project on 2026-08-12 specifically so this
 cleanup work is reversible. `.env` is gitignored and confirmed never
 committed — it holds real API keys/secrets and must stay out of git.
+
+**Which Supabase project is real (found 2026-08-13):** the `.env` file
+originally pointed at `cdyxszpwxqpcqfzbtmra`, a project live and working
+but NOT visible in the user's own Supabase account (likely Bolt-managed,
+inaccessible). The user's actual Supabase account has two projects: "Trade
+X" (`irtlwmpcfzjrlrxicxbk`, ACTIVE_HEALTHY) and an unrelated inactive one
+("VCT"). Decision made: standardize on **Trade X**
+(`irtlwmpcfzjrlrxicxbk`) going forward — `.env`'s `VITE_SUPABASE_URL` /
+`VITE_SUPABASE_ANON_KEY` now point there. `cdyxszpwxqpcqfzbtmra` is
+untouched and still exists under Bolt; unpublishing it is a separate,
+user-owned step in Bolt's own dashboard, not something done from here.
+
+**Trade X's live schema has drifted from this repo's migration files** —
+confirmed by testing, not just reading code. Two concrete examples found
+so far: `user_broker_connections` is a view with different columns than
+the code expects (broker-connect is currently broken there, but this
+becomes moot once fix #8 deletes that code), and the real `subscriptions`
+table has `plan_type`/`grace_period_end` instead of
+`trial_start`/`trial_end`/`stripe_price_id`/`canceled_at` (already fixed
+in `activate-subscription`, commit `117e37a`). **Lesson: before writing
+code that touches a table on Trade X, check its actual live columns
+first** (`supabase db query --linked "select column_name from
+information_schema.columns where table_name='X'"`) rather than trusting
+the migration files in this repo — they describe intent, not
+necessarily reality on this specific database.
+
+**Local tooling set up this session** (not permanent — lives in the
+session's scratchpad, would need reinstalling in a fresh session): the
+Supabase CLI (no Docker available, so `--linked`/`db query` are used
+instead of the Docker-dependent commands) and Node.js, both installed as
+standalone binaries since neither `brew` nor `npm`/`node` exist on this
+machine by default. A Supabase Personal Access Token was provided by the
+user and used to log in the CLI. `.claude/launch.json` runs the dev
+server via a wrapper script that sets PATH before calling `npm run dev`,
+since the spawned process doesn't inherit the session's PATH.
 
 ## Current work
 
@@ -32,17 +68,33 @@ Work through these one at a time. Do not batch.
    logged-in user could pass someone else's `connection_id` and pull
    their real trade data. Fixed: now checks the connection belongs to
    the caller before syncing, same as the `/diagnose` route already did.
-3. **[DONE — commit `2efb95c`, 2026-08-12]** `activate-subscription` —
-   require real Stripe verification. Anyone could grant themselves a
-   free paid subscription by calling the function directly with no
-   payment (there was even a public "Activate Subscription (Testing)"
-   button on the Payment/Settings pages doing exactly this). Fixed: the
-   function now looks the subscription up in Stripe itself and only
-   writes what Stripe actually reports for that verified user — no
-   more trusting a client-supplied duration. Note: the "Activate
-   Subscription (Testing)" button will now correctly show an error for
-   anyone who hasn't actually paid through Stripe — that button's copy/
-   visibility should get cleaned up as part of fix #4 or #9.
+3. **[DONE — commit `2efb95c`, corrected in `117e37a`, deployed to Trade
+   X, 2026-08-13]** `activate-subscription` — require real Stripe
+   verification. Anyone could grant themselves a free paid subscription
+   by calling the function directly with no payment (there was even a
+   public "Activate Subscription (Testing)" button on the Payment/
+   Settings pages doing exactly this). Fixed: the function now looks
+   the subscription up in Stripe itself and only writes what Stripe
+   actually reports for that verified user — no more trusting a
+   client-supplied duration. Also had to correct it once more (commit
+   `117e37a`) after testing revealed the live `subscriptions` table on
+   Trade X doesn't have the columns the first version assumed — see the
+   schema-drift note above. Note: the "Activate Subscription (Testing)"
+   button will now correctly show an error for anyone who hasn't
+   actually paid through Stripe — that button's copy/visibility should
+   get cleaned up as part of fix #4 or #9.
+
+**Deployed to Trade X so far (2026-08-13):** fixes #1, #2, #3 (all three
+edge functions), plus the waitlist RLS leak (fix #7, done early/out of
+order since it was live and actively exposing 7 real emails — see fix
+#7 below). A local dev server was set up and pointed at Trade X to
+verify things visually; testing surfaced the schema-drift issues noted
+above. Known still-broken from that testing pass, not yet triaged:
+some "multiple rows returned" errors on journal/confluences queries
+(possibly duplicate test data), and 500 errors generating Nova tips
+(possibly a missing OPENAI_API_KEY secret in Trade X's own Vault —
+secrets are per-project and need to be re-added there separately from
+whatever was configured on the old cdyxs project).
 4. Subscription enforcement server-side, not just in `PrivateRoute`. The
    paywall is currently only a client-side UI gate — a free user can open
    the browser console and pull full paid data directly.
@@ -53,8 +105,14 @@ Work through these one at a time. Do not batch.
 6. Add rate limiting and a per-user daily quota to `nova-chat`. It's not
    authenticated properly today, so anyone can hit it and run up the
    OpenAI bill.
-7. Fix the waitlist RLS policy — it currently allows anyone to read every
-   collected email (`USING (true)`).
+7. **[DONE — migration `20260813201659`, applied directly to Trade X,
+   2026-08-13]** Fix the waitlist RLS policy — it allowed anyone,
+   logged in or not, to read every collected email (`USING (true)`).
+   This was done out of order/urgently since it was live and actively
+   exposing 7 real signup emails, not just a theoretical risk. Fixed by
+   dropping the public SELECT policy entirely (signup/INSERT still
+   works for everyone, matches how the form was already calling it —
+   no `.select()` after insert, so nothing broke).
 8. Delete dead broker and voice code: `nova-tts`, `process-voice-journal`,
    `broker-api`, `metatrader-sync`, `mt4-webhook`, `sync-all-brokers`,
    plus `src/services/metaApiService.ts` and `brokerService.ts`. These
