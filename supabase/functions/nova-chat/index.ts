@@ -6,6 +6,8 @@ import { correctTradingTerms, TRADING_VOCABULARY_SYSTEM_PROMPT } from "../_share
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY ?? '' });
 const MODEL = 'claude-sonnet-5';
+const PER_MINUTE_LIMIT = 10;
+const DAILY_LIMIT = 100;
 
 const SYSTEM_PROMPT = `You are Nova, the AI trading assistant built into TradeX -- a comprehensive trading journal and performance analytics platform. You are not a generic chatbot. You are the intelligence layer of TradeX, deeply integrated with the user's trading data, journal entries, psychology logs, performance metrics, NOVA Score, confluences, and trading rules.
 
@@ -682,7 +684,9 @@ interface Message {
 
 interface RequestPayload {
   messages: Message[];
-  user: {
+  // Identity is derived from the caller's verified JWT, never trusted from
+  // the request body - this field is accepted but ignored.
+  user?: {
     id: string;
   };
   images?: string[];
@@ -765,7 +769,7 @@ Deno.serve(async (req: Request) => {
       throw new Error('Anthropic API key not configured');
     }
 
-    const { messages, user, images }: RequestPayload = await req.json();
+    const { messages, images }: RequestPayload = await req.json();
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(
@@ -777,11 +781,60 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    if (!user || !user.id) {
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
       return new Response(
         JSON.stringify({ error: 'User authentication required' }),
         {
           status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: { Authorization: authHeader },
+        },
+      }
+    );
+
+    // Identity is derived from the verified JWT, never trusted from the
+    // request body - this is also what the rate limit below is keyed on,
+    // so it has to be the real authenticated user, not a client-supplied ID.
+    const { data: { user: authUser }, error: authError } = await supabaseClient.auth.getUser();
+    if (authError || !authUser) {
+      return new Response(
+        JSON.stringify({ error: 'User authentication required' }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+    const userId = authUser.id;
+
+    const { data: usageCheck, error: usageError } = await supabaseClient
+      .rpc('check_and_increment_nova_usage', {
+        p_user_id: userId,
+        p_per_minute_limit: PER_MINUTE_LIMIT,
+        p_daily_limit: DAILY_LIMIT,
+      })
+      .single();
+
+    if (usageError) {
+      console.error('Rate limit check failed:', usageError);
+    } else if (usageCheck && !(usageCheck as any).allowed) {
+      const limitMessage = (usageCheck as any).reason === 'daily_limit'
+        ? "You've hit today's message limit with Nova. It resets at midnight - talk soon!"
+        : "Whoa, slow down a little there! Give it a few seconds and try again.";
+      return new Response(
+        JSON.stringify({ error: limitMessage }),
+        {
+          status: 429,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       );
@@ -825,23 +878,12 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    const authHeader = req.headers.get('Authorization');
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: authHeader ?? '' },
-        },
-      }
-    );
-
     let userProfile: UserProfile | null = null;
     try {
       const { data: profileData } = await supabaseClient
         .from('user_trading_profiles')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .maybeSingle();
 
       userProfile = profileData;
@@ -852,6 +894,16 @@ Deno.serve(async (req: Request) => {
     const profileContext = formatProfileForAI(userProfile);
     const enhancedSystemPrompt = SYSTEM_PROMPT + profileContext;
 
+    // Cache the system prompt (~4,400 tokens) and tool definitions (tools
+    // render before system, so one breakpoint here covers both). This
+    // prompt is sent on every single call - without caching, every message
+    // in a conversation pays full price for it again. A cache breakpoint
+    // on the last system block makes repeat calls within ~5 minutes read
+    // it at roughly 10% of the cost instead.
+    const systemBlocks: Anthropic.TextBlockParam[] = [
+      { type: 'text', text: enhancedSystemPrompt, cache_control: { type: 'ephemeral' } },
+    ];
+
     const claudeMessages: Anthropic.MessageParam[] = correctedHistory.map((m) => ({
       role: m.role === 'assistant' ? 'assistant' : 'user',
       content: m.content as any,
@@ -861,7 +913,7 @@ Deno.serve(async (req: Request) => {
       model: MODEL,
       max_tokens: 1200,
       output_config: { effort: 'medium' },
-      system: enhancedSystemPrompt,
+      system: systemBlocks,
       messages: claudeMessages,
       tools: TOOLS,
     });
@@ -886,7 +938,7 @@ Deno.serve(async (req: Request) => {
                 'Content-Type': 'application/json',
                 'apikey': Deno.env.get('SUPABASE_ANON_KEY') ?? '',
               },
-              body: JSON.stringify({ ...functionArgs, user_id: user.id }),
+              body: JSON.stringify({ ...functionArgs, user_id: userId }),
             }
           );
 
@@ -899,12 +951,15 @@ Deno.serve(async (req: Request) => {
             content: [{ type: 'tool_result', tool_use_id: toolUseBlock.id, content: JSON.stringify(journalResult) }],
           });
 
+          // Same system + tools as the first call, so this hits the cache
+          // written above instead of paying full price again.
           const secondResponse = await anthropic.messages.create({
             model: MODEL,
             max_tokens: 200,
             output_config: { effort: 'medium' },
-            system: enhancedSystemPrompt,
+            system: systemBlocks,
             messages: claudeMessages,
+            tools: TOOLS,
           });
 
           const secondText = secondResponse.content.find((b): b is Anthropic.TextBlock => b.type === 'text');
@@ -940,7 +995,7 @@ Deno.serve(async (req: Request) => {
                 'apikey': Deno.env.get('SUPABASE_ANON_KEY') ?? '',
               },
               body: JSON.stringify({
-                user_id: user.id,
+                user_id: userId,
                 days_back: functionArgs.days_back || 90,
                 account_id: functionArgs.account_id
               }),
@@ -963,8 +1018,9 @@ Deno.serve(async (req: Request) => {
             model: MODEL,
             max_tokens: 2000,
             output_config: { effort: 'medium' },
-            system: enhancedSystemPrompt,
+            system: systemBlocks,
             messages: claudeMessages,
+            tools: TOOLS,
           });
 
           const secondText = secondResponse.content.find((b): b is Anthropic.TextBlock => b.type === 'text');
