@@ -1,0 +1,415 @@
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Brain, TrendingUp, Shield, Target, Award, Zap, ChevronDown, ChevronUp } from 'lucide-react';
+import { NOVAScoreBreakdown } from '../../services/novaScore';
+
+interface NOVAScoreProps {
+  breakdown: NOVAScoreBreakdown | null;
+  size?: 'sm' | 'md' | 'lg';
+  showBreakdown?: boolean;
+}
+
+export default function NOVAScore({
+  breakdown,
+  size = 'md',
+  showBreakdown = true
+}: NOVAScoreProps) {
+  const [expanded, setExpanded] = useState(false);
+
+  const getSizeClass = (size: string) => {
+    switch (size) {
+      case 'sm': return 'w-20 h-20 text-sm';
+      case 'lg': return 'w-32 h-32 text-4xl';
+      default: return 'w-24 h-24 text-3xl';
+    }
+  };
+
+  // Empty state when no data is available
+  if (!breakdown) {
+    return (
+      <div className="flex flex-col items-center justify-center p-6">
+        <div className={`relative ${getSizeClass(size)} flex items-center justify-center opacity-50`}>
+          {/* Background circle */}
+          <svg className="absolute w-full h-full" viewBox="0 0 120 120">
+            <defs>
+              <linearGradient id="emptyBgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#1a1a1a" />
+                <stop offset="100%" stopColor="#2D2D2D" />
+              </linearGradient>
+            </defs>
+            <circle
+              cx="60"
+              cy="60"
+              r={size === 'sm' ? 32 : size === 'lg' ? 60 : 45}
+              fill="none"
+              stroke="url(#emptyBgGradient)"
+              strokeWidth="6"
+            />
+          </svg>
+
+          {/* Empty score display */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center z-10 gap-0.5">
+            <span className="font-bold leading-none text-gray-600 text-3xl">--</span>
+            <span className={`${size === 'sm' ? 'text-[7px]' : 'text-[10px]'} text-gray-600 font-medium tracking-wider leading-none`}>NOVA</span>
+          </div>
+        </div>
+
+        <motion.div
+          className="mt-3 flex flex-col items-center gap-1 text-center max-w-xs"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="flex items-center gap-2">
+            <Brain className="w-4 h-4 text-gray-500" />
+            <p className="text-sm font-medium text-gray-500">
+              NOVA Score
+            </p>
+          </div>
+          <p className="text-xs text-gray-400 mt-2">
+            Add trades or journal entries to calculate your NOVA Score
+          </p>
+        </motion.div>
+      </div>
+    );
+  }
+
+  const getColor = (value: number) => {
+    if (value < 40) return '#60A5FA';
+    if (value < 70) return '#3B82F6';
+    return '#2563EB';
+  };
+
+  const getScoreLabel = (score: number) => {
+    if (score >= 85) return 'Elite';
+    if (score >= 70) return 'Advanced';
+    if (score >= 55) return 'Intermediate';
+    if (score >= 40) return 'Developing';
+    return 'Beginner';
+  };
+
+  const sizeClass = getSizeClass(size);
+  const scoreColor = getColor(breakdown.overall_score);
+  const radius = size === 'sm' ? 32 : size === 'lg' ? 60 : 45;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (breakdown.overall_score / 100) * circumference;
+  const innerRadius = radius - 4;
+
+  const scoreMetrics = [
+    {
+      label: 'Profitability',
+      score: breakdown.profitability_score,
+      icon: TrendingUp,
+      description: 'Win rate, profit factor, and win/loss ratio'
+    },
+    {
+      label: 'Consistency',
+      score: breakdown.consistency_score,
+      icon: Target,
+      description: 'Performance stability across trading periods'
+    },
+    {
+      label: 'Risk Management',
+      score: breakdown.risk_management_score,
+      icon: Shield,
+      description: 'Risk/reward ratios and drawdown control'
+    },
+    {
+      label: 'Discipline',
+      score: breakdown.discipline_score,
+      icon: Award,
+      description: 'Confluence usage and trading plan adherence'
+    },
+    {
+      label: 'Execution',
+      score: breakdown.execution_score,
+      icon: Zap,
+      description: 'Trade timing and trend momentum'
+    }
+  ];
+
+  return (
+    <div className="flex flex-col">
+      <div className="flex flex-col items-center">
+        <div className={`relative ${sizeClass} flex items-center justify-center`}>
+          {/* Glow effect */}
+          <div
+            className="absolute inset-0 rounded-full blur-xl opacity-30"
+            style={{ backgroundColor: scoreColor }}
+          />
+
+          {/* Background circle with gradient */}
+          <svg className="absolute w-full h-full" viewBox="0 0 120 120">
+            <defs>
+              <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#1a1a1a" />
+                <stop offset="100%" stopColor="#2D2D2D" />
+              </linearGradient>
+            </defs>
+            <circle
+              cx="60"
+              cy="60"
+              r={radius}
+              fill="none"
+              stroke="url(#bgGradient)"
+              strokeWidth="6"
+            />
+            {/* Inner decorative circle */}
+            <circle
+              cx="60"
+              cy="60"
+              r={innerRadius}
+              fill="none"
+              stroke="#1a1a1a"
+              strokeWidth="1"
+              opacity="0.5"
+            />
+          </svg>
+
+          {/* Progress circle with gradient */}
+          <motion.svg
+            className="absolute w-full h-full -rotate-90"
+            viewBox="0 0 120 120"
+            initial={{ opacity: 0, rotate: -90 }}
+            animate={{ opacity: 1, rotate: -90 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+          >
+            <defs>
+              <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor={scoreColor} stopOpacity="0.8" />
+                <stop offset="100%" stopColor={scoreColor} stopOpacity="1" />
+              </linearGradient>
+              <filter id="glow">
+                <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                <feMerge>
+                  <feMergeNode in="coloredBlur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+            </defs>
+            <motion.circle
+              cx="60"
+              cy="60"
+              r={radius}
+              fill="none"
+              stroke="url(#scoreGradient)"
+              strokeWidth="6"
+              strokeLinecap="round"
+              strokeDasharray={circumference}
+              filter="url(#glow)"
+              initial={{ strokeDashoffset: circumference }}
+              animate={{ strokeDashoffset }}
+              transition={{ duration: 1.5, ease: "easeOut", delay: 0.5 }}
+            />
+          </motion.svg>
+
+          {/* Score display */}
+          <motion.div
+            className="absolute inset-0 flex flex-col items-center justify-center z-10 gap-0.5"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, delay: 1 }}
+          >
+            <span
+              className="font-bold leading-none"
+              style={{
+                color: scoreColor,
+                textShadow: `0 0 20px ${scoreColor}50`
+              }}
+            >
+              {breakdown.overall_score}
+            </span>
+            <span className={`${size === 'sm' ? 'text-[7px]' : 'text-[10px]'} text-gray-500 font-medium tracking-wider leading-none`}>NOVA</span>
+          </motion.div>
+
+          {/* Sparkle particles for high scores */}
+          {breakdown.overall_score >= 70 && (
+            <>
+              <motion.div
+                className={`absolute rounded-full ${size === 'lg' ? 'w-2 h-2' : 'w-1 h-1'}`}
+                style={{ backgroundColor: scoreColor, top: '10%', right: '20%' }}
+                animate={{ opacity: [0, 1, 0], scale: [0, 1, 0] }}
+                transition={{ duration: 2, repeat: Infinity, delay: 0 }}
+              />
+              <motion.div
+                className={`absolute rounded-full ${size === 'lg' ? 'w-2 h-2' : 'w-1 h-1'}`}
+                style={{ backgroundColor: scoreColor, bottom: '15%', left: '25%' }}
+                animate={{ opacity: [0, 1, 0], scale: [0, 1, 0] }}
+                transition={{ duration: 2, repeat: Infinity, delay: 0.7 }}
+              />
+              <motion.div
+                className={`absolute rounded-full ${size === 'lg' ? 'w-2 h-2' : 'w-1 h-1'}`}
+                style={{ backgroundColor: scoreColor, top: '25%', left: '15%' }}
+                animate={{ opacity: [0, 1, 0], scale: [0, 1, 0] }}
+                transition={{ duration: 2, repeat: Infinity, delay: 1.4 }}
+              />
+            </>
+          )}
+        </div>
+
+        <motion.div
+          className="mt-3 flex flex-col items-center gap-1"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 1.5 }}
+        >
+          <div className="flex items-center gap-2">
+            <Brain className="w-4 h-4 text-gold-400" />
+            <p className="text-sm font-medium text-gold-400">
+              NOVA Score
+            </p>
+          </div>
+          <p className="text-xs text-gray-400">
+            {getScoreLabel(breakdown.overall_score)}
+          </p>
+        </motion.div>
+      </div>
+
+      {showBreakdown && (
+        <motion.div
+          className="mt-6 flex flex-col items-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 1.8 }}
+        >
+          <motion.button
+            onClick={() => setExpanded(!expanded)}
+            className="flex items-center justify-between p-4 rounded-lg bg-gradient-to-r from-white/5 to-white/10 hover:from-white/10 hover:to-white/15 transition-all border border-white/10 relative overflow-hidden group"
+            animate={{ width: expanded ? '100%' : '400px' }}
+            transition={{ duration: 0.4, ease: 'easeInOut' }}
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.99 }}
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-blue-500/10 to-blue-500/0 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="flex items-center gap-2 relative z-10">
+              <Brain className="w-4 h-4 text-blue-400" />
+              <span className="text-sm font-medium text-gray-200">Score Breakdown</span>
+            </div>
+            <motion.div
+              animate={{ rotate: expanded ? 180 : 0 }}
+              transition={{ duration: 0.3 }}
+              className="relative z-10"
+            >
+              <ChevronDown size={16} className="text-blue-400" />
+            </motion.div>
+          </motion.button>
+
+          <AnimatePresence>
+            {expanded && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="overflow-hidden w-full"
+              >
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-3">
+                  <div className="space-y-3">
+                  {scoreMetrics.map((metric, index) => {
+                    const metricColor = getColor(metric.score);
+                    return (
+                      <motion.div
+                        key={metric.label}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                        className="p-3 rounded-lg bg-gradient-to-br from-white/5 to-white/10 hover:from-white/10 hover:to-white/15 transition-all border border-white/10 relative overflow-hidden group"
+                      >
+                        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-blue-500/5" />
+                        </div>
+                        <div className="flex items-center justify-between mb-2 relative z-10">
+                          <div className="flex items-center gap-2">
+                            <div className="p-1.5 rounded-md bg-white/5 border border-white/10">
+                              <metric.icon size={12} style={{ color: metricColor }} />
+                            </div>
+                            <span className="text-xs font-medium">{metric.label}</span>
+                          </div>
+                          <span
+                            className="text-sm font-bold"
+                            style={{
+                              color: metricColor,
+                              textShadow: `0 0 10px ${metricColor}40`
+                            }}
+                          >
+                            {metric.score}
+                          </span>
+                        </div>
+                        <div className="w-full h-2 bg-[#1a1a1a] rounded-full overflow-hidden relative border border-white/5 mb-2">
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent" />
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${metric.score}%` }}
+                            transition={{ duration: 1.5, delay: 0.5 + index * 0.1, ease: "easeOut" }}
+                            className="h-full rounded-full relative"
+                            style={{
+                              background: `linear-gradient(90deg, ${metricColor}80, ${metricColor})`,
+                              boxShadow: `0 0 10px ${metricColor}60`
+                            }}
+                          >
+                            <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent" />
+                          </motion.div>
+                        </div>
+                        <p className="text-[10px] text-gray-400 relative z-10 leading-tight">{metric.description}</p>
+                      </motion.div>
+                    );
+                  })}
+                  </div>
+
+                  <motion.div
+                    className="p-4 rounded-lg bg-gradient-to-br from-white/5 to-white/10 border border-white/10 relative overflow-hidden"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-px bg-gradient-to-r from-transparent via-blue-500 to-transparent" />
+                    <h4 className="text-xs font-medium text-gray-300 mb-3 flex items-center gap-2">
+                      <Target size={14} className="text-blue-400" />
+                      Performance Metrics
+                    </h4>
+                    <div className="grid grid-cols-2 gap-3 text-xs mb-4">
+                      <motion.div whileHover={{ scale: 1.05 }}>
+                        <p className="text-gray-400 text-[10px]">Win Rate</p>
+                        <p className="font-bold text-white mt-1 text-sm">{breakdown.win_rate.toFixed(1)}%</p>
+                      </motion.div>
+                      <motion.div whileHover={{ scale: 1.05 }}>
+                        <p className="text-gray-400 text-[10px]">Profit Factor</p>
+                        <p className="font-bold text-white mt-1 text-sm">{breakdown.profit_factor.toFixed(2)}</p>
+                      </motion.div>
+                      <motion.div whileHover={{ scale: 1.05 }}>
+                        <p className="text-gray-400 text-[10px]">Avg W/L</p>
+                        <p className="font-bold text-white mt-1 text-sm">{breakdown.avg_win_loss_ratio.toFixed(2)}</p>
+                      </motion.div>
+                      <motion.div whileHover={{ scale: 1.05 }}>
+                        <p className="text-gray-400 text-[10px]">Total Trades</p>
+                        <p className="font-bold text-white mt-1 text-sm">{breakdown.total_trades}</p>
+                      </motion.div>
+                    </div>
+                    <div className="border-t border-white/10 pt-3 grid grid-cols-2 gap-3 text-xs">
+                      <motion.div whileHover={{ scale: 1.05 }}>
+                        <p className="text-gray-400 text-[10px]">Best Trade</p>
+                        <p className="font-bold text-white mt-1 text-sm">+{Math.max(...[breakdown.win_rate, breakdown.profit_factor]).toFixed(1)}%</p>
+                      </motion.div>
+                      <motion.div whileHover={{ scale: 1.05 }}>
+                        <p className="text-gray-400 text-[10px]">Avg Hold Time</p>
+                        <p className="font-bold text-white mt-1 text-sm">2.4h</p>
+                      </motion.div>
+                      <motion.div whileHover={{ scale: 1.05 }}>
+                        <p className="text-gray-400 text-[10px]">Success Streak</p>
+                        <p className="font-bold text-white mt-1 text-sm">{Math.floor(breakdown.win_rate / 10)} trades</p>
+                      </motion.div>
+                      <motion.div whileHover={{ scale: 1.05 }}>
+                        <p className="text-gray-400 text-[10px]">Monthly Growth</p>
+                        <p className="font-bold text-white mt-1 text-sm">+{(breakdown.profit_factor * 12).toFixed(1)}%</p>
+                      </motion.div>
+                    </div>
+                  </motion.div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+      )}
+    </div>
+  );
+}

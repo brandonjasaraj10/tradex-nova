@@ -1,0 +1,27 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Allow all major search engines
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Slurp
+Allow: /
+
+# Disallow private areas
+Disallow: /dashboard
+Disallow: /journal
+Disallow: /analytics
+Disallow: /calendar
+Disallow: /nova
+Disallow: /settings
+Disallow: /profile
+Disallow: /checklists
+Disallow: /payment
+
+# Sitemap location
+Sitemap: https://tradexnova.com/sitemap.xml

@@ -1,0 +1,106 @@
+import { motion } from 'framer-motion';
+import { TrendingUp, TrendingDown, Target, BarChart3, ChevronRight, Eye } from 'lucide-react';
+import { TradingReport } from '../../services/reports';
+
+interface WeeklySummaryCardProps {
+  report: TradingReport;
+  onClick: () => void;
+  privacyMode?: boolean;
+  delay?: number;
+}
+
+export default function WeeklySummaryCard({ report, onClick, privacyMode = false, delay = 0 }: WeeklySummaryCardProps) {
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(value);
+  };
+
+  const formatDate = (dateStr: string) => {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${monthNames[month - 1]} ${day}`;
+  };
+
+  const formatWeekRange = (startStr: string, endStr: string) => {
+    const [startYear, startMonth, startDay] = startStr.split('-').map(Number);
+    const [endYear, endMonth, endDay] = endStr.split('-').map(Number);
+
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const month = monthNames[startMonth - 1];
+
+    return `${month} ${startDay}-${endDay}`;
+  };
+
+  return (
+    <motion.button
+      onClick={onClick}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, delay: delay * 0.1, ease: "easeOut" }}
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      className="w-full h-full min-h-0 bg-gradient-to-br from-[#0A0A0A] to-[#0F0F0F] border border-[#3B82F6]/30 rounded-md p-1 lg:p-1.5 text-left hover:border-[#3B82F6]/60 transition-all group relative overflow-hidden flex flex-col justify-start"
+      style={{
+        boxShadow: '0 0 20px rgba(59, 130, 246, 0.15), inset 0 0 40px rgba(59, 130, 246, 0.05)',
+      }}
+    >
+      <div className="absolute inset-0 bg-gradient-to-br from-[#3B82F6]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+      <div className="relative z-10 flex flex-col justify-start h-full gap-0.5">
+        <div>
+          <span className="text-[7px] lg:text-[8px] font-medium text-gray-400 block truncate">
+            {formatWeekRange(report.period_start, report.period_end)}
+          </span>
+        </div>
+
+        {report.total_trades === 0 ? (
+          <div className="text-center">
+            <p className="text-[8px] lg:text-[9px] text-gray-500">No trades</p>
+          </div>
+        ) : privacyMode ? (
+          <div className="flex items-center justify-center">
+            <Eye size={10} className="text-gray-600" />
+          </div>
+        ) : (
+          <div className="space-y-0">
+            <div className="flex items-center justify-between">
+              <span className="text-[7px] lg:text-[8px] text-gray-400">P&L</span>
+              <span className={`text-[9px] lg:text-[10px] font-bold ${report.total_pnl >= 0 ? 'text-[#3B82F6]' : 'text-gray-400'}`}>
+                {report.total_pnl >= 0 ? '+' : ''}{formatCurrency(report.total_pnl)}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <span className="text-[7px] lg:text-[8px] text-gray-400">Win Rate</span>
+              <span className="text-[9px] lg:text-[10px] font-bold text-white">{report.win_rate.toFixed(0)}%</span>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <span className="text-[7px] lg:text-[8px] text-gray-400">Trades</span>
+              <span className="text-[9px] lg:text-[10px] font-bold text-white">{report.total_trades}</span>
+            </div>
+
+            {report.avg_psychology_score > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="text-[7px] lg:text-[8px] text-gray-400">Psych</span>
+                <span className="text-[9px] lg:text-[10px] font-medium text-white">
+                  {report.avg_psychology_score.toFixed(0)}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="mt-auto pt-0.5 border-t border-white/5">
+          <div className="flex items-center justify-center gap-0.5 text-[7px] lg:text-[8px] text-gray-500 group-hover:text-blue-400 transition-colors">
+            <span>View</span>
+            <ChevronRight size={8} className="lg:w-3 lg:h-3" />
+          </div>
+        </div>
+      </div>
+    </motion.button>
+  );
+}
