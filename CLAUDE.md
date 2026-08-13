@@ -32,9 +32,17 @@ Work through these one at a time. Do not batch.
    logged-in user could pass someone else's `connection_id` and pull
    their real trade data. Fixed: now checks the connection belongs to
    the caller before syncing, same as the `/diagnose` route already did.
-3. `activate-subscription` — require real Stripe verification. Right now
-   anyone can grant themselves a free paid subscription by calling the
-   function directly with no payment.
+3. **[DONE — commit `2efb95c`, 2026-08-12]** `activate-subscription` —
+   require real Stripe verification. Anyone could grant themselves a
+   free paid subscription by calling the function directly with no
+   payment (there was even a public "Activate Subscription (Testing)"
+   button on the Payment/Settings pages doing exactly this). Fixed: the
+   function now looks the subscription up in Stripe itself and only
+   writes what Stripe actually reports for that verified user — no
+   more trusting a client-supplied duration. Note: the "Activate
+   Subscription (Testing)" button will now correctly show an error for
+   anyone who hasn't actually paid through Stripe — that button's copy/
+   visibility should get cleaned up as part of fix #4 or #9.
 4. Subscription enforcement server-side, not just in `PrivateRoute`. The
    paywall is currently only a client-side UI gate — a free user can open
    the browser console and pull full paid data directly.
