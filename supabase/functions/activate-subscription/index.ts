@@ -1,11 +1,19 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import Stripe from "npm:stripe@17.7.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") ?? "", {
+  appInfo: {
+    name: "TradeX",
+    version: "1.0.0",
+  },
+});
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -37,47 +45,62 @@ Deno.serve(async (req: Request) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    const { action = 'activate', duration = 30 } = await req.json();
-
+    const { action = 'activate' } = await req.json();
     const now = new Date();
-    const trialStart = now;
-    const trialEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-    const currentPeriodEnd = new Date(now.getTime() + duration * 24 * 60 * 60 * 1000);
 
     if (action === 'activate') {
+      // Look the subscription up in Stripe itself, keyed by the verified
+      // supabase_user_id metadata that create-subscription attaches to
+      // every checkout session. This never trusts anything from the
+      // request body — activation only happens if Stripe confirms a real
+      // subscription exists for this exact authenticated user.
+      const searchResult = await stripe.subscriptions.search({
+        query: `metadata['supabase_user_id']:'${user.id}'`,
+        limit: 1,
+      });
+
+      const stripeSub = searchResult.data[0];
+      if (!stripeSub) {
+        return new Response(
+          JSON.stringify({ error: "No Stripe subscription found. Please subscribe first." }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 402,
+          }
+        );
+      }
+
+      const subscriptionRecord = {
+        stripe_customer_id: typeof stripeSub.customer === "string" ? stripeSub.customer : stripeSub.customer.id,
+        stripe_subscription_id: stripeSub.id,
+        stripe_price_id: stripeSub.items.data[0]?.price?.id ?? null,
+        status: stripeSub.status,
+        current_period_start: new Date(stripeSub.current_period_start * 1000).toISOString(),
+        current_period_end: new Date(stripeSub.current_period_end * 1000).toISOString(),
+        trial_start: stripeSub.trial_start ? new Date(stripeSub.trial_start * 1000).toISOString() : null,
+        trial_end: stripeSub.trial_end ? new Date(stripeSub.trial_end * 1000).toISOString() : null,
+        cancel_at_period_end: stripeSub.cancel_at_period_end,
+        canceled_at: stripeSub.canceled_at ? new Date(stripeSub.canceled_at * 1000).toISOString() : null,
+        updated_at: now.toISOString(),
+      };
+
       const { data: existingSub } = await supabaseAdmin
         .from("subscriptions")
-        .select("*")
+        .select("id")
         .eq("user_id", user.id)
         .maybeSingle();
 
       if (existingSub) {
         const { error: updateError } = await supabaseAdmin
           .from("subscriptions")
-          .update({
-            status: "active",
-            current_period_start: now.toISOString(),
-            current_period_end: currentPeriodEnd.toISOString(),
-            trial_start: trialStart.toISOString(),
-            trial_end: trialEnd.toISOString(),
-            cancel_at_period_end: false,
-            updated_at: now.toISOString(),
-          })
+          .update(subscriptionRecord)
           .eq("user_id", user.id);
 
         if (updateError) throw updateError;
       } else {
         const { error: insertError } = await supabaseAdmin
           .from("subscriptions")
-          .insert({
-            user_id: user.id,
-            status: "active",
-            current_period_start: now.toISOString(),
-            current_period_end: currentPeriodEnd.toISOString(),
-            trial_start: trialStart.toISOString(),
-            trial_end: trialEnd.toISOString(),
-            cancel_at_period_end: false,
-          });
+          .insert({ user_id: user.id, ...subscriptionRecord });
 
         if (insertError) throw insertError;
       }
@@ -85,11 +108,11 @@ Deno.serve(async (req: Request) => {
       return new Response(
         JSON.stringify({
           success: true,
-          message: "Subscription activated successfully",
+          message: "Subscription synced from Stripe",
           subscription: {
-            status: "active",
-            trial_end: trialEnd.toISOString(),
-            current_period_end: currentPeriodEnd.toISOString(),
+            status: subscriptionRecord.status,
+            trial_end: subscriptionRecord.trial_end,
+            current_period_end: subscriptionRecord.current_period_end,
           },
         }),
         {
