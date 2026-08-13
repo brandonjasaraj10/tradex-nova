@@ -174,19 +174,32 @@ whatever was configured on the old cdyxs project).
     actually has `display_name`, `supported`). Not a security issue,
     just broken functionality.
 
-**[DONE — commit `621d5f5`, deployed to Trade X, 2026-08-13]** Not part of
-the original security list — a separate request to switch Nova's AI
-backend from OpenAI to Claude (Anthropic). `nova-chat` now calls Claude
-Sonnet 5 instead of OpenAI's gpt-4o. Nothing outside that one file
-changed — the frontend still gets back the exact same `{text,
-tool_calls}` shape it always did. Uses `ANTHROPIC_API_KEY` (a new secret,
-added to Trade X's Vault) instead of `OPENAI_API_KEY`. `nova-tts` and
-`process-voice-journal` still use OpenAI — they weren't touched since
-fix #8 deletes them entirely anyway. Verified end to end with a real key:
-plain chat replies work, and the full tool-calling round trip (Claude
-decides to log a journal entry → the entry actually gets written →
-Claude confirms in natural language) works correctly, HTML formatting
-rules and all.
+**[DONE — commits `621d5f5` and `e8032d2`, deployed to Trade X,
+2026-08-13]** Not part of the original security list — a separate
+request to switch Nova's AI backend from OpenAI to Claude (Anthropic).
+Both `nova-chat` and `process-voice-journal` now call Claude Sonnet 5
+instead of OpenAI's gpt-4o — nothing outside those two files changed,
+same response shapes as before, so the frontend didn't need any
+updates. Uses `ANTHROPIC_API_KEY` (a new secret, added to Trade X's
+Vault) instead of `OPENAI_API_KEY` for those two.
+
+`nova-tts` (Nova's spoken replies) **stays on OpenAI on purpose** —
+confirmed with the user this is a real, wanted feature (voice chat
+with Nova), not abandoned like the ElevenLabs env vars. It can't move
+to Claude regardless: Anthropic's Claude API has no text-to-speech
+capability at all — that's specific to the Claude consumer app, not
+something exposed to third-party integrations. Options if OpenAI cost
+for this becomes a concern later: ElevenLabs, or the browser's free
+built-in `speechSynthesis` API (same free-browser-API pattern already
+used for speech-to-text in `useVoice.ts`) — the user chose to keep
+OpenAI for now since it sounds better.
+
+Verified end to end with a real key: `nova-chat` — plain chat replies
+work, and the full tool-calling round trip (Claude decides to log a
+journal entry → the entry actually gets written → Claude confirms in
+natural language) works correctly, HTML formatting rules and all.
+`process-voice-journal` — sent a real transcript, got back correctly
+extracted structured JSON (symbol, direction, P&L, title).
 
 ## Before launch
 
