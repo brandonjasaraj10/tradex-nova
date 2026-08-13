@@ -95,9 +95,17 @@ some "multiple rows returned" errors on journal/confluences queries
 (possibly a missing OPENAI_API_KEY secret in Trade X's own Vault —
 secrets are per-project and need to be re-added there separately from
 whatever was configured on the old cdyxs project).
-4. Subscription enforcement server-side, not just in `PrivateRoute`. The
-   paywall is currently only a client-side UI gate — a free user can open
-   the browser console and pull full paid data directly.
+4. **[DONE — migration `20260813211517`, applied directly to Trade X,
+   2026-08-13]** Subscription enforcement server-side, not just in
+   `PrivateRoute`. The paywall was only a client-side UI gate — a free
+   user could open the browser console and pull full paid data
+   directly. Fixed: added a `has_active_subscription()` database
+   function (mirrors the existing client-side access logic) and
+   required it on all 84 RLS policies across the 23 paid-feature
+   tables. `user_profiles`, `subscriptions`, and `notifications` stay
+   ungated on purpose. Verified directly: an unsubscribed test account
+   gets rejected with an RLS error on insert; the same account with an
+   active subscription row passes through.
 5. Delete `setup-stripe-product` and the `cloudflare-worker` folder
    entirely. The Stripe setup function has no login check at all, and the
    Cloudflare worker is an open, unauthenticated proxy that can be pointed
