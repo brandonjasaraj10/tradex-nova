@@ -114,7 +114,7 @@ export default function MiniCalendar({ selectedDate, onDateSelect }: MiniCalenda
               className={`
                 w-full h-full flex items-center justify-center text-sm rounded-lg transition-colors
                 ${isSelectedDate(day)
-                  ? 'bg-blue-400 text-white font-medium'
+                  ? 'bg-blue-500 text-white font-medium'
                   : isToday(day)
                   ? 'bg-white/5 text-white font-medium ring-1 ring-blue-400/50'
                   : 'hover:bg-white/5 text-gray-300'
