@@ -38,6 +38,22 @@ information_schema.columns where table_name='X'"`) rather than trusting
 the migration files in this repo — they describe intent, not
 necessarily reality on this specific database.
 
+**Second-order consequence of that same schema-drift pattern, found and
+fixed 2026-08-14 (migration `20260814050807`):** fixing
+`create_default_folders()`'s column bug earlier in this session
+(migration `20260813210423`) made new-user signup itself start working
+— but the function's actual folder-creation logic turned out to be a
+leftover Bolt-era design (three folders: "General", "Weekly Review",
+"Trade Reviews", plus a "Notes" row written to a separate
+`notes_folders` table the frontend never reads) instead of the app's
+real, current default-folder model (exactly two: "Daily Journal" +
+"Notes", both in `journal_folders`, confirmed by `Journal.tsx`'s own
+`DEFAULT_FOLDERS` constant). Fixing a broken column reference isn't the
+same as confirming the surrounding logic is still correct — the
+function had been silently failing for so long that nobody could tell
+its actual output was wrong until it started succeeding. Rewrote it to
+match the app's real default folders and backfilled affected accounts.
+
 **Local tooling set up this session** (not permanent — lives in the
 session's scratchpad, would need reinstalling in a fresh session): the
 Supabase CLI (no Docker available, so `--linked`/`db query` are used
