@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ConfirmModal from '../components/shared/ConfirmModal';
-import { Mic, Send, Sparkles, Trash2, RotateCw, TrendingUp, Brain, Zap, Target, Clock, LineChart, Activity, DollarSign, BarChart2, AlertCircle, CheckCircle2, Flame, Award, BookOpen, Volume2, VolumeX, Settings, History, X } from 'lucide-react';
+import { Mic, Send, Sparkles, Trash2, RotateCw, TrendingUp, Brain, Zap, Target, Clock, LineChart, Activity, DollarSign, BarChart2, AlertCircle, CheckCircle2, Flame, Award, BookOpen, Volume2, VolumeX, Settings, History, X, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { useNova } from '../lib/novaContext';
 import { useNavigate } from 'react-router-dom';
 import { useVoice } from '../hooks/useVoice';
@@ -48,7 +48,7 @@ export default function NovaAssistant() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { tourCompleted } = useTour();
-  const { messages, isTyping, isLoading, currentSessionId, sendMessage, clearHistory, startVoiceSession, loadSession, createNewSession, deleteSession } = useNova();
+  const { messages, isTyping, isLoading, currentSessionId, sendMessage, clearHistory, startVoiceSession, loadSession, createNewSession, deleteSession, submitFeedback } = useNova();
   const [input, setInput] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [autoSpeak, setAutoSpeak] = useState(false);
@@ -617,23 +617,43 @@ export default function NovaAssistant() {
                             <Sparkles className="w-4 h-4 text-blue-400 drop-shadow-[0_0_8px_rgba(59,130,246,1)]" />
                           </div>
                         )}
-                        <div
-                          className={`
-                            rounded-2xl px-4 py-3
-                            ${message.role === 'user'
-                              ? 'bg-blue-400/15 border border-blue-400/40 text-white'
-                              : 'bg-[#111] border border-blue-400/30 text-white'
-                            }
-                          `}
-                          style={{
-                            boxShadow: message.role === 'user'
-                              ? '0 0 20px rgba(59, 130, 246, 0.3)'
-                              : '0 0 15px rgba(59, 130, 246, 0.2)',
-                          }}
-                        >
-                          <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                            {message.role === 'assistant' ? formatNovaMessage(message.content) : message.content}
+                        <div className="flex flex-col gap-1.5 min-w-0">
+                          <div
+                            className={`
+                              rounded-2xl px-4 py-3
+                              ${message.role === 'user'
+                                ? 'bg-blue-400/15 border border-blue-400/40 text-white'
+                                : 'bg-[#111] border border-blue-400/30 text-white'
+                              }
+                            `}
+                            style={{
+                              boxShadow: message.role === 'user'
+                                ? '0 0 20px rgba(59, 130, 246, 0.3)'
+                                : '0 0 15px rgba(59, 130, 246, 0.2)',
+                            }}
+                          >
+                            <div className="whitespace-pre-wrap text-sm leading-relaxed">
+                              {message.role === 'assistant' ? formatNovaMessage(message.content) : message.content}
+                            </div>
                           </div>
+                          {message.role === 'assistant' && (
+                            <div className="flex items-center gap-1 px-1">
+                              <button
+                                onClick={() => submitFeedback(message.id, 'up')}
+                                title="Good response"
+                                className={`p-1.5 rounded-lg transition-colors border ${message.feedback === 'up' ? 'text-blue-400 bg-blue-400/10 border-blue-400/30' : 'text-gray-500 border-transparent hover:text-gray-300 hover:bg-white/5'}`}
+                              >
+                                <ThumbsUp className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => submitFeedback(message.id, 'down')}
+                                title="Bad response"
+                                className={`p-1.5 rounded-lg transition-colors border ${message.feedback === 'down' ? 'text-red-400 bg-red-400/10 border-red-400/30' : 'text-gray-500 border-transparent hover:text-gray-300 hover:bg-white/5'}`}
+                              >
+                                <ThumbsDown className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </motion.div>

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, Send, Brain, X, Trash2, Sparkles, Volume2, VolumeX, History } from 'lucide-react';
+import { Mic, Send, Brain, X, Trash2, Sparkles, Volume2, VolumeX, History, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { useNova } from '../../lib/novaContext';
 import { useVoice } from '../../hooks/useVoice';
 import { useDataSync } from '../../lib/dataSync';
@@ -10,7 +10,7 @@ import ConfirmModal from '../shared/ConfirmModal';
 import { formatNovaMessage } from '../../utils/formatNovaMessage';
 
 export default function NovaWidget() {
-  const { messages, isTyping, isLoading, isOpen, currentSessionId, setIsOpen, sendMessage, clearHistory, loadSession, createNewSession, deleteSession } = useNova();
+  const { messages, isTyping, isLoading, isOpen, currentSessionId, setIsOpen, sendMessage, clearHistory, loadSession, createNewSession, deleteSession, submitFeedback } = useNova();
   const { refreshTrigger } = useDataSync();
   const [input, setInput] = useState('');
   const [autoSpeak, setAutoSpeak] = useState(false);
@@ -151,18 +151,38 @@ export default function NovaWidget() {
                             <Sparkles className="w-3 h-3 text-blue-400" />
                           </div>
                         )}
-                        <div
-                          className={`
-                          rounded-2xl px-4 py-3
-                          ${message.role === 'user'
-                              ? 'bg-blue-400/10 border border-blue-400/20 text-white'
-                              : 'bg-white/5 text-white'
-                            }
-                        `}
-                        >
-                          <div className="text-sm whitespace-pre-wrap leading-relaxed">
-                            {message.role === 'assistant' ? formatNovaMessage(message.content) : message.content}
+                        <div className="flex flex-col gap-1">
+                          <div
+                            className={`
+                            rounded-2xl px-4 py-3
+                            ${message.role === 'user'
+                                ? 'bg-blue-400/10 border border-blue-400/20 text-white'
+                                : 'bg-white/5 text-white'
+                              }
+                          `}
+                          >
+                            <div className="text-sm whitespace-pre-wrap leading-relaxed">
+                              {message.role === 'assistant' ? formatNovaMessage(message.content) : message.content}
+                            </div>
                           </div>
+                          {message.role === 'assistant' && (
+                            <div className="flex items-center gap-1 px-1">
+                              <button
+                                onClick={() => submitFeedback(message.id, 'up')}
+                                title="Good response"
+                                className={`p-1 rounded-lg transition-colors ${message.feedback === 'up' ? 'text-blue-400 bg-blue-400/10' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}
+                              >
+                                <ThumbsUp className="w-3 h-3" />
+                              </button>
+                              <button
+                                onClick={() => submitFeedback(message.id, 'down')}
+                                title="Bad response"
+                                className={`p-1 rounded-lg transition-colors ${message.feedback === 'down' ? 'text-red-400 bg-red-400/10' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}
+                              >
+                                <ThumbsDown className="w-3 h-3" />
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </motion.div>

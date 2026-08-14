@@ -16,6 +16,7 @@ interface NovaContextType {
   loadSession: (sessionId: string) => Promise<void>;
   createNewSession: () => Promise<void>;
   deleteSession: (sessionId: string) => Promise<void>;
+  submitFeedback: (messageId: string, rating: 'up' | 'down' | null) => Promise<void>;
 }
 
 const NovaContext = createContext<NovaContextType | undefined>(undefined);
@@ -78,7 +79,7 @@ export function NovaProvider({ children }: { children: ReactNode }) {
           content: "Hey! I'm NOVA, your AI Trading Assistant. I'm here to help you analyze your trades, review your performance, and provide insights. What would you like to explore?"
         };
         setMessages([welcomeMessage]);
-        await novaService.saveMessage('assistant', welcomeMessage.content);
+        await novaService.saveMessage('assistant', welcomeMessage.content, welcomeMessage.id);
       } else {
         setMessages(history);
       }
@@ -154,7 +155,7 @@ export function NovaProvider({ children }: { children: ReactNode }) {
     setIsTyping(true);
 
     try {
-      await novaService.saveMessage('user', content.trim());
+      await novaService.saveMessage('user', content.trim(), userMsg.id);
 
       const response = await novaService.generateResponse(content.trim(), messages, images);
 
@@ -165,7 +166,7 @@ export function NovaProvider({ children }: { children: ReactNode }) {
       };
 
       setMessages(prev => [...prev, assistantMsg]);
-      await novaService.saveMessage('assistant', response);
+      await novaService.saveMessage('assistant', response, assistantMsg.id);
     } catch (error) {
       console.error('Error sending message:', error);
       const errorMsg: ChatMessage = {
@@ -255,7 +256,7 @@ export function NovaProvider({ children }: { children: ReactNode }) {
         content: "Hey! I'm NOVA, your AI Trading Assistant. I'm here to help you analyze your trades, review your performance, and provide insights. What would you like to explore?"
       };
       setMessages([welcomeMessage]);
-      await newService.saveMessage('assistant', welcomeMessage.content);
+      await newService.saveMessage('assistant', welcomeMessage.content, welcomeMessage.id);
     } catch (error) {
       console.error('Error creating new session:', error);
     } finally {
@@ -268,6 +269,20 @@ export function NovaProvider({ children }: { children: ReactNode }) {
       await createNewSession();
     }
   }, [currentSessionId, createNewSession]);
+
+  const submitFeedback = useCallback(async (messageId: string, rating: 'up' | 'down' | null) => {
+    const previous = messages.find(m => m.id === messageId)?.feedback ?? null;
+    const nextRating = previous === rating ? null : rating;
+
+    setMessages(prev => prev.map(m => (m.id === messageId ? { ...m, feedback: nextRating } : m)));
+
+    try {
+      await novaService.submitFeedback(messageId, nextRating);
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+      setMessages(prev => prev.map(m => (m.id === messageId ? { ...m, feedback: previous } : m)));
+    }
+  }, [messages, novaService]);
 
   return (
     <NovaContext.Provider
@@ -284,7 +299,8 @@ export function NovaProvider({ children }: { children: ReactNode }) {
         startVoiceSession,
         loadSession,
         createNewSession,
-        deleteSession
+        deleteSession,
+        submitFeedback
       }}
     >
       {children}

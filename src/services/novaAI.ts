@@ -5,6 +5,7 @@ export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   created_at?: string;
+  feedback?: 'up' | 'down' | null;
 }
 
 export class NovaAIService {
@@ -35,20 +36,80 @@ export class NovaAIService {
       return [];
     }
 
+    const feedbackMap = await this.loadFeedbackMap(data.map(msg => msg.id));
+
     return data.map(msg => ({
       id: msg.id,
       role: msg.role,
       content: msg.content,
-      created_at: msg.created_at
+      created_at: msg.created_at,
+      feedback: feedbackMap.get(msg.id) ?? null
     }));
   }
 
-  async saveMessage(role: 'user' | 'assistant', content: string): Promise<string> {
+  async loadFeedbackMap(messageIds: string[]): Promise<Map<string, 'up' | 'down'>> {
+    const feedbackMap = new Map<string, 'up' | 'down'>();
+    if (!this.userId || messageIds.length === 0) return feedbackMap;
+
+    const { data, error } = await supabase
+      .from('nova_message_feedback')
+      .select('message_id, rating')
+      .eq('user_id', this.userId)
+      .in('message_id', messageIds);
+
+    if (error) {
+      console.error('Error loading message feedback:', error);
+      return feedbackMap;
+    }
+
+    for (const row of data) {
+      feedbackMap.set(row.message_id, row.rating);
+    }
+    return feedbackMap;
+  }
+
+  async submitFeedback(messageId: string, rating: 'up' | 'down' | null): Promise<void> {
+    if (!this.userId) throw new Error('User not authenticated');
+
+    if (rating === null) {
+      const { error } = await supabase
+        .from('nova_message_feedback')
+        .delete()
+        .eq('user_id', this.userId)
+        .eq('message_id', messageId);
+
+      if (error) {
+        console.error('Error clearing message feedback:', error);
+        throw error;
+      }
+      return;
+    }
+
+    const { error } = await supabase
+      .from('nova_message_feedback')
+      .upsert(
+        {
+          user_id: this.userId,
+          message_id: messageId,
+          rating,
+          updated_at: new Date().toISOString()
+        },
+        { onConflict: 'message_id,user_id' }
+      );
+
+    if (error) {
+      console.error('Error saving message feedback:', error);
+      throw error;
+    }
+  }
+
+  async saveMessage(role: 'user' | 'assistant', content: string, id?: string): Promise<string> {
     if (!this.userId) throw new Error('User not authenticated');
 
     const { data, error } = await supabase
       .from('nova_chat_messages')
       .insert({
+        id,
         user_id: this.userId,
         role,
         content,
