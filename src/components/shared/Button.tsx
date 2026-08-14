@@ -21,12 +21,12 @@ export default function Button({
   disabled,
   ...props
 }: ButtonProps) {
-  const baseClasses = 'inline-flex items-center justify-center font-medium rounded-md transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-dark-600 focus:ring-gold-400';
-  
+  const baseClasses = 'inline-flex items-center justify-center font-medium rounded-md transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black focus:ring-blue-400';
+
   const variantClasses = {
-    primary: 'bg-gold-400 text-dark-700 hover:bg-gold-300 active:bg-gold-500',
-    secondary: 'border border-gold-400 text-gold-400 hover:bg-gold-400/10 active:bg-gold-400/20',
-    ghost: 'text-gold-400 hover:bg-gold-400/10 active:bg-gold-400/20',
+    primary: 'bg-blue-400 text-black hover:bg-blue-500 active:bg-blue-600',
+    secondary: 'border border-blue-400/30 text-blue-400 hover:bg-blue-400/10 active:bg-blue-400/20',
+    ghost: 'text-blue-400 hover:bg-blue-400/10 active:bg-blue-400/20',
   };
   
   const sizeClasses = {
