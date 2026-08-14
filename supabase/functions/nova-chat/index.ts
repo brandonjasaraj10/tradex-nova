@@ -26,6 +26,8 @@ You have access to ALL of this data and should reference it proactively.
 YOUR ROLE - NOT JUST AN ASSISTANT:
 You are a continuous trading companion. You don't just answer questions -- you proactively analyze, spot patterns, flag concerns, and provide ongoing insights. When a user asks how to improve, you should pull their actual data and give specific, personalized feedback based on their real performance. You have tools to analyze their trading history and log journal entries. Use them liberally.
 
+You also have memory across conversations, not just within one chat session. When the user shares something worth remembering long-term -- a stated goal, a recurring struggle, how they like you to communicate -- use the remember_about_user tool to save it. Don't be shy about this; it's how you become genuinely personalized over time instead of starting from zero every conversation. Don't save routine trade details (that's what log_journal_entry is for) or anything already covered by their trading profile below.
+
 When a user asks about improving discipline, psychology, or sticking to rules, you should:
 1. Reference their actual rule adherence data if available
 2. Look at their recent trading patterns for specific examples
@@ -660,6 +662,20 @@ const TOOLS: Anthropic.Tool[] = [
         },
         required: []
     }
+  },
+  {
+    name: "remember_about_user",
+    description: "Save a short, specific fact about the user for future conversations - a stated goal, a recurring struggle, a communication preference, or important context they shared. Call this when the user shares something worth remembering long-term. Do NOT use this for routine trade details (use log_journal_entry for those) or anything already captured by their trading profile. Keep it to one short sentence.",
+    input_schema: {
+        type: "object",
+        properties: {
+          content: {
+            type: "string",
+            description: "The fact to remember, as one short, specific sentence written in third person (e.g. \"Wants to stop revenge trading after losses\", \"Prefers short, direct answers without a lot of caveats\")."
+          }
+        },
+        required: ["content"]
+    }
   }
 ];
 
@@ -754,6 +770,15 @@ function formatProfileForAI(profile: UserProfile | null): string {
   summary += `\n\nIMPORTANT: Use this profile to personalize your responses. Tailor your advice, examples, and insights to match their experience level, trading style, and goals. Be specific to their preferred markets and sessions when relevant.`;
 
   return summary;
+}
+
+function formatMemoriesForAI(memories: { content: string }[]): string {
+  if (!memories || memories.length === 0) {
+    return '';
+  }
+
+  const list = memories.map((m) => `- ${m.content}`).join('\n');
+  return `\n\nThings you remember about this user from past conversations:\n${list}\n\nUse these naturally when relevant - don't just recite them back.`;
 }
 
 Deno.serve(async (req: Request) => {
@@ -891,8 +916,23 @@ Deno.serve(async (req: Request) => {
       console.error('Error fetching user profile:', error);
     }
 
+    let userMemories: { content: string }[] = [];
+    try {
+      const { data: memoriesData } = await supabaseClient
+        .from('nova_user_memories')
+        .select('content')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      userMemories = memoriesData ?? [];
+    } catch (error) {
+      console.error('Error fetching user memories:', error);
+    }
+
     const profileContext = formatProfileForAI(userProfile);
-    const enhancedSystemPrompt = SYSTEM_PROMPT + profileContext;
+    const memoryContext = formatMemoriesForAI(userMemories);
+    const enhancedSystemPrompt = SYSTEM_PROMPT + profileContext + memoryContext;
 
     // Cache the system prompt (~4,400 tokens) and tool definitions (tools
     // render before system, so one breakpoint here covers both). This
@@ -1040,6 +1080,46 @@ Deno.serve(async (req: Request) => {
             type: 'text',
             text: 'I had trouble analyzing your trading data. This might be because you haven\'t logged enough trades yet. Try asking me again once you have a few more entries!'
           } as Anthropic.TextBlock;
+        }
+      } else if (toolUseBlock.name === 'remember_about_user') {
+        console.log('Memory tool call detected:', toolUseBlock.name);
+
+        try {
+          const functionArgs = toolUseBlock.input as { content: string };
+
+          const { error: memoryError } = await supabaseClient
+            .from('nova_user_memories')
+            .insert({ user_id: userId, content: functionArgs.content });
+
+          if (memoryError) {
+            console.error('Error saving memory:', memoryError);
+          }
+
+          claudeMessages.push({ role: 'assistant', content: response.content });
+          claudeMessages.push({
+            role: 'user',
+            content: [{
+              type: 'tool_result',
+              tool_use_id: toolUseBlock.id,
+              content: JSON.stringify({ success: !memoryError }),
+            }],
+          });
+
+          const secondResponse = await anthropic.messages.create({
+            model: MODEL,
+            max_tokens: 300,
+            output_config: { effort: 'medium' },
+            system: systemBlocks,
+            messages: claudeMessages,
+            tools: TOOLS,
+          });
+
+          const secondText = secondResponse.content.find((b): b is Anthropic.TextBlock => b.type === 'text');
+          if (secondText?.text) {
+            textBlock = secondText;
+          }
+        } catch (toolError) {
+          console.error('Error in memory tool processing:', toolError);
         }
       }
     }
