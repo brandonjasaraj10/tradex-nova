@@ -201,6 +201,52 @@ natural language) works correctly, HTML formatting rules and all.
 `process-voice-journal` — sent a real transcript, got back correctly
 extracted structured JSON (symbol, direction, P&L, title).
 
+## Nova improvement initiative
+
+Separate from the security list — user wants Nova to "get better over
+time." Important constraint that shapes all three steps: **Claude
+(Anthropic) doesn't offer fine-tuning**, so Nova's underlying model can
+never be retrained on TradeX's data the way the Privacy Policy's
+"training AI models" language implies. All three steps below are ways
+to improve Nova without touching the model itself. Agreed order:
+
+1. **[DONE — commit `c724c32`, migration `20260813231756`, deployed to
+   Trade X, 2026-08-13]** Thumbs up/down feedback on Nova's replies.
+   New `nova_message_feedback` table (RLS: owning user + active
+   subscription, same shape as `nova_chat_messages`). Found and fixed a
+   real bug while building this: displayed messages used a
+   client-generated UUID that never matched the UUID actually saved to
+   the database, so feedback (and the pre-existing realtime message
+   subscription) couldn't reliably reference a freshly-sent message.
+   Fixed by generating the ID client-side and passing it through to the
+   insert. Buttons added to both places Nova's chat renders —
+   `NovaWidget.tsx` (floating widget) and `NovaAssistant.tsx` (the main
+   `/dashboard` → NOVA AI page, which turned out to be the primary one,
+   not the widget). Verified end-to-end against Trade X: rating
+   persists, switching up/down works, clicking the same rating again
+   clears it, and feedback correctly re-attaches after a full page
+   reload. This is a signal-collection mechanism only — nothing
+   automatically acts on the ratings yet; reviewing them to manually
+   improve Nova's system prompt/tools is a manual follow-up, not
+   automated.
+2. **Not started.** Better personal memory — Nova remembering things
+   about the user (goals, preferences, patterns) across conversations,
+   not just within one chat session.
+3. **Not started, intentionally held.** Cross-user aggregate insights —
+   anonymized patterns across all users to sharpen Nova's general
+   advice. Needs real usage data to be meaningful; the app has zero
+   real users right now, so there's nothing to aggregate yet. Revisit
+   once there's been real usage post-launch.
+
+**Test account note:** `claude-test-20260813@example.com` (id
+`5c29d48e-5c8e-4a61-9f5f-e62bc04b9074`) is a standing test account on
+Trade X. Its password was set to `ClaudeTest2026!` and it was given an
+active subscription row (bypassing Stripe, direct DB insert) to verify
+step 1 above, since Nova chat is one of the paywalled features. The
+subscription was left active afterward since it's useful for testing
+other paid features too; its test chat messages/feedback rows were
+deleted to leave a clean slate.
+
 ## Before launch
 
 - Two-account test on every table: create two test accounts and confirm
