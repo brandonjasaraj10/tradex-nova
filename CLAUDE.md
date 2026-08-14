@@ -13,6 +13,14 @@ Git was initialized in this project on 2026-08-12 specifically so this
 cleanup work is reversible. `.env` is gitignored and confirmed never
 committed — it holds real API keys/secrets and must stay out of git.
 
+**Visual/UI work:** check [BRAND_GUIDE.md](BRAND_GUIDE.md) first (added
+2026-08-14) — it documents the app's actual colors, spacing, and type as
+real Tailwind tokens (`brand-blue`, `brand-surface`, etc.), based on an
+audit of the live pages, not the unused legacy `Button.tsx`/`.card` CSS
+that also exist in this repo. Use the documented tokens for new UI code
+rather than guessing between the two blues or three near-black
+backgrounds already scattered through the app.
+
 **Which Supabase project is real (found 2026-08-13):** the `.env` file
 originally pointed at `cdyxszpwxqpcqfzbtmra`, a project live and working
 but NOT visible in the user's own Supabase account (likely Bolt-managed,
