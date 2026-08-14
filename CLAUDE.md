@@ -229,9 +229,27 @@ to improve Nova without touching the model itself. Agreed order:
    automatically acts on the ratings yet; reviewing them to manually
    improve Nova's system prompt/tools is a manual follow-up, not
    automated.
-2. **Not started.** Better personal memory — Nova remembering things
-   about the user (goals, preferences, patterns) across conversations,
-   not just within one chat session.
+2. **[DONE — commit `2a93db0`, migration `20260814041248`, deployed to
+   Trade X, 2026-08-14]** Cross-conversation memory. Turned out Nova
+   already had half of this: the onboarding profile
+   (`user_trading_profiles` — goals, risk tolerance, trading style, set
+   once via "Personalize Nova") was already being fetched and injected
+   into every system prompt, pre-existing and unrelated to this
+   session's work. The actual gap was conversational memory — a brand
+   new chat session had zero awareness of anything said in a previous
+   one. Fixed with a new `nova_user_memories` table (same RLS shape as
+   `nova_message_feedback`) and a new `remember_about_user` tool given
+   to Claude, following the exact same tool-call pattern as the
+   existing `log_journal_entry`/`analyze_trading_performance` tools —
+   no new plumbing invented, reused what already worked. The 20 most
+   recent saved facts get pulled into the system prompt on every
+   message. User chose to keep this invisible for now (no "what Nova
+   remembers about you" management screen) — can revisit if it matters
+   later. Verified for real against Trade X: told Nova about a
+   recurring problem in one session, forced a genuinely blank new
+   session (cleared the local session ID), and asked whether it knew
+   anything about the user already — Nova correctly recalled the fact
+   without being told again.
 3. **Not started, intentionally held.** Cross-user aggregate insights —
    anonymized patterns across all users to sharpen Nova's general
    advice. Needs real usage data to be meaningful; the app has zero
