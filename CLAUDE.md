@@ -387,3 +387,11 @@ deleted to leave a clean slate.
 - One fix at a time. Commit to git after each one with a clear message,
   then stop and let me test before moving on. Never batch changes.
 - If something is risky or irreversible, tell me before doing it.
+- **[Added 2026-08-14]** Now that GitHub is connected to Vercel and
+  pushing to `main` immediately deploys to the live, public
+  tradexnova.com: commit locally as usual after each fix, but don't
+  `git push` until I explicitly say to push/deploy. Deploy timing is
+  my call, not an automatic side effect of finishing a fix. (Doesn't
+  apply to Supabase edge function deploys/migrations — those go live
+  immediately as part of each fix, same as the whole rest of this
+  project.)
