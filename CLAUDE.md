@@ -391,7 +391,9 @@ deleted to leave a clean slate.
   pushing to `main` immediately deploys to the live, public
   tradexnova.com: commit locally as usual after each fix, but don't
   `git push` until I explicitly say to push/deploy. Deploy timing is
-  my call, not an automatic side effect of finishing a fix. (Doesn't
+  my call, not an automatic side effect of finishing a fix. Reason:
+  if real people are actively on the site while we're mid-work on
+  something, I don't want a deploy interrupting their session. (Doesn't
   apply to Supabase edge function deploys/migrations — those go live
   immediately as part of each fix, same as the whole rest of this
   project.)
