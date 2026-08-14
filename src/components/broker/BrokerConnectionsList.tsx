@@ -305,7 +305,7 @@ export default function BrokerConnectionsList() {
                           }).format(connection.current_balance || connection.starting_balance)}
                         </span>
                         {connection.current_balance !== connection.starting_balance && (
-                          <span className={`text-xs ${(connection.current_balance || 0) >= connection.starting_balance ? 'text-green-400' : 'text-red-400'}`}>
+                          <span className={`text-xs ${(connection.current_balance || 0) >= connection.starting_balance ? 'text-blue-400' : 'text-gray-400'}`}>
                             {((connection.current_balance || 0) >= connection.starting_balance) ? '+' : ''}
                             {new Intl.NumberFormat('en-US', {
                               style: 'currency',

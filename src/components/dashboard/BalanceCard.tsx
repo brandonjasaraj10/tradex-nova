@@ -180,7 +180,7 @@ export default function BalanceCard() {
                 <DollarSign className="w-4 h-4 text-gray-400" />
                 <p className="text-xs text-gray-400">Net P&L</p>
               </div>
-              <p className={`text-lg font-semibold ${isProfitable ? 'text-green-400' : 'text-red-400'}`}>
+              <p className={`text-lg font-semibold ${isProfitable ? 'text-blue-400' : 'text-gray-400'}`}>
                 {isProfitable ? '+' : ''}{formatCurrency(balanceData.net_pnl, balanceData.currency)}
               </p>
             </div>
@@ -188,13 +188,13 @@ export default function BalanceCard() {
             <div className="p-3 rounded-lg bg-black/20 border border-white/5">
               <div className="flex items-center gap-2 mb-1">
                 {isProfitable ? (
-                  <TrendingUp className="w-4 h-4 text-green-400" />
+                  <TrendingUp className="w-4 h-4 text-blue-400" />
                 ) : (
-                  <TrendingDown className="w-4 h-4 text-red-400" />
+                  <TrendingDown className="w-4 h-4 text-gray-400" />
                 )}
                 <p className="text-xs text-gray-400">Return</p>
               </div>
-              <p className={`text-lg font-semibold ${isProfitable ? 'text-green-400' : 'text-red-400'}`}>
+              <p className={`text-lg font-semibold ${isProfitable ? 'text-blue-400' : 'text-gray-400'}`}>
                 {formatPercent(balanceData.percent_change)}
               </p>
             </div>

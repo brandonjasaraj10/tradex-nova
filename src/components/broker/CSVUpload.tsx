@@ -205,7 +205,7 @@ export default function CSVUpload({ onClose, onSuccess }: CSVUploadProps) {
                           <td className="px-4 py-2 text-right">{trade.volume.toFixed(2)}</td>
                           <td className="px-4 py-2 text-right">{trade.open_price.toFixed(5)}</td>
                           <td className="px-4 py-2">{new Date(trade.open_time).toLocaleString()}</td>
-                          <td className={`px-4 py-2 text-right ${trade.profit && trade.profit > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          <td className={`px-4 py-2 text-right ${trade.profit && trade.profit > 0 ? 'text-blue-400' : 'text-gray-400'}`}>
                             {trade.profit ? `$${trade.profit.toFixed(2)}` : '-'}
                           </td>
                         </tr>

@@ -1,10 +1,9 @@
 # TradeX Nova — Brand Guide
 
 This documents the visual language the app actually uses today, based on
-an audit of the real, live pages (not the unused legacy `Button.tsx`
-component or the old `.btn-primary`/`.card` CSS classes in `index.css` —
-those are leftovers from an earlier design pass and don't reflect what
-the app looks like now).
+an audit of the real, live pages (not the old `.btn-primary`/`.card` CSS
+classes in `index.css`, which are leftovers from an earlier design pass
+and don't reflect what the app looks like now).
 
 **Purpose:** give new code a single, named source of truth to reach for,
 instead of guessing between two shades of blue or three near-identical
@@ -42,16 +41,27 @@ Three tiers, darkest to lightest:
 | `brand-surface` | `#0A0A0A` | Cards and panels sitting on the page |
 | `brand-elevated` | `#111111` | Things sitting on top of a card — inputs, nested panels |
 
-### Status colors
+### Status colors — profit/loss
 
 | Token | Hex | Use for |
 |---|---|---|
-| `brand-profit` | `#4ADE80` | Gains, wins, positive stats |
-| `brand-loss` | `#F87171` | Losses, errors, destructive actions |
+| `brand-profit` | `#60A5FA` (same as `brand-blue-light`) | Gains, wins, positive P&L |
+| `brand-loss` | `#9CA3AF` (grey, not red) | Losses, negative P&L |
 
-(A few places use `emerald-400`/`green-500` instead of `green-400` for
-profit — that's legacy drift, not a second intentional color. Treat
-`brand-profit` as the one to use going forward.)
+Deliberately blue/grey, not the green/red most trading apps default to.
+This isn't a guess — it's already how the app's two most-used trading
+views work: `Calendar.tsx`'s P&L view and `Analytics.tsx`'s stat cards
+both color gains `text-blue-400` and losses/flat `text-gray-400` (or
+`text-slate-300`), and even the marketing page's demo calendar
+(`Sales.tsx`) follows the same pattern. A handful of other places
+(`BalanceCard.tsx`, CSV import, broker balance display) used green/red
+instead — those were brought in line with the blue/grey pattern.
+
+**This is specifically about profit/loss, not every red/green in the
+app.** Destructive actions (delete buttons), error states, and
+connection-status badges ("Active"/"Error" on a broker connection) are
+a different, unrelated use of red — those stay red. Only change a
+color if it's representing a gain or a loss.
 
 ### Borders
 
@@ -80,19 +90,23 @@ profit — that's legacy drift, not a second intentional color. Treat
 These exist in the app today. They're not urgent, but worth knowing
 about so nobody assumes they're intentional:
 
-- **The `Button.tsx` shared component** (`src/components/shared/Button.tsx`)
-  uses a gold/dark color scheme (`gold-400`, `dark-700`) that isn't
-  defined anywhere and isn't used anywhere either — it's dead code from
-  an earlier design. Most buttons in the app are hand-styled per
-  component instead of using a shared component.
 - **`index.css`'s `.card`/`.btn-primary`/`.input-field` classes** use
   yet another background shade (`#111`/80% opacity) and a white/black
   button style, inconsistent with the blue-accented, `#0A0A0A`-card
   look the actual pages use. Some older code may still reference these.
-- **Green for profit** is split between `green-400` and `emerald-400`
-  in a few places — `brand-profit` (`green-400`) is the one to
-  standardize on.
 
 None of this needs an urgent fix — it's here so future work (including
 future Claude Code sessions) doesn't mistake old leftovers for the
 current design.
+
+## Fixed since this guide was written
+
+- **2026-08-14 — `Button.tsx` was not dead code**, as this guide first
+  claimed. It's actually imported in 16 files (Auth, Dashboard, Payment,
+  Settings, and more) — its colors just referenced an undefined
+  `gold-400`/`dark-700` palette, so every button using it rendered with
+  no visible background or border at all. Fixed to use real brand-blue
+  tokens; see git history for the commit.
+- **2026-08-14 — Profit/loss standardized on blue/grey** (see Status
+  colors above) — `BalanceCard.tsx`, CSV import, and broker balance
+  display previously used green/red and were brought in line.
