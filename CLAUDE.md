@@ -5,9 +5,8 @@
 TradeX Nova — a trading journal SaaS. React/Vite frontend, Supabase backend,
 Stripe for payments, Claude (Anthropic) powers the Nova AI chat feature —
 switched from OpenAI on 2026-08-13, see the note under "Fix order" below.
-Pre-launch: zero real users yet. The domain tradexnova.com is currently
-lost/expired and needs to be re-purchased before there's a live public
-site again.
+Pre-launch, but tradexnova.com is now live — see "Deployment & domain"
+below for the full setup.
 
 Git was initialized in this project on 2026-08-12 specifically so this
 cleanup work is reversible. `.env` is gitignored and confirmed never
@@ -65,12 +64,78 @@ match the app's real default folders and backfilled affected accounts.
 **Local tooling set up this session** (not permanent — lives in the
 session's scratchpad, would need reinstalling in a fresh session): the
 Supabase CLI (no Docker available, so `--linked`/`db query` are used
-instead of the Docker-dependent commands) and Node.js, both installed as
-standalone binaries since neither `brew` nor `npm`/`node` exist on this
-machine by default. A Supabase Personal Access Token was provided by the
-user and used to log in the CLI. `.claude/launch.json` runs the dev
+instead of the Docker-dependent commands), the GitHub CLI (`gh`, used to
+authenticate git push access — device-flow login, logged in as
+`brandonjasaraj10`), and Node.js, all installed as standalone binaries
+since neither `brew` nor `npm`/`node`/`gh` exist on this machine by
+default. A Supabase Personal Access Token was provided by the user and
+used to log in the Supabase CLI. `.claude/launch.json` runs the dev
 server via a wrapper script that sets PATH before calling `npm run dev`,
 since the spawned process doesn't inherit the session's PATH.
+
+## Deployment & domain
+
+**[DONE, 2026-08-14]** Went from "domain just purchased" to a fully live
+site in one session:
+
+- **Code**: pushed to GitHub at `github.com/brandonjasaraj10/tradex-nova`
+  (repo didn't exist before this session). Before the first push, the
+  entire git history was rewritten (`git filter-branch`) to remove two
+  old files (`SECRETS_SETUP.md`, `SIMPLE_SETUP.md`) that had a real,
+  live OpenAI key committed in them — those files were already deleted
+  from the working tree in fix #9, but the key was still sitting in
+  history. Repo had never been pushed anywhere before, so the rewrite
+  was clean (nothing to reconcile with a remote).
+- **Hosting**: Vercel, connected to the GitHub repo, auto-deploys on
+  every push to `main`. `vercel.json` added with a SPA rewrite rule
+  (every path → `index.html`) — without it, direct navigation to any
+  route other than the homepage 404'd, since Vercel doesn't know this
+  is a client-side-routed single-page app by default.
+- **Environment variables**: all 6 real `VITE_*` values (Supabase URL/
+  anon key, Stripe publishable key + both price IDs, early access code)
+  added in Vercel's project settings. Two real deploy bugs hit and
+  fixed here: (1) the Supabase anon key got saved with its value
+  replaced by literal bullet/dot mask characters on a re-edit — always
+  clear the field and paste fresh rather than editing a masked value;
+  (2) `VITE_ELEVENLABS_*`/`VITE_METAAPI_TOKEN` are dead vars from
+  already-removed features, correctly left out.
+- **DNS**: `tradexnova.com` bought at GoDaddy. One A record
+  (`@` → `216.198.79.1`) points it at Vercel; SSL provisioned
+  automatically within minutes of DNS propagating.
+- **Fixed opportunistically while going live** (all deployed and
+  verified, not just committed): the clipped "g" descender on the
+  landing page headline (`leading-tight` → `leading-normal` on a
+  `bg-clip-text` gradient heading); the favicon, which was explicitly
+  disabled and pointed at an unrelated old logo design — now uses
+  `tradex_logo.png` (transparent, for the tab icon) with
+  `trade_x_logo.png` (solid background) for the `og:image`/
+  `twitter:image` social-share preview, which was missing entirely.
+- **Password reset was completely broken** (found while checking
+  whether it used Resend) — same schema-drift pattern as everywhere
+  else in this project. Fixed: see migration
+  `20260814202608_fix_password_reset_codes_schema_drift.sql`.
+
+**Email, via Resend:**
+- Password reset and (per user) all transactional/campaign email should
+  go through Resend, not Supabase's default email. `RESEND_API_KEY` is
+  configured in Trade X's Vault. `tradexnova.com` needed its own
+  separate DNS verification in Resend (SPF/DKIM — different records
+  from the ones added for Vercel) before send would actually work;
+  added those 3 records at GoDaddy and verification completed.
+  The domain's "Enable Receiving" MX record (inbound email) has been
+  sitting unconfigured/unverified since the domain's original setup 8
+  months ago — unrelated to sending, not used by anything in this app,
+  left as the user's call whether to disable it or ignore it.
+- **Waitlist → Resend**: not connected to any email before this. Built
+  `resend-waitlist-sync` edge function + a `pg_net`-based Postgres
+  trigger (`20260814205619_sync_waitlist_signups_to_resend.sql`) so
+  every new waitlist signup automatically gets added as a Resend
+  contact in a "Waitlist" **segment** (Resend deprecated "Audiences" in
+  favor of Segments — checked current docs rather than building on the
+  deprecated one). All 7 existing real signups were backfilled. This
+  only adds contacts to Resend for a future campaign/broadcast — no
+  broadcast has been sent yet, that's a manual step whenever the user
+  wants to announce launch.
 
 ## Current work
 
