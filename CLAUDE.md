@@ -356,8 +356,31 @@ deleted to leave a clean slate.
 
 ## Before launch
 
-- Two-account test on every table: create two test accounts and confirm
-  neither can see or touch the other's data, on every feature.
+- **[DONE, 2026-08-14]** Two-account test on every table. Tested at the
+  database level directly (not just clicking through the UI, since the
+  frontend not *displaying* another user's data doesn't prove the
+  database itself is blocking it) — created a second standing test
+  account, `claude-isotest-b-20260814@example.com` /
+  `IsoTest2026!B` (id `bd4a3a28-0e01-4220-b1d5-8dc47bd2cfa9`, active
+  subscription, kept around for future testing same as the original
+  test account). As account A, created real rows across 10 tables
+  spanning every distinct RLS pattern in the app (journal_folders,
+  trading_confluences, trading_rules, journal_entries, trades, notes,
+  nova_conversation_sessions, nova_chat_messages, nova_user_memories,
+  notifications). As account B, authenticated with B's own real JWT
+  (not a privileged key) and attempted direct REST API reads, targeted
+  reads by A's specific row IDs, updates, and deletes against every one
+  of those rows — all blocked, confirmed both by empty API responses
+  and by checking the database directly that A's data was byte-for-byte
+  unchanged afterward. Also swept all 30 user-data tables for RLS
+  enabled + real policies present (catches a table slipping through
+  unprotected entirely, a different failure mode than per-row leakage)
+  — every table covered; the one table with zero policies
+  (`nova_chat_rate_limits`) is correct as-is, since it's only ever
+  touched by a SECURITY DEFINER function internally, never by a client
+  directly. Confirmed visually too: logged into the real site as
+  account B, saw only its own default folders and "No entries yet" —
+  zero trace of account A's data anywhere in the UI.
 - **[DONE — commit `c565b80`, 2026-08-13]** Terms of Service, Privacy
   Policy, and Risk Disclaimer already existed (`src/pages/TermsOfService
   .tsx`, `PrivacyPolicy.tsx`, `RiskDisclaimer.tsx`) — reviewed for
