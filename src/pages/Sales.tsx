@@ -209,7 +209,7 @@ export default function Sales() {
 
             <motion.h1
               variants={fadeInUp}
-              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold mb-4 sm:mb-6 bg-gradient-to-r from-white via-white/50 to-white bg-[length:200%_auto] animate-text-shimmer bg-clip-text text-transparent leading-tight px-2"
+              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold mb-4 sm:mb-6 bg-gradient-to-r from-white via-white/50 to-white bg-[length:200%_auto] animate-text-shimmer bg-clip-text text-transparent leading-normal px-2"
             >
               AI-Powered Trading Journal
             </motion.h1>
