@@ -46,11 +46,11 @@ Deno.serve(async (req: Request) => {
         );
       }
 
-      const userExists = users.users.some(
+      const matchedUser = users.users.find(
         (u) => u.email?.toLowerCase() === normalizedEmail
       );
 
-      if (!userExists) {
+      if (!matchedUser) {
         return new Response(
           JSON.stringify({ success: true, message: "If an account exists, a code has been sent" }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -68,6 +68,7 @@ Deno.serve(async (req: Request) => {
       const { error: insertError } = await supabase
         .from("password_reset_codes")
         .insert({
+          user_id: matchedUser.id,
           email: normalizedEmail,
           code: resetCode,
           expires_at: expiresAt.toISOString(),
