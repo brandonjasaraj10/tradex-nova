@@ -9,7 +9,7 @@ interface Notification {
   title: string;
   message: string;
   type: 'info' | 'success' | 'warning' | 'error';
-  is_read: boolean;
+  read: boolean;
   created_at: string;
 }
 
@@ -68,13 +68,13 @@ export default function NotificationPopup({ isOpen, onClose }: NotificationPopup
     try {
       const { error } = await supabase
         .from('notifications')
-        .update({ is_read: true, read_at: new Date().toISOString() })
+        .update({ read: true })
         .eq('id', notificationId);
 
       if (error) throw error;
 
       setNotifications(prev =>
-        prev.map(n => (n.id === notificationId ? { ...n, is_read: true } : n))
+        prev.map(n => (n.id === notificationId ? { ...n, read: true } : n))
       );
     } catch (error) {
       console.error('Error marking notification as read:', error);
@@ -83,17 +83,17 @@ export default function NotificationPopup({ isOpen, onClose }: NotificationPopup
 
   const markAllAsRead = async () => {
     try {
-      const unreadIds = notifications.filter(n => !n.is_read).map(n => n.id);
+      const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
 
       const { error } = await supabase
         .from('notifications')
-        .update({ is_read: true, read_at: new Date().toISOString() })
+        .update({ read: true })
         .in('id', unreadIds);
 
       if (error) throw error;
 
       setNotifications(prev =>
-        prev.map(n => ({ ...n, is_read: true }))
+        prev.map(n => ({ ...n, read: true }))
       );
     } catch (error) {
       console.error('Error marking all as read:', error);
@@ -143,7 +143,7 @@ export default function NotificationPopup({ isOpen, onClose }: NotificationPopup
     return date.toLocaleDateString();
   };
 
-  const unreadCount = notifications.filter(n => !n.is_read).length;
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
     <AnimatePresence>
@@ -194,7 +194,7 @@ export default function NotificationPopup({ isOpen, onClose }: NotificationPopup
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     className={`p-4 hover:bg-white/5 transition-colors group ${
-                      !notification.is_read ? 'bg-white/[0.02]' : ''
+                      !notification.read ? 'bg-white/[0.02]' : ''
                     }`}
                   >
                     <div className="flex gap-3">
@@ -205,7 +205,7 @@ export default function NotificationPopup({ isOpen, onClose }: NotificationPopup
                         <div className="flex items-start justify-between gap-2 mb-1">
                           <h4 className="text-sm font-medium">{notification.title}</h4>
                           <div className="flex items-center gap-1 flex-shrink-0">
-                            {!notification.is_read && (
+                            {!notification.read && (
                               <button
                                 onClick={() => markAsRead(notification.id)}
                                 className="p-1 hover:bg-white/10 rounded transition-colors opacity-0 group-hover:opacity-100"
@@ -228,7 +228,7 @@ export default function NotificationPopup({ isOpen, onClose }: NotificationPopup
                           <span className="text-xs text-gray-500">
                             {formatTime(notification.created_at)}
                           </span>
-                          {!notification.is_read && (
+                          {!notification.read && (
                             <div className="w-1.5 h-1.5 bg-blue-400 rounded-full" />
                           )}
                         </div>

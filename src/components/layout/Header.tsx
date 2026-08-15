@@ -50,7 +50,7 @@ export default function Header({ sidebarCollapsed = false, sidebarOpen = false, 
         .from('notifications')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id)
-        .eq('is_read', false);
+        .eq('read', false);
 
       if (error) throw error;
       setUnreadCount(count || 0);
