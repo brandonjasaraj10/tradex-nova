@@ -61,14 +61,13 @@ Deno.serve(async (req: Request) => {
 
   try {
     const {
-      user_id,
       report_type,
       period_start,
       period_end,
       force_refresh = false,
     }: GenerateReportRequest = await req.json();
 
-    if (!user_id || !report_type || !period_start || !period_end) {
+    if (!report_type || !period_start || !period_end) {
       return new Response(
         JSON.stringify({ error: "Missing required parameters" }),
         {
@@ -84,6 +83,17 @@ Deno.serve(async (req: Request) => {
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
       { global: { headers: { Authorization: authHeader ?? "" } } }
     );
+
+    // Identity is derived from the verified JWT, never trusted from the
+    // request body - same pattern as every other fix this session.
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+    if (authError || !authUser) {
+      return new Response(
+        JSON.stringify({ error: "User authentication required" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    const user_id = authUser.id;
 
     if (!force_refresh) {
       const { data: existing } = await supabase
@@ -142,7 +152,6 @@ Deno.serve(async (req: Request) => {
 
     const journalEntryIds: string[] = [];
     (journalResult.data || [])
-      .filter((e: any) => e.manual_pnl !== 0)
       .forEach((e: any) => {
         allTrades.push({
           pnl: e.manual_pnl || 0,
