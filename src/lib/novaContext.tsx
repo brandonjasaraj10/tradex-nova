@@ -79,7 +79,17 @@ export function NovaProvider({ children }: { children: ReactNode }) {
           content: "Hey! I'm NOVA, your AI Trading Assistant. I'm here to help you analyze your trades, review your performance, and provide insights. What would you like to explore?"
         };
         setMessages([welcomeMessage]);
-        await novaService.saveMessage('assistant', welcomeMessage.content, welcomeMessage.id);
+        try {
+          await novaService.saveMessage('assistant', welcomeMessage.content, welcomeMessage.id);
+        } catch (saveError: any) {
+          if (saveError?.code === '23505') {
+            // A concurrent load already saved the welcome message for this
+            // session - sync local state to whichever one actually won.
+            setMessages(await novaService.loadChatHistory());
+          } else {
+            throw saveError;
+          }
+        }
       } else {
         setMessages(history);
       }
@@ -256,7 +266,11 @@ export function NovaProvider({ children }: { children: ReactNode }) {
         content: "Hey! I'm NOVA, your AI Trading Assistant. I'm here to help you analyze your trades, review your performance, and provide insights. What would you like to explore?"
       };
       setMessages([welcomeMessage]);
-      await newService.saveMessage('assistant', welcomeMessage.content, welcomeMessage.id);
+      try {
+        await newService.saveMessage('assistant', welcomeMessage.content, welcomeMessage.id);
+      } catch (saveError: any) {
+        if (saveError?.code !== '23505') throw saveError;
+      }
     } catch (error) {
       console.error('Error creating new session:', error);
     } finally {
