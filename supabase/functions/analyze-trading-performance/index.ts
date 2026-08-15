@@ -43,21 +43,20 @@ Deno.serve(async (req: Request) => {
     midpointDate.setDate(midpointDate.getDate() - Math.floor(days_back / 2));
     const midpointDateStr = midpointDate.toISOString();
 
-    let tradesQuery = supabaseClient
+    // journal_entries has no category or account_id column - a single
+    // entry can carry both trade fields (manual_pnl, symbol) and
+    // psychology fields (stress_level, mood, etc.) at once, or neither,
+    // and there's no per-account link at all. Fetch once and split by
+    // which fields are actually populated instead.
+    const journalQuery = supabaseClient
       .from("journal_entries")
       .select("*")
       .eq("user_id", user_id)
-      .eq("category", "trade")
       .gte("entry_date", cutoffDateStr)
       .order("entry_date", { ascending: false });
 
-    if (account_id) {
-      tradesQuery = tradesQuery.eq("account_id", account_id);
-    }
-
     const [
-      tradesResult,
-      psychResult,
+      journalResult,
       rulesResult,
       confluencesResult,
       profileResult,
@@ -65,14 +64,7 @@ Deno.serve(async (req: Request) => {
       entryConfluencesResult,
       balanceResult,
     ] = await Promise.all([
-      tradesQuery,
-      supabaseClient
-        .from("journal_entries")
-        .select("*")
-        .eq("user_id", user_id)
-        .eq("category", "psychology")
-        .gte("entry_date", cutoffDateStr)
-        .order("entry_date", { ascending: false }),
+      journalQuery,
       supabaseClient
         .from("trading_rules")
         .select("*")
@@ -104,8 +96,14 @@ Deno.serve(async (req: Request) => {
         .limit(100),
     ]);
 
-    const trades = tradesResult.data || [];
-    const psychologyEntries = psychResult.data || [];
+    if (journalResult.error) throw journalResult.error;
+
+    const journalEntries = journalResult.data || [];
+    const trades = journalEntries.filter((e: any) => e.manual_pnl !== null && e.manual_pnl !== undefined);
+    const psychologyEntries = journalEntries.filter((e: any) =>
+      e.stress_level !== null || e.mood_before !== null || e.mood_after !== null ||
+      e.confidence_level !== null || e.rule_following !== null
+    );
     const tradingRules = rulesResult.data || [];
     const confluences = confluencesResult.data || [];
     const userProfile = profileResult.data;
@@ -113,16 +111,14 @@ Deno.serve(async (req: Request) => {
     const entryConfluences = entryConfluencesResult.data || [];
     const balanceHistory = balanceResult.data || [];
 
-    if (tradesResult.error) throw tradesResult.error;
-
-    const getPnl = (t: any) => t.trade_data?.pnl || t.manual_pnl || t.pnl || 0;
-    const getSymbol = (t: any) => t.trade_data?.symbol || t.symbol || "Unknown";
-    const getSession = (t: any) => t.trade_data?.session || "Unknown";
-    const getDuration = (t: any) => t.trade_data?.trade_duration || t.trade_duration || "Unknown";
-    const getDirection = (t: any) => t.trade_data?.direction || "unknown";
-    const getEntryReason = (t: any) => t.trade_data?.entry_reason || "";
-    const getExitReason = (t: any) => t.trade_data?.exit_reason || "";
-    const getPositionSize = (t: any) => t.trade_data?.position_size || t.position_size || null;
+    const getPnl = (t: any) => t.manual_pnl ?? t.pnl ?? 0;
+    const getSymbol = (t: any) => t.symbol || "Unknown";
+    const getSession = (t: any) => "Unknown";
+    const getDuration = (t: any) => t.trade_duration || "Unknown";
+    const getDirection = (t: any) => (t.direction || "unknown").toLowerCase();
+    const getEntryReason = (t: any) => t.pre_market_notes || "";
+    const getExitReason = (t: any) => t.post_market_notes || "";
+    const getPositionSize = (t: any) => t.position_size || null;
     const getEntryDate = (t: any) => t.entry_date || "";
 
     const winningTrades = trades.filter((t) => getPnl(t) > 0);
