@@ -140,17 +140,12 @@ export default function NovaJournalAssistant({
             psychology: Object.keys(psychologyData).length > 0 ? psychologyData : undefined,
           };
 
+          // Show the Apply/Dismiss banner and wait for an explicit click -
+          // this used to auto-apply on a timer regardless of what the user
+          // chose, silently overwriting real journal content (including
+          // fields the regex extraction mis-parsed, like pulling "ACTIVITY"
+          // out of "trading activity" as if it were a symbol).
           setPendingExtraction(extracted);
-
-          setTimeout(() => {
-            if (extracted.journal) {
-              onExtractContent(extracted.journal);
-            }
-            if (extracted.psychology && onExtractPsychology) {
-              onExtractPsychology(extracted.psychology);
-            }
-            setPendingExtraction(null);
-          }, 1500);
         }
       }
     }
