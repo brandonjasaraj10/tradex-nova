@@ -141,7 +141,7 @@ async function getAllUnifiedTrades(
 
   let journalQuery = supabase
     .from('journal_entries')
-    .select('id, manual_pnl, symbol, direction, entry_date, created_at, broker_connection_id')
+    .select('id, manual_pnl, symbol, direction, entry_date, created_at')
     .eq('user_id', userId)
     .not('manual_pnl', 'is', null);
 
@@ -150,14 +150,18 @@ async function getAllUnifiedTrades(
       .gte('entry_date', dateRange[0].toISOString().split('T')[0])
       .lte('entry_date', dateRange[1].toISOString().split('T')[0]);
   }
-  if (accountId) {
-    journalQuery = journalQuery.eq('broker_connection_id', accountId);
-  }
+  // journal_entries has no account/broker-connection column, so a
+  // per-account filter can't apply to journal-logged P&L - only to
+  // trades. That's a real gap (journal entries aren't tied to an
+  // account), not something to paper over with a fake filter.
 
   const [tradesResult, journalResult] = await Promise.all([
     tradesQuery,
     journalQuery,
   ]);
+
+  if (tradesResult.error) throw tradesResult.error;
+  if (journalResult.error) throw journalResult.error;
 
   const tradesData: UnifiedTrade[] = (tradesResult.data || []).map((t: any) => ({
     pnl: t.pnl || 0,
