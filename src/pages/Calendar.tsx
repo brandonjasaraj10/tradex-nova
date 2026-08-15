@@ -41,44 +41,6 @@ export default function Calendar() {
     }
   }, [user, selectedAccount, currentDate, refreshTrigger]);
 
-  const generateMockData = () => {
-    const dataMap = new Map<string, DayData>();
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const today = new Date();
-
-    for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(year, month, day);
-
-      if (date > today) continue;
-
-      const shouldHaveTrades = Math.random() > 0.3;
-
-      if (shouldHaveTrades) {
-        const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        const isWin = Math.random() > 0.4;
-        const pnl = isWin
-          ? Math.random() * 1500 + 100
-          : -(Math.random() * 800 + 50);
-        const tradeCount = Math.floor(Math.random() * 8) + 1;
-
-        const hasJournal = Math.random() > 0.4;
-        const psychScore = hasJournal ? Math.floor(Math.random() * 40) + 50 : null;
-
-        dataMap.set(dateKey, {
-          date: dateKey,
-          pnl: Math.round(pnl * 100) / 100,
-          tradeCount,
-          psychologyScore: psychScore,
-          hasJournal
-        });
-      }
-    }
-
-    return dataMap;
-  };
-
   const loadCalendarData = async () => {
     if (!user) return;
 
@@ -164,93 +126,47 @@ export default function Calendar() {
         });
       }
 
-      if (dataMap.size === 0) {
-        const mockData = generateMockData();
-        setCalendarData(mockData);
-      } else {
-        setCalendarData(dataMap);
-      }
+      setCalendarData(dataMap);
     } catch (error) {
       console.error('Error loading calendar data:', error);
-      const mockData = generateMockData();
-      setCalendarData(mockData);
+      setCalendarData(new Map());
     } finally {
       setLoading(false);
     }
   };
 
-  const generateMockWeeklyReport = (weekStart: string, weekEnd: string): TradingReport => {
-    const isWinningWeek = Math.random() > 0.4;
-    const totalTrades = Math.floor(Math.random() * 15) + 5;
-    const winningTrades = Math.floor(totalTrades * (isWinningWeek ? 0.6 + Math.random() * 0.2 : 0.3 + Math.random() * 0.2));
-    const losingTrades = totalTrades - winningTrades;
-    const avgWin = 200 + Math.random() * 300;
-    const avgLoss = 100 + Math.random() * 150;
-    const totalPnl = (winningTrades * avgWin) - (losingTrades * avgLoss);
-
-    const pairs = ['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD', 'USDCAD'];
-    const mostTradedPairs = pairs
-      .map(pair => ({ pair, count: Math.floor(Math.random() * totalTrades) }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 3);
-
-    const winRate = (winningTrades / totalTrades) * 100;
-    const riskRewardRatio = avgLoss > 0 ? avgWin / avgLoss : 0;
-
-    const insights = [];
-    if (winRate >= 65) {
-      insights.push({ type: 'positive', message: `Strong win rate of ${winRate.toFixed(1)}% shows consistent edge` });
-    } else if (winRate < 50) {
-      insights.push({ type: 'warning', message: `Win rate of ${winRate.toFixed(1)}% suggests need for strategy refinement` });
-    }
-
-    if (totalPnl > 0) {
-      insights.push({ type: 'positive', message: `Profitable week with $${totalPnl.toFixed(2)} total gain` });
-    } else {
-      insights.push({ type: 'critical', message: `Week closed at -$${Math.abs(totalPnl).toFixed(2)}. Review and adjust` });
-    }
-
-    if (riskRewardRatio >= 2) {
-      insights.push({ type: 'positive', message: `Excellent risk-reward ratio of ${riskRewardRatio.toFixed(2)}:1` });
-    }
-
-    return {
-      id: `mock-${weekStart}`,
-      user_id: user?.id || '',
-      report_type: 'weekly',
-      period_start: weekStart,
-      period_end: weekEnd,
-      total_trades: totalTrades,
-      winning_trades: winningTrades,
-      losing_trades: losingTrades,
-      win_rate: winRate,
-      total_pnl: totalPnl,
-      avg_win: avgWin,
-      avg_loss: avgLoss,
-      risk_reward_ratio: riskRewardRatio,
-      best_trade: avgWin * (1.5 + Math.random()),
-      worst_trade: -avgLoss * (1.3 + Math.random()),
-      largest_win_streak: Math.floor(Math.random() * 5) + 2,
-      largest_loss_streak: Math.floor(Math.random() * 4) + 1,
-      most_traded_pairs: mostTradedPairs,
-      session_breakdown: {
-        'London': { trades: Math.floor(totalTrades * 0.4), pnl: totalPnl * 0.4 },
-        'New York': { trades: Math.floor(totalTrades * 0.35), pnl: totalPnl * 0.35 },
-        'Asia': { trades: Math.floor(totalTrades * 0.25), pnl: totalPnl * 0.25 }
-      },
-      avg_trade_duration: 45 + Math.random() * 90,
-      rule_compliance_rate: 60 + Math.random() * 30,
-      avg_psychology_score: 60 + Math.random() * 25,
-      best_trading_day: weekStart,
-      worst_trading_day: weekEnd,
-      total_trading_days: 4 + Math.floor(Math.random() * 2),
-      key_insights: insights,
-      generated_at: new Date().toISOString(),
-      is_stale: false,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-  };
+  const buildEmptyWeeklyReport = (weekStart: string, weekEnd: string): TradingReport => ({
+    id: `empty-${weekStart}`,
+    user_id: user?.id || '',
+    report_type: 'weekly',
+    period_start: weekStart,
+    period_end: weekEnd,
+    total_trades: 0,
+    winning_trades: 0,
+    losing_trades: 0,
+    win_rate: 0,
+    total_pnl: 0,
+    avg_win: 0,
+    avg_loss: 0,
+    risk_reward_ratio: 0,
+    best_trade: 0,
+    worst_trade: 0,
+    largest_win_streak: 0,
+    largest_loss_streak: 0,
+    most_traded_pairs: [],
+    session_breakdown: {},
+    avg_trade_duration: 0,
+    rule_compliance_rate: 0,
+    avg_psychology_score: 0,
+    best_trading_day: null,
+    worst_trading_day: null,
+    total_trading_days: 0,
+    key_insights: [{ type: 'info', message: 'No trading activity during this period' }],
+    generated_at: new Date().toISOString(),
+    is_stale: false,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  });
 
   const loadWeeklyReportsForMonth = async () => {
     if (!user) return;
@@ -271,29 +187,20 @@ export default function Calendar() {
         } else {
           try {
             const report = await generateReport(user.id, 'weekly', week.start, week.end, false);
-            if (report && report.total_trades !== undefined) {
-              reports.push(report);
-            } else {
-              reports.push(generateMockWeeklyReport(week.start, week.end));
-            }
-          } catch {
-            reports.push(generateMockWeeklyReport(week.start, week.end));
+            reports.push(report && report.total_trades !== undefined ? report : buildEmptyWeeklyReport(week.start, week.end));
+          } catch (reportError) {
+            console.error('Error generating weekly report:', reportError);
+            reports.push(buildEmptyWeeklyReport(week.start, week.end));
           }
         }
       }
 
-      const validReports = reports.filter(r => r != null);
-      if (validReports.length === 0 || validReports.every(r => r.total_trades === 0)) {
-        const mockReports = weeks.map(week => generateMockWeeklyReport(week.start, week.end));
-        setWeeklyReports(mockReports.sort((a, b) => b.period_start.localeCompare(a.period_start)));
-      } else {
-        setWeeklyReports(validReports.sort((a, b) => b.period_start.localeCompare(a.period_start)));
-      }
+      setWeeklyReports(reports.sort((a, b) => b.period_start.localeCompare(a.period_start)));
     } catch (error) {
       console.error('Error loading weekly reports:', error);
       const weeks = getMonthWeeks(currentDate.getFullYear(), currentDate.getMonth());
-      const mockReports = weeks.map(week => generateMockWeeklyReport(week.start, week.end));
-      setWeeklyReports(mockReports.sort((a, b) => b.period_start.localeCompare(a.period_start)));
+      const emptyReports = weeks.map(week => buildEmptyWeeklyReport(week.start, week.end));
+      setWeeklyReports(emptyReports.sort((a, b) => b.period_start.localeCompare(a.period_start)));
     } finally {
       setLoadingReports(false);
     }
