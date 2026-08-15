@@ -14,6 +14,8 @@ import ConversationArchive from '../components/nova/ConversationArchive';
 import { generateInsights, getActiveInsights, dismissInsight, type Insight } from '../services/insights';
 import { generateTips, getActiveTips, dismissTip, type Tip } from '../services/tips';
 import { correctTradingTerms } from '../utils/tradingVocabulary';
+import { calculateNOVAScore, type NOVAScoreBreakdown } from '../services/novaScore';
+import { supabase } from '../lib/supabase';
 
 interface QuickAction {
   text: string;
@@ -30,19 +32,23 @@ const quickActions: QuickAction[] = [
   { text: 'Best Trading Times', query: 'When should I trade?', icon: Clock },
 ];
 
-const mockStats = [
-  { label: 'NOVA Score', value: '87', icon: Sparkles, change: '+5', positive: true },
-  { label: 'Win Rate', value: '68%', icon: TrendingUp, change: '+3%', positive: true },
-  { label: 'Profit Factor', value: '2.4', icon: DollarSign, change: '+0.2', positive: true },
-  { label: 'Avg Win/Loss', value: '2.1:1', icon: BarChart2, change: '+0.3', positive: true }
-];
+interface ActivityItem {
+  action: string;
+  time: string;
+  icon: typeof LineChart;
+}
 
-
-const recentActivity = [
-  { action: 'Analyzed EUR/USD performance', time: '2 hours ago', icon: LineChart },
-  { action: 'Updated trading confluences', time: '5 hours ago', icon: Target },
-  { action: 'Reviewed risk management', time: 'Yesterday', icon: Award },
-];
+function formatRelativeTime(dateStr: string): string {
+  const diffMs = Date.now() - new Date(dateStr).getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins} minute${diffMins === 1 ? '' : 's'} ago`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays === 1) return 'Yesterday';
+  return `${diffDays} days ago`;
+}
 
 export default function NovaAssistant() {
   const navigate = useNavigate();
@@ -62,6 +68,9 @@ export default function NovaAssistant() {
   const [loadingInsights, setLoadingInsights] = useState(false);
   const [tips, setTips] = useState<Tip[]>([]);
   const [loadingTips, setLoadingTips] = useState(false);
+  const [scoreBreakdown, setScoreBreakdown] = useState<NOVAScoreBreakdown | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const lastMessageRef = useRef<string>('');
@@ -168,6 +177,66 @@ export default function NovaAssistant() {
     };
 
     loadTips();
+  }, [user]);
+
+  useEffect(() => {
+    const loadStatsAndActivity = async () => {
+      if (!user) return;
+      setStatsLoading(true);
+      try {
+        const [{ data: tradesData }, { data: journalData }] = await Promise.all([
+          supabase
+            .from('trades')
+            .select('pnl, entry_date, exit_date, created_at')
+            .eq('user_id', user.id)
+            .order('entry_date', { ascending: false })
+            .limit(100),
+          supabase
+            .from('journal_entries')
+            .select('id, title, entry_type, manual_pnl, entry_date, created_at')
+            .eq('user_id', user.id)
+            .not('manual_pnl', 'is', null)
+            .order('entry_date', { ascending: false })
+            .limit(100),
+        ]);
+
+        const tradeItems = (tradesData || []).map((t: any) => ({
+          profit_loss: t.pnl || 0,
+          entry_time: t.entry_date || t.created_at,
+          exit_time: t.exit_date || t.entry_date || t.created_at,
+        }));
+
+        const journalItems = (journalData || []).map((e: any) => ({
+          profit_loss: e.manual_pnl || 0,
+          entry_time: e.entry_date || e.created_at,
+          exit_time: e.entry_date || e.created_at,
+        }));
+
+        const allTrades = [...tradeItems, ...journalItems];
+        setScoreBreakdown(allTrades.length > 0 ? await calculateNOVAScore(allTrades) : null);
+
+        const { data: recentEntries } = await supabase
+          .from('journal_entries')
+          .select('id, title, entry_type, created_at')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(3);
+
+        setRecentActivity(
+          (recentEntries || []).map((e: any) => ({
+            action: e.entry_type === 'psychology' ? `Logged psychology entry: ${e.title}` : `Logged trade entry: ${e.title}`,
+            time: formatRelativeTime(e.created_at),
+            icon: e.entry_type === 'psychology' ? Brain : LineChart,
+          }))
+        );
+      } catch (error) {
+        console.error('Error loading stats/activity:', error);
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+
+    loadStatsAndActivity();
   }, [user]);
 
   useEffect(() => {
@@ -493,7 +562,12 @@ export default function NovaAssistant() {
                 Performance Metrics
               </h3>
               <div className="grid grid-cols-2 gap-3">
-                {mockStats.map((stat, i) => (
+                {[
+                  { label: 'NOVA Score', value: scoreBreakdown ? String(scoreBreakdown.overall_score) : '--', icon: Sparkles },
+                  { label: 'Win Rate', value: scoreBreakdown ? `${scoreBreakdown.win_rate.toFixed(0)}%` : '--', icon: TrendingUp },
+                  { label: 'Profit Factor', value: scoreBreakdown ? scoreBreakdown.profit_factor.toFixed(1) : '--', icon: DollarSign },
+                  { label: 'Avg Win/Loss', value: scoreBreakdown ? `${scoreBreakdown.avg_win_loss_ratio.toFixed(1)}:1` : '--', icon: BarChart2 },
+                ].map((stat, i) => (
                   <motion.div
                     key={i}
                     initial={{ opacity: 0, scale: 0.9 }}
@@ -503,15 +577,15 @@ export default function NovaAssistant() {
                   >
                     <div className="flex items-center justify-between mb-2">
                       <stat.icon className="w-4 h-4 text-blue-400" />
-                      <span className={`text-xs ${stat.positive ? 'text-blue-400' : 'text-gray-400'}`}>
-                        {stat.change}
-                      </span>
                     </div>
                     <p className="text-xs text-gray-400 mb-1">{stat.label}</p>
-                    <p className="text-xl font-bold text-white">{stat.value}</p>
+                    <p className="text-xl font-bold text-white">{statsLoading ? '...' : stat.value}</p>
                   </motion.div>
                 ))}
               </div>
+              {!statsLoading && !scoreBreakdown && (
+                <p className="text-xs text-gray-500 mt-3">Add trades or journal entries to calculate your metrics</p>
+              )}
             </motion.div>
 
             <motion.div
@@ -528,6 +602,9 @@ export default function NovaAssistant() {
                 Recent Activity
               </h3>
               <div className="space-y-3 flex-1">
+                {!statsLoading && recentActivity.length === 0 && (
+                  <p className="text-xs text-gray-500">No activity yet — log a trade or journal entry to get started</p>
+                )}
                 {recentActivity.map((activity, i) => (
                   <motion.div
                     key={i}
