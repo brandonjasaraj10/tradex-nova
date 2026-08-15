@@ -76,13 +76,19 @@ Deno.serve(async (req: Request) => {
     cutoffDate.setDate(cutoffDate.getDate() - 30);
     const cutoffDateStr = cutoffDate.toISOString();
 
-    const { data: trades } = await supabaseClient
+    // journal_entries has no category column - "trade" entries are just
+    // ones with manual_pnl set, same convention used everywhere else
+    // this session (Dashboard, Analytics, generate-insights).
+    const { data: journalEntries, error: journalError } = await supabaseClient
       .from("journal_entries")
       .select("*")
       .eq("user_id", user_id)
-      .eq("category", "trade")
       .gte("entry_date", cutoffDateStr)
       .order("entry_date", { ascending: false });
+
+    if (journalError) throw journalError;
+
+    const trades = (journalEntries || []).filter((e: any) => e.manual_pnl !== null && e.manual_pnl !== undefined);
 
     const { data: tradingRules } = await supabaseClient
       .from("trading_rules")
@@ -126,12 +132,12 @@ Deno.serve(async (req: Request) => {
       });
     } else {
       const winningTrades = trades.filter((t) => {
-        const pnl = t.trade_data?.pnl || t.pnl;
+        const pnl = t.manual_pnl;
         return pnl && pnl > 0;
       });
 
       const losingTrades = trades.filter((t) => {
-        const pnl = t.trade_data?.pnl || t.pnl;
+        const pnl = t.manual_pnl;
         return pnl && pnl < 0;
       });
 
@@ -164,8 +170,8 @@ Deno.serve(async (req: Request) => {
       }
 
       if (winningTrades.length > 0 && losingTrades.length > 0) {
-        const avgWin = winningTrades.reduce((sum, t) => sum + (t.trade_data?.pnl || t.pnl || 0), 0) / winningTrades.length;
-        const avgLoss = Math.abs(losingTrades.reduce((sum, t) => sum + (t.trade_data?.pnl || t.pnl || 0), 0) / losingTrades.length);
+        const avgWin = winningTrades.reduce((sum, t) => sum + (t.manual_pnl || 0), 0) / winningTrades.length;
+        const avgLoss = Math.abs(losingTrades.reduce((sum, t) => sum + (t.manual_pnl || 0), 0) / losingTrades.length);
 
         if (avgLoss > 0 && avgWin / avgLoss < 1.5) {
           tips.push({
@@ -183,7 +189,7 @@ Deno.serve(async (req: Request) => {
       }
 
       const recentTrades = trades.slice(0, 5);
-      const recentLosses = recentTrades.filter((t) => (t.trade_data?.pnl || t.pnl || 0) < 0).length;
+      const recentLosses = recentTrades.filter((t) => (t.manual_pnl || 0) < 0).length;
 
       if (recentLosses >= 3) {
         tips.push({
@@ -250,7 +256,8 @@ Deno.serve(async (req: Request) => {
         });
       }
 
-      const hasTimeData = trades.some((t) => t.trade_data?.session);
+      // journal_entries has no session/time-of-day tracking field yet.
+      const hasTimeData = false;
       if (!hasTimeData && trades.length >= 5) {
         tips.push({
           user_id,
