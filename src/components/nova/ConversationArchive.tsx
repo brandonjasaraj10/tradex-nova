@@ -54,7 +54,27 @@ export default function ConversationArchive({
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
-      setSessions(data || []);
+
+      // nova_conversation_sessions has no stored message_count column -
+      // count messages per session in one pass instead.
+      const { data: messageRows, error: messagesError } = await supabase
+        .from('nova_chat_messages')
+        .select('session_id')
+        .eq('user_id', user.id);
+
+      if (messagesError) throw messagesError;
+
+      const countsBySession = new Map<string, number>();
+      for (const row of messageRows || []) {
+        countsBySession.set(row.session_id, (countsBySession.get(row.session_id) || 0) + 1);
+      }
+
+      const sessionsWithCounts = (data || []).map(session => ({
+        ...session,
+        message_count: countsBySession.get(session.id) || 0,
+      }));
+
+      setSessions(sessionsWithCounts);
     } catch (error) {
       console.error('Error loading sessions:', error);
     } finally {
