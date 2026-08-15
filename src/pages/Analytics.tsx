@@ -139,20 +139,24 @@ export default function Analytics() {
     const loadNovaScore = async () => {
       if (!user) return;
       try {
-        const { data: tradesData } = await supabase
+        const { data: tradesData, error: tradesError } = await supabase
           .from('trades')
           .select('pnl, entry_date, exit_date, created_at')
           .eq('user_id', user.id)
           .order('entry_date', { ascending: false })
           .limit(100);
 
-        const { data: journalData } = await supabase
+        if (tradesError) throw tradesError;
+
+        const { data: journalData, error: journalError } = await supabase
           .from('journal_entries')
-          .select('manual_pnl, entry_date, created_at, trade_data')
+          .select('manual_pnl, entry_date, created_at')
           .eq('user_id', user.id)
           .not('manual_pnl', 'is', null)
           .order('entry_date', { ascending: false })
           .limit(100);
+
+        if (journalError) throw journalError;
 
         const tradeItems = (tradesData || []).map((t: any) => ({
           profit_loss: t.pnl || 0,
