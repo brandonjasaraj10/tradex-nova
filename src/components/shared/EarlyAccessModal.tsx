@@ -14,19 +14,35 @@ export default function EarlyAccessModal({ isOpen, onClose, onSuccess }: EarlyAc
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    const correctCode = import.meta.env.VITE_EARLY_ACCESS_CODE;
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-early-access`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({ code }),
+        }
+      );
 
-    if (code.toUpperCase() === correctCode) {
-      localStorage.setItem('tradex_early_access', 'granted');
-      setIsLoading(false);
-      onSuccess();
-    } else {
-      setError('Invalid access code. Please try again.');
+      const data = await response.json();
+
+      if (data.valid) {
+        localStorage.setItem('tradex_early_access', 'granted');
+        onSuccess();
+      } else {
+        setError('Invalid access code. Please try again.');
+      }
+    } catch (err) {
+      setError('Something went wrong. Please try again.');
+    } finally {
       setIsLoading(false);
     }
   };
