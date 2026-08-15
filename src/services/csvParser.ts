@@ -223,27 +223,21 @@ export class CSVParser {
         const tradeData: any = {
           user_id: user.id,
           broker_id: connectionId || null,
-          external_id: trade.ticket || `manual_${Date.now()}_${Math.random()}`,
           symbol: trade.symbol,
-          type: trade.type,
-          volume: trade.volume,
-          open_price: trade.open_price,
-          close_price: trade.close_price,
-          open_time: trade.open_time,
-          close_time: trade.close_time,
-          profit: trade.profit,
-          commission: trade.commission || 0,
-          swap: trade.swap || 0,
-          comment: trade.comment,
-          status: trade.close_time ? 'closed' : 'open',
+          direction: trade.type === 'buy' ? 'LONG' : 'SHORT',
+          quantity: trade.volume,
+          entry_price: trade.open_price,
+          exit_price: trade.close_price ?? null,
+          entry_date: trade.open_time,
+          exit_date: trade.close_time || trade.open_time,
+          pnl: trade.profit ?? null,
+          fees: (trade.commission || 0) + (trade.swap || 0),
+          notes: trade.comment || null,
         };
 
         const { error } = await supabase
           .from('trades')
-          .upsert(tradeData, {
-            onConflict: 'external_id,user_id',
-            ignoreDuplicates: false,
-          });
+          .insert(tradeData);
 
         if (error) {
           errors.push(`Failed to import ${trade.symbol}: ${error.message}`);

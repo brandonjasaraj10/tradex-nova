@@ -52,7 +52,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
 
   const loadBrokers = async () => {
     const data = await brokerService.getAvailableBrokers();
-    setBrokers(data.filter(b => b.status === 'live'));
+    setBrokers(data.filter(b => b.supported));
   };
 
   const handleCreateAccount = async () => {
@@ -63,11 +63,13 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
+      const selectedBroker = brokers.find(b => b.id === selectedBrokerId);
+
       const connectionData: any = {
         user_id: user.id,
         account_name: newAccountName.trim(),
-        connection_type: 'manual_import',
         status: 'connected',
+        broker_type: selectedBroker?.name || 'manual',
       };
 
       if (selectedBrokerId) {
@@ -240,7 +242,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
                   <option value="">Select a broker...</option>
                   {brokers.map((broker) => (
                     <option key={broker.id} value={broker.id}>
-                      {broker.name}
+                      {broker.display_name || broker.name}
                     </option>
                   ))}
                 </select>

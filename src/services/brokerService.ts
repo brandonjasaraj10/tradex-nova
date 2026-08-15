@@ -3,11 +3,8 @@ import { supabase } from '../lib/supabase';
 export interface BrokerFromAPI {
   id: string;
   name: string;
-  slug: string;
-  category: string;
-  supports_auto_sync: boolean;
-  supports_file_upload: boolean;
-  status: 'live' | 'coming_soon';
+  display_name?: string;
+  supported: boolean;
   logo_url?: string;
 }
 
@@ -15,17 +12,10 @@ export interface BrokerConnection {
   id: string;
   account_name: string;
   account_type?: string;
-  connection_type: string;
   status: 'connected' | 'error' | 'disconnected' | 'connecting';
   last_synced_at?: string;
-  last_error?: string;
   trades_count: number;
   created_at: string;
-  username?: string;
-  server?: string;
-  webhook_secret?: string;
-  webhook_url?: string;
-  platform?: string;
   metaapi_account_id?: string;
   is_auto_sync_enabled?: boolean;
   starting_balance?: number;
@@ -33,33 +23,7 @@ export interface BrokerConnection {
   currency?: string;
   ownership_type?: 'personal' | 'funded' | 'prop';
   last_balance_update?: string;
-  brokers?: BrokerFromAPI | null;
-}
-
-export interface ConnectBrokerParams {
-  broker_slug: string;
-  broker_id?: string;
-  account_name: string;
-  account_type?: string;
-  connection_type: 'api_key' | 'oauth' | 'credentials';
-  api_key?: string;
-  api_secret?: string;
-  access_token?: string;
-  refresh_token?: string;
-  account_id?: string;
-  username?: string;
-  password?: string;
-  server?: string;
-  starting_balance: number;
-  currency?: string;
-  ownership_type?: 'personal' | 'funded' | 'prop';
-}
-
-export interface SyncResult {
-  success: boolean;
-  tradesImported: number;
-  tradesUpdated: number;
-  error?: string;
+  brokers?: { name: string } | null;
 }
 
 export class BrokerService {
@@ -106,72 +70,6 @@ export class BrokerService {
     } catch (error) {
       console.error('Error fetching connections:', error);
       return [];
-    }
-  }
-
-  async connectBroker(params: ConnectBrokerParams): Promise<{ success: boolean; connection?: BrokerConnection; error?: string }> {
-    try {
-      console.log('🌐 Broker Service: Connecting broker...', params.broker_slug);
-      console.log('📤 Request params:', { ...params, password: params.password ? '***' : undefined });
-
-      const headers = await this.getAuthHeaders();
-      const response = await fetch(`${this.apiUrl}/connect`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(params),
-      });
-
-      console.log('📥 Response status:', response.status, response.statusText);
-
-      const data = await response.json();
-      console.log('📥 Response data:', data);
-
-      if (!response.ok) {
-        console.error('❌ API returned error:', data.error);
-        return { success: false, error: data.error || 'Failed to connect' };
-      }
-
-      return { success: data.valid, connection: data.connection };
-    } catch (error) {
-      console.error('❌ Error connecting broker:', error);
-      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
-    }
-  }
-
-  async testConnection(connectionId: string): Promise<{ status: string; message: string }> {
-    try {
-      const headers = await this.getAuthHeaders();
-      const response = await fetch(`${this.apiUrl}/test`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ connection_id: connectionId }),
-      });
-
-      return await response.json();
-    } catch (error) {
-      console.error('Error testing connection:', error);
-      return { status: 'error', message: 'Failed to test connection' };
-    }
-  }
-
-  async syncConnection(connectionId: string, enableAudit: boolean = false): Promise<SyncResult & { audit?: any }> {
-    try {
-      const headers = await this.getAuthHeaders();
-      const response = await fetch(`${this.apiUrl}/sync`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ connection_id: connectionId }),
-      });
-
-      return await response.json();
-    } catch (error) {
-      console.error('Error syncing connection:', error);
-      return {
-        success: false,
-        tradesImported: 0,
-        tradesUpdated: 0,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      };
     }
   }
 

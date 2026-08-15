@@ -217,38 +217,29 @@ Deno.serve(async (req: Request) => {
       try {
         const side = determineSide(trade.type);
         const isClosed = !!trade.closeTime && !!trade.closePrice;
+        const direction = side === 'long' ? 'LONG' : 'SHORT';
 
         const tradeData = {
           user_id: user.id,
-          broker_connection_id: connectionId,
-          broker_trade_id: `mt_${trade.ticket}`,
+          broker_id: connectionId,
           symbol: trade.symbol,
-          asset_class: 'forex',
-          side: side,
-          direction: side,
-          entry_time: new Date(trade.openTime).toISOString(),
+          direction,
           entry_date: new Date(trade.openTime).toISOString(),
           entry_price: trade.openPrice,
-          exit_time: isClosed && trade.closeTime ? new Date(trade.closeTime).toISOString() : null,
           exit_date: isClosed && trade.closeTime ? new Date(trade.closeTime).toISOString() : new Date(trade.openTime).toISOString(),
           exit_price: trade.closePrice || null,
           quantity: trade.volume,
-          pnl: trade.profit || null,
+          pnl: trade.profit ?? null,
           fees: (trade.swap || 0) + (trade.commission || 0),
-          commission: trade.commission || 0,
           notes: trade.comment || null,
-          raw_broker_payload: trade,
         };
 
-        const { error: upsertError } = await supabase
+        const { error: insertError } = await supabase
           .from("trades")
-          .upsert(tradeData, {
-            onConflict: "user_id,broker_connection_id,broker_trade_id",
-            ignoreDuplicates: false,
-          });
+          .insert(tradeData);
 
-        if (upsertError) {
-          errors.push(`Trade ${trade.ticket}: ${upsertError.message}`);
+        if (insertError) {
+          errors.push(`Trade ${trade.ticket}: ${insertError.message}`);
           skipped++;
         } else {
           imported++;
@@ -259,18 +250,14 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    const { count } = await supabase
-      .from("trades")
-      .select("*", { count: "exact", head: true })
-      .eq("broker_connection_id", connectionId);
-
-    await supabase
+    const { error: syncUpdateError } = await supabase
       .from("user_broker_connections")
-      .update({
-        last_synced_at: new Date().toISOString(),
-        trades_count: count || 0,
-      })
+      .update({ last_sync: new Date().toISOString() })
       .eq("id", connectionId);
+
+    if (syncUpdateError) {
+      console.error("Failed to update last_sync:", syncUpdateError);
+    }
 
     return new Response(
       JSON.stringify({

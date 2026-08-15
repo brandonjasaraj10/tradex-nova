@@ -84,7 +84,7 @@ export default function BrokerConnectionsList() {
 
   const loadBrokers = async () => {
     const data = await brokerService.getAvailableBrokers();
-    setBrokers(data.filter(b => b.status === 'live'));
+    setBrokers(data.filter(b => b.supported));
   };
 
   const handleCreateAccount = async () => {
@@ -102,13 +102,15 @@ export default function BrokerConnectionsList() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
+      const selectedBroker = brokers.find(b => b.id === selectedBrokerId);
+
       const { error } = await supabase
         .from('user_broker_connections')
         .insert({
           user_id: user.id,
           broker_id: selectedBrokerId || null,
+          broker_type: selectedBroker?.name || 'manual',
           account_name: newAccountName.trim(),
-          connection_type: 'manual_import',
           status: 'connected',
           starting_balance: parseFloat(startingBalance),
           current_balance: parseFloat(startingBalance),
@@ -335,12 +337,6 @@ export default function BrokerConnectionsList() {
                     </span>
                   </div>
                 </div>
-                {connection.last_error && (
-                  <div className="mt-3 p-2 bg-red-500/10 border border-red-500/20 rounded text-xs text-red-400 flex items-start gap-2">
-                    <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                    <span>{connection.last_error}</span>
-                  </div>
-                )}
 
                 <div className="mt-4">
                   <input
@@ -454,7 +450,7 @@ export default function BrokerConnectionsList() {
                   <option value="">None - I'll add this later</option>
                   {brokers.map((broker) => (
                     <option key={broker.id} value={broker.id}>
-                      {broker.name}
+                      {broker.display_name || broker.name}
                     </option>
                   ))}
                 </select>

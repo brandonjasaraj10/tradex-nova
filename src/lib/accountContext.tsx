@@ -28,7 +28,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
 
     const { data, error } = await supabase
       .from('user_broker_connections')
-      .select('id, account_name, connection_type, brokers(name)')
+      .select('id, account_name, broker_id')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
@@ -37,10 +37,16 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // broker_id has no real foreign key to brokers (it's stored as
+    // plain text), so resolve display names with a separate lookup
+    // instead of a PostgREST embed.
+    const { data: brokersData } = await supabase.from('brokers').select('id, name, display_name');
+    const brokerNameById = new Map((brokersData || []).map(b => [b.id, b.display_name || b.name]));
+
     const transformedAccounts: Account[] = (data || []).map((item: any) => ({
       id: item.id,
       account_name: item.account_name,
-      broker_type: item.brokers?.name || item.connection_type || 'Manual',
+      broker_type: (item.broker_id && brokerNameById.get(item.broker_id)) || 'Manual',
       is_active: false,
     }));
 
