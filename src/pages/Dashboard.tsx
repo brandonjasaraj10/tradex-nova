@@ -216,7 +216,9 @@ export default function Dashboard() {
       const { data: tradesData, error: tradesError } = await tradesQuery;
       if (tradesError) throw tradesError;
 
-      let journalQuery = supabase
+      // journal_entries has no per-account column, so a per-account
+      // filter can't apply to journal-logged P&L - only to trades.
+      const journalQuery = supabase
         .from('journal_entries')
         .select('*')
         .eq('user_id', user.id)
@@ -226,15 +228,10 @@ export default function Dashboard() {
         .order('entry_date', { ascending: false })
         .limit(20);
 
-      if (selectedAccount) {
-        journalQuery = journalQuery.eq('broker_connection_id', selectedAccount.id);
-      }
-
       const { data: journalData, error: journalError } = await journalQuery;
       if (journalError) throw journalError;
 
       const journalTrades = (journalData || [])
-        .filter((entry: any) => entry.manual_pnl !== 0)
         .map((entry: any) => ({
           id: entry.id,
           user_id: entry.user_id,
@@ -432,9 +429,11 @@ export default function Dashboard() {
 
       const { data: tradesData } = await tradesQuery;
 
-      let journalScoreQuery = supabase
+      // journal_entries has no per-account column, so a per-account
+      // filter can't apply to journal-logged P&L - only to trades.
+      const journalScoreQuery = supabase
         .from('journal_entries')
-        .select('manual_pnl, entry_date, created_at, trade_data')
+        .select('manual_pnl, entry_date, created_at')
         .eq('user_id', user.id)
         .not('manual_pnl', 'is', null)
         .gte('entry_date', dateRange.startDate.toISOString().split('T')[0])
@@ -442,11 +441,8 @@ export default function Dashboard() {
         .order('entry_date', { ascending: false })
         .limit(100);
 
-      if (selectedAccount) {
-        journalScoreQuery = journalScoreQuery.eq('broker_connection_id', selectedAccount.id);
-      }
-
-      const { data: journalData } = await journalScoreQuery;
+      const { data: journalData, error: journalScoreError } = await journalScoreQuery;
+      if (journalScoreError) throw journalScoreError;
 
       const tradeItems = (tradesData || []).map((t: any) => ({
         profit_loss: t.pnl || 0,
@@ -455,9 +451,8 @@ export default function Dashboard() {
       }));
 
       const journalItems = (journalData || [])
-        .filter((e: any) => e.manual_pnl !== 0)
         .map((e: any) => ({
-          profit_loss: e.manual_pnl || e.trade_data?.pnl || 0,
+          profit_loss: e.manual_pnl || 0,
           entry_time: e.entry_date || e.created_at,
           exit_time: e.entry_date || e.created_at,
         }));
