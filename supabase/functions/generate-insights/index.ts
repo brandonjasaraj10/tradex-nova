@@ -67,19 +67,17 @@ Deno.serve(async (req: Request) => {
     const midpointDate = new Date();
     midpointDate.setDate(midpointDate.getDate() - 15);
 
-    const [tradesResult, psychResult, rulesResult, entryRulesResult, profileResult] = await Promise.all([
+    // journal_entries has no category column distinguishing "trade" vs
+    // "psychology" entries - a single entry can carry both trade fields
+    // (manual_pnl, symbol) and psychology fields (stress_level, mood,
+    // etc.) at once, or neither. Fetch once and split by which fields
+    // are actually populated instead of filtering on a column that was
+    // never real.
+    const [journalResult, rulesResult, entryRulesResult, profileResult] = await Promise.all([
       supabaseClient
         .from("journal_entries")
         .select("*")
         .eq("user_id", user_id)
-        .eq("category", "trade")
-        .gte("entry_date", cutoffDateStr)
-        .order("entry_date", { ascending: false }),
-      supabaseClient
-        .from("journal_entries")
-        .select("*")
-        .eq("user_id", user_id)
-        .eq("category", "psychology")
         .gte("entry_date", cutoffDateStr)
         .order("entry_date", { ascending: false }),
       supabaseClient
@@ -98,8 +96,14 @@ Deno.serve(async (req: Request) => {
         .maybeSingle(),
     ]);
 
-    const trades = tradesResult.data || [];
-    const psychologyEntries = psychResult.data || [];
+    if (journalResult.error) throw journalResult.error;
+
+    const journalEntries = journalResult.data || [];
+    const trades = journalEntries.filter((e) => e.manual_pnl !== null && e.manual_pnl !== undefined);
+    const psychologyEntries = journalEntries.filter((e) =>
+      e.stress_level !== null || e.mood_before !== null || e.mood_after !== null ||
+      e.confidence_level !== null || e.rule_following !== null
+    );
     const tradingRules = rulesResult.data || [];
     const entryRules = entryRulesResult.data || [];
     const userProfile = profileResult.data;
@@ -625,9 +629,17 @@ Deno.serve(async (req: Request) => {
     }
 
     if (insights.length > 0) {
+      // insight_text is NOT NULL on user_insights but none of the
+      // insight objects built above set it - the real content lives in
+      // description/title.
+      const insightsToInsert = insights.map((i) => ({
+        ...i,
+        insight_text: i.description || i.title || "",
+      }));
+
       const { error: insertError } = await supabaseClient
         .from("user_insights")
-        .insert(insights);
+        .insert(insightsToInsert);
 
       if (insertError) {
         console.error("Error inserting insights:", insertError);
