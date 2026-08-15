@@ -5,6 +5,17 @@ import Card from '../components/shared/Card';
 import Button from '../components/shared/Button';
 import { useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
+import { getSubscription, type Subscription } from '../services/subscriptionService';
+
+const STATUS_LABELS: Record<Subscription['status'], string> = {
+  active: 'Active',
+  trialing: 'Trial',
+  past_due: 'Past Due',
+  canceled: 'Canceled',
+  incomplete: 'Incomplete',
+  incomplete_expired: 'Incomplete',
+  unpaid: 'Unpaid',
+};
 
 export default function Profile() {
   const { user, profile, refreshProfile } = useAuth();
@@ -12,6 +23,7 @@ export default function Profile() {
   const [lastName, setLastName] = useState('');
   const [loading, setLoading] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [subscription, setSubscription] = useState<Subscription | null>(null);
 
   useEffect(() => {
     if (profile) {
@@ -19,6 +31,12 @@ export default function Profile() {
       setLastName(profile.last_name || '');
     }
   }, [profile]);
+
+  useEffect(() => {
+    if (user) {
+      getSubscription().then(setSubscription);
+    }
+  }, [user]);
 
   const handleSave = async () => {
     if (!user || !firstName.trim()) return;
@@ -198,7 +216,15 @@ export default function Profile() {
               </div>
               <div className="flex justify-between py-2">
                 <span className="text-gray-400">Account Status</span>
-                <span className="text-success-400">Active</span>
+                <span className={
+                  subscription && ['active', 'trialing'].includes(subscription.status)
+                    ? 'text-success-400'
+                    : subscription && ['past_due', 'unpaid', 'incomplete', 'incomplete_expired'].includes(subscription.status)
+                    ? 'text-danger-400'
+                    : 'text-gray-400'
+                }>
+                  {subscription ? STATUS_LABELS[subscription.status] : 'No Subscription'}
+                </span>
               </div>
             </div>
           </Card>
