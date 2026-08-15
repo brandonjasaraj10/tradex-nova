@@ -8,7 +8,6 @@ const corsHeaders = {
 };
 
 interface GenerateTipsRequest {
-  user_id: string;
   force_refresh?: boolean;
 }
 
@@ -21,17 +20,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { user_id, force_refresh = false }: GenerateTipsRequest = await req.json();
-
-    if (!user_id) {
-      return new Response(
-        JSON.stringify({ error: "user_id is required" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
+    const { force_refresh = false }: GenerateTipsRequest = await req.json();
 
     const authHeader = req.headers.get("Authorization");
     const supabaseClient = createClient(
@@ -43,6 +32,17 @@ Deno.serve(async (req: Request) => {
         },
       }
     );
+
+    // Identity is derived from the verified JWT, never trusted from the
+    // request body - same pattern as every other fix this session.
+    const { data: { user: authUser }, error: authError } = await supabaseClient.auth.getUser();
+    if (authError || !authUser) {
+      return new Response(
+        JSON.stringify({ error: "User authentication required" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    const user_id = authUser.id;
 
     if (!force_refresh) {
       const { data: existingTips } = await supabaseClient

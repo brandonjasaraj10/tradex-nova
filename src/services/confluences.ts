@@ -148,13 +148,19 @@ export async function initializeDefaultConfluences(): Promise<void> {
       }))
     );
 
-  if (error) throw error;
+  // 23505 = unique_violation. Another call already seeded these
+  // defaults (this function is called from both Dashboard and
+  // Checklists, so both can race here) - that's a harmless outcome
+  // now that the DB enforces one row per (user_id, name), not an error.
+  if (error && error.code !== '23505') throw error;
 
-  await supabase
+  const { error: settingsError } = await supabase
     .from('trading_plan_settings')
     .insert({
       user_id: user.id,
       min_confluences_required: 3,
       total_confluences: 6,
     });
+
+  if (settingsError && settingsError.code !== '23505') throw settingsError;
 }
