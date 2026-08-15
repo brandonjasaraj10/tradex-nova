@@ -15,6 +15,7 @@ import { generateInsights, getActiveInsights, dismissInsight, type Insight } fro
 import { generateTips, getActiveTips, dismissTip, type Tip } from '../services/tips';
 import { correctTradingTerms } from '../utils/tradingVocabulary';
 import { calculateNOVAScore, type NOVAScoreBreakdown } from '../services/novaScore';
+import { getTradingRules, type TradingRule } from '../services/tradingRules';
 import { supabase } from '../lib/supabase';
 
 interface QuickAction {
@@ -71,6 +72,7 @@ export default function NovaAssistant() {
   const [scoreBreakdown, setScoreBreakdown] = useState<NOVAScoreBreakdown | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
   const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
+  const [userTradingRules, setUserTradingRules] = useState<TradingRule[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const lastMessageRef = useRef<string>('');
@@ -229,6 +231,8 @@ export default function NovaAssistant() {
             icon: e.entry_type === 'psychology' ? Brain : LineChart,
           }))
         );
+
+        setUserTradingRules(await getTradingRules(user.id));
       } catch (error) {
         console.error('Error loading stats/activity:', error);
       } finally {
@@ -908,129 +912,54 @@ export default function NovaAssistant() {
                 <Sparkles className="w-4 h-4 text-blue-400" />
                 NOVA Score Analysis
               </h3>
-              <div className="flex items-center gap-2">
-                <span className="text-3xl font-bold text-white">87</span>
-                <span className="text-xs text-blue-400 bg-blue-400/10 px-2 py-1 rounded-lg">+5</span>
-              </div>
+              <span className="text-3xl font-bold text-white">{scoreBreakdown ? scoreBreakdown.overall_score : '--'}</span>
             </div>
 
-            <div className="space-y-4">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-gray-400">Overall Score</span>
-                  <span className="text-xs text-white font-medium">87/100</span>
-                </div>
-                <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: '87%' }}
-                    transition={{ duration: 1, delay: 0.7 }}
-                    className="h-full bg-gradient-to-r from-blue-400 to-blue-500 rounded-full"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Score Breakdown</h4>
-
-                <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+            {!scoreBreakdown ? (
+              <p className="text-xs text-gray-500">Add trades or journal entries to see your score breakdown</p>
+            ) : (
+              <div className="space-y-4">
+                <div>
                   <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <TrendingUp className="w-4 h-4 text-blue-400" />
-                      <span className="text-sm text-white">Win Rate</span>
-                    </div>
-                    <span className="text-sm font-medium text-blue-400">92/100</span>
+                    <span className="text-xs text-gray-400">Overall Score</span>
+                    <span className="text-xs text-white font-medium">{scoreBreakdown.overall_score}/100</span>
                   </div>
-                  <div className="h-1.5 bg-white/5 rounded-full overflow-hidden mb-2">
-                    <div className="h-full bg-blue-400 rounded-full" style={{ width: '92%' }} />
-                  </div>
-                  <p className="text-xs text-gray-400">68% win rate - Excellent consistency</p>
-                </div>
-
-                <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Target className="w-4 h-4 text-blue-400" />
-                      <span className="text-sm text-white">Risk Management</span>
-                    </div>
-                    <span className="text-sm font-medium text-blue-400">95/100</span>
-                  </div>
-                  <div className="h-1.5 bg-white/5 rounded-full overflow-hidden mb-2">
-                    <div className="h-full bg-blue-400 rounded-full" style={{ width: '95%' }} />
-                  </div>
-                  <p className="text-xs text-gray-400">Average 1.2% risk per trade - Outstanding</p>
-                </div>
-
-                <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Activity className="w-4 h-4 text-blue-400" />
-                      <span className="text-sm text-white">Consistency</span>
-                    </div>
-                    <span className="text-sm font-medium text-blue-400">85/100</span>
-                  </div>
-                  <div className="h-1.5 bg-white/5 rounded-full overflow-hidden mb-2">
-                    <div className="h-full bg-blue-400 rounded-full" style={{ width: '85%' }} />
-                  </div>
-                  <p className="text-xs text-gray-400">Good trading frequency and discipline</p>
-                </div>
-
-                <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Award className="w-4 h-4 text-blue-400" />
-                      <span className="text-sm text-white">Trade Quality</span>
-                    </div>
-                    <span className="text-sm font-medium text-blue-400">78/100</span>
-                  </div>
-                  <div className="h-1.5 bg-white/5 rounded-full overflow-hidden mb-2">
-                    <div className="h-full bg-blue-400 rounded-full" style={{ width: '78%' }} />
-                  </div>
-                  <p className="text-xs text-gray-400">Room to improve confluence alignment</p>
-                </div>
-              </div>
-
-              <div className="pt-3 border-t border-white/5">
-                <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Ways to Improve</h4>
-                <div className="space-y-2">
-                  <div className="flex items-start gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 flex-shrink-0" />
-                    <p className="text-xs text-gray-300 leading-relaxed">Focus on high-confluence setups to improve trade quality score</p>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 flex-shrink-0" />
-                    <p className="text-xs text-gray-300 leading-relaxed">Document your trades in the journal for better tracking</p>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 flex-shrink-0" />
-                    <p className="text-xs text-gray-300 leading-relaxed">Review and update your confluences regularly</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-3 border-t border-white/5">
-                <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">7-Day Trend</h4>
-                <div className="flex items-end justify-between h-16 gap-2">
-                  {[75, 78, 80, 82, 84, 85, 87].map((score, i) => (
+                  <div className="h-2 bg-white/5 rounded-full overflow-hidden">
                     <motion.div
-                      key={i}
-                      initial={{ height: 0 }}
-                      animate={{ height: `${(score / 100) * 100}%` }}
-                      transition={{ duration: 0.5, delay: 0.8 + i * 0.1 }}
-                      className="flex-1 bg-gradient-to-t from-blue-400 to-blue-500 rounded-t relative group"
-                    >
-                      <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {score}
-                      </span>
-                    </motion.div>
+                      initial={{ width: 0 }}
+                      animate={{ width: `${scoreBreakdown.overall_score}%` }}
+                      transition={{ duration: 1, delay: 0.7 }}
+                      className="h-full bg-gradient-to-r from-blue-400 to-blue-500 rounded-full"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Score Breakdown</h4>
+
+                  {[
+                    { label: 'Profitability', icon: TrendingUp, value: scoreBreakdown.profitability_score, note: `${scoreBreakdown.win_rate.toFixed(0)}% win rate, ${scoreBreakdown.profit_factor.toFixed(2)} profit factor` },
+                    { label: 'Risk Management', icon: Target, value: scoreBreakdown.risk_management_score, note: `Avg win/loss ratio ${scoreBreakdown.avg_win_loss_ratio.toFixed(2)}:1` },
+                    { label: 'Consistency', icon: Activity, value: scoreBreakdown.consistency_score, note: `Based on ${scoreBreakdown.total_trades} trades` },
+                    { label: 'Discipline', icon: Award, value: scoreBreakdown.discipline_score, note: 'Confluence use and overtrading check' },
+                  ].map((row, i) => (
+                    <div key={i} className="bg-white/5 rounded-xl p-3 border border-white/5">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <row.icon className="w-4 h-4 text-blue-400" />
+                          <span className="text-sm text-white">{row.label}</span>
+                        </div>
+                        <span className="text-sm font-medium text-blue-400">{row.value}/100</span>
+                      </div>
+                      <div className="h-1.5 bg-white/5 rounded-full overflow-hidden mb-2">
+                        <div className="h-full bg-blue-400 rounded-full" style={{ width: `${row.value}%` }} />
+                      </div>
+                      <p className="text-xs text-gray-400">{row.note}</p>
+                    </div>
                   ))}
                 </div>
-                <div className="flex justify-between mt-2">
-                  <span className="text-xs text-gray-500">7d ago</span>
-                  <span className="text-xs text-gray-500">Today</span>
-                </div>
               </div>
-            </div>
+            )}
           </motion.div>
 
           <motion.div
@@ -1055,112 +984,30 @@ export default function NovaAssistant() {
               </button>
             </div>
 
-            <div className="space-y-3">
-              <div className="bg-white/5 rounded-xl p-4 border border-white/5">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-blue-400/10 flex items-center justify-center flex-shrink-0">
-                    <CheckCircle2 className="w-4 h-4 text-blue-400" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="text-sm font-medium text-white mb-1">Never Risk More Than 1%</h4>
-                    <p className="text-xs text-gray-400 leading-relaxed mb-2">
-                      Maximum risk per trade should not exceed 1% of total account balance
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-blue-400 bg-blue-400/10 px-2 py-1 rounded">Active</span>
-                      <span className="text-xs text-gray-500">Following 98% of the time</span>
+            {userTradingRules.length === 0 ? (
+              <p className="text-xs text-gray-500">No trading rules set up yet - add some to keep yourself accountable</p>
+            ) : (
+              <div className="space-y-3">
+                {userTradingRules.map((rule) => (
+                  <div key={rule.id} className="bg-white/5 rounded-xl p-4 border border-white/5">
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-blue-400/10 flex items-center justify-center flex-shrink-0">
+                        <CheckCircle2 className="w-4 h-4 text-blue-400" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-sm font-medium text-white mb-1">{rule.name}</h4>
+                        {rule.description && (
+                          <p className="text-xs text-gray-400 leading-relaxed mb-2">{rule.description}</p>
+                        )}
+                        <span className={`text-xs px-2 py-1 rounded ${rule.enabled ? 'text-blue-400 bg-blue-400/10' : 'text-gray-500 bg-white/5'}`}>
+                          {rule.enabled ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
+                ))}
               </div>
-
-              <div className="bg-white/5 rounded-xl p-4 border border-white/5">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-blue-400/10 flex items-center justify-center flex-shrink-0">
-                    <Target className="w-4 h-4 text-blue-400" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="text-sm font-medium text-white mb-1">3+ Confluences Required</h4>
-                    <p className="text-xs text-gray-400 leading-relaxed mb-2">
-                      Only enter trades when at least 3 of your confluences align
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-blue-400 bg-blue-400/10 px-2 py-1 rounded">Active</span>
-                      <span className="text-xs text-gray-500">Following 92% of the time</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white/5 rounded-xl p-4 border border-white/5">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-blue-400/10 flex items-center justify-center flex-shrink-0">
-                    <Clock className="w-4 h-4 text-blue-400" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="text-sm font-medium text-white mb-1">No Trading on Fridays</h4>
-                    <p className="text-xs text-gray-400 leading-relaxed mb-2">
-                      Avoid opening new positions on Fridays to reduce weekend gap risk
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-blue-400 bg-blue-400/10 px-2 py-1 rounded">Active</span>
-                      <span className="text-xs text-gray-500">Following 88% of the time</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white/5 rounded-xl p-4 border border-white/5">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-blue-400/10 flex items-center justify-center flex-shrink-0">
-                    <AlertCircle className="w-4 h-4 text-blue-400" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="text-sm font-medium text-white mb-1">Stop After 2 Losses</h4>
-                    <p className="text-xs text-gray-400 leading-relaxed mb-2">
-                      Take a break and review strategy after 2 consecutive losing trades
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-blue-400 bg-blue-400/10 px-2 py-1 rounded">Active</span>
-                      <span className="text-xs text-gray-500">Following 95% of the time</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white/5 rounded-xl p-4 border border-white/5">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-blue-400/10 flex items-center justify-center flex-shrink-0">
-                    <TrendingUp className="w-4 h-4 text-blue-400" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="text-sm font-medium text-white mb-1">Minimum 2:1 Risk/Reward</h4>
-                    <p className="text-xs text-gray-400 leading-relaxed mb-2">
-                      Only take trades where potential reward is at least 2x the risk
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-blue-400 bg-blue-400/10 px-2 py-1 rounded">Active</span>
-                      <span className="text-xs text-gray-500">Following 90% of the time</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-4 pt-4 border-t border-white/5">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-400">Overall Rule Adherence</span>
-                <span className="text-white font-medium">93%</span>
-              </div>
-              <div className="h-1.5 bg-white/5 rounded-full overflow-hidden mt-2">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: '93%' }}
-                  transition={{ duration: 1, delay: 0.7 }}
-                  className="h-full bg-gradient-to-r from-blue-400 to-blue-500 rounded-full"
-                />
-              </div>
-            </div>
+            )}
           </motion.div>
         </div>
 
