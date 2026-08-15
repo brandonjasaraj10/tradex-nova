@@ -127,18 +127,23 @@ Deno.serve(async (req: Request) => {
 
       const subscriptions = await stripe.subscriptions.list({
         customer: stripeCustomerId,
-        status: "active",
-        limit: 1,
+        status: "all",
+        limit: 5,
       });
 
-      if (subscriptions.data.length === 0) {
+      // "active" alone misses subscriptions still in their 7-day trial
+      // (Stripe status "trialing") or with a failed payment ("past_due")
+      // - both are still real, cancellable subscriptions.
+      const subscription = subscriptions.data.find((s) =>
+        ["active", "trialing", "past_due"].includes(s.status)
+      );
+
+      if (!subscription) {
         return new Response(
           JSON.stringify({ error: "No active subscription found" }),
           { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-
-      const subscription = subscriptions.data[0];
 
       await stripe.subscriptions.update(subscription.id, {
         cancel_at_period_end: true,
