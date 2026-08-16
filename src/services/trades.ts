@@ -253,7 +253,7 @@ export async function getDailyPnL(
   return dailyMap;
 }
 
-function calculatePnL(data: TradeFormData): number {
+export function calculatePnL(data: TradeFormData): number {
   const { direction, entry_price, exit_price, quantity } = data;
   return direction === 'LONG'
     ? (exit_price - entry_price) * quantity

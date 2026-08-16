@@ -75,7 +75,14 @@ export async function checkSubscriptionAccess(): Promise<SubscriptionAccess> {
     };
   }
 
-  const now = new Date();
+  return evaluateSubscriptionAccess(subscription, new Date());
+}
+
+// Pure decision logic, split out from checkSubscriptionAccess() so it's
+// testable without mocking supabase.auth - mirrors has_active_subscription()
+// on the database side (the actual RLS gate), so this is a behavioral
+// cross-check on that logic, not just documentation of intent.
+export function evaluateSubscriptionAccess(subscription: Subscription, now: Date): SubscriptionAccess {
   const currentPeriodEnd = subscription.current_period_end ? new Date(subscription.current_period_end) : null;
   const gracePeriodEnd = subscription.grace_period_end ? new Date(subscription.grace_period_end) : null;
 

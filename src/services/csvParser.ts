@@ -16,7 +16,7 @@ export interface CSVTrade {
 }
 
 export class CSVParser {
-  private static detectFormat(headers: string[]): 'mt4' | 'mt5' | 'generic' | null {
+  static detectFormat(headers: string[]): 'mt4' | 'mt5' | 'generic' | null {
     const headerStr = headers.join(',').toLowerCase();
 
     if (headerStr.includes('ticket') && headerStr.includes('open time') && headerStr.includes('type')) {
@@ -30,7 +30,7 @@ export class CSVParser {
     return null;
   }
 
-  private static parseDate(dateStr: string): string {
+  static parseDate(dateStr: string): string {
     const formats = [
       /(\d{4})\.(\d{2})\.(\d{2}) (\d{2}):(\d{2}):(\d{2})/,
       /(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})/,
@@ -59,7 +59,7 @@ export class CSVParser {
     return dateStr;
   }
 
-  private static parseMT4Row(row: any): CSVTrade | null {
+  static parseMT4Row(row: any): CSVTrade | null {
     try {
       const type = row['Type']?.toLowerCase();
       if (!type || (!type.includes('buy') && !type.includes('sell'))) {
@@ -86,7 +86,7 @@ export class CSVParser {
     }
   }
 
-  private static parseMT5Row(row: any): CSVTrade | null {
+  static parseMT5Row(row: any): CSVTrade | null {
     try {
       const type = row['Type']?.toLowerCase();
       if (!type || (!type.includes('buy') && !type.includes('sell'))) {
@@ -113,7 +113,7 @@ export class CSVParser {
     }
   }
 
-  private static parseGenericRow(row: any): CSVTrade | null {
+  static parseGenericRow(row: any): CSVTrade | null {
     try {
       const symbolKey = Object.keys(row).find(k => k.toLowerCase().includes('symbol'));
       const typeKey = Object.keys(row).find(k => k.toLowerCase().includes('type') || k.toLowerCase().includes('side'));
