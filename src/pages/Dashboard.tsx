@@ -244,7 +244,7 @@ export default function Dashboard() {
           exit_date: entry.entry_date,
           pnl: entry.manual_pnl || 0,
           fees: 0,
-          notes: entry.content?.substring(0, 100) || '',
+          notes: entry.content?.replace(/<[^>]*>/g, '').substring(0, 100) || '',
           tags: entry.tags || [],
           created_at: entry.created_at,
           updated_at: entry.updated_at,
