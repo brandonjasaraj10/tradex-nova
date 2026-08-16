@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { clientSafeMessage } from "../_shared/errors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -467,7 +468,7 @@ Deno.serve(async (req: Request) => {
   } catch (error) {
     console.error("Error in generate-report:", error);
     return new Response(
-      JSON.stringify({ error: "Failed to generate report", details: error.message }),
+      JSON.stringify({ error: "Failed to generate report", details: clientSafeMessage(error) }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

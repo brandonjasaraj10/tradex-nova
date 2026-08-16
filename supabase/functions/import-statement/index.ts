@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { clientSafeMessage } from "../_shared/errors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -245,7 +246,7 @@ Deno.serve(async (req: Request) => {
           imported++;
         }
       } catch (error) {
-        errors.push(`Trade ${trade.ticket}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        errors.push(`Trade ${trade.ticket}: ${clientSafeMessage(error, 'Unknown error')}`);
         skipped++;
       }
     }
@@ -278,7 +279,7 @@ Deno.serve(async (req: Request) => {
     return new Response(
       JSON.stringify({
         error: "Failed to import statement",
-        details: error instanceof Error ? error.message : "Unknown error",
+        details: clientSafeMessage(error, "Unknown error"),
       }),
       {
         status: 500,

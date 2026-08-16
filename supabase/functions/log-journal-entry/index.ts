@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { clientSafeMessage } from "../_shared/errors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -335,7 +336,7 @@ Deno.serve(async (req: Request) => {
     return new Response(
       JSON.stringify({
         error: 'Failed to log journal entry',
-        details: error.message
+        details: clientSafeMessage(error)
       }),
       {
         status: 500,
