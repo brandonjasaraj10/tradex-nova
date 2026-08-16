@@ -260,6 +260,19 @@ Deno.serve(async (req: Request) => {
       console.error("Failed to update last_sync:", syncUpdateError);
     }
 
+    const { error: notifyError } = await supabase.from("notifications").insert({
+      user_id: user.id,
+      title: skipped === 0 ? "Import complete" : "Import finished with some errors",
+      message: `Imported ${imported} of ${parsedTrades.length} trades from your statement.${
+        skipped > 0 ? ` ${skipped} rows were skipped.` : ""
+      }`,
+      type: skipped === 0 ? "success" : "warning",
+    });
+
+    if (notifyError) {
+      console.error("Failed to create import notification:", notifyError);
+    }
+
     return new Response(
       JSON.stringify({
         success: true,

@@ -146,11 +146,13 @@ async function syncSubscription(userId: string, subscription: Stripe.Subscriptio
 
   const { data: existing, error: lookupError } = await supabase
     .from('subscriptions')
-    .select('id')
+    .select('id, status')
     .eq('user_id', userId)
     .maybeSingle();
 
   if (lookupError) throw lookupError;
+
+  const previousStatus = existing?.status ?? null;
 
   if (existing) {
     const { error } = await supabase.from('subscriptions').update(record).eq('user_id', userId);
@@ -160,5 +162,45 @@ async function syncSubscription(userId: string, subscription: Stripe.Subscriptio
     if (error) throw error;
   }
 
+  if (previousStatus !== subscription.status) {
+    await notifyStatusChange(userId, previousStatus, subscription.status);
+  }
+
   console.info(`Synced subscription ${subscription.id} (${subscription.status}) for user ${userId}`);
+}
+
+// Only notify on transitions that actually matter to the user - not every
+// webhook fire (Stripe sends customer.subscription.updated for plenty of
+// changes, like metadata, that shouldn't page anyone).
+async function notifyStatusChange(userId: string, previousStatus: string | null, newStatus: string) {
+  let title: string | null = null;
+  let message: string | null = null;
+  let type: 'success' | 'warning' | 'info' = 'info';
+
+  if (newStatus === 'active' && previousStatus !== 'active') {
+    title = 'Subscription active';
+    message = 'Your TradeX subscription is now active. Welcome aboard!';
+    type = 'success';
+  } else if (newStatus === 'past_due') {
+    title = 'Payment failed';
+    message = 'Your last payment did not go through. Please update your payment method to keep your subscription active.';
+    type = 'warning';
+  } else if (newStatus === 'canceled') {
+    title = 'Subscription canceled';
+    message = 'Your TradeX subscription has been canceled.';
+    type = 'info';
+  }
+
+  if (!title || !message) return;
+
+  const { error } = await supabase.from('notifications').insert({
+    user_id: userId,
+    title,
+    message,
+    type,
+  });
+
+  if (error) {
+    console.error('Failed to create subscription notification:', error);
+  }
 }
