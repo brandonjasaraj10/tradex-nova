@@ -806,6 +806,47 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // Rate limiting below caps request frequency, not size - a single
+    // oversized request could still run up real Anthropic API cost or
+    // blow past Claude's context window. Generous limits that only
+    // reject genuinely abusive payloads, not real usage.
+    const MAX_MESSAGES = 200;
+    const MAX_MESSAGE_CHARS = 20000;
+    const MAX_TOTAL_CHARS = 150000;
+    const MAX_IMAGES = 5;
+
+    if (messages.length > MAX_MESSAGES) {
+      return new Response(
+        JSON.stringify({ error: 'Too many messages in this conversation' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    let totalChars = 0;
+    for (const m of messages) {
+      const len = typeof m?.content === 'string' ? m.content.length : 0;
+      if (len > MAX_MESSAGE_CHARS) {
+        return new Response(
+          JSON.stringify({ error: 'Message is too long' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      totalChars += len;
+    }
+    if (totalChars > MAX_TOTAL_CHARS) {
+      return new Response(
+        JSON.stringify({ error: 'Conversation is too long' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (images && (!Array.isArray(images) || images.length > MAX_IMAGES)) {
+      return new Response(
+        JSON.stringify({ error: 'Too many images attached' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(
