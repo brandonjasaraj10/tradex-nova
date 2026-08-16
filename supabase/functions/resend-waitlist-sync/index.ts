@@ -48,6 +48,32 @@ async function addContact(resendApiKey: string, segmentId: string, email: string
   return { ok: false, error: errorText };
 }
 
+async function notifyOwnerOfSignup(resendApiKey: string, notifyEmail: string, signupEmail: string, totalCount: number | null) {
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${resendApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "TradeX <noreply@tradexnova.com>",
+        to: [notifyEmail],
+        subject: `New waitlist signup: ${signupEmail}`,
+        html: `<p>New waitlist signup: <strong>${signupEmail}</strong></p>${
+          totalCount !== null ? `<p>Total waitlist signups: ${totalCount}</p>` : ""
+        }`,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error("Failed to send owner notification:", await response.text());
+    }
+  } catch (error) {
+    console.error("Error sending owner notification:", error);
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 200, headers: corsHeaders });
@@ -81,6 +107,20 @@ Deno.serve(async (req: Request) => {
       if (!result.ok) {
         console.error("Failed to add contact:", result.error);
       }
+
+      const notifyEmail = Deno.env.get("WAITLIST_NOTIFY_EMAIL");
+      if (notifyEmail) {
+        const supabase = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+        );
+        const { count } = await supabase
+          .from("waitlist")
+          .select("*", { count: "exact", head: true });
+
+        await notifyOwnerOfSignup(resendApiKey, notifyEmail, body.record.email, count ?? null);
+      }
+
       return new Response(
         JSON.stringify({ success: result.ok }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
