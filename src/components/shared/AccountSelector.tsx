@@ -28,6 +28,9 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
   const [isCreating, setIsCreating] = useState(false);
   const [newAccountName, setNewAccountName] = useState('');
   const [selectedBrokerId, setSelectedBrokerId] = useState('');
+  const [startingBalance, setStartingBalance] = useState('');
+  const [currency, setCurrency] = useState('USD');
+  const [ownershipType, setOwnershipType] = useState<'personal' | 'funded' | 'prop'>('personal');
   const selectorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -57,6 +60,10 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
 
   const handleCreateAccount = async () => {
     if (!newAccountName.trim()) return;
+    if (!startingBalance || parseFloat(startingBalance) <= 0) {
+      alert('Please enter a valid starting balance');
+      return;
+    }
 
     setIsCreating(true);
     try {
@@ -70,6 +77,10 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
         account_name: newAccountName.trim(),
         status: 'connected',
         broker_type: selectedBroker?.name || 'manual',
+        starting_balance: parseFloat(startingBalance),
+        current_balance: parseFloat(startingBalance),
+        currency,
+        ownership_type: ownershipType,
       };
 
       if (selectedBrokerId) {
@@ -85,6 +96,9 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
       setShowAddAccount(false);
       setNewAccountName('');
       setSelectedBrokerId('');
+      setStartingBalance('');
+      setCurrency('USD');
+      setOwnershipType('personal');
       setIsOpen(false);
       onAccountsUpdate?.();
     } catch (error) {
@@ -209,6 +223,9 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
                   setShowAddAccount(false);
                   setNewAccountName('');
                   setSelectedBrokerId('');
+                  setStartingBalance('');
+                  setCurrency('USD');
+                  setOwnershipType('personal');
                 }}
                 className="p-2 hover:bg-white/5 rounded-lg transition-colors"
               >
@@ -248,6 +265,66 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
                 </select>
               </div>
 
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Starting Balance *
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={startingBalance}
+                    onChange={(e) => setStartingBalance(e.target.value)}
+                    placeholder="0.00"
+                    className="w-full px-4 py-2.5 pl-14 rounded-lg bg-black/30 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                  />
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                    {currency}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Your account balance at the start of tracking
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Currency
+                  </label>
+                  <select
+                    value={currency}
+                    onChange={(e) => setCurrency(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-lg bg-black/30 border border-white/10 text-white focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                  >
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="GBP">GBP</option>
+                    <option value="JPY">JPY</option>
+                    <option value="AUD">AUD</option>
+                    <option value="CAD">CAD</option>
+                    <option value="CHF">CHF</option>
+                    <option value="NZD">NZD</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Account Type
+                  </label>
+                  <select
+                    value={ownershipType}
+                    onChange={(e) => setOwnershipType(e.target.value as 'personal' | 'funded' | 'prop')}
+                    className="w-full px-4 py-2.5 rounded-lg bg-black/30 border border-white/10 text-white focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                  >
+                    <option value="personal">Personal</option>
+                    <option value="funded">Funded (Prop Firm)</option>
+                    <option value="prop">Prop Firm</option>
+                  </select>
+                </div>
+              </div>
+
               <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
                 <p className="text-xs text-blue-400">
                   After creating your account, you can upload your MT4/MT5 statement (HTML or CSV) to import your trade history.
@@ -262,6 +339,9 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
                   setShowAddAccount(false);
                   setNewAccountName('');
                   setSelectedBrokerId('');
+                  setStartingBalance('');
+                  setCurrency('USD');
+                  setOwnershipType('personal');
                 }}
               >
                 Cancel
@@ -270,7 +350,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
                 variant="primary"
                 onClick={handleCreateAccount}
                 isLoading={isCreating}
-                disabled={!newAccountName.trim()}
+                disabled={!newAccountName.trim() || !startingBalance || parseFloat(startingBalance) <= 0}
               >
                 Create Account
               </Button>

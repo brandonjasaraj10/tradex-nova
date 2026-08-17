@@ -5,6 +5,7 @@ import Card from '../components/shared/Card';
 import Button from '../components/shared/Button';
 import DateRangePicker from '../components/shared/DateRangePicker';
 import AccountSelector from '../components/shared/AccountSelector';
+import BalanceCard from '../components/dashboard/BalanceCard';
 import { useAccount } from '../lib/accountContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
@@ -691,6 +692,10 @@ export default function Dashboard() {
               onAccountsUpdate={refreshAccounts}
             />
           </div>
+        </motion.div>
+
+        <motion.div variants={fadeInUp} className="mt-4">
+          <BalanceCard />
         </motion.div>
 
         {/* Quick Navigation - Full Width */}

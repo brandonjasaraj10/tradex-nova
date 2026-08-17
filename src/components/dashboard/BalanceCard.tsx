@@ -11,7 +11,6 @@ export default function BalanceCard() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showNotification, setShowNotification] = useState(true);
-  const [forceShowPreview, setForceShowPreview] = useState(true); // PREVIEW MODE: Always show notification
 
   useEffect(() => {
     loadBalance();
@@ -72,7 +71,7 @@ export default function BalanceCard() {
   }
 
   const hasNoBalance = !balanceData || balanceData.starting_balance === 0;
-  const shouldShowNotification = (forceShowPreview || hasNoBalance) && showNotification;
+  const shouldShowNotification = hasNoBalance && showNotification;
 
   if (shouldShowNotification) {
     return (
@@ -108,16 +107,6 @@ export default function BalanceCard() {
               <X className="w-4 h-4 text-blue-400/70 group-hover:text-blue-400" />
             </button>
           </div>
-
-          {/* Preview Mode Toggle - Remove this in production */}
-          {forceShowPreview && (
-            <button
-              onClick={() => setForceShowPreview(false)}
-              className="mt-3 w-full py-2 px-3 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 border border-blue-400/30 text-xs font-medium text-blue-300 transition-colors"
-            >
-              Exit Preview Mode
-            </button>
-          )}
         </div>
       </motion.div>
     );
