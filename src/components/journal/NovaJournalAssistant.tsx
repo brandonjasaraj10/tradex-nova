@@ -103,30 +103,6 @@ export default function NovaJournalAssistant({
   }, [messages]);
 
   useEffect(() => {
-    if (messages.length > 0 && !isTyping) {
-      const lastMessage = messages[messages.length - 1];
-      if (lastMessage.role === 'assistant' && lastMessage.content) {
-        const journalData = extractJournalData(lastMessage.content);
-        const psychologyData = extractPsychologyData(lastMessage.content);
-
-        if (Object.keys(journalData).length > 0 || Object.keys(psychologyData).length > 0) {
-          const extracted = {
-            journal: Object.keys(journalData).length > 0 ? journalData : undefined,
-            psychology: Object.keys(psychologyData).length > 0 ? psychologyData : undefined,
-          };
-
-          // Show the Apply/Dismiss banner and wait for an explicit click -
-          // this used to auto-apply on a timer regardless of what the user
-          // chose, silently overwriting real journal content (including
-          // fields the regex extraction mis-parsed, like pulling "ACTIVITY"
-          // out of "trading activity" as if it were a symbol).
-          setPendingExtraction(extracted);
-        }
-      }
-    }
-  }, [messages, isTyping]);
-
-  useEffect(() => {
     if (autoSpeak && messages.length > 0) {
       const lastMessage = messages[messages.length - 1];
       if (lastMessage.role === 'assistant' && lastMessage.content !== lastMessageRef.current) {
@@ -377,7 +353,19 @@ export default function NovaJournalAssistant({
       screenshotUrls.push(...afterScreenshots.map(s => s.url));
     }
 
-    await sendMessage(contextMessage + userMessage, screenshotUrls.length > 0 ? screenshotUrls : undefined);
+    const reply = await sendMessage(contextMessage + userMessage, screenshotUrls.length > 0 ? screenshotUrls : undefined);
+
+    if (reply) {
+      const replyJournalData = extractJournalData(reply);
+      const replyPsychologyData = extractPsychologyData(reply);
+
+      if (Object.keys(replyJournalData).length > 0 || Object.keys(replyPsychologyData).length > 0) {
+        setPendingExtraction({
+          journal: Object.keys(replyJournalData).length > 0 ? replyJournalData : undefined,
+          psychology: Object.keys(replyPsychologyData).length > 0 ? replyPsychologyData : undefined,
+        });
+      }
+    }
   };
 
   const handleQuickPrompt = (prompt: string) => {

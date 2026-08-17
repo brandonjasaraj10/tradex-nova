@@ -81,9 +81,14 @@ export function useNovaEntrySession(sessionId: string | null) {
     };
   }, [sessionId]);
 
-  const sendMessage = useCallback(async (content: string, images?: string[]) => {
+  // Returns the assistant's reply text on success, or undefined - callers
+  // use this to know a message is a genuinely new reply (worth reacting
+  // to, e.g. extracting journal data from it) rather than relying on the
+  // messages array changing, which also happens on the initial history
+  // load and would otherwise be indistinguishable from a live reply.
+  const sendMessage = useCallback(async (content: string, images?: string[]): Promise<string | undefined> => {
     const service = serviceRef.current;
-    if (!content.trim() || !service || isTyping) return;
+    if (!content.trim() || !service || isTyping) return undefined;
 
     const userMsg: ChatMessage = {
       id: crypto.randomUUID(),
@@ -107,6 +112,7 @@ export function useNovaEntrySession(sessionId: string | null) {
 
       setMessages(prev => [...prev, assistantMsg]);
       await service.saveMessage('assistant', response, assistantMsg.id);
+      return response;
     } catch (error) {
       console.error('Error sending message:', error);
       const errorMsg: ChatMessage = {
@@ -115,6 +121,7 @@ export function useNovaEntrySession(sessionId: string | null) {
         content: 'Sorry, I encountered an error. Please try again.'
       };
       setMessages(prev => [...prev, errorMsg]);
+      return undefined;
     } finally {
       setIsTyping(false);
     }
