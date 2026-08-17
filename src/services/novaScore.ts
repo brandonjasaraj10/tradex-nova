@@ -1,5 +1,3 @@
-import { supabase } from '../lib/supabase';
-
 export interface NOVAScoreBreakdown {
   overall_score: number;
   consistency_score: number;
@@ -11,15 +9,6 @@ export interface NOVAScoreBreakdown {
   profit_factor: number;
   avg_win_loss_ratio: number;
   total_trades: number;
-}
-
-export interface NOVAScore extends NOVAScoreBreakdown {
-  id: string;
-  user_id: string;
-  account_id: string | null;
-  calculation_date: string;
-  created_at: string;
-  updated_at: string;
 }
 
 export interface TradeData {
@@ -266,110 +255,4 @@ function calculateExecutionScore(trades: TradeData[], winRate: number): number {
   score += Math.min(largeWinRatio * 30, 30);
 
   return score;
-}
-
-export async function saveNOVAScore(breakdown: NOVAScoreBreakdown, accountId: string | null = null): Promise<NOVAScore | null> {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return null;
-
-    const { data, error } = await supabase
-      .from('nova_score')
-      .insert({
-        user_id: user.id,
-        score: breakdown.overall_score,
-        date: new Date().toISOString().split('T')[0],
-        factors: breakdown
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    console.error('Error saving NOVAScore:', error);
-    return null;
-  }
-}
-
-export async function getLatestNOVAScore(accountId: string | null = null): Promise<NOVAScore | null> {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return null;
-
-    const { data, error } = await supabase
-      .from('nova_score')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('date', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (error) throw error;
-    if (!data) return null;
-
-    const factors = (data.factors || {}) as any;
-    return {
-      id: data.id,
-      user_id: data.user_id,
-      account_id: null,
-      calculation_date: data.date,
-      created_at: data.created_at,
-      updated_at: data.created_at,
-      overall_score: data.score,
-      consistency_score: factors.consistency_score || 0,
-      risk_management_score: factors.risk_management_score || 0,
-      profitability_score: factors.profitability_score || 0,
-      discipline_score: factors.discipline_score || 0,
-      execution_score: factors.execution_score || 0,
-      win_rate: factors.win_rate || 0,
-      profit_factor: factors.profit_factor || 0,
-      avg_win_loss_ratio: factors.avg_win_loss_ratio || 0,
-      total_trades: factors.total_trades || 0,
-    } as NOVAScore;
-  } catch (error) {
-    console.error('Error fetching NOVAScore:', error);
-    return null;
-  }
-}
-
-export async function getNOVAScoreHistory(accountId: string | null = null, limit: number = 30): Promise<NOVAScore[]> {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return [];
-
-    const { data, error } = await supabase
-      .from('nova_score')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('date', { ascending: false })
-      .limit(limit);
-
-    if (error) throw error;
-
-    return (data || []).map((row: any) => {
-      const factors = (row.factors || {}) as any;
-      return {
-        id: row.id,
-        user_id: row.user_id,
-        account_id: null,
-        calculation_date: row.date,
-        created_at: row.created_at,
-        updated_at: row.created_at,
-        overall_score: row.score,
-        consistency_score: factors.consistency_score || 0,
-        risk_management_score: factors.risk_management_score || 0,
-        profitability_score: factors.profitability_score || 0,
-        discipline_score: factors.discipline_score || 0,
-        execution_score: factors.execution_score || 0,
-        win_rate: factors.win_rate || 0,
-        profit_factor: factors.profit_factor || 0,
-        avg_win_loss_ratio: factors.avg_win_loss_ratio || 0,
-        total_trades: factors.total_trades || 0,
-      } as NOVAScore;
-    });
-  } catch (error) {
-    console.error('Error fetching NOVAScore history:', error);
-    return [];
-  }
 }
