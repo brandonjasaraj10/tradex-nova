@@ -216,55 +216,6 @@ export default function Journal() {
   }, [entryForm.template_data?.pre_trade_mindset?.mood_rating]);
 
   useEffect(() => {
-    let confluencesChannel: ReturnType<typeof supabase.channel> | null = null;
-    let rulesChannel: ReturnType<typeof supabase.channel> | null = null;
-
-    const setupRealtimeSubscriptions = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      confluencesChannel = supabase
-        .channel('confluences-changes')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'trading_confluences',
-            filter: `user_id=eq.${user.id}`
-          },
-          () => {
-            loadConfluencesAndRules();
-          }
-        )
-        .subscribe();
-
-      rulesChannel = supabase
-        .channel('rules-changes')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'trading_rules',
-            filter: `user_id=eq.${user.id}`
-          },
-          () => {
-            loadConfluencesAndRules();
-          }
-        )
-        .subscribe();
-    };
-
-    setupRealtimeSubscriptions();
-
-    return () => {
-      if (confluencesChannel) supabase.removeChannel(confluencesChannel);
-      if (rulesChannel) supabase.removeChannel(rulesChannel);
-    };
-  }, []);
-
-  useEffect(() => {
     if (selectedFolder && selectedDate) {
       loadDailyEntries(selectedFolder.id, selectedDate);
       loadDailyTrades();
