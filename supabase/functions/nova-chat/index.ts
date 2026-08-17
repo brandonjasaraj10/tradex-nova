@@ -28,6 +28,8 @@ You are a continuous trading companion. You don't just answer questions -- you p
 
 You also have memory across conversations, not just within one chat session. When the user shares something worth remembering long-term -- a stated goal, a recurring struggle, how they like you to communicate -- use the remember_about_user tool to save it. Don't be shy about this; it's how you become genuinely personalized over time instead of starting from zero every conversation. Don't save routine trade details (that's what log_journal_entry is for) or anything already covered by their trading profile below.
 
+If the user says they journaled on the wrong day, or tagged an entry to the wrong trading account, use the move_journal_entry tool to fix it directly -- don't tell them you can't do that. You need the date the entry is currently sitting on to find it; ask if it isn't clear from the conversation.
+
 When a user asks about improving discipline, psychology, or sticking to rules, you should:
 1. Reference their actual rule adherence data if available
 2. Look at their recent trading patterns for specific examples
@@ -676,6 +678,28 @@ const TOOLS: Anthropic.Tool[] = [
         },
         required: ["content"]
     }
+  },
+  {
+    name: "move_journal_entry",
+    description: "Move an already-logged journal entry to a different date and/or reassign it to a different trading account. Use this when the user says they journaled on the wrong day, or tagged an entry to the wrong account, and want it corrected. You need the date the entry is CURRENTLY sitting on to find it - ask the user if it's not clear from context.",
+    input_schema: {
+        type: "object",
+        properties: {
+          from_date: {
+            type: "string",
+            description: "The date (YYYY-MM-DD) the entry is currently logged on - used to find it. If multiple entries exist on that date, the most recently created one is moved."
+          },
+          to_date: {
+            type: "string",
+            description: "The new date (YYYY-MM-DD) to move the entry to. Omit if only reassigning the account, not the date."
+          },
+          account_name: {
+            type: "string",
+            description: "Name of the trading account to reassign this entry to - must match one of the user's existing account names exactly. Omit if only changing the date, not the account."
+          }
+        },
+        required: ["from_date"]
+    }
   }
 ];
 
@@ -1161,6 +1185,62 @@ Deno.serve(async (req: Request) => {
           }
         } catch (toolError) {
           console.error('Error in memory tool processing:', toolError);
+        }
+      } else if (toolUseBlock.name === 'move_journal_entry') {
+        console.log('Move entry tool call detected:', toolUseBlock.name);
+
+        try {
+          const functionArgs = toolUseBlock.input as any;
+          console.log('Move arguments:', functionArgs);
+
+          const moveResponse = await fetch(
+            `${Deno.env.get('SUPABASE_URL')}/functions/v1/move-journal-entry`,
+            {
+              method: 'POST',
+              headers: {
+                'Authorization': authHeader ?? '',
+                'Content-Type': 'application/json',
+                'apikey': Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+              },
+              body: JSON.stringify(functionArgs),
+            }
+          );
+
+          const moveResult = await moveResponse.json();
+          console.log('Move result:', moveResult);
+
+          claudeMessages.push({ role: 'assistant', content: response.content });
+          claudeMessages.push({
+            role: 'user',
+            content: [{ type: 'tool_result', tool_use_id: toolUseBlock.id, content: JSON.stringify(moveResult) }],
+          });
+
+          const secondResponse = await anthropic.messages.create({
+            model: MODEL,
+            max_tokens: 200,
+            output_config: { effort: 'medium' },
+            system: systemBlocks,
+            messages: claudeMessages,
+            tools: TOOLS,
+          });
+
+          const secondText = secondResponse.content.find((b): b is Anthropic.TextBlock => b.type === 'text');
+          if (secondText?.text) {
+            textBlock = secondText;
+          }
+
+          if (!textBlock?.text) {
+            textBlock = {
+              type: 'text',
+              text: moveResult.success ? moveResult.message : `I couldn't move that entry: ${moveResult.error || 'unknown error'}`
+            } as Anthropic.TextBlock;
+          }
+        } catch (toolError) {
+          console.error('Error in move entry tool processing:', toolError);
+          textBlock = {
+            type: 'text',
+            text: "I ran into an error trying to move that entry. Try again in a moment, or move it manually from the Journal page."
+          } as Anthropic.TextBlock;
         }
       }
     }

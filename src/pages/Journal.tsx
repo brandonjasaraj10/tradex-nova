@@ -129,6 +129,10 @@ export default function Journal() {
   const [expandedImage, setExpandedImage] = useState<{ url: string; label: string } | null>(null);
   const [uploadingScreenshot, setUploadingScreenshot] = useState<'before' | 'after' | null>(null);
   const [showNovaAssistant, setShowNovaAssistant] = useState(false);
+  const [showMoveModal, setShowMoveModal] = useState(false);
+  const [moveToDate, setMoveToDate] = useState('');
+  const [moveToAccountId, setMoveToAccountId] = useState<string>('');
+  const [isMovingEntry, setIsMovingEntry] = useState(false);
 
   const [userConfluences, setUserConfluences] = useState<Confluence[]>([]);
   const [userRules, setUserRules] = useState<TradingRule[]>([]);
@@ -288,6 +292,14 @@ export default function Journal() {
               }
             }
           }
+        } else if (toolCall.name === 'move_journal_entry') {
+          console.log('Nova moved a journal entry, refreshing...');
+
+          if (selectedFolder && selectedDate) {
+            const freshEntries = await getEntriesByDate(selectedFolder.id, selectedDate, selectedAccount?.id);
+            setDailyEntries(freshEntries);
+            resetEntryForm(freshEntries);
+          }
         }
       }
     };
@@ -296,7 +308,7 @@ export default function Journal() {
     return () => {
       window.removeEventListener('nova-tool-call', handleNovaToolCall as EventListener);
     };
-  }, [selectedFolder, selectedDate]);
+  }, [selectedFolder, selectedDate, selectedAccount]);
 
   useEffect(() => {
     if (!currentEntry && selectedDate) {
@@ -813,6 +825,45 @@ export default function Journal() {
     });
   };
 
+  const openMoveModal = () => {
+    if (!currentEntry) return;
+    setMoveToDate(currentEntry.entry_date);
+    setMoveToAccountId(currentEntry.account_id || '');
+    setShowMoveModal(true);
+  };
+
+  const handleMoveEntry = async () => {
+    if (!currentEntry || !moveToDate) return;
+
+    setIsMovingEntry(true);
+    try {
+      const dateChanged = moveToDate !== currentEntry.entry_date;
+
+      await updateEntry(currentEntry.id, {
+        entry_date: moveToDate,
+        account_id: moveToAccountId || null,
+      });
+
+      setShowMoveModal(false);
+
+      if (dateChanged) {
+        // Navigate to the entry's new date so the view stays consistent -
+        // otherwise the next autosave on this page would silently stamp
+        // the entry's date right back to whatever's still selected here.
+        setSelectedDate(moveToDate);
+        setSearchParams({ date: moveToDate }, { replace: true });
+      } else if (selectedFolder) {
+        const freshEntries = await getEntriesByDate(selectedFolder.id, selectedDate, selectedAccount?.id);
+        setDailyEntries(freshEntries);
+        resetEntryForm(freshEntries);
+      }
+    } catch (error) {
+      console.error('Error moving entry:', error);
+    } finally {
+      setIsMovingEntry(false);
+    }
+  };
+
   const handleAddTag = () => {
     if (newTag.trim() && !entryForm.tags.includes(newTag.trim())) {
       setEntryForm({ ...entryForm, tags: [...entryForm.tags, newTag.trim()] });
@@ -1165,6 +1216,16 @@ export default function Journal() {
                         ${dailyPnL >= 0 ? '+' : ''}{dailyPnL.toFixed(2)}
                       </span>
                     </div>
+                  )}
+                  {currentEntry && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      icon={<Calendar size={16} />}
+                      onClick={openMoveModal}
+                    >
+                      Move
+                    </Button>
                   )}
                   {currentEntry && (
                     <Button
@@ -2036,6 +2097,82 @@ export default function Journal() {
               />
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-4 rounded-b-lg">
                 <p className="text-lg text-white font-medium">{expandedImage.label}</p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showMoveModal && currentEntry && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={() => setShowMoveModal(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-[#111] border border-white/10 rounded-2xl p-6 w-full max-w-md"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold">Move Entry</h2>
+                <button
+                  onClick={() => setShowMoveModal(false)}
+                  className="p-2 hover:bg-white/5 rounded-lg transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Date
+                  </label>
+                  <input
+                    type="date"
+                    value={moveToDate}
+                    onChange={(e) => setMoveToDate(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-lg bg-black/30 border border-white/10 text-white focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all [color-scheme:dark]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Account
+                  </label>
+                  <select
+                    value={moveToAccountId}
+                    onChange={(e) => setMoveToAccountId(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-lg bg-black/30 border border-white/10 text-white focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                  >
+                    <option value="">No Account</option>
+                    {accounts.map((account) => (
+                      <option key={account.id} value={account.id}>
+                        {account.account_name || account.broker_type}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 mt-6">
+                <Button variant="ghost" onClick={() => setShowMoveModal(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={handleMoveEntry}
+                  isLoading={isMovingEntry}
+                  disabled={!moveToDate}
+                >
+                  Save
+                </Button>
               </div>
             </motion.div>
           </motion.div>
