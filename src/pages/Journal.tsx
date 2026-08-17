@@ -9,6 +9,7 @@ import MiniCalendar from '../components/journal/MiniCalendar';
 import { RichTextEditor } from '../components/journal/RichTextEditor';
 import { PsychologyTemplate } from '../components/journal/PsychologyTemplate';
 import NovaJournalAssistant from '../components/journal/NovaJournalAssistant';
+import AccountSelector from '../components/shared/AccountSelector';
 import { useDataSync } from '../lib/dataSync';
 import { useAccount } from '../lib/accountContext';
 import {
@@ -70,7 +71,7 @@ const formatLocalDate = (date: Date) => {
 export default function Journal() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { refreshTrigger, forceRefresh } = useDataSync();
-  const { selectedAccount } = useAccount();
+  const { accounts, selectedAccount, setSelectedAccount, refreshAccounts } = useAccount();
   const [folders, setFolders] = useState<JournalFolder[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<JournalFolder | null>(null);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
@@ -89,8 +90,9 @@ export default function Journal() {
   const currentEntryRef = React.useRef<JournalEntry | null>(null);
   const selectedFolderRef = React.useRef<JournalFolder | null>(null);
   const selectedDateRef = React.useRef<string>(formatLocalDate(new Date()));
-  const [novaSessionId, setNovaSessionId] = useState<string>(() => crypto.randomUUID());
-  const novaSessionIdRef = React.useRef<string>(novaSessionId);
+  const selectedAccountIdRef = React.useRef<string | undefined>(undefined);
+  const [novaSessionId, setNovaSessionId] = useState<string | null>(null);
+  const novaSessionIdRef = React.useRef<string | null>(null);
   const [recentTrades, setRecentTrades] = useState<Trade[]>([]);
   const [dailyPnL, setDailyPnL] = useState<number>(0);
 
@@ -155,15 +157,29 @@ export default function Journal() {
   currentEntryRef.current = currentEntry;
   selectedFolderRef.current = selectedFolder;
   selectedDateRef.current = selectedDate;
+  selectedAccountIdRef.current = selectedAccount?.id;
   novaSessionIdRef.current = novaSessionId;
 
   // Each journal entry gets its own Nova conversation, separate from the
   // Dashboard widget / NOVA AI page and from every other entry. Reuse the
-  // one already saved on this entry if it has one; otherwise generate a
-  // fresh id, which autoSaveEntry persists onto the entry once it saves.
+  // one already saved on this entry if it has one; otherwise stay null
+  // until Nova is actually opened - NovaJournalAssistant mints an id itself
+  // and only reports it back (via handleNovaSessionCreated) once the
+  // session row genuinely exists, so this never holds an id that isn't
+  // safe to save as a foreign key yet.
   useEffect(() => {
-    setNovaSessionId(currentEntry?.nova_session_id || crypto.randomUUID());
+    setNovaSessionId(currentEntry?.nova_session_id || null);
   }, [currentEntry?.id, currentEntry?.nova_session_id]);
+
+  const handleNovaSessionCreated = (id: string) => {
+    setNovaSessionId(id);
+    novaSessionIdRef.current = id;
+    if (currentEntryRef.current) {
+      updateEntry(currentEntryRef.current.id, { nova_session_id: id }).catch(error => {
+        console.error('Error persisting Nova session id:', error);
+      });
+    }
+  };
 
   const urlDateHandled = React.useRef(false);
   useEffect(() => {
@@ -229,7 +245,7 @@ export default function Journal() {
 
   useEffect(() => {
     if (selectedFolder && selectedDate) {
-      loadDailyEntries(selectedFolder.id, selectedDate);
+      loadDailyEntries(selectedFolder.id, selectedDate, selectedAccount?.id);
       loadDailyTrades();
     }
     // Nova's assistant panel shares one ongoing conversation across the
@@ -404,6 +420,7 @@ export default function Journal() {
       } else {
         savedEntry = await createEntry({
           folder_id: folder.id,
+          account_id: selectedAccountIdRef.current || null,
           ...dataToSave,
         });
         setCurrentEntry(savedEntry);
@@ -468,9 +485,9 @@ export default function Journal() {
 
   useEffect(() => {
     if (selectedFolder) {
-      loadEntries(selectedFolder.id);
+      loadEntries(selectedFolder.id, selectedAccount?.id);
     }
-  }, [selectedFolder]);
+  }, [selectedFolder, selectedAccount]);
 
   const loadFolders = async () => {
     try {
@@ -504,19 +521,19 @@ export default function Journal() {
     }
   };
 
-  const loadEntries = async (folderId: string) => {
+  const loadEntries = async (folderId: string, accountId?: string) => {
     try {
-      const data = await getEntriesByFolder(folderId);
+      const data = await getEntriesByFolder(folderId, accountId);
       setEntries(data);
     } catch (error) {
       console.error('Error loading entries:', error);
     }
   };
 
-  const loadDailyEntries = async (folderId: string, date: string) => {
+  const loadDailyEntries = async (folderId: string, date: string, accountId?: string) => {
     try {
       isLoadingEntryRef.current = true;
-      const entries = await getEntriesByDate(folderId, date);
+      const entries = await getEntriesByDate(folderId, date, accountId);
       setDailyEntries(entries);
 
       if (entries.length > 0) {
@@ -607,7 +624,7 @@ export default function Journal() {
       await autoSaveEntry();
     }
     if (selectedFolder) {
-      const freshEntries = await getEntriesByDate(selectedFolder.id, selectedDate);
+      const freshEntries = await getEntriesByDate(selectedFolder.id, selectedDate, selectedAccount?.id);
       setDailyEntries(freshEntries);
       resetEntryForm(freshEntries);
     }
@@ -953,14 +970,25 @@ export default function Journal() {
     );
   }
 
+  // Only worth showing which account an entry belongs to when there's
+  // more than one to tell apart - with a single account it's just noise.
+  const accountNameById = new Map(accounts.map(a => [a.id, a.account_name || a.broker_type]));
+  const showAccountLabels = accounts.length > 1;
+
   return (
     <div className="px-4 sm:px-6 lg:px-8">
       <motion.div initial="hidden" animate="visible" variants={{ visible: { transition: { staggerChildren: 0.1 } } }}>
-        <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 pt-6" data-tour="journal-header">
+        <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 pt-6 gap-3" data-tour="journal-header">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold">Journal</h1>
             <p className="text-sm sm:text-base text-gray-400 mt-1">Organize your thoughts and trades</p>
           </div>
+          <AccountSelector
+            accounts={accounts}
+            selectedAccount={selectedAccount}
+            onAccountChange={setSelectedAccount}
+            onAccountsUpdate={refreshAccounts}
+          />
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 mb-6">
@@ -1037,6 +1065,13 @@ export default function Journal() {
                       <div className="text-sm font-medium mt-1 truncate">{entry.title}</div>
                     )}
                     <div className="text-xs text-gray-500 mt-1 line-clamp-2">{entry.content?.replace(/<[^>]*>/g, '')}</div>
+                    {showAccountLabels && (
+                      <div className="mt-1.5">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-gray-400 border border-white/10">
+                          {entry.account_id ? (accountNameById.get(entry.account_id) || 'Unknown Account') : 'No Account'}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 ))}
                 {entries.length === 0 && (
@@ -1190,6 +1225,11 @@ export default function Journal() {
                               {selectedFolder?.template_type !== 'notes' && (editingEntryId === entry.id ? entryForm.mood : entry.mood) && (
                                 <span className="px-2 py-0.5 bg-blue-400/10 text-blue-400 text-xs rounded" title="Mood">
                                   {editingEntryId === entry.id ? entryForm.mood : entry.mood}
+                                </span>
+                              )}
+                              {showAccountLabels && (
+                                <span className="px-2 py-0.5 bg-white/5 text-gray-400 text-xs rounded border border-white/10">
+                                  {entry.account_id ? (accountNameById.get(entry.account_id) || 'Unknown Account') : 'No Account'}
                                 </span>
                               )}
                             </div>
@@ -1656,6 +1696,7 @@ export default function Journal() {
                     <NovaJournalAssistant
                       currentDate={selectedDate}
                       sessionId={novaSessionId}
+                      onSessionCreated={handleNovaSessionCreated}
                       beforeScreenshots={entryForm.before_screenshots}
                       afterScreenshots={entryForm.after_screenshots}
                       isPsychologyMode={selectedFolder?.template_type === 'psychology'}

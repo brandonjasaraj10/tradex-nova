@@ -27,28 +27,37 @@ async function ensureSessionExists(sessionId: string) {
 // of the app-wide NovaProvider (Dashboard widget / NOVA AI page). Used for
 // per-journal-entry chats so they don't share message history with the main
 // assistant or with each other - see nova_session_id on journal_entries.
-export function useNovaEntrySession(sessionId: string | null) {
+//
+// If sessionId is null/undefined (no session persisted for this entry yet),
+// this generates one itself and only reports it back via onSessionCreated
+// once the nova_conversation_sessions row actually exists - callers must
+// not invent an id and hand it to a foreign key column before that, or the
+// save fails with a constraint violation the moment a row references it.
+export function useNovaEntrySession(sessionId: string | null | undefined, onSessionCreated?: (id: string) => void) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const serviceRef = useRef<NovaAIService | null>(null);
   const messagesRef = useRef<ChatMessage[]>([]);
   messagesRef.current = messages;
+  const onSessionCreatedRef = useRef(onSessionCreated);
+  onSessionCreatedRef.current = onSessionCreated;
 
   useEffect(() => {
-    if (!sessionId) {
-      serviceRef.current = null;
-      setMessages([]);
-      setIsLoading(false);
-      return;
-    }
-
     let cancelled = false;
     setIsLoading(true);
 
     const load = async () => {
-      await ensureSessionExists(sessionId);
-      const service = new NovaAIService(sessionId);
+      const effectiveSessionId = sessionId || crypto.randomUUID();
+
+      await ensureSessionExists(effectiveSessionId);
+      if (cancelled) return;
+
+      if (!sessionId) {
+        onSessionCreatedRef.current?.(effectiveSessionId);
+      }
+
+      const service = new NovaAIService(effectiveSessionId);
       await service.initialize();
       if (cancelled) return;
       serviceRef.current = service;

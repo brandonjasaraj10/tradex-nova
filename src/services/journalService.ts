@@ -40,7 +40,7 @@ export interface JournalEntry {
   custom_sections?: any[];
   template_data?: any;
   linked_entry_id?: string;
-  broker_connection_id?: string;
+  account_id?: string | null;
   nova_session_id?: string | null;
   created_at: string;
   updated_at: string;
@@ -104,12 +104,17 @@ export async function deleteFolder(id: string): Promise<void> {
   if (error) throw error;
 }
 
-export async function getEntriesByFolder(folderId: string): Promise<JournalEntry[]> {
-  const { data, error } = await supabase
+export async function getEntriesByFolder(folderId: string, accountId?: string): Promise<JournalEntry[]> {
+  let query = supabase
     .from('journal_entries')
     .select('*')
-    .eq('folder_id', folderId)
-    .order('entry_date', { ascending: false });
+    .eq('folder_id', folderId);
+
+  if (accountId) {
+    query = query.eq('account_id', accountId);
+  }
+
+  const { data, error } = await query.order('entry_date', { ascending: false });
 
   if (error) throw error;
   return data || [];
@@ -140,13 +145,18 @@ export async function getEntryByDate(folderId: string, date: string): Promise<Jo
   return data;
 }
 
-export async function getEntriesByDate(folderId: string, date: string): Promise<JournalEntry[]> {
-  const { data, error } = await supabase
+export async function getEntriesByDate(folderId: string, date: string, accountId?: string): Promise<JournalEntry[]> {
+  let query = supabase
     .from('journal_entries')
     .select('*')
     .eq('folder_id', folderId)
-    .eq('entry_date', date)
-    .order('created_at', { ascending: true });
+    .eq('entry_date', date);
+
+  if (accountId) {
+    query = query.eq('account_id', accountId);
+  }
+
+  const { data, error } = await query.order('created_at', { ascending: true });
 
   if (error) throw error;
   return data || [];

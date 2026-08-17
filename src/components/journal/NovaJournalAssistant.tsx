@@ -62,7 +62,8 @@ interface NovaJournalAssistantProps {
   afterScreenshots?: Screenshot[];
   isPsychologyMode?: boolean;
   onClose?: () => void;
-  sessionId: string;
+  sessionId: string | null;
+  onSessionCreated?: (id: string) => void;
 }
 
 const QUICK_PROMPTS = [
@@ -80,9 +81,10 @@ export default function NovaJournalAssistant({
   afterScreenshots = [],
   isPsychologyMode = false,
   onClose,
-  sessionId
+  sessionId,
+  onSessionCreated
 }: NovaJournalAssistantProps) {
-  const { messages, isTyping, isLoading, sendMessage } = useNovaEntrySession(sessionId);
+  const { messages, isTyping, isLoading, sendMessage } = useNovaEntrySession(sessionId, onSessionCreated);
   const [input, setInput] = useState('');
   const [autoSpeak, setAutoSpeak] = useState(false);
   const [showQuickPrompts, setShowQuickPrompts] = useState(true);
