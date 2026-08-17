@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Send, Sparkles, Mic, MicOff, Wand2, Image, FileText, Brain, Check, X, Volume2, VolumeX } from 'lucide-react';
-import { useNova } from '../../lib/novaContext';
+import { useNovaEntrySession } from '../../hooks/useNovaEntrySession';
 import { useVoice } from '../../hooks/useVoice';
 import { correctTradingTerms } from '../../utils/tradingVocabulary';
 import { formatNovaMessage } from '../../utils/formatNovaMessage';
@@ -61,6 +61,8 @@ interface NovaJournalAssistantProps {
   beforeScreenshots?: Screenshot[];
   afterScreenshots?: Screenshot[];
   isPsychologyMode?: boolean;
+  onClose?: () => void;
+  sessionId: string;
 }
 
 const QUICK_PROMPTS = [
@@ -76,9 +78,11 @@ export default function NovaJournalAssistant({
   currentDate,
   beforeScreenshots = [],
   afterScreenshots = [],
-  isPsychologyMode = false
+  isPsychologyMode = false,
+  onClose,
+  sessionId
 }: NovaJournalAssistantProps) {
-  const { messages, isTyping, isLoading, sendMessage } = useNova();
+  const { messages, isTyping, isLoading, sendMessage } = useNovaEntrySession(sessionId);
   const [input, setInput] = useState('');
   const [autoSpeak, setAutoSpeak] = useState(false);
   const [showQuickPrompts, setShowQuickPrompts] = useState(true);
@@ -423,6 +427,15 @@ export default function NovaJournalAssistant({
               <Image className="w-4 h-4 text-blue-400" />
               <span className="text-xs text-blue-400">{beforeScreenshots.length + afterScreenshots.length} charts</span>
             </div>
+          )}
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="p-2 rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white transition-colors"
+              title="Close Nova"
+            >
+              <X className="w-4 h-4" />
+            </button>
           )}
         </div>
       </div>

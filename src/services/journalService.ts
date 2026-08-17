@@ -41,6 +41,7 @@ export interface JournalEntry {
   template_data?: any;
   linked_entry_id?: string;
   broker_connection_id?: string;
+  nova_session_id?: string | null;
   created_at: string;
   updated_at: string;
 }

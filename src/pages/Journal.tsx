@@ -89,6 +89,8 @@ export default function Journal() {
   const currentEntryRef = React.useRef<JournalEntry | null>(null);
   const selectedFolderRef = React.useRef<JournalFolder | null>(null);
   const selectedDateRef = React.useRef<string>(formatLocalDate(new Date()));
+  const [novaSessionId, setNovaSessionId] = useState<string>(() => crypto.randomUUID());
+  const novaSessionIdRef = React.useRef<string>(novaSessionId);
   const [recentTrades, setRecentTrades] = useState<Trade[]>([]);
   const [dailyPnL, setDailyPnL] = useState<number>(0);
 
@@ -153,6 +155,15 @@ export default function Journal() {
   currentEntryRef.current = currentEntry;
   selectedFolderRef.current = selectedFolder;
   selectedDateRef.current = selectedDate;
+  novaSessionIdRef.current = novaSessionId;
+
+  // Each journal entry gets its own Nova conversation, separate from the
+  // Dashboard widget / NOVA AI page and from every other entry. Reuse the
+  // one already saved on this entry if it has one; otherwise generate a
+  // fresh id, which autoSaveEntry persists onto the entry once it saves.
+  useEffect(() => {
+    setNovaSessionId(currentEntry?.nova_session_id || crypto.randomUUID());
+  }, [currentEntry?.id, currentEntry?.nova_session_id]);
 
   const urlDateHandled = React.useRef(false);
   useEffect(() => {
@@ -381,7 +392,8 @@ export default function Journal() {
         manual_pnl: parsedManualPnl,
         position_size: parsedPositionSize,
         direction: form.direction || null,
-        entry_date: date
+        entry_date: date,
+        nova_session_id: entry?.nova_session_id || novaSessionIdRef.current
       };
 
       if (entry) {
@@ -1642,9 +1654,11 @@ export default function Journal() {
                   <div>
                     <NovaJournalAssistant
                       currentDate={selectedDate}
+                      sessionId={novaSessionId}
                       beforeScreenshots={entryForm.before_screenshots}
                       afterScreenshots={entryForm.after_screenshots}
                       isPsychologyMode={selectedFolder?.template_type === 'psychology'}
+                      onClose={() => setShowNovaAssistant(false)}
                       onExtractContent={(data) => {
                         setEntryForm(prev => ({
                           ...prev,
