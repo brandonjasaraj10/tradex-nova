@@ -53,7 +53,7 @@ Deno.serve(async (req: Request) => {
 
     const response = await anthropic.messages.create({
       model: MODEL,
-      max_tokens: 2000,
+      max_tokens: 8192,
       output_config: { effort: 'medium' },
       system: enhancedSystemPrompt,
       messages: [{ role: 'user', content: correctedTranscript }],
