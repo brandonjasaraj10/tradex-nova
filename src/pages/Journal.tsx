@@ -124,6 +124,7 @@ export default function Journal() {
   const [afterScreenshotLabel, setAfterScreenshotLabel] = useState('');
   const [expandedImage, setExpandedImage] = useState<{ url: string; label: string } | null>(null);
   const [uploadingScreenshot, setUploadingScreenshot] = useState<'before' | 'after' | null>(null);
+  const [showNovaAssistant, setShowNovaAssistant] = useState(false);
 
   const [userConfluences, setUserConfluences] = useState<Confluence[]>([]);
   const [userRules, setUserRules] = useState<TradingRule[]>([]);
@@ -220,6 +221,11 @@ export default function Journal() {
       loadDailyEntries(selectedFolder.id, selectedDate);
       loadDailyTrades();
     }
+    // Nova's assistant panel shares one ongoing conversation across the
+    // whole app, not one per entry - without this, switching to a new
+    // entry could show it already open with a previous entry's chat
+    // still in it, which reads as Nova auto-analyzing the new one.
+    setShowNovaAssistant(false);
   }, [selectedFolder, selectedDate, selectedAccount]);
 
   useEffect(() => {
@@ -1621,7 +1627,18 @@ export default function Journal() {
                   </div>
                 </div>
 
-                {(entryForm.before_screenshots.length > 0 || entryForm.after_screenshots.length > 0) && (
+                {!showNovaAssistant && (
+                  <button
+                    type="button"
+                    onClick={() => setShowNovaAssistant(true)}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-400/10 hover:bg-blue-400/20 text-blue-400 rounded-xl text-sm font-medium transition-colors border border-blue-400/20"
+                  >
+                    <Brain size={16} />
+                    Ask Nova About This Entry
+                  </button>
+                )}
+
+                {showNovaAssistant && (
                   <div>
                     <NovaJournalAssistant
                       currentDate={selectedDate}
