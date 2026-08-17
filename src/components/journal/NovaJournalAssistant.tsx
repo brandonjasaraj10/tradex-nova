@@ -85,7 +85,6 @@ export default function NovaJournalAssistant({
   const [pendingExtraction, setPendingExtraction] = useState<{journal?: JournalData; psychology?: PsychologyData} | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastMessageRef = useRef<string>('');
-  const hasAutoAnalyzedRef = useRef(false);
 
   const { isListening, isSpeaking, isSupported, startListening, stopListening, speak, stopSpeaking } = useVoice({
     onTranscript: (text) => {
@@ -98,34 +97,6 @@ export default function NovaJournalAssistant({
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-
-  useEffect(() => {
-    const totalScreenshots = beforeScreenshots.length + afterScreenshots.length;
-
-    if (totalScreenshots > 0 && !hasAutoAnalyzedRef.current && !isTyping && !isLoading) {
-      hasAutoAnalyzedRef.current = true;
-
-      const screenshotUrls: string[] = [];
-      if (beforeScreenshots.length > 0) {
-        screenshotUrls.push(...beforeScreenshots.map(s => s.url));
-      }
-      if (afterScreenshots.length > 0) {
-        screenshotUrls.push(...afterScreenshots.map(s => s.url));
-      }
-
-      const contextMessage = `[Context: Date ${currentDate}] [User uploaded ${totalScreenshots} chart screenshot(s)] `;
-      const autoPrompt = isPsychologyMode
-        ? 'Analyze my charts and help me reflect on the emotional and psychological aspects of this trade.'
-        : 'Analyze my chart screenshots and extract all trade details. Format your response clearly with: Symbol, Direction (buy/sell/long/short), Entry Price, Exit Price, Stop Loss, Take Profit, Position Size, Timeframe, Trade Duration, and P&L if visible.';
-
-      sendMessage(contextMessage + autoPrompt, screenshotUrls);
-      setShowQuickPrompts(false);
-    }
-  }, [beforeScreenshots, afterScreenshots, currentDate, isPsychologyMode, isTyping, isLoading, sendMessage]);
-
-  useEffect(() => {
-    hasAutoAnalyzedRef.current = false;
-  }, [beforeScreenshots, afterScreenshots]);
 
   useEffect(() => {
     if (messages.length > 0 && !isTyping) {
