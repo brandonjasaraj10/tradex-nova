@@ -223,7 +223,7 @@ export async function getDailyPnL(
   year: number,
   month: number,
   accountId?: string
-): Promise<Map<number, { pnl: number; trades: number }>> {
+): Promise<Map<number, { pnl: number; trades: number; hasJournal: boolean }>> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return new Map();
 
@@ -238,16 +238,40 @@ export async function getDailyPnL(
     accountId
   );
 
-  const dailyMap = new Map<number, { pnl: number; trades: number }>();
+  const dailyMap = new Map<number, { pnl: number; trades: number; hasJournal: boolean }>();
 
   for (const trade of allTrades) {
     const dateStr = trade.entry_date?.split('T')[0] || '';
     if (dateStr < startStr || dateStr > endStr) continue;
     const day = parseInt(dateStr.split('-')[2], 10);
-    const existing = dailyMap.get(day) || { pnl: 0, trades: 0 };
+    const existing = dailyMap.get(day) || { pnl: 0, trades: 0, hasJournal: false };
     existing.pnl += trade.pnl;
     existing.trades += 1;
     dailyMap.set(day, existing);
+  }
+
+  // A journal entry (text/screenshots, no manual P&L attached) doesn't show up
+  // in getAllUnifiedTrades above - that only counts entries with a manual_pnl
+  // set. Without this, a day with real journal content but no trade/P&L was
+  // completely invisible on the calendar - no indicator, and clicking it did
+  // nothing since it was treated as empty.
+  const { data: journalEntries, error: journalError } = await supabase
+    .from('journal_entries')
+    .select('entry_date')
+    .eq('user_id', user.id)
+    .gte('entry_date', startStr)
+    .lte('entry_date', endStr);
+
+  if (!journalError && journalEntries) {
+    for (const entry of journalEntries) {
+      const day = parseInt(entry.entry_date.split('-')[2], 10);
+      const existing = dailyMap.get(day);
+      if (existing) {
+        existing.hasJournal = true;
+      } else {
+        dailyMap.set(day, { pnl: 0, trades: 0, hasJournal: true });
+      }
+    }
   }
 
   return dailyMap;

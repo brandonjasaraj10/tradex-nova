@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Eye, EyeOff, DollarSign, Brain, TrendingUp, TrendingDown } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
@@ -29,6 +30,7 @@ function toLocalDateStr(date: Date): string {
 }
 
 export default function Calendar() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { selectedAccount } = useAccount();
   const { refreshTrigger } = useDataSync();
@@ -37,7 +39,6 @@ export default function Calendar() {
   const [viewMode, setViewMode] = useState<ViewMode>('pnl');
   const [privacyMode, setPrivacyMode] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [selectedDay, setSelectedDay] = useState<DayData | null>(null);
   const [hoveredDay, setHoveredDay] = useState<string | null>(null);
   const [weeklyReports, setWeeklyReports] = useState<TradingReport[]>([]);
   const [selectedReport, setSelectedReport] = useState<TradingReport | null>(null);
@@ -263,7 +264,10 @@ export default function Calendar() {
     if (!dayData) return 'bg-white/[0.03] border-white/10';
 
     if (viewMode === 'pnl') {
-      if (dayData.tradeCount === 0) return 'bg-white/[0.03] border-white/10';
+      if (dayData.tradeCount === 0) {
+        if (dayData.hasJournal) return 'bg-white/5 border-blue-400/70 shadow-lg shadow-blue-500/40';
+        return 'bg-white/[0.03] border-white/10';
+      }
       if (dayData.pnl > 0) return 'bg-gradient-to-br from-blue-500/30 via-blue-400/20 to-blue-600/15 border-blue-400/40 shadow-md shadow-blue-500/10';
       if (dayData.pnl < 0) return 'bg-gradient-to-br from-slate-600/20 via-gray-600/15 to-zinc-600/10 border-slate-500/40 shadow-sm shadow-slate-500/5';
       return 'bg-gradient-to-br from-slate-600/20 via-gray-600/15 to-zinc-600/10 border-slate-500/40 shadow-sm shadow-slate-500/5';
@@ -304,7 +308,7 @@ export default function Calendar() {
     if (!dayData) return 'text-gray-400';
 
     if (viewMode === 'pnl') {
-      if (dayData.tradeCount === 0) return 'text-gray-400';
+      if (dayData.tradeCount === 0) return dayData.hasJournal ? 'text-blue-400' : 'text-gray-400';
       if (dayData.pnl > 0) return 'text-blue-400 drop-shadow-[0_0_8px_rgba(96,165,250,0.3)]';
       if (dayData.pnl < 0) return 'text-slate-300';
       return 'text-slate-300';
@@ -379,7 +383,7 @@ export default function Calendar() {
           cells.push(
             <div key={currentDay} className="relative group w-full h-full">
               <button
-                onClick={() => setSelectedDay(dayData || null)}
+                onClick={() => navigate(`/journal?date=${dateKey}`)}
                 onMouseEnter={() => setHoveredDay(dateKey)}
                 onMouseLeave={() => setHoveredDay(null)}
                 className={`w-full h-full border transition-all duration-300 p-1 lg:p-2 flex flex-col justify-between relative rounded-md ${
@@ -391,6 +395,14 @@ export default function Calendar() {
                 <div className={`text-[11px] lg:text-xs xl:text-sm font-semibold ${getCellTextColor(dayData)}`}>
                   {currentDay}
                 </div>
+
+                {dayData && viewMode === 'pnl' && dayData.tradeCount === 0 && dayData.hasJournal && (
+                  <div className="text-center">
+                    <div className={`text-[9px] lg:text-[10px] xl:text-xs ${getCellTextColor(dayData)}`}>
+                      Journal
+                    </div>
+                  </div>
+                )}
 
                 {dayData && viewMode === 'pnl' && dayData.tradeCount > 0 && (
                   <div className="text-center">
@@ -875,95 +887,6 @@ export default function Calendar() {
           </div>
         </div>
       </div>
-
-      {selectedDay && (
-        <div
-          className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={() => setSelectedDay(null)}
-        >
-          <div
-            className="bg-[#111]/80 backdrop-blur-sm border border-white/[0.05] rounded-2xl p-6 max-w-md w-full"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="text-lg md:text-xl font-bold mb-4 text-white">
-              {new Date(selectedDay.date).toLocaleDateString('en-US', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              })}
-            </h3>
-
-            <div className="space-y-3">
-              {selectedDay.tradeCount > 0 && (
-                <div className="bg-black/30 border border-white/5 rounded-xl p-4">
-                  <h4 className="text-xs font-semibold text-gray-400 mb-3">Trading Performance</h4>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-400">Trades:</span>
-                      <span className="text-sm font-semibold text-white">{selectedDay.tradeCount}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-400">P&L:</span>
-                      <span className={`text-sm font-semibold ${
-                        selectedDay.pnl > 0 ? 'text-blue-400' :
-                        selectedDay.pnl < 0 ? 'text-slate-300' : 'text-slate-300'
-                      }`}>
-                        {!privacyMode ? formatCurrency(selectedDay.pnl) : '***'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {selectedDay.hasJournal && (
-                <div className="bg-black/30 border border-white/5 rounded-xl p-4 relative overflow-hidden">
-                  {selectedDay.psychologyScore !== null && (
-                    <div className={`absolute inset-0 ${getPsychologyMood(selectedDay.psychologyScore).bg} opacity-30`} />
-                  )}
-                  <div className="relative">
-                    <h4 className="text-xs font-semibold text-gray-400 mb-3 flex items-center gap-2">
-                      <Brain size={14} />
-                      Mental State Assessment
-                    </h4>
-                    {selectedDay.psychologyScore !== null ? (
-                      <>
-                        <div className="flex items-center justify-center mb-4">
-                          <div className="relative">
-                            <div className={`text-5xl font-bold ${getPsychologyTextColor(selectedDay.psychologyScore)}`}>
-                              {selectedDay.psychologyScore}
-                            </div>
-                            <div className="text-center text-xs text-gray-500 mt-1">NOVA Score</div>
-                          </div>
-                        </div>
-                        <div className={`flex flex-col items-center gap-3 p-5 rounded-xl ${getPsychologyGradient(selectedDay.psychologyScore)} backdrop-blur-sm`}>
-                          <span className={`text-lg font-bold ${getPsychologyMood(selectedDay.psychologyScore).color} uppercase tracking-widest`}>
-                            {getPsychologyMood(selectedDay.psychologyScore).text}
-                          </span>
-                          <div className="text-xs text-gray-400 font-medium">Mental State Classification</div>
-                        </div>
-                      </>
-                    ) : (
-                      <p className="text-sm text-gray-400 text-center py-2">Journal entry exists (no score available)</p>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {!selectedDay.tradeCount && !selectedDay.hasJournal && (
-                <p className="text-center text-sm text-gray-400 py-4">No data for this day</p>
-              )}
-            </div>
-
-            <button
-              onClick={() => setSelectedDay(null)}
-              className="w-full mt-6 px-4 py-2.5 bg-white/5 hover:bg-white/10 rounded-xl transition-colors text-sm font-medium text-white"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
 
       <TradingReportModal
         report={selectedReport}

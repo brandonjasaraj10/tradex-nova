@@ -35,7 +35,7 @@ import TradingReportModal from '../components/reports/TradingReportModal';
 const buildCalendarData = (
   year: number,
   month: number,
-  dailyPnL: Map<number, { pnl: number; trades: number }>
+  dailyPnL: Map<number, { pnl: number; trades: number; hasJournal: boolean }>
 ) => {
   const firstDay = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0);
@@ -50,8 +50,8 @@ const buildCalendarData = (
 
     if (date > currentDate) {
       calendarData.push({ date, day, pnl: 0, trades: 0, psychologyScore: null, hasJournal: false, future: true, isEmpty: true });
-    } else if (dayData && dayData.trades > 0) {
-      calendarData.push({ date, day, pnl: dayData.pnl, trades: dayData.trades, psychologyScore: null, hasJournal: false, isEmpty: false });
+    } else if (dayData && (dayData.trades > 0 || dayData.hasJournal)) {
+      calendarData.push({ date, day, pnl: dayData.pnl, trades: dayData.trades, psychologyScore: null, hasJournal: dayData.hasJournal, isEmpty: false });
     } else {
       calendarData.push({ date, day, pnl: 0, trades: 0, psychologyScore: null, hasJournal: false, isEmpty: true });
     }
@@ -596,7 +596,7 @@ export default function Dashboard() {
 
   // Handle calendar day click
   const handleDayClick = (day: { date: Date; pnl: number; trades: number; psychologyScore: number | null; hasJournal: boolean; future?: boolean; isEmpty?: boolean }) => {
-    if (day.future || day.isEmpty) return;
+    if (day.future) return;
 
     const y = day.date.getFullYear();
     const m = String(day.date.getMonth() + 1).padStart(2, '0');
@@ -960,14 +960,15 @@ export default function Dashboard() {
                         onClick={() => handleDayClick(day)}
                         className={`
                           aspect-square rounded-sm sm:rounded-md lg:rounded-lg p-0.5 sm:p-1 lg:p-1.5 xl:p-2 border
-                          ${day.future ? 'opacity-50 cursor-default bg-white/5 border-white/10' : ''}
-                          ${!day.future && (calendarViewMode === 'pnl' ? day.isEmpty : day.isEmpty && !hasPsychData) ? 'cursor-default bg-white/[0.03] border-white/10' : ''}
-                          ${!day.future && !day.future && (calendarViewMode === 'pnl' ? !day.isEmpty : (hasPsychData || (!day.isEmpty && !hasPsychData))) ? 'cursor-pointer hover:ring-1 sm:hover:ring-2 hover:ring-white/20' : ''}
+                          ${day.future ? 'opacity-50 cursor-default bg-white/5 border-white/10' : 'cursor-pointer hover:ring-1 sm:hover:ring-2 hover:ring-white/20'}
+                          ${!day.future && (calendarViewMode === 'pnl' ? day.isEmpty : day.isEmpty && !hasPsychData) ? 'bg-white/[0.03] border-white/10' : ''}
                           ${calendarViewMode === 'psychology' && !day.isEmpty && !hasPsychData && !day.future ? 'bg-white/5 border-blue-400/70 shadow-lg shadow-blue-500/40' : ''}
                           ${calendarViewMode === 'pnl' && !day.isEmpty && !day.future
-                            ? isProfitable
-                              ? 'bg-gradient-to-br from-blue-500/30 via-blue-400/20 to-blue-600/15 border-blue-400/40 shadow-md shadow-blue-500/10'
-                              : 'bg-gradient-to-br from-slate-600/20 via-gray-600/15 to-zinc-600/10 border-slate-500/40 shadow-sm shadow-slate-500/5'
+                            ? day.trades > 0
+                              ? (isProfitable
+                                  ? 'bg-gradient-to-br from-blue-500/30 via-blue-400/20 to-blue-600/15 border-blue-400/40 shadow-md shadow-blue-500/10'
+                                  : 'bg-gradient-to-br from-slate-600/20 via-gray-600/15 to-zinc-600/10 border-slate-500/40 shadow-sm shadow-slate-500/5')
+                              : 'bg-white/5 border-blue-400/70 shadow-lg shadow-blue-500/40'
                             : ''
                           }
                           ${calendarViewMode === 'psychology' && hasPsychData
@@ -981,7 +982,9 @@ export default function Dashboard() {
                           <span className="text-[8px] sm:text-[9px] lg:text-[10px] xl:text-xs font-medium">{day.day}</span>
                           {calendarViewMode === 'pnl' && !day.isEmpty && !day.future && (
                             <div className="text-[7px] sm:text-[8px] lg:text-[9px] xl:text-[10px] font-medium mt-0.5 sm:mt-1 min-w-0 leading-tight">
-                              {!privacyMode ? (
+                              {day.trades === 0 ? (
+                                <div className="text-center text-blue-400">Journal</div>
+                              ) : !privacyMode ? (
                                 <>
                                   <div className={`truncate break-all leading-tight ${isProfitable ? 'text-blue-400 drop-shadow-[0_0_8px_rgba(96,165,250,0.3)]' : 'text-slate-300'}`}>
                                     {formatCurrency(day.pnl)}
