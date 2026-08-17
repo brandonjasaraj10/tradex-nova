@@ -1275,20 +1275,6 @@ export default function Journal() {
                   {isProcessingVoice && (
                     <span className="text-xs text-blue-400 animate-pulse">Processing voice...</span>
                   )}
-                  {isAutoFilling && (
-                    <span className="text-xs text-blue-400 animate-pulse">Organizing with Nova...</span>
-                  )}
-                  {entryForm.content.replace(/<[^>]*>/g, '').trim().length > 0 && (
-                    <button
-                      onClick={handleAutoFillFromText}
-                      disabled={isAutoFilling || isProcessingVoice}
-                      className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all bg-blue-400/10 text-blue-400 border border-blue-400/20 hover:bg-blue-400/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Have Nova organize what you've typed and fill in the details"
-                    >
-                      <Brain size={18} />
-                      <span className="text-sm">Organize with Nova</span>
-                    </button>
-                  )}
                   {isSupported && (
                     <button
                       onClick={toggleVoiceInput}
@@ -1632,13 +1618,24 @@ export default function Journal() {
                   )}
                 </div>
 
-                <div>
+                <div className="relative">
                   <RichTextEditor
                     label="Main Content"
                     content={entryForm.content}
                     onChange={(content) => setEntryForm({ ...entryForm, content })}
                     placeholder="Write your thoughts here..."
                   />
+                  {entryForm.content.replace(/<[^>]*>/g, '').trim().length > 0 && (
+                    <button
+                      onClick={handleAutoFillFromText}
+                      disabled={isAutoFilling || isProcessingVoice}
+                      className="absolute bottom-3 right-3 flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-xs shadow-lg transition-all bg-blue-400/10 text-blue-400 border border-blue-400/20 backdrop-blur-sm hover:bg-blue-400/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Have Nova organize what you've typed and fill in the details"
+                    >
+                      <Brain size={14} className={isAutoFilling ? 'animate-pulse' : ''} />
+                      {isAutoFilling ? 'Organizing...' : 'Organize with Nova'}
+                    </button>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
