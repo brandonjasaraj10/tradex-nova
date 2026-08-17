@@ -1057,7 +1057,7 @@ export default function Journal() {
                   >
                     <div className="flex items-center justify-between">
                       <div className="text-xs text-gray-400">
-                        {new Date(entry.entry_date).toLocaleDateString()}
+                        {new Date(entry.entry_date + 'T00:00:00').toLocaleDateString()}
                       </div>
                       {entry.symbol && (
                         <span className="text-xs text-blue-400 font-medium">{entry.symbol}</span>
@@ -1066,7 +1066,7 @@ export default function Journal() {
                     {entry.title && (
                       <div className="text-sm font-medium mt-1 truncate">{entry.title}</div>
                     )}
-                    <div className="text-xs text-gray-500 mt-1 line-clamp-2">{entry.content}</div>
+                    <div className="text-xs text-gray-500 mt-1 line-clamp-2">{entry.content?.replace(/<[^>]*>/g, '')}</div>
                   </div>
                 ))}
                 {entries.length === 0 && (

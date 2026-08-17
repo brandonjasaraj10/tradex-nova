@@ -18,6 +18,16 @@ interface DayData {
 
 type ViewMode = 'pnl' | 'psychology';
 
+// A date-only string (like a `date` column, or `.toISOString().split('T')[0]`)
+// always represents midnight UTC when parsed via `new Date(str)`, and
+// `.toISOString()` always converts back to UTC - either one alone is fine,
+// but round-tripping through them to get a *local* calendar day shifts the
+// day by one for anyone west of UTC. This reads the local Y/M/D directly,
+// no UTC conversion involved.
+function toLocalDateStr(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 export default function Calendar() {
   const { user } = useAuth();
   const { selectedAccount } = useAccount();
@@ -69,8 +79,8 @@ export default function Calendar() {
         .from('journal_entries')
         .select('entry_date, template_data')
         .eq('user_id', user.id)
-        .gte('entry_date', startOfMonth.toISOString().split('T')[0])
-        .lte('entry_date', endOfMonth.toISOString().split('T')[0]);
+        .gte('entry_date', toLocalDateStr(startOfMonth))
+        .lte('entry_date', toLocalDateStr(endOfMonth));
 
       if (journalsError) throw journalsError;
 
@@ -80,7 +90,7 @@ export default function Calendar() {
         trades.forEach(trade => {
           if (!trade.exit_date) return;
 
-          const dateKey = new Date(trade.exit_date).toISOString().split('T')[0];
+          const dateKey = toLocalDateStr(new Date(trade.exit_date));
           const existing = dataMap.get(dateKey);
 
           if (existing) {
@@ -358,9 +368,8 @@ export default function Calendar() {
         } else {
           const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(currentDay).padStart(2, '0')}`;
           const dayData = calendarData.get(dateKey);
-          const isToday = dateKey === new Date().toISOString().split('T')[0];
-          const currentDate = new Date(dateKey);
-          const dayOfWeek = currentDate.getDay();
+          const isToday = dateKey === toLocalDateStr(new Date());
+          const dayOfWeek = new Date(year, month, currentDay).getDay();
 
           const isHovered = hoveredDay === dateKey;
           const mood = dayData && dayData.psychologyScore !== null && viewMode === 'psychology'

@@ -243,7 +243,7 @@ export async function getDailyPnL(
   for (const trade of allTrades) {
     const dateStr = trade.entry_date?.split('T')[0] || '';
     if (dateStr < startStr || dateStr > endStr) continue;
-    const day = new Date(dateStr).getDate();
+    const day = parseInt(dateStr.split('-')[2], 10);
     const existing = dailyMap.get(day) || { pnl: 0, trades: 0 };
     existing.pnl += trade.pnl;
     existing.trades += 1;
