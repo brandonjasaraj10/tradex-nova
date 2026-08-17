@@ -141,6 +141,7 @@ export default function Journal() {
   const [checklistTab, setChecklistTab] = useState<'confluences' | 'rules'>('confluences');
   const [showPsychologyTemplate, setShowPsychologyTemplate] = useState(false);
   const [isProcessingVoice, setIsProcessingVoice] = useState(false);
+  const [isAutoFilling, setIsAutoFilling] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     title: string;
@@ -737,6 +738,89 @@ export default function Journal() {
     }
   };
 
+  const handleAutoFillFromText = async () => {
+    const plainText = entryForm.content.replace(/<[^>]*>/g, '').trim();
+    if (!plainText || isAutoFilling) return;
+
+    setIsAutoFilling(true);
+    try {
+      // No existingEntry passed on purpose - this box's own text is the
+      // whole transcript to organize, not new info to merge into what's
+      // already there, so Nova returns a complete rewritten entry rather
+      // than an "only what's new" delta the way voice updates do.
+      const voiceData: VoiceJournalData = await processVoiceJournalEntry(plainText);
+
+      setEntryForm(prev => ({
+        ...prev,
+        title: voiceData.title || prev.title,
+        symbol: voiceData.symbol || prev.symbol,
+        direction: voiceData.direction || prev.direction,
+        trade_duration: voiceData.trade_duration || prev.trade_duration,
+        position_size: voiceData.position_size || prev.position_size,
+        manual_pnl: voiceData.manual_pnl !== undefined ? voiceData.manual_pnl : prev.manual_pnl,
+        content: voiceData.content || prev.content,
+        tags: voiceData.tags && voiceData.tags.length > 0
+          ? [...new Set([...prev.tags, ...voiceData.tags])]
+          : prev.tags,
+        pre_market_notes: voiceData.pre_market_notes || prev.pre_market_notes,
+        post_market_notes: voiceData.post_market_notes || prev.post_market_notes,
+        template_data: voiceData.template_data ? {
+          ...prev.template_data,
+          ...voiceData.template_data,
+          pre_trade_mindset: {
+            ...(prev.template_data?.pre_trade_mindset || {}),
+            ...(voiceData.template_data?.pre_trade_mindset || {})
+          },
+          emotional_checkin: {
+            ...(prev.template_data?.emotional_checkin || {}),
+            ...(voiceData.template_data?.emotional_checkin || {}),
+            emotions: [
+              ...(prev.template_data?.emotional_checkin?.emotions || []),
+              ...(voiceData.template_data?.emotional_checkin?.emotions || [])
+            ].filter((v, i, a) => a.indexOf(v) === i)
+          },
+          post_trade_reflection: {
+            ...(prev.template_data?.post_trade_reflection || {}),
+            ...(voiceData.template_data?.post_trade_reflection || {})
+          },
+          affirmations: [
+            ...(prev.template_data?.affirmations || []),
+            ...(voiceData.template_data?.affirmations || [])
+          ],
+          psychological_wins: [
+            ...(prev.template_data?.psychological_wins || []),
+            ...(voiceData.template_data?.psychological_wins || [])
+          ],
+          trigger_tracking: [
+            ...(prev.template_data?.trigger_tracking || []),
+            ...(voiceData.template_data?.trigger_tracking || [])
+          ],
+          stress_levels: {
+            ...(prev.template_data?.stress_levels || {}),
+            ...(voiceData.template_data?.stress_levels || {})
+          },
+          cognitive_distortions: [
+            ...(prev.template_data?.cognitive_distortions || []),
+            ...(voiceData.template_data?.cognitive_distortions || [])
+          ].filter((v, i, a) => a.indexOf(v) === i),
+          end_of_day_summary: {
+            ...(prev.template_data?.end_of_day_summary || {}),
+            ...(voiceData.template_data?.end_of_day_summary || {})
+          },
+          decision_quality_score: voiceData.template_data?.decision_quality_score || prev.template_data?.decision_quality_score
+        } : prev.template_data
+      }));
+
+      if (voiceData.template_data && Object.keys(voiceData.template_data).length > 0) {
+        setShowPsychologyTemplate(true);
+      }
+    } catch (error) {
+      console.error('Error auto-filling from text:', error);
+    } finally {
+      setIsAutoFilling(false);
+    }
+  };
+
   const toggleVoiceInput = () => {
     if (isListening) {
       stopListening();
@@ -1190,6 +1274,20 @@ export default function Journal() {
                   )}
                   {isProcessingVoice && (
                     <span className="text-xs text-blue-400 animate-pulse">Processing voice...</span>
+                  )}
+                  {isAutoFilling && (
+                    <span className="text-xs text-blue-400 animate-pulse">Organizing with Nova...</span>
+                  )}
+                  {entryForm.content.replace(/<[^>]*>/g, '').trim().length > 0 && (
+                    <button
+                      onClick={handleAutoFillFromText}
+                      disabled={isAutoFilling || isProcessingVoice}
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all bg-blue-400/10 text-blue-400 border border-blue-400/20 hover:bg-blue-400/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Have Nova organize what you've typed and fill in the details"
+                    >
+                      <Brain size={18} />
+                      <span className="text-sm">Organize with Nova</span>
+                    </button>
                   )}
                   {isSupported && (
                     <button
