@@ -193,12 +193,15 @@ export function PsychologyTemplate({ data, onChange }: PsychologyTemplateProps) 
   // Calculate score for Simple mode
   const calculateSimpleScore = (): number | null => {
     let totalScore = 0;
-    let components = 0;
+    let weightFilled = 0;
+    let fieldsFilled = 0;
+    const TOTAL_FIELDS = 4;
 
     // 1. Pre-trade mood (0-10) → convert to 0-100 scale (25% weight)
     if (data.pre_trade_mindset?.mood_rating !== undefined) {
       totalScore += data.pre_trade_mindset.mood_rating * 10 * 0.25;
-      components += 0.25;
+      weightFilled += 0.25;
+      fieldsFilled += 1;
     }
 
     // 2. Emotional check-in (25% weight)
@@ -209,7 +212,8 @@ export function PsychologyTemplate({ data, onChange }: PsychologyTemplateProps) 
       ).length;
       const emotionScore = (positiveEmotions / emotions.length) * 100;
       totalScore += emotionScore * 0.25;
-      components += 0.25;
+      weightFilled += 0.25;
+      fieldsFilled += 1;
     }
 
     // 3. Psychological state (35% weight)
@@ -217,18 +221,25 @@ export function PsychologyTemplate({ data, onChange }: PsychologyTemplateProps) 
       const stateScore = data.end_of_day_summary.psychological_state === 'excellent' ? 100 :
                         data.end_of_day_summary.psychological_state === 'moderate' ? 60 : 30;
       totalScore += stateScore * 0.35;
-      components += 0.35;
+      weightFilled += 0.35;
+      fieldsFilled += 1;
     }
 
     // 4. Reflection completeness (15% weight)
     if (data.end_of_day_summary?.mental_state_reflection && data.end_of_day_summary.mental_state_reflection.length > 20) {
       totalScore += 100 * 0.15;
-      components += 0.15;
+      weightFilled += 0.15;
+      fieldsFilled += 1;
     }
 
-    // Only return score if at least 50% of components are filled
-    if (components >= 0.5) {
-      return Math.round(totalScore / components);
+    // Show a score once at least half the fields are filled, regardless of
+    // which ones - previously this gated on the filled fields' combined
+    // *weight* being >= 50%, but Psychological State alone is worth 35%,
+    // so two equally "half filled out" users could land on opposite sides
+    // of the threshold depending on which two fields they picked (e.g.
+    // mood + reflection = 40%, blocked; mood + emotions = 50%, allowed).
+    if (fieldsFilled >= Math.ceil(TOTAL_FIELDS / 2) && weightFilled > 0) {
+      return Math.round(totalScore / weightFilled);
     }
     return null;
   };
@@ -236,18 +247,22 @@ export function PsychologyTemplate({ data, onChange }: PsychologyTemplateProps) 
   // Calculate score for Advanced mode
   const calculateAdvancedScore = (): number | null => {
     let totalScore = 0;
-    let components = 0;
+    let weightFilled = 0;
+    let fieldsFilled = 0;
+    const TOTAL_FIELDS = 7;
 
     // 1. Pre-trade mood (15% weight)
     if (data.pre_trade_mindset?.mood_rating !== undefined) {
       totalScore += data.pre_trade_mindset.mood_rating * 10 * 0.15;
-      components += 0.15;
+      weightFilled += 0.15;
+      fieldsFilled += 1;
     }
 
     // 2. Decision quality score (15% weight)
     if (data.decision_quality_score !== undefined) {
       totalScore += data.decision_quality_score * 10 * 0.15;
-      components += 0.15;
+      weightFilled += 0.15;
+      fieldsFilled += 1;
     }
 
     // 3. Stress management (15% weight)
@@ -258,7 +273,8 @@ export function PsychologyTemplate({ data, onChange }: PsychologyTemplateProps) 
       // Lower stress is better, so invert the score
       const stressScore = (10 - avgStress) * 10;
       totalScore += stressScore * 0.15;
-      components += 0.15;
+      weightFilled += 0.15;
+      fieldsFilled += 1;
     }
 
     // 4. Emotional check-in (15% weight)
@@ -269,20 +285,23 @@ export function PsychologyTemplate({ data, onChange }: PsychologyTemplateProps) 
       ).length;
       const emotionScore = (positiveEmotions / emotions.length) * 100;
       totalScore += emotionScore * 0.15;
-      components += 0.15;
+      weightFilled += 0.15;
+      fieldsFilled += 1;
     }
 
-    // 5. Cognitive distortions (10% weight) - fewer is better
+    // 5. Cognitive distortions (10% weight) - fewer is better. An empty list
+    // here is itself a meaningful, complete answer ("no distortions today"),
+    // so it always counts as filled, same as it always contributing weight.
     const distortions = data.cognitive_distortions || [];
     if (distortions.length === 0) {
       totalScore += 100 * 0.10;
-      components += 0.10;
     } else {
       // Score decreases with more distortions (cap at 10)
       const distortionScore = Math.max(0, (10 - Math.min(distortions.length, 10)) * 10);
       totalScore += distortionScore * 0.10;
-      components += 0.10;
     }
+    weightFilled += 0.10;
+    fieldsFilled += 1;
 
     // 6. Trigger tracking (10% weight) - having better responses is good
     const triggers = data.trigger_tracking || [];
@@ -290,7 +309,8 @@ export function PsychologyTemplate({ data, onChange }: PsychologyTemplateProps) 
       const triggersWithBetterResponse = triggers.filter(t => t.better_response && t.better_response.length > 10).length;
       const triggerScore = (triggersWithBetterResponse / triggers.length) * 100;
       totalScore += triggerScore * 0.10;
-      components += 0.10;
+      weightFilled += 0.10;
+      fieldsFilled += 1;
     }
 
     // 7. Psychological state (20% weight)
@@ -298,12 +318,15 @@ export function PsychologyTemplate({ data, onChange }: PsychologyTemplateProps) 
       const stateScore = data.end_of_day_summary.psychological_state === 'excellent' ? 100 :
                         data.end_of_day_summary.psychological_state === 'moderate' ? 60 : 30;
       totalScore += stateScore * 0.20;
-      components += 0.20;
+      weightFilled += 0.20;
+      fieldsFilled += 1;
     }
 
-    // Only return score if at least 50% of components are filled
-    if (components >= 0.5) {
-      return Math.round(totalScore / components);
+    // Show a score once at least half the fields are filled, regardless of
+    // which ones - see the same fix in calculateSimpleScore() above for why
+    // gating on combined *weight* instead of a field *count* was wrong.
+    if (fieldsFilled >= Math.ceil(TOTAL_FIELDS / 2) && weightFilled > 0) {
+      return Math.round(totalScore / weightFilled);
     }
     return null;
   };
