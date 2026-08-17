@@ -257,7 +257,8 @@ export default function Journal() {
               setEditingEntryId(latestEntry.id);
 
               if (latestEntry.template_data) {
-                setEntryForm({
+                setEntryForm(prev => ({
+                  ...prev,
                   title: latestEntry.title || '',
                   content: latestEntry.content || '',
                   mood: latestEntry.mood || '',
@@ -267,7 +268,7 @@ export default function Journal() {
                   position_size: latestEntry.position_size || '',
                   manual_pnl: latestEntry.manual_pnl || undefined,
                   linked_entry_id: latestEntry.linked_entry_id || null,
-                });
+                }));
               }
             }
           }
