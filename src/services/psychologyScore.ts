@@ -90,22 +90,32 @@ export async function getPsychologyScores(
   }
 }
 
+// `.toISOString().split('T')[0]` gives the UTC date, not the local one -
+// for anyone west of UTC (this app's users included) that silently shifts
+// to tomorrow's date once it's evening locally. For 'daily' specifically
+// that meant "Today" could filter for a date that hadn't happened yet
+// locally, excluding the entry someone had just created for today and
+// showing the empty "Track Your Psychology" state instead.
+function toLocalDateStr(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 function getDateFilter(timeFrame: TimeFrame): string {
   const now = new Date();
 
   switch (timeFrame) {
     case 'daily':
-      return now.toISOString().split('T')[0];
+      return toLocalDateStr(now);
 
     case 'weekly':
       const weekAgo = new Date(now);
       weekAgo.setDate(weekAgo.getDate() - 7);
-      return weekAgo.toISOString().split('T')[0];
+      return toLocalDateStr(weekAgo);
 
     case 'monthly':
       const monthAgo = new Date(now);
       monthAgo.setMonth(monthAgo.getMonth() - 1);
-      return monthAgo.toISOString().split('T')[0];
+      return toLocalDateStr(monthAgo);
 
     case 'all':
     default:

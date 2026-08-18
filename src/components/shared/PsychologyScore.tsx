@@ -346,7 +346,7 @@ export default function PsychologyScore() {
                 >
                   <div className="flex items-center gap-3">
                     <span className="text-xs text-gray-400">
-                      {new Date(score.date).toLocaleDateString('en-US', {
+                      {new Date(score.date + 'T00:00:00').toLocaleDateString('en-US', {
                         month: 'short',
                         day: 'numeric',
                       })}
