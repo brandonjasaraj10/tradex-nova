@@ -60,7 +60,6 @@ export const TOUR_STEPS: TourStep[] = [
     content: 'Define your trading rules and confluences here. Consistency is key to profitable trading!',
     position: 'top',
     route: '/dashboard',
-    maxHeight: 500,
   },
   {
     id: 'journal-intro',
@@ -77,7 +76,6 @@ export const TOUR_STEPS: TourStep[] = [
     content: 'Use the Daily Journal folder for your trading reflections and the Notes folder for important observations and strategies.',
     position: 'right',
     route: '/journal',
-    maxHeight: 250,
   },
   {
     id: 'journal-editor',
@@ -86,7 +84,6 @@ export const TOUR_STEPS: TourStep[] = [
     content: 'Write detailed entries with formatting, add screenshots, track your mood, and tag important concepts.',
     position: 'bottom',
     route: '/journal',
-    maxHeight: 700,
   },
   {
     id: 'journal-voice-input',
@@ -180,7 +177,7 @@ export function useTour() {
 }
 
 export function TourProvider({ children }: { children: React.ReactNode }) {
-  const { user, isFirstTimeUser, setIsFirstTimeUser } = useAuth();
+  const { user, setIsFirstTimeUser } = useAuth();
   const [isActive, setIsActive] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [tourCompleted, setTourCompleted] = useState(false);
@@ -195,8 +192,14 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
   }, [user?.id]);
 
   useEffect(() => {
+    // Gate purely on tour_completed (durable, from the DB) rather than
+    // isFirstTimeUser (an in-memory flag set only inside signUp() and
+    // wiped by any reload or a later signIn()). A user blocked by the
+    // subscription paywall right after signing up, or who just closes
+    // the tab and logs back in later, would set isFirstTimeUser back to
+    // false and never see the tour again even though tour_completed was
+    // still false - this is what happened for real.
     if (
-      isFirstTimeUser &&
       !tourCompleted &&
       hasCheckedTourStatus &&
       !isActive &&
@@ -212,7 +215,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
       }, 1500);
       return () => clearTimeout(timer);
     }
-  }, [isFirstTimeUser, tourCompleted, hasCheckedTourStatus, isActive]);
+  }, [tourCompleted, hasCheckedTourStatus, isActive]);
 
   const checkTourStatus = async () => {
     if (!user) return;

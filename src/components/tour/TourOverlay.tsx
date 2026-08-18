@@ -342,6 +342,21 @@ export default function TourOverlay() {
         top = targetRect.top - tooltipHeight - gap;
         left = Math.max(minMargin, Math.min(targetCenterX - tooltipWidth / 2, viewportWidth - tooltipWidth - minMargin));
       }
+
+      // The "most space" side isn't guaranteed to have ENOUGH space (e.g.
+      // a target wide enough to leave less room on every side than the
+      // tooltip needs, like the full-width Calendar panel) - re-clamp so
+      // the tooltip can never render partly off-screen. Some residual
+      // overlap with the spotlighted target is an acceptable tradeoff for
+      // never cutting the tooltip itself off.
+      if (left < minMargin) left = minMargin;
+      if (left + tooltipWidth > viewportWidth - minMargin) {
+        left = viewportWidth - tooltipWidth - minMargin;
+      }
+      if (top < minMargin) top = minMargin;
+      if (top + tooltipHeight > viewportHeight - minMargin) {
+        top = viewportHeight - tooltipHeight - minMargin;
+      }
     }
 
     setTooltipPosition({ top, left });
