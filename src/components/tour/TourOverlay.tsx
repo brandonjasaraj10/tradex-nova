@@ -558,7 +558,7 @@ export default function TourOverlay() {
 
               <div className="p-4 pt-0 space-y-3">
                 <div className="flex justify-center">
-                  <div className="flex gap-1 flex-wrap justify-center max-w-[200px]">
+                  <div className="flex gap-1 flex-wrap justify-center max-w-[280px]">
                     {Array.from({ length: totalSteps }).map((_, i) => (
                       <div
                         key={i}

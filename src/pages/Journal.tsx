@@ -1717,6 +1717,7 @@ export default function Journal() {
                   />
                   {entryForm.content.replace(/<[^>]*>/g, '').trim().length > 0 && (
                     <button
+                      data-tour="journal-organize-nova"
                       onClick={handleAutoFillFromText}
                       disabled={isAutoFilling || isProcessingVoice}
                       className="absolute bottom-3 right-3 flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-xs shadow-lg transition-all bg-blue-400/10 text-blue-400 border border-blue-400/20 backdrop-blur-sm hover:bg-blue-400/20 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1728,7 +1729,7 @@ export default function Journal() {
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6" data-tour="journal-screenshots">
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
                       <Image size={16} />

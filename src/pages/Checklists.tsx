@@ -208,6 +208,7 @@ export default function Checklists() {
           </p>
         </div>
 
+        <div data-tour="checklists-page">
         <div className="flex gap-2 mb-6 border-b border-white/10">
           <button
             onClick={() => setActiveTab('confluences')}
@@ -428,6 +429,7 @@ export default function Checklists() {
               )}
             </div>
           </Card>
+        </div>
         </div>
       </div>
 

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from './supabase';
 import { useAuth } from './auth';
+import { seedTourDemoData, cleanupTourDemoData, type TourDemoDataIds } from './tourDemoData';
 
 export type TourStep = {
   id: string;
@@ -22,6 +23,14 @@ export const TOUR_STEPS: TourStep[] = [
     route: '/dashboard',
   },
   {
+    id: 'account-selector',
+    targetSelector: '[data-tour="account-selector"]',
+    title: 'Add Your Trading Accounts',
+    content: 'Add multiple trading accounts here - personal, funded, or prop firm - and switch between them any time to filter everything in TradeX to just that account.',
+    position: 'bottom',
+    route: '/dashboard',
+  },
+  {
     id: 'quick-access',
     targetSelector: '[data-tour="quick-access"]',
     title: 'Quick Navigation',
@@ -33,17 +42,25 @@ export const TOUR_STEPS: TourStep[] = [
     id: 'metrics',
     targetSelector: '[data-tour="metrics"]',
     title: 'Your Performance Metrics',
-    content: 'Track your trading performance at a glance - P&L, win rate, profit factor, and your Nova Score.',
+    content: 'Track your trading performance at a glance - P&L, win rate, profit factor, and your Nova Score. This is what it looks like once you have some trades logged.',
     position: 'bottom',
     route: '/dashboard',
   },
   {
-    id: 'calendar',
-    targetSelector: '[data-tour="calendar"]',
+    id: 'calendar-page',
+    targetSelector: '[data-tour="calendar-page"]',
     title: 'Trading Calendar',
-    content: 'Visualize your trading activity day by day. Click any day to view or add journal entries.',
-    position: 'right',
-    route: '/dashboard',
+    content: 'Visualize your trading activity day by day - P&L or psychology score. Click any day to jump straight to your journal entry for it.',
+    position: 'top',
+    route: '/calendar',
+  },
+  {
+    id: 'calendar-weekly-review',
+    targetSelector: '[data-tour="calendar-weekly-review"]',
+    title: 'Weekly Review Cards',
+    content: "Every week gets an auto-generated summary card - trades, win rate, and key takeaways - right alongside that week's days.",
+    position: 'left',
+    route: '/calendar',
   },
   {
     id: 'nova-chat',
@@ -54,12 +71,12 @@ export const TOUR_STEPS: TourStep[] = [
     route: '/nova',
   },
   {
-    id: 'trading-plan',
-    targetSelector: '[data-tour="trading-plan"]',
+    id: 'checklists',
+    targetSelector: '[data-tour="checklists-page"]',
     title: 'Trading Plan & Confluences',
-    content: 'Define your trading rules and confluences here. Consistency is key to profitable trading!',
+    content: 'Define your trading rules and confluences here, then track how often you actually follow them. Consistency is key to profitable trading!',
     position: 'top',
-    route: '/dashboard',
+    route: '/checklists',
   },
   {
     id: 'journal-intro',
@@ -91,6 +108,22 @@ export const TOUR_STEPS: TourStep[] = [
     title: 'Voice Journaling',
     content: 'Click the button, speak your thoughts, and Nova will automatically organize and format your entry for you.',
     position: 'left',
+    route: '/journal',
+  },
+  {
+    id: 'journal-organize-nova',
+    targetSelector: '[data-tour="journal-organize-nova"]',
+    title: 'Or Just Type and Organize',
+    content: "Prefer typing? Write your notes in plain, messy language and this button appears - click it and Nova reorganizes what you wrote and fills in the details for you, same as voice.",
+    position: 'left',
+    route: '/journal',
+  },
+  {
+    id: 'journal-screenshots',
+    targetSelector: '[data-tour="journal-screenshots"]',
+    title: 'Attach Chart Screenshots',
+    content: 'Upload before and after screenshots of your trades, or paste an image URL. They stay attached to the entry for whenever you want to look back.',
+    position: 'top',
     route: '/journal',
   },
   {
@@ -134,10 +167,10 @@ export const TOUR_STEPS: TourStep[] = [
     route: '/settings',
   },
   {
-    id: 'settings-brokers',
+    id: 'settings-accounts',
     targetSelector: '[data-tour="settings-brokers"]',
-    title: 'Connect Your Broker',
-    content: 'Link your trading accounts and add multiple accounts. We support MetaTrader 4/5 and manual CSV uploads from any broker.',
+    title: 'Manage Your Trading Accounts',
+    content: 'Add trading accounts and import your trade history from any broker via CSV or statement upload.',
     position: 'top',
     route: '/settings',
   },
@@ -145,7 +178,7 @@ export const TOUR_STEPS: TourStep[] = [
     id: 'tour-complete',
     targetSelector: '[data-tour="sidebar-logo"]',
     title: "You're All Set!",
-    content: "You've completed the tour! Start by connecting a broker or manually logging your first trade. I'm always here if you need help.",
+    content: "You've completed the tour! Start by adding a trading account or manually logging your first trade. I'm always here if you need help.",
     position: 'right',
     route: '/dashboard',
   },
@@ -184,12 +217,26 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
   const [hasCheckedTourStatus, setHasCheckedTourStatus] = useState(false);
   const hasEndedRef = useRef(false);
   const hasStartedRef = useRef(false);
+  const demoDataIdsRef = useRef<TourDemoDataIds | null>(null);
+  const hasSeededDemoDataRef = useRef(false);
 
   useEffect(() => {
     if (user && !hasCheckedTourStatus) {
       checkTourStatus();
     }
   }, [user?.id]);
+
+  useEffect(() => {
+    // Seed once, the moment the tour actually becomes visible - not
+    // earlier, so this never runs for an account that never ends up
+    // seeing the tour at all.
+    if (isActive && user && !hasSeededDemoDataRef.current) {
+      hasSeededDemoDataRef.current = true;
+      seedTourDemoData(user.id).then(ids => {
+        demoDataIdsRef.current = ids;
+      });
+    }
+  }, [isActive, user]);
 
   useEffect(() => {
     // Gate purely on tour_completed (durable, from the DB) rather than
@@ -249,6 +296,11 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     setIsFirstTimeUser(false);
     setIsActive(false);
     setCurrentStep(0);
+
+    if (demoDataIdsRef.current) {
+      cleanupTourDemoData(user.id, demoDataIdsRef.current);
+      demoDataIdsRef.current = null;
+    }
 
     try {
       await supabase

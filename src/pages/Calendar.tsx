@@ -483,7 +483,7 @@ export default function Calendar() {
         const weekReport = getWeekReportForDate(weekEndDateKey);
         if (weekReport) {
           cells.push(
-            <div key={`report-${row}`} className="w-full h-full">
+            <div key={`report-${row}`} className="w-full h-full" data-tour="calendar-weekly-review">
               <WeeklySummaryCard
                 report={weekReport}
                 onClick={() => handleOpenReport(weekReport)}
@@ -546,7 +546,7 @@ export default function Calendar() {
           </div>
 
           <div className="flex-1 min-h-0 flex flex-col xl:flex-row gap-4">
-            <div className="flex-1 bg-[#111]/80 backdrop-blur-sm border border-white/[0.05] rounded-2xl p-3 md:p-4 lg:p-6 flex flex-col min-h-0">
+            <div className="flex-1 bg-[#111]/80 backdrop-blur-sm border border-white/[0.05] rounded-2xl p-3 md:p-4 lg:p-6 flex flex-col min-h-0" data-tour="calendar-page">
               <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
                 <div className="flex items-center gap-2">
                   <button

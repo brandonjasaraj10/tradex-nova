@@ -685,12 +685,14 @@ export default function Dashboard() {
               </div>
             </div>
             <DateRangePicker value={dateRange} onChange={setDateRange} />
-            <AccountSelector
-              accounts={accounts}
-              selectedAccount={selectedAccount}
-              onAccountChange={setSelectedAccount}
-              onAccountsUpdate={refreshAccounts}
-            />
+            <div data-tour="account-selector">
+              <AccountSelector
+                accounts={accounts}
+                selectedAccount={selectedAccount}
+                onAccountChange={setSelectedAccount}
+                onAccountsUpdate={refreshAccounts}
+              />
+            </div>
           </div>
         </motion.div>
 
