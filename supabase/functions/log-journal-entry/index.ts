@@ -170,15 +170,35 @@ Deno.serve(async (req: Request) => {
 
     const entryDate = payload.entry_date || new Date().toISOString().split('T')[0];
 
-    const { data: existingEntry } = await supabaseClient
+    const { data: entriesForDate } = await supabaseClient
       .from('journal_entries')
       .select('*')
       .eq('user_id', userId)
       .eq('folder_id', folder.id)
       .eq('entry_date', entryDate)
-      .maybeSingle();
+      .order('created_at', { ascending: true });
 
-    let templateData: any = {};
+    const allEntriesForDate = entriesForDate || [];
+
+    // A trade log whose symbol doesn't match any entry already logged
+    // today is a different position, not more detail on one already
+    // here - each position gets its own entry, since symbol/direction/
+    // position_size/manual_pnl can each only hold one trade's values.
+    // Psychology-only logs (and trades matching an existing entry's
+    // symbol) still merge into that entry, same as before.
+    const newSymbol = payload.category === 'trade' ? payload.trade_data?.symbol?.trim().toUpperCase() : undefined;
+    const existingEntry = newSymbol
+      ? allEntriesForDate.find((e: any) => (e.symbol || '').trim().toUpperCase() === newSymbol)
+      : allEntriesForDate[allEntriesForDate.length - 1];
+
+    // Still the same trading day/session, so a freshly split-off position
+    // entry carries forward the day's mood/psychology context - only the
+    // position-specific fields below reset, not the whole day.
+    const carryOverTemplateData = (!existingEntry && allEntriesForDate.length > 0)
+      ? (allEntriesForDate[allEntriesForDate.length - 1].template_data || {})
+      : {};
+
+    let templateData: any = { ...carryOverTemplateData };
     let symbol: string | undefined;
     let tradeDuration: string | undefined;
     let positionSize: string | undefined;
@@ -195,6 +215,7 @@ Deno.serve(async (req: Request) => {
       manualPnl = typeof td.pnl === 'number' ? td.pnl : undefined;
 
       templateData = {
+        ...carryOverTemplateData,
         direction: td.direction,
         entry_reason: td.entry_reason,
         exit_reason: td.exit_reason,
@@ -230,6 +251,7 @@ Deno.serve(async (req: Request) => {
       entryMood = payload.mood || pd.emotional_state;
 
       templateData = {
+        ...carryOverTemplateData,
         emotional_state: pd.emotional_state,
         stress_level: pd.stress_level,
         discipline_level: pd.discipline_level,

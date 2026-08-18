@@ -784,13 +784,48 @@ export default function Journal() {
 
     setIsAutoFilling(true);
     try {
-      const voiceData: VoiceJournalData = isIncrementalUpdate
-        ? await processVoiceJournalEntry(newTextOnly, entryForm)
-        : await processVoiceJournalEntry(newTextOnly);
+      let voiceData: VoiceJournalData;
+      let isNewPositionEntry = false;
+      // Psychology/mood context carries forward into a split-off entry
+      // (still the same trading day/session) - only the position-specific
+      // fields below get reset, since those describe a different trade.
+      const carriedMood = entryForm.mood;
+      const carriedTemplateData = entryForm.template_data;
+      const carriedPreMarketNotes = entryForm.pre_market_notes;
+      const carriedPostMarketNotes = entryForm.post_market_notes;
+
+      if (isIncrementalUpdate) {
+        // Work out what the newly-added text is about on its own before
+        // deciding whether it belongs in this entry at all - a second,
+        // distinct position on the same day gets its own entry (matching
+        // "Add Another Entry"), it doesn't get folded into this one, since
+        // position fields (symbol, direction, size, risk, P&L) can only
+        // hold one trade's values each.
+        const probeData = await processVoiceJournalEntry(newTextOnly);
+        const currentSymbol = (entryForm.symbol || '').trim().toUpperCase();
+        const newSymbol = (probeData.symbol || '').trim().toUpperCase();
+        isNewPositionEntry = !!newSymbol && !!currentSymbol && newSymbol !== currentSymbol;
+
+        if (isNewPositionEntry) {
+          if (currentEntry) {
+            await updateEntry(currentEntry.id, { content: lastOrganizedContentRef.current });
+          }
+          if (selectedFolder) {
+            const freshEntries = await getEntriesByDate(selectedFolder.id, selectedDate, selectedAccount?.id);
+            setDailyEntries(freshEntries);
+            resetEntryForm(freshEntries);
+          }
+          voiceData = probeData;
+        } else {
+          voiceData = await processVoiceJournalEntry(newTextOnly, entryForm);
+        }
+      } else {
+        voiceData = await processVoiceJournalEntry(newTextOnly);
+      }
 
       const nextContent = voiceData.content
-        ? (isIncrementalUpdate ? `${currentContent}\n\n${voiceData.content}` : voiceData.content)
-        : currentContent;
+        ? (isIncrementalUpdate && !isNewPositionEntry ? `${currentContent}\n\n${voiceData.content}` : voiceData.content)
+        : (isNewPositionEntry ? '' : currentContent);
 
       // Don't store nextContent (Nova's raw HTML string) as the baseline -
       // TipTap re-parses it through ProseMirror's own schema once it renders,
@@ -812,53 +847,58 @@ export default function Journal() {
         tags: voiceData.tags && voiceData.tags.length > 0
           ? [...new Set([...prev.tags, ...voiceData.tags])]
           : prev.tags,
-        pre_market_notes: voiceData.pre_market_notes || prev.pre_market_notes,
-        post_market_notes: voiceData.post_market_notes || prev.post_market_notes,
-        template_data: voiceData.template_data ? {
-          ...prev.template_data,
-          ...voiceData.template_data,
-          pre_trade_mindset: {
-            ...(prev.template_data?.pre_trade_mindset || {}),
-            ...(voiceData.template_data?.pre_trade_mindset || {})
-          },
-          emotional_checkin: {
-            ...(prev.template_data?.emotional_checkin || {}),
-            ...(voiceData.template_data?.emotional_checkin || {}),
-            emotions: [
-              ...(prev.template_data?.emotional_checkin?.emotions || []),
-              ...(voiceData.template_data?.emotional_checkin?.emotions || [])
-            ].filter((v, i, a) => a.indexOf(v) === i)
-          },
-          post_trade_reflection: {
-            ...(prev.template_data?.post_trade_reflection || {}),
-            ...(voiceData.template_data?.post_trade_reflection || {})
-          },
-          affirmations: [
-            ...(prev.template_data?.affirmations || []),
-            ...(voiceData.template_data?.affirmations || [])
-          ],
-          psychological_wins: [
-            ...(prev.template_data?.psychological_wins || []),
-            ...(voiceData.template_data?.psychological_wins || [])
-          ],
-          trigger_tracking: [
-            ...(prev.template_data?.trigger_tracking || []),
-            ...(voiceData.template_data?.trigger_tracking || [])
-          ],
-          stress_levels: {
-            ...(prev.template_data?.stress_levels || {}),
-            ...(voiceData.template_data?.stress_levels || {})
-          },
-          cognitive_distortions: [
-            ...(prev.template_data?.cognitive_distortions || []),
-            ...(voiceData.template_data?.cognitive_distortions || [])
-          ].filter((v, i, a) => a.indexOf(v) === i),
-          end_of_day_summary: {
-            ...(prev.template_data?.end_of_day_summary || {}),
-            ...(voiceData.template_data?.end_of_day_summary || {})
-          },
-          decision_quality_score: voiceData.template_data?.decision_quality_score || prev.template_data?.decision_quality_score
-        } : prev.template_data
+        pre_market_notes: voiceData.pre_market_notes || (isNewPositionEntry ? carriedPreMarketNotes : prev.pre_market_notes),
+        post_market_notes: voiceData.post_market_notes || (isNewPositionEntry ? carriedPostMarketNotes : prev.post_market_notes),
+        mood: isNewPositionEntry ? carriedMood : prev.mood,
+        template_data: (() => {
+          const base = isNewPositionEntry ? carriedTemplateData : prev.template_data;
+          if (!voiceData.template_data) return base;
+          return {
+            ...base,
+            ...voiceData.template_data,
+            pre_trade_mindset: {
+              ...(base?.pre_trade_mindset || {}),
+              ...(voiceData.template_data?.pre_trade_mindset || {})
+            },
+            emotional_checkin: {
+              ...(base?.emotional_checkin || {}),
+              ...(voiceData.template_data?.emotional_checkin || {}),
+              emotions: [
+                ...(base?.emotional_checkin?.emotions || []),
+                ...(voiceData.template_data?.emotional_checkin?.emotions || [])
+              ].filter((v, i, a) => a.indexOf(v) === i)
+            },
+            post_trade_reflection: {
+              ...(base?.post_trade_reflection || {}),
+              ...(voiceData.template_data?.post_trade_reflection || {})
+            },
+            affirmations: [
+              ...(base?.affirmations || []),
+              ...(voiceData.template_data?.affirmations || [])
+            ],
+            psychological_wins: [
+              ...(base?.psychological_wins || []),
+              ...(voiceData.template_data?.psychological_wins || [])
+            ],
+            trigger_tracking: [
+              ...(base?.trigger_tracking || []),
+              ...(voiceData.template_data?.trigger_tracking || [])
+            ],
+            stress_levels: {
+              ...(base?.stress_levels || {}),
+              ...(voiceData.template_data?.stress_levels || {})
+            },
+            cognitive_distortions: [
+              ...(base?.cognitive_distortions || []),
+              ...(voiceData.template_data?.cognitive_distortions || [])
+            ].filter((v, i, a) => a.indexOf(v) === i),
+            end_of_day_summary: {
+              ...(base?.end_of_day_summary || {}),
+              ...(voiceData.template_data?.end_of_day_summary || {})
+            },
+            decision_quality_score: voiceData.template_data?.decision_quality_score || base?.decision_quality_score
+          };
+        })()
       }));
 
       if (voiceData.template_data && Object.keys(voiceData.template_data).length > 0) {
