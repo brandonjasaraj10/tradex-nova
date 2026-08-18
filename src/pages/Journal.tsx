@@ -659,10 +659,34 @@ export default function Journal() {
     }
   };
 
+  // Confluences/rules the user already has defined, passed to Nova so she
+  // can match a name the user says out loud ("followed my trend alignment
+  // confluence") to the right existing row - matched by id, never a guess.
+  const namedConfluences = () => userConfluences.map(c => ({ id: c.id, name: c.name }));
+  const namedRules = () => userRules.map(r => ({ id: r.id, name: r.name }));
+
+  const applyConfluenceRuleStatus = (voiceData: VoiceJournalData) => {
+    if (voiceData.confluences_status && voiceData.confluences_status.length > 0) {
+      setConfluenceStatus(prev => {
+        const next = new Map(prev);
+        voiceData.confluences_status!.forEach(c => next.set(c.id, c.present));
+        return next;
+      });
+    }
+    if (voiceData.rules_status && voiceData.rules_status.length > 0) {
+      setRuleStatus(prev => {
+        const next = new Map(prev);
+        voiceData.rules_status!.forEach(r => next.set(r.id, r.followed));
+        return next;
+      });
+    }
+  };
+
   const handleVoiceTranscript = async (text: string) => {
     setIsProcessingVoice(true);
     try {
-      const voiceData: VoiceJournalData = await processVoiceJournalEntry(text, entryForm);
+      const voiceData: VoiceJournalData = await processVoiceJournalEntry(text, entryForm, namedConfluences(), namedRules());
+      applyConfluenceRuleStatus(voiceData);
 
       setEntryForm(prev => ({
         ...prev,
@@ -801,7 +825,7 @@ export default function Journal() {
         // "Add Another Entry"), it doesn't get folded into this one, since
         // position fields (symbol, direction, size, risk, P&L) can only
         // hold one trade's values each.
-        const probeData = await processVoiceJournalEntry(newTextOnly);
+        const probeData = await processVoiceJournalEntry(newTextOnly, undefined, namedConfluences(), namedRules());
         const currentSymbol = (entryForm.symbol || '').trim().toUpperCase();
         const newSymbol = (probeData.symbol || '').trim().toUpperCase();
         isNewPositionEntry = !!newSymbol && !!currentSymbol && newSymbol !== currentSymbol;
@@ -817,11 +841,13 @@ export default function Journal() {
           }
           voiceData = probeData;
         } else {
-          voiceData = await processVoiceJournalEntry(newTextOnly, entryForm);
+          voiceData = await processVoiceJournalEntry(newTextOnly, entryForm, namedConfluences(), namedRules());
         }
       } else {
-        voiceData = await processVoiceJournalEntry(newTextOnly);
+        voiceData = await processVoiceJournalEntry(newTextOnly, undefined, namedConfluences(), namedRules());
       }
+
+      applyConfluenceRuleStatus(voiceData);
 
       const nextContent = voiceData.content
         ? (isIncrementalUpdate && !isNewPositionEntry ? `${currentContent}\n\n${voiceData.content}` : voiceData.content)

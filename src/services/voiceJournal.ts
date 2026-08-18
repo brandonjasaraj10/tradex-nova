@@ -50,9 +50,24 @@ export interface VoiceJournalData {
       nova_score?: number;
     };
   };
+  // Only for confluences/rules explicitly matched to ones the user
+  // already has defined (by id) - never a new one, and never guessed
+  // just because the trade matches the pattern.
+  confluences_status?: { id: string; present: boolean }[];
+  rules_status?: { id: string; followed: boolean }[];
 }
 
-export async function processVoiceJournalEntry(transcript: string, existingEntry?: any): Promise<VoiceJournalData> {
+export interface NamedItem {
+  id: string;
+  name: string;
+}
+
+export async function processVoiceJournalEntry(
+  transcript: string,
+  existingEntry?: any,
+  userConfluences: NamedItem[] = [],
+  userRules: NamedItem[] = []
+): Promise<VoiceJournalData> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
@@ -93,10 +108,19 @@ The user is UPDATING an existing journal entry. Here's what they already have:
 - Exception: If correcting/updating content, provide the full new HTML content
 ` : '';
 
+    const confluencesRulesPrompt = (userConfluences.length > 0 || userRules.length > 0) ? `
+**THE USER'S DEFINED CONFLUENCES AND RULES:**
+${userConfluences.length > 0 ? `Confluences (id: name):\n${userConfluences.map(c => `- ${c.id}: ${c.name}`).join('\n')}` : 'No confluences defined.'}
+${userRules.length > 0 ? `Rules (id: name):\n${userRules.map(r => `- ${r.id}: ${r.name}`).join('\n')}` : 'No rules defined.'}
+
+If the user explicitly says they followed, used, saw, or hit one of these by name (or a rule wasn't followed/was broken), include it in confluences_status / rules_status using its exact id from the list above - never invent a new one, and never include an item just because the trade generally matches that pattern. Only include ones the user actually spoke about.
+` : '';
+
     const systemPrompt = `You are NOVA, an elite AI trading psychology assistant with advanced natural language processing capabilities. Your role is to extract, organize, and structure trading journal entries from voice input with professional-level precision and intelligence.
 
 CRITICAL: You MUST return ONLY a valid JSON object. NO explanations, NO markdown, NO text outside the JSON.
 ${contextPrompt}
+${confluencesRulesPrompt}
 
 CORE CAPABILITIES:
 1. Context-aware extraction: Understand trading terminology, slang, abbreviations
@@ -533,7 +557,9 @@ Return ONLY valid JSON (no markdown code blocks, no backticks, no explanations):
       "mental_state_reflection": "detailed reflection on mental state",
       "nova_score": number (auto-calculated, can be omitted)
     }
-  }
+  },
+  "confluences_status": [{ "id": "the confluence's id from the list above", "present": true }],
+  "rules_status": [{ "id": "the rule's id from the list above", "followed": false }]
 }
 
 CRITICAL RULES:
@@ -543,6 +569,7 @@ CRITICAL RULES:
 4. If no psychology data is mentioned, omit template_data entirely
 5. Be generous with inference but conservative with assumptions
 6. Extract ALL relevant trading details from natural speech
+7. **confluences_status/rules_status**: only include an item if the user explicitly named it and said whether they followed/saw it or not - never infer from the trade description alone, and never include anything not in the provided id list. Omit both arrays entirely if nothing was explicitly mentioned.
 7. **CONVERT casual language to professional terminology**
 8. Generate smart tags based on content (e.g., "scalp", "swing", "win", "loss", "breakout", "reversal")
 9. Return PURE JSON only - no markdown formatting, no code blocks, no explanations
