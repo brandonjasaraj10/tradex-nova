@@ -333,7 +333,12 @@ export default function Calendar() {
   const rows = Math.ceil(totalDays / 7);
 
   const getWeekReportForDate = (dateStr: string): TradingReport | null => {
-    const date = new Date(dateStr);
+    // Local Y/M/D construction, not new Date(dateStr) - that parses as UTC
+    // midnight and getMonthBasedWeekBounds() reads it back with local
+    // getters, which can land on the wrong week and show no report card
+    // (or the wrong one) near week/month boundaries.
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
     const weekBounds = getMonthBasedWeekBounds(date);
     return weeklyReports.find(r => r.period_start === weekBounds.start) || null;
   };

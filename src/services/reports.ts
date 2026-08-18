@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { toLocalDateStr } from '../utils/dateHelpers';
 
 export interface TradingReport {
   id: string;
@@ -167,8 +168,8 @@ export function getWeekBounds(date: Date): { start: string; end: string } {
   weekEnd.setHours(23, 59, 59, 999);
 
   return {
-    start: weekStart.toISOString().split('T')[0],
-    end: weekEnd.toISOString().split('T')[0]
+    start: toLocalDateStr(weekStart),
+    end: toLocalDateStr(weekEnd)
   };
 }
 
@@ -246,8 +247,8 @@ export function getMonthBounds(date: Date): { start: string; end: string } {
   const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
 
   return {
-    start: monthStart.toISOString().split('T')[0],
-    end: monthEnd.toISOString().split('T')[0]
+    start: toLocalDateStr(monthStart),
+    end: toLocalDateStr(monthEnd)
   };
 }
 
@@ -257,8 +258,8 @@ export function getQuarterBounds(date: Date): { start: string; end: string } {
   const quarterEnd = new Date(date.getFullYear(), quarter * 3 + 3, 0);
 
   return {
-    start: quarterStart.toISOString().split('T')[0],
-    end: quarterEnd.toISOString().split('T')[0]
+    start: toLocalDateStr(quarterStart),
+    end: toLocalDateStr(quarterEnd)
   };
 }
 
@@ -267,7 +268,7 @@ export function getYearBounds(date: Date): { start: string; end: string } {
   const yearEnd = new Date(date.getFullYear(), 11, 31);
 
   return {
-    start: yearStart.toISOString().split('T')[0],
-    end: yearEnd.toISOString().split('T')[0]
+    start: toLocalDateStr(yearStart),
+    end: toLocalDateStr(yearEnd)
   };
 }

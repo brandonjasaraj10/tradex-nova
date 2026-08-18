@@ -31,6 +31,7 @@ import type { Trade } from '../types/trade';
 import { getTradingRules, createTradingRule, updateTradingRule, deleteTradingRule, type TradingRule } from '../services/tradingRules';
 import { generateReport, getWeekBounds, getMonthBounds, getQuarterBounds, getYearBounds, type TradingReport } from '../services/reports';
 import TradingReportModal from '../components/reports/TradingReportModal';
+import { toLocalDateStr } from '../utils/dateHelpers';
 
 
 const buildCalendarData = (
@@ -224,8 +225,8 @@ export default function Dashboard() {
         .select('*')
         .eq('user_id', user.id)
         .not('manual_pnl', 'is', null)
-        .gte('entry_date', dateRange.startDate.toISOString().split('T')[0])
-        .lte('entry_date', dateRange.endDate.toISOString().split('T')[0])
+        .gte('entry_date', toLocalDateStr(dateRange.startDate))
+        .lte('entry_date', toLocalDateStr(dateRange.endDate))
         .order('entry_date', { ascending: false })
         .limit(20);
 
@@ -437,8 +438,8 @@ export default function Dashboard() {
         .select('manual_pnl, entry_date, created_at')
         .eq('user_id', user.id)
         .not('manual_pnl', 'is', null)
-        .gte('entry_date', dateRange.startDate.toISOString().split('T')[0])
-        .lte('entry_date', dateRange.endDate.toISOString().split('T')[0])
+        .gte('entry_date', toLocalDateStr(dateRange.startDate))
+        .lte('entry_date', toLocalDateStr(dateRange.endDate))
         .order('entry_date', { ascending: false })
         .limit(100);
 

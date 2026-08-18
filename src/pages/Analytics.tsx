@@ -14,6 +14,7 @@ import type { TradeStats } from '../types/trade';
 import { useAuth } from '../lib/auth';
 import { generateInsights, getActiveInsights, dismissInsight, type Insight } from '../services/insights';
 import { supabase } from '../lib/supabase';
+import { toLocalDateStr } from '../utils/dateHelpers';
 
 import {
   Chart as ChartJS,
@@ -236,7 +237,7 @@ export default function Analytics() {
       if (isNaN(date.getTime())) return;
       const weekStart = new Date(date);
       weekStart.setDate(date.getDate() - date.getDay());
-      const key = weekStart.toISOString().split('T')[0];
+      const key = toLocalDateStr(weekStart);
       const existing = weeklyMap.get(key) || { wins: 0, total: 0 };
       existing.total++;
       if (t.pnl > 0) existing.wins++;

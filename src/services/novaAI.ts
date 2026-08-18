@@ -157,9 +157,22 @@ export class NovaAIService {
         { role: 'user', content: userMessage }
       ];
 
+      // Claude has no way to know the user's actual local date on its own
+      // (it would otherwise guess based on training data or default to UTC
+      // server time) - pass it explicitly so "today"/"yesterday" and the
+      // default entry_date for log_journal_entry resolve to the day the
+      // user is really on, not a server/UTC one that can already be
+      // tomorrow once it's evening in timezones behind UTC.
+      const now = new Date();
+      const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
       const requestBody: any = {
         messages,
-        user: { id: session.user.id }
+        user: { id: session.user.id },
+        client_context: {
+          local_date: localDate,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        },
       };
 
       if (images && images.length > 0) {

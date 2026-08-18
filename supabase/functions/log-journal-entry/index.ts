@@ -168,6 +168,11 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    // Last-resort fallback only - a server-side Deno function has no way to
+    // know the user's timezone on its own, so this is UTC "today", not
+    // theirs. nova-chat (the only real caller) now always resolves and
+    // passes entry_date itself using the client's actual local date before
+    // reaching here; this only fires if that resolution somehow failed.
     const entryDate = payload.entry_date || new Date().toISOString().split('T')[0];
 
     const { data: entriesForDate } = await supabaseClient

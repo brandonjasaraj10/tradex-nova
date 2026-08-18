@@ -1,3 +1,5 @@
+import { toLocalDateStr } from '../utils/dateHelpers';
+
 export interface NOVAScoreBreakdown {
   overall_score: number;
   consistency_score: number;
@@ -123,7 +125,7 @@ function calculateProfitConsistency(trades: TradeData[]): number {
   const dailyPnL = new Map<string, number>();
 
   trades.forEach(trade => {
-    const date = new Date(trade.entry_time).toISOString().split('T')[0];
+    const date = toLocalDateStr(new Date(trade.entry_time));
     dailyPnL.set(date, (dailyPnL.get(date) || 0) + trade.profit_loss);
   });
 
@@ -216,7 +218,7 @@ function calculateOvertradingPenalty(trades: TradeData[]): number {
   const dailyTradeCounts = new Map<string, number>();
 
   trades.forEach(trade => {
-    const date = new Date(trade.entry_time).toISOString().split('T')[0];
+    const date = toLocalDateStr(new Date(trade.entry_time));
     dailyTradeCounts.set(date, (dailyTradeCounts.get(date) || 0) + 1);
   });
 

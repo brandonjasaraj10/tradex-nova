@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import type { Trade, TradeFormData, TradeStats, TradeFilters } from '../types/trade';
+import { toLocalDateStr } from '../utils/dateHelpers';
 
 export async function createTrade(data: TradeFormData): Promise<Trade> {
   const user = supabase.auth.getUser();
@@ -147,8 +148,8 @@ async function getAllUnifiedTrades(
 
   if (dateRange) {
     journalQuery = journalQuery
-      .gte('entry_date', dateRange[0].toISOString().split('T')[0])
-      .lte('entry_date', dateRange[1].toISOString().split('T')[0]);
+      .gte('entry_date', toLocalDateStr(dateRange[0]))
+      .lte('entry_date', toLocalDateStr(dateRange[1]));
   }
   // journal_entries has no account/broker-connection column, so a
   // per-account filter can't apply to journal-logged P&L - only to
@@ -229,8 +230,8 @@ export async function getDailyPnL(
 
   const startDate = new Date(year, month, 1);
   const endDate = new Date(year, month + 1, 0);
-  const startStr = startDate.toISOString().split('T')[0];
-  const endStr = endDate.toISOString().split('T')[0];
+  const startStr = toLocalDateStr(startDate);
+  const endStr = toLocalDateStr(endDate);
 
   const allTrades = await getAllUnifiedTrades(
     user.id,
@@ -241,7 +242,16 @@ export async function getDailyPnL(
   const dailyMap = new Map<number, { pnl: number; trades: number; hasJournal: boolean }>();
 
   for (const trade of allTrades) {
-    const dateStr = trade.entry_date?.split('T')[0] || '';
+    // entry_date is a full UTC timestamp for real trades but an
+    // already-local plain date for journal-sourced entries (entry_date is
+    // a `date` column there, never stored with a time/offset) - only the
+    // timestamp case needs converting to a local calendar day, otherwise
+    // that conversion would wrongly shift the already-correct plain date.
+    const dateStr = !trade.entry_date
+      ? ''
+      : trade.entry_date.includes('T')
+        ? toLocalDateStr(new Date(trade.entry_date))
+        : trade.entry_date;
     if (dateStr < startStr || dateStr > endStr) continue;
     const day = parseInt(dateStr.split('-')[2], 10);
     const existing = dailyMap.get(day) || { pnl: 0, trades: 0, hasJournal: false };

@@ -730,6 +730,13 @@ interface RequestPayload {
     id: string;
   };
   images?: string[];
+  // The server has no way to know the user's local date/timezone on its
+  // own - without this, "today" silently means UTC server time, which is
+  // already tomorrow for anyone behind UTC once it's evening locally.
+  client_context?: {
+    local_date?: string;
+    timezone?: string;
+  };
 }
 
 interface UserProfile {
@@ -818,7 +825,8 @@ Deno.serve(async (req: Request) => {
       throw new Error('Anthropic API key not configured');
     }
 
-    const { messages, images }: RequestPayload = await req.json();
+    const { messages, images, client_context }: RequestPayload = await req.json();
+    const clientLocalDate = client_context?.local_date;
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(
@@ -997,7 +1005,13 @@ Deno.serve(async (req: Request) => {
 
     const profileContext = formatProfileForAI(userProfile);
     const memoryContext = formatMemoriesForAI(userMemories);
-    const enhancedSystemPrompt = SYSTEM_PROMPT + profileContext + memoryContext;
+    // The server's own clock is not the user's - without this, "today" or
+    // an omitted entry_date silently defaults to server/UTC time, which
+    // is already tomorrow for anyone behind UTC once it's evening locally.
+    const dateContext = clientLocalDate
+      ? `\n\nToday's date, in the user's own local timezone, is ${clientLocalDate}. Always use this (not your own sense of the current date) for "today", "yesterday", "this week", or any other relative date the user mentions, and as the entry_date default for log_journal_entry when they don't specify one.`
+      : '';
+    const enhancedSystemPrompt = SYSTEM_PROMPT + profileContext + memoryContext + dateContext;
 
     // Cache the system prompt (~4,400 tokens) and tool definitions (tools
     // render before system, so one breakpoint here covers both). This
@@ -1033,6 +1047,14 @@ Deno.serve(async (req: Request) => {
         try {
           const functionArgs = toolUseBlock.input as any;
           console.log('Function arguments:', functionArgs);
+
+          // Belt-and-suspenders: the prompt already tells Claude what
+          // today is, but if it omits entry_date anyway, fall back to the
+          // client's real local date rather than letting log-journal-entry
+          // compute its own (server/UTC) "today".
+          if (!functionArgs.entry_date && clientLocalDate) {
+            functionArgs.entry_date = clientLocalDate;
+          }
 
           const journalResponse = await fetch(
             `${Deno.env.get('SUPABASE_URL')}/functions/v1/log-journal-entry`,
