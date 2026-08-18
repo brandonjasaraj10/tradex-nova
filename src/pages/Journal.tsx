@@ -142,6 +142,8 @@ export default function Journal() {
   const [showPsychologyTemplate, setShowPsychologyTemplate] = useState(false);
   const [isProcessingVoice, setIsProcessingVoice] = useState(false);
   const [isAutoFilling, setIsAutoFilling] = useState(false);
+  const lastOrganizedContentRef = React.useRef<string>('');
+  const justOrganizedRef = React.useRef(false);
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     title: string;
@@ -259,6 +261,20 @@ export default function Journal() {
     // still in it, which reads as Nova auto-analyzing the new one.
     setShowNovaAssistant(false);
   }, [selectedFolder, selectedDate, selectedAccount]);
+
+  useEffect(() => {
+    // Runs after React has committed entryForm.content and RichTextEditor's
+    // own effect has re-parsed it through TipTap - only then does the DOM
+    // reflect what the editor will actually hand back next time, so this is
+    // the first point it's safe to use as the "what did we just organize"
+    // baseline. Capturing it any earlier (e.g. right in the click handler)
+    // reads the DOM before that re-parse has happened.
+    if (justOrganizedRef.current) {
+      justOrganizedRef.current = false;
+      const renderedEditor = document.querySelector('[contenteditable="true"]');
+      lastOrganizedContentRef.current = renderedEditor?.innerHTML || entryForm.content;
+    }
+  }, [entryForm.content]);
 
   useEffect(() => {
     const handleNovaToolCall = async (event: CustomEvent) => {
@@ -655,7 +671,7 @@ export default function Journal() {
         direction: voiceData.direction || prev.direction,
         trade_duration: voiceData.trade_duration || prev.trade_duration,
         position_size: voiceData.position_size || prev.position_size,
-        manual_pnl: voiceData.manual_pnl !== undefined ? voiceData.manual_pnl : prev.manual_pnl,
+        manual_pnl: voiceData.manual_pnl !== undefined ? String(voiceData.manual_pnl) : prev.manual_pnl,
         content: voiceData.content
           ? (prev.content && prev.content.trim().length > 0
               ? `${prev.content}\n\n${voiceData.content}`
@@ -739,16 +755,50 @@ export default function Journal() {
   };
 
   const handleAutoFillFromText = async () => {
-    const plainText = entryForm.content.replace(/<[^>]*>/g, '').trim();
+    const currentContent = entryForm.content;
+    const plainText = currentContent.replace(/<[^>]*>/g, '').trim();
     if (!plainText || isAutoFilling) return;
+
+    // TipTap re-serializes HTML through ProseMirror's own schema, so the
+    // whitespace between tags in what we stored after the last run won't
+    // byte-match what's read back from the editor now, even when nothing
+    // meaningful changed - collapse all whitespace before comparing so that
+    // doesn't break the "did the user just add to this" detection below.
+    const normalize = (s: string) => s.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    const plainTextNorm = normalize(currentContent);
+    const lastOrganizedNorm = normalize(lastOrganizedContentRef.current);
+
+    // If the box still starts with exactly what we organized last time and
+    // has grown, the user added more on top of an already-organized entry -
+    // send ONLY the new part through the same incremental-update path voice
+    // input already uses (existingEntry passed, content appended rather
+    // than replaced). Re-sending the WHOLE box as one fresh transcript every
+    // time doesn't reliably preserve everything already organized - Nova
+    // can end up re-deriving just the newest trade and dropping the rest.
+    const isIncrementalUpdate =
+      lastOrganizedNorm.length > 0 &&
+      plainTextNorm.startsWith(lastOrganizedNorm) &&
+      plainTextNorm.length > lastOrganizedNorm.length;
+    const newTextOnly = isIncrementalUpdate ? plainTextNorm.slice(lastOrganizedNorm.length).trim() : plainText;
+    if (!newTextOnly) return;
 
     setIsAutoFilling(true);
     try {
-      // No existingEntry passed on purpose - this box's own text is the
-      // whole transcript to organize, not new info to merge into what's
-      // already there, so Nova returns a complete rewritten entry rather
-      // than an "only what's new" delta the way voice updates do.
-      const voiceData: VoiceJournalData = await processVoiceJournalEntry(plainText);
+      const voiceData: VoiceJournalData = isIncrementalUpdate
+        ? await processVoiceJournalEntry(newTextOnly, entryForm)
+        : await processVoiceJournalEntry(newTextOnly);
+
+      const nextContent = voiceData.content
+        ? (isIncrementalUpdate ? `${currentContent}\n\n${voiceData.content}` : voiceData.content)
+        : currentContent;
+
+      // Don't store nextContent (Nova's raw HTML string) as the baseline -
+      // TipTap re-parses it through ProseMirror's own schema once it renders,
+      // which can shift whitespace and even wording slightly, so comparing
+      // against the pre-render string next time silently fails to match and
+      // falls back to full-reorganize mode. The effect above captures the
+      // real baseline once the DOM has actually caught up.
+      justOrganizedRef.current = true;
 
       setEntryForm(prev => ({
         ...prev,
@@ -757,8 +807,8 @@ export default function Journal() {
         direction: voiceData.direction || prev.direction,
         trade_duration: voiceData.trade_duration || prev.trade_duration,
         position_size: voiceData.position_size || prev.position_size,
-        manual_pnl: voiceData.manual_pnl !== undefined ? voiceData.manual_pnl : prev.manual_pnl,
-        content: voiceData.content || prev.content,
+        manual_pnl: voiceData.manual_pnl !== undefined ? String(voiceData.manual_pnl) : prev.manual_pnl,
+        content: nextContent,
         tags: voiceData.tags && voiceData.tags.length > 0
           ? [...new Set([...prev.tags, ...voiceData.tags])]
           : prev.tags,

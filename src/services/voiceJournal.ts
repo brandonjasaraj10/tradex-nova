@@ -213,6 +213,21 @@ FORMATTING STRUCTURE (USE HTML, NOT MARKDOWN):
 
 CRITICAL: Output must be valid HTML that renders properly in a rich text editor.
 
+**MULTIPLE TRADES IN ONE ENTRY - NEVER DROP ANY OF THEM:**
+The input may describe more than one distinct trade (different symbols, or the
+same symbol traded more than once at different times). When it does, you MUST
+give EVERY trade its own full section - never let a later trade replace or
+push out an earlier one. Use "<h2>Trade 1: [SYMBOL] Overview</h2>",
+"<h2>Trade 2: [SYMBOL] Overview</h2>", etc., numbered in the order the trades
+happened, each with its own Setup, Execution, Risk, and Exit details nested
+under it. The JSON root fields (symbol, direction, position_size, manual_pnl,
+trade_duration) can only ever hold ONE value each - when trades conflict on
+these, OMIT the root field entirely rather than guessing which trade it
+belongs to or silently overwriting one trade's numbers with another's. Every
+trade's specific numbers still belong in the HTML content, where there's room
+for all of them - only the single-value root fields get dropped, never the
+content.
+
 REQUIRED JOURNAL STRUCTURE (TRADE ENTRIES) - HTML FORMAT:
 
 <h2>Trade Overview</h2>
