@@ -9,10 +9,10 @@ import { PreferencesProvider } from './lib/preferencesContext';
 import Header from './components/layout/Header';
 import Sidebar from './components/layout/Sidebar';
 import PrivateRoute from './components/shared/PrivateRoute';
-import NovaWidget from './components/nova/NovaWidget';
 import WelcomeAnimation from './components/shared/WelcomeAnimation';
 import ProfileSetup from './components/auth/ProfileSetup';
 import TourOverlay from './components/tour/TourOverlay';
+import PageLoader from './components/shared/PageLoader';
 
 const Sales = lazy(() => import('./pages/Sales'));
 const Auth = lazy(() => import('./pages/Auth'));
@@ -36,11 +36,7 @@ function PublicLayout() {
   return (
     <div className="min-h-screen bg-black">
       <main>
-        <Suspense fallback={
-          <div className="flex items-center justify-center min-h-screen bg-black">
-            <div className="text-sm text-white">Loading...</div>
-          </div>
-        }>
+        <Suspense fallback={<PageLoader fullScreen />}>
           <Routes>
             <Route path="/" element={<Sales />} />
             <Route path="/sales" element={<Sales />} />
@@ -70,11 +66,7 @@ function PrivateLayout() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-black">
-        <div className="text-sm text-white">Loading...</div>
-      </div>
-    );
+    return <PageLoader fullScreen />;
   }
 
   if (needsProfile && user) {
@@ -91,7 +83,7 @@ function PrivateLayout() {
 
   if (needsSubscription && user && profile) {
     return (
-      <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-black"><div className="text-sm text-white">Loading...</div></div>}>
+      <Suspense fallback={<PageLoader fullScreen />}>
         <Payment
           onSubscriptionComplete={async () => {
             await refreshSubscription();
@@ -131,11 +123,7 @@ function PrivateLayout() {
             onMenuClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           />
           <main className="pt-16">
-            <Suspense fallback={
-              <div className="flex items-center justify-center min-h-screen">
-                <div className="text-sm">Loading...</div>
-              </div>
-            }>
+            <Suspense fallback={<PageLoader className="min-h-[calc(100vh-4rem)]" />}>
               <Routes>
                 <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
                 <Route path="/journal" element={<PrivateRoute><Journal /></PrivateRoute>} />
@@ -149,7 +137,6 @@ function PrivateLayout() {
               </Routes>
             </Suspense>
           </main>
-          <NovaWidget />
           <TourOverlay />
         </div>
       </div>

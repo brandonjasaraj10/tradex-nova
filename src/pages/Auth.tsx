@@ -278,7 +278,7 @@ export default function Auth() {
       )}
 
       {success && (
-        <div className="text-sm text-emerald-400 bg-emerald-400/10 p-3 rounded-lg">
+        <div className="text-sm text-blue-400 bg-blue-400/10 p-3 rounded-lg">
           {success}
         </div>
       )}
@@ -369,7 +369,7 @@ export default function Auth() {
           <p className="mt-1 text-xs text-red-400">Passwords do not match</p>
         )}
         {confirmPassword && password === confirmPassword && (
-          <p className="mt-1 text-xs text-emerald-400">Passwords match</p>
+          <p className="mt-1 text-xs text-blue-400">Passwords match</p>
         )}
       </div>
 
@@ -437,7 +437,7 @@ export default function Auth() {
       )}
 
       {success && (
-        <div className="text-sm text-emerald-400 bg-emerald-400/10 p-3 rounded-lg">
+        <div className="text-sm text-blue-400 bg-blue-400/10 p-3 rounded-lg">
           {success}
         </div>
       )}
@@ -493,7 +493,7 @@ export default function Auth() {
       )}
 
       {success && (
-        <div className="text-sm text-emerald-400 bg-emerald-400/10 p-3 rounded-lg">
+        <div className="text-sm text-blue-400 bg-blue-400/10 p-3 rounded-lg">
           {success}
         </div>
       )}
@@ -577,7 +577,7 @@ export default function Auth() {
           <p className="mt-1 text-xs text-red-400">Passwords do not match</p>
         )}
         {confirmNewPassword && newPassword === confirmNewPassword && (
-          <p className="mt-1 text-xs text-emerald-400">Passwords match</p>
+          <p className="mt-1 text-xs text-blue-400">Passwords match</p>
         )}
       </div>
 
@@ -588,7 +588,7 @@ export default function Auth() {
       )}
 
       {success && (
-        <div className="text-sm text-emerald-400 bg-emerald-400/10 p-3 rounded-lg">
+        <div className="text-sm text-blue-400 bg-blue-400/10 p-3 rounded-lg">
           {success}
         </div>
       )}

@@ -19,6 +19,15 @@ export default {
         'brand-profit': '#60A5FA',     // gains, positive stats (blue, not green - see BRAND_GUIDE.md)
         'brand-loss': '#9CA3AF',       // losses, negative stats (grey, not red)
       },
+      keyframes: {
+        'loader-sweep': {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(350%)' },
+        },
+      },
+      animation: {
+        'loader-sweep': 'loader-sweep 1.2s ease-in-out infinite',
+      },
     },
   },
   plugins: [],

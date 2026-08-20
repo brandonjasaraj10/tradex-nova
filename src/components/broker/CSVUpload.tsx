@@ -176,7 +176,7 @@ export default function CSVUpload({ onClose, onSuccess }: CSVUploadProps) {
 
             {!isProcessing && trades.length > 0 && (
               <div className="space-y-4">
-                <div className="flex items-center gap-2 text-green-400">
+                <div className="flex items-center gap-2 text-blue-400">
                   <CheckCircle2 size={20} />
                   <span>Found {trades.length} trades ready to import</span>
                 </div>
@@ -198,7 +198,7 @@ export default function CSVUpload({ onClose, onSuccess }: CSVUploadProps) {
                         <tr key={index} className="border-t border-white/5 hover:bg-white/5">
                           <td className="px-4 py-2">{trade.symbol}</td>
                           <td className="px-4 py-2">
-                            <span className={trade.type === 'buy' ? 'text-green-400' : 'text-red-400'}>
+                            <span className={trade.type === 'buy' ? 'text-blue-400' : 'text-gray-400'}>
                               {trade.type.toUpperCase()}
                             </span>
                           </td>
@@ -232,12 +232,12 @@ export default function CSVUpload({ onClose, onSuccess }: CSVUploadProps) {
                 )}
 
                 {importResult && (
-                  <div className={`p-4 rounded-lg ${importResult.imported > 0 ? 'bg-green-500/10 border border-green-500/20' : 'bg-red-500/10 border border-red-500/20'}`}>
+                  <div className={`p-4 rounded-lg ${importResult.imported > 0 ? 'bg-blue-500/10 border border-blue-500/20' : 'bg-red-500/10 border border-red-500/20'}`}>
                     <div className="flex items-center gap-2 mb-2">
                       {importResult.imported > 0 ? (
                         <>
-                          <CheckCircle2 className="w-5 h-5 text-green-400" />
-                          <span className="text-green-400 font-medium">
+                          <CheckCircle2 className="w-5 h-5 text-blue-400" />
+                          <span className="text-blue-400 font-medium">
                             Successfully imported {importResult.imported} trades!
                           </span>
                         </>

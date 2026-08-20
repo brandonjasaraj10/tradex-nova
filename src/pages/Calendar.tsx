@@ -8,6 +8,7 @@ import { useDataSync } from '../lib/dataSync';
 import { generateReport, getWeeklyReports, getMonthBasedWeekBounds, getMonthWeeks, type TradingReport } from '../services/reports';
 import WeeklySummaryCard from '../components/reports/WeeklySummaryCard';
 import TradingReportModal from '../components/reports/TradingReportModal';
+import PageLoader from '../components/shared/PageLoader';
 
 interface DayData {
   date: string;
@@ -576,7 +577,7 @@ export default function Calendar() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <div className="flex items-center bg-black/50 border border-white/10 rounded-lg p-1">
+                  <div className="flex items-center bg-black/50 border border-white/10 rounded-lg p-1" data-tour="calendar-psych-toggle">
                     <button
                       onClick={() => setViewMode('pnl')}
                       className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
@@ -632,7 +633,7 @@ export default function Calendar() {
 
                 {loading ? (
                   <div className="flex-1 flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400" />
+                    <PageLoader />
                   </div>
                 ) : (
                   <>

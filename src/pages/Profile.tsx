@@ -193,7 +193,7 @@ export default function Profile() {
                 </Button>
 
                 {saveStatus === 'error' && (
-                  <span className="text-sm text-danger-400">
+                  <span className="text-sm text-red-400">
                     Failed to save changes
                   </span>
                 )}
@@ -218,9 +218,9 @@ export default function Profile() {
                 <span className="text-gray-400">Account Status</span>
                 <span className={
                   subscription && ['active', 'trialing'].includes(subscription.status)
-                    ? 'text-success-400'
+                    ? 'text-blue-400'
                     : subscription && ['past_due', 'unpaid', 'incomplete', 'incomplete_expired'].includes(subscription.status)
-                    ? 'text-danger-400'
+                    ? 'text-red-400'
                     : 'text-gray-400'
                 }>
                   {subscription ? STATUS_LABELS[subscription.status] : 'No Subscription'}

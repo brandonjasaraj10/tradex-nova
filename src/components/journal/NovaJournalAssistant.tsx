@@ -431,16 +431,16 @@ export default function NovaJournalAssistant({
       </div>
 
       {pendingExtraction && (
-        <div className="p-3 bg-green-500/10 border-b border-green-500/20">
+        <div className="p-3 bg-blue-500/10 border-b border-blue-500/20">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Wand2 className="w-4 h-4 text-green-400" />
-              <span className="text-sm text-green-400">Nova detected journal data to auto-fill</span>
+              <Wand2 className="w-4 h-4 text-blue-400" />
+              <span className="text-sm text-blue-400">Nova detected journal data to auto-fill</span>
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={applyExtraction}
-                className="flex items-center gap-1 px-3 py-1.5 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg text-xs font-medium transition-colors"
+                className="flex items-center gap-1 px-3 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg text-xs font-medium transition-colors"
               >
                 <Check className="w-3 h-3" />
                 Apply

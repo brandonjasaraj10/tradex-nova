@@ -150,12 +150,12 @@ export default function PersonalizationModal({ isOpen, onClose, onComplete, user
                         isActive
                           ? 'bg-blue-400/20 border border-blue-400/30'
                           : isCompleted
-                          ? 'bg-green-400/20 border border-green-400/30'
+                          ? 'bg-blue-400/10 border border-blue-400/20'
                           : 'bg-white/5 border border-white/5'
                       }`}
                     >
                       {isCompleted ? (
-                        <Check className="w-5 h-5 text-green-400" />
+                        <Check className="w-5 h-5 text-blue-400" />
                       ) : (
                         <StepIcon
                           className={`w-5 h-5 ${

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { BookOpen, AlertCircle, CheckCircle, TrendingUp, AlertTriangle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Card from './Card';
+import PageLoader from './PageLoader';
 import { getTradingRules, type TradingRule } from '../../services/tradingRules';
 import { getJournalEntryRules } from '../../services/tradingRules';
 import { supabase } from '../../lib/supabase';
@@ -82,23 +83,17 @@ export default function TradingRulesWidget() {
   }
 
   function getAdherenceColor(rate: number) {
-    if (rate >= 90) return 'text-green-400';
-    if (rate >= 75) return 'text-yellow-400';
-    return 'text-red-400';
+    return rate >= 90 ? 'text-blue-400' : 'text-gray-400';
   }
 
   function getAdherenceBgColor(rate: number) {
-    if (rate >= 90) return 'bg-green-400/10 border-green-400/20';
-    if (rate >= 75) return 'bg-yellow-400/10 border-yellow-400/20';
-    return 'bg-red-400/10 border-red-400/20';
+    return rate >= 90 ? 'bg-blue-400/10 border-blue-400/20' : 'bg-gray-400/10 border-gray-400/20';
   }
 
   if (loading) {
     return (
       <Card variant="default" className="p-6">
-        <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400"></div>
-        </div>
+        <PageLoader className="py-8" />
       </Card>
     );
   }
@@ -148,7 +143,7 @@ export default function TradingRulesWidget() {
                         <p className="text-xs text-gray-400 mb-2">{rule.description}</p>
                       )}
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-green-400 font-medium">Active</span>
+                        <span className="text-xs text-blue-400 font-medium">Active</span>
                         <span className="text-xs text-gray-400">
                           Following <span className={`font-medium ${getAdherenceColor(rule.adherence_rate)}`}>
                             {rule.adherence_rate}%
@@ -172,11 +167,7 @@ export default function TradingRulesWidget() {
             <div className="w-full bg-white/5 rounded-full h-2 overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all duration-500 ${
-                  overallAdherence >= 90
-                    ? 'bg-green-400'
-                    : overallAdherence >= 75
-                    ? 'bg-yellow-400'
-                    : 'bg-red-400'
+                  overallAdherence >= 90 ? 'bg-blue-400' : 'bg-gray-400'
                 }`}
                 style={{ width: `${overallAdherence}%` }}
               />

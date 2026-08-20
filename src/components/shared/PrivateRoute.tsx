@@ -2,6 +2,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../lib/auth';
 import { useEffect, useState } from 'react';
 import { checkSubscriptionAccess } from '../../services/subscriptionService';
+import PageLoader from './PageLoader';
 
 export default function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading } = useAuth();
@@ -30,11 +31,7 @@ export default function PrivateRoute({ children }: { children: React.ReactNode }
   }, [user, authLoading, location.pathname]);
 
   if (authLoading || subscriptionChecking) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-sm">Loading...</div>
-      </div>
-    );
+    return <PageLoader className="min-h-[calc(100vh-4rem)]" />;
   }
 
   if (!user) {

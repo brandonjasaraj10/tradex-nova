@@ -444,7 +444,7 @@ export default function Settings() {
                       onClick={handleSaveProfile}
                       disabled={loading}
                       icon={saveSuccess ? <Check size={16} /> : <Save size={16} />}
-                      className={saveSuccess ? 'bg-emerald-600 hover:bg-emerald-700' : ''}
+                      className={saveSuccess ? 'bg-blue-600 hover:bg-blue-700' : ''}
                     >
                       {saveSuccess ? 'Saved!' : loading ? 'Saving...' : 'Save Changes'}
                     </Button>
@@ -754,7 +754,7 @@ export default function Settings() {
                       onClick={handleSavePreferences}
                       disabled={loading}
                       icon={saveSuccess ? <Check size={16} /> : <Save size={16} />}
-                      className={saveSuccess ? 'bg-emerald-600 hover:bg-emerald-700' : ''}
+                      className={saveSuccess ? 'bg-blue-600 hover:bg-blue-700' : ''}
                     >
                       {saveSuccess ? 'Saved!' : loading ? 'Saving...' : 'Save Preferences'}
                     </Button>

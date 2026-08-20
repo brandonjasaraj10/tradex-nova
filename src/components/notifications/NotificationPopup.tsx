@@ -118,11 +118,11 @@ export default function NotificationPopup({ isOpen, onClose }: NotificationPopup
   const getIcon = (type: string) => {
     switch (type) {
       case 'success':
-        return <CheckCircle size={18} className="text-success-400" />;
+        return <CheckCircle size={18} className="text-blue-400" />;
       case 'warning':
-        return <AlertTriangle size={18} className="text-warning-400" />;
+        return <AlertTriangle size={18} className="text-yellow-400" />;
       case 'error':
-        return <XCircle size={18} className="text-danger-400" />;
+        return <XCircle size={18} className="text-red-400" />;
       default:
         return <Info size={18} className="text-blue-400" />;
     }

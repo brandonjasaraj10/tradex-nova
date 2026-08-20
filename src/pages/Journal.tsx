@@ -41,6 +41,7 @@ import {
 import { useVoice } from '../hooks/useVoice';
 import { processVoiceJournalEntry, type VoiceJournalData } from '../services/voiceJournal';
 import { correctTradingTerms } from '../utils/tradingVocabulary';
+import PageLoader from '../components/shared/PageLoader';
 
 const DEFAULT_FOLDERS = [
   { name: 'Daily Journal', description: 'Daily trading reflections and general entries', icon: 'Calendar', color: '#3B82F6', template_type: 'default' },
@@ -1211,14 +1212,7 @@ export default function Journal() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mx-auto"></div>
-          <p className="mt-4 text-gray-400">Loading journal...</p>
-        </div>
-      </div>
-    );
+    return <PageLoader className="min-h-screen" label="Loading journal..." />;
   }
 
   // Only worth showing which account an entry belongs to when there's
@@ -2194,7 +2188,7 @@ export default function Journal() {
                         className="flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
                       >
                         <div className="flex items-center gap-3">
-                          <div className={`w-2 h-2 rounded-full ${trade.direction === 'LONG' ? 'bg-green-400' : 'bg-red-400'}`} />
+                          <div className={`w-2 h-2 rounded-full ${trade.direction === 'LONG' ? 'bg-blue-400' : 'bg-gray-400'}`} />
                           <div>
                             <p className="text-sm font-medium">{trade.symbol}</p>
                             <p className="text-xs text-gray-400">{trade.setup || 'No setup'}</p>

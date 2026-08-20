@@ -19,6 +19,7 @@ import {
 } from '../services/tradingRules';
 import { CheckCircle2, Circle, Plus, X, Edit2, Save, Trash2, GripVertical } from 'lucide-react';
 import Card from '../components/shared/Card';
+import PageLoader from '../components/shared/PageLoader';
 
 type TabType = 'confluences' | 'rules';
 
@@ -192,7 +193,7 @@ export default function Checklists() {
     return (
       <div className="p-8">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center py-12">Loading...</div>
+          <PageLoader />
         </div>
       </div>
     );
