@@ -370,23 +370,20 @@ export default function Calendar() {
     let currentDay = 1;
     const weekReportRows = new Map<number, string>();
 
-    // First pass: determine which rows should have week reports
-    let tempDay = 1;
-    for (let row = 0; row < rows; row++) {
-      for (let col = 0; col < 7; col++) {
-        const cellIndex = row * 7 + col;
-        if (cellIndex >= startingDayOfWeek && tempDay <= daysInMonth) {
-          // Check if this is the end of a month-based week
-          if (tempDay === 7 || tempDay === 14 || tempDay === 21 || tempDay === daysInMonth) {
-            const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(tempDay).padStart(2, '0')}`;
-            weekReportRows.set(row, dateKey);
-          }
-          tempDay++;
-        }
-      }
-    }
+    // Month-based weeks (1-7, 8-14, 15-21, 22-end) can't line up with
+    // Sun-Sat grid rows, so anchoring each card to the row holding its
+    // last day punched holes in the Week column - August 2026 landed
+    // cards on rows 1, 2, 3 and 5 with row 4 blank. Stacking them from
+    // the top keeps the column contiguous no matter how a month falls;
+    // each card is labelled with its own date range anyway.
+    const weekEndDays = [7, 14, 21, daysInMonth]
+      .filter((d, i, arr) => d <= daysInMonth && arr.indexOf(d) === i);
 
-    // Second pass: render the calendar
+    weekEndDays.forEach((endDay, weekIndex) => {
+      const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(endDay).padStart(2, '0')}`;
+      weekReportRows.set(weekIndex, dateKey);
+    });
+
     currentDay = 1;
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < 7; col++) {

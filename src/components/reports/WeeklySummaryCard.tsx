@@ -49,23 +49,34 @@ export default function WeeklySummaryCard({ report, onClick, privacyMode = false
       }}
     >
       <div className="absolute inset-0 bg-gradient-to-br from-[#3B82F6]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-      <div className="relative z-10 flex flex-col justify-start h-full gap-0.5">
-        <div>
-          <span className="text-[7px] lg:text-[8px] font-medium text-gray-400 block truncate">
+      {/*
+        The whole card is a button, so the old separate "View >" footer row
+        was both redundant and the thing being clipped: with four stat rows
+        it pushed past the fixed row height and overflow-hidden cut it off.
+        The chevron now lives inline in the header, and the stats area is a
+        min-h-0 flex child so it can never shove anything out of the card.
+      */}
+      <div className="relative z-10 flex flex-col h-full min-h-0 gap-0.5">
+        <div className="flex items-center justify-between gap-0.5 flex-shrink-0">
+          <span className="text-[7px] lg:text-[8px] font-medium text-gray-400 truncate">
             {formatWeekRange(report.period_start, report.period_end)}
           </span>
+          <ChevronRight
+            size={8}
+            className="lg:w-2.5 lg:h-2.5 flex-shrink-0 text-gray-600 group-hover:text-blue-400 transition-colors"
+          />
         </div>
 
         {report.total_trades === 0 ? (
-          <div className="text-center">
+          <div className="flex-1 min-h-0 flex items-center justify-center">
             <p className="text-[8px] lg:text-[9px] text-gray-500">No trades</p>
           </div>
         ) : privacyMode ? (
-          <div className="flex items-center justify-center">
+          <div className="flex-1 min-h-0 flex items-center justify-center">
             <Eye size={10} className="text-gray-600" />
           </div>
         ) : (
-          <div className="space-y-0">
+          <div className="flex-1 min-h-0 flex flex-col justify-center">
             <div className="flex items-center justify-between">
               <span className="text-[7px] lg:text-[8px] text-gray-400">P&L</span>
               <span className={`text-[9px] lg:text-[10px] font-bold ${report.total_pnl >= 0 ? 'text-[#3B82F6]' : 'text-gray-400'}`}>
@@ -93,13 +104,6 @@ export default function WeeklySummaryCard({ report, onClick, privacyMode = false
             )}
           </div>
         )}
-
-        <div className="mt-auto pt-0.5 border-t border-white/5">
-          <div className="flex items-center justify-center gap-0.5 text-[7px] lg:text-[8px] text-gray-500 group-hover:text-blue-400 transition-colors">
-            <span>View</span>
-            <ChevronRight size={8} className="lg:w-3 lg:h-3" />
-          </div>
-        </div>
       </div>
     </motion.button>
   );
