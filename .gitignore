@@ -30,3 +30,9 @@ supabase/.temp
 # Vite crash-recovery config snapshots
 vite.config.ts.timestamp-*.mjs
 .tools/
+
+# Claude Code local config - both files hold absolute paths tied to a
+# single machine/session (launch.json points at a run-dev.sh inside that
+# session's temp scratchpad, which is why the dev server broke once the
+# session changed). Nothing here is portable to another checkout.
+.claude/
