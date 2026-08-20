@@ -44,6 +44,36 @@ Deno.serve(async (req: Request) => {
       throw new Error('Price ID is required');
     }
 
+    /*
+      Founder pricing is waitlist-only, and this is the only place that can
+      actually enforce it. The founder price ids ship inside the frontend
+      bundle, so without this check anyone could POST one here and lock in
+      $14.99 forever regardless of whether they ever joined the waitlist.
+
+      is_founder_eligible() derives the email from the caller's signed JWT,
+      so it answers only about the authenticated user and can't be spoofed
+      by anything in the request body.
+    */
+    const founderPriceIds = [
+      Deno.env.get('STRIPE_FOUNDER_MONTHLY_PRICE_ID'),
+      Deno.env.get('STRIPE_FOUNDER_ANNUAL_PRICE_ID'),
+    ].filter((id): id is string => Boolean(id));
+
+    if (founderPriceIds.includes(priceId)) {
+      const { data: eligible, error: eligibilityError } = await supabase.rpc('is_founder_eligible');
+
+      if (eligibilityError) {
+        console.error('Founder eligibility check failed:', eligibilityError);
+        throw new Error('Could not verify founding member eligibility');
+      }
+
+      if (eligible !== true) {
+        throw new Error(
+          'Founding member pricing is only available to people who joined the waitlist.',
+        );
+      }
+    }
+
     let customerId: string | undefined;
 
     const { data: existingSub } = await supabase
