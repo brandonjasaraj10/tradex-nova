@@ -63,6 +63,14 @@ export const TOUR_STEPS: TourStep[] = [
     route: '/calendar',
   },
   {
+    id: 'calendar-psych-toggle',
+    targetSelector: '[data-tour="calendar-psych-toggle"]',
+    title: 'Switch to Psychology View',
+    content: 'Toggle to Psych to see the same calendar mapped by your mental and emotional state instead of dollars - great for spotting patterns in your mindset over time.',
+    position: 'bottom',
+    route: '/calendar',
+  },
+  {
     id: 'nova-chat',
     targetSelector: '[data-tour="nova-chat"]',
     title: 'Nova AI Assistant',

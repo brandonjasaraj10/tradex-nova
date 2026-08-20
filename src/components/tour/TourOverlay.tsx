@@ -371,6 +371,8 @@ export default function TourOverlay() {
       '/analytics': 'Analytics',
       '/settings': 'Settings',
       '/nova': 'Nova Assistant',
+      '/calendar': 'Calendar',
+      '/checklists': 'Checklists',
     };
     return routeNames[route] || 'Next Step';
   };
@@ -391,7 +393,7 @@ export default function TourOverlay() {
           {targetRect && isReady && !isTransitioning ? (
             <>
               <div
-                className="absolute bg-black/90 transition-all duration-500 ease-out"
+                className="absolute bg-black/60 transition-all duration-500 ease-out"
                 style={{
                   top: 0,
                   left: 0,
@@ -400,7 +402,7 @@ export default function TourOverlay() {
                 }}
               />
               <div
-                className="absolute bg-black/90 transition-all duration-500 ease-out"
+                className="absolute bg-black/60 transition-all duration-500 ease-out"
                 style={{
                   top: targetRect.bottom,
                   left: 0,
@@ -409,7 +411,7 @@ export default function TourOverlay() {
                 }}
               />
               <div
-                className="absolute bg-black/90 transition-all duration-500 ease-out"
+                className="absolute bg-black/60 transition-all duration-500 ease-out"
                 style={{
                   top: targetRect.top,
                   left: 0,
@@ -418,7 +420,7 @@ export default function TourOverlay() {
                 }}
               />
               <div
-                className="absolute bg-black/90 transition-all duration-500 ease-out"
+                className="absolute bg-black/60 transition-all duration-500 ease-out"
                 style={{
                   top: targetRect.top,
                   left: targetRect.right,
@@ -449,7 +451,7 @@ export default function TourOverlay() {
               />
             </>
           ) : (
-            <div className="absolute inset-0 bg-black/90" />
+            <div className="absolute inset-0 bg-black/60" />
           )}
         </motion.div>
 

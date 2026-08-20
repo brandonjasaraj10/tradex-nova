@@ -33,47 +33,78 @@ export async function seedTourDemoData(userId: string): Promise<TourDemoDataIds>
     .select('id', { count: 'exact', head: true })
     .eq('user_id', userId);
 
-  if (count && count > 0) return EMPTY_IDS;
+  const hasRealTrades = !!count && count > 0;
 
-  const demoTrades = [
-    { symbol: 'EURUSD', direction: 'LONG', entry_price: 1.0850, exit_price: 1.0891, quantity: 1, pnl: 410, setup: 'Breakout', daysAgo: 1 },
-    { symbol: 'NAS100', direction: 'SHORT', entry_price: 18420, exit_price: 18395, quantity: 0.5, pnl: 125, setup: 'Reversal', daysAgo: 2 },
-    { symbol: 'AAPL', direction: 'LONG', entry_price: 218.40, exit_price: 216.90, quantity: 10, pnl: -150, setup: 'Trend Continuation', daysAgo: 3 },
-    { symbol: 'GBPUSD', direction: 'SHORT', entry_price: 1.2740, exit_price: 1.2695, quantity: 1, pnl: 450, setup: 'Support/Resistance', daysAgo: 5 },
-    { symbol: 'BTCUSD', direction: 'LONG', entry_price: 61200, exit_price: 62050, quantity: 0.1, pnl: 85, setup: 'Breakout', daysAgo: 6 },
-    { symbol: 'XAUUSD', direction: 'SHORT', entry_price: 2410, exit_price: 2418, quantity: 1, pnl: -80, setup: 'Reversal', daysAgo: 8 },
-  ];
+  let tradeIds: string[] = [];
 
-  const tradeRows = demoTrades.map(t => {
-    const exitDate = daysAgo(t.daysAgo);
-    const entryDate = new Date(exitDate);
-    entryDate.setHours(entryDate.getHours() - 1);
-    return {
-      user_id: userId,
-      symbol: t.symbol,
-      direction: t.direction,
-      entry_price: t.entry_price,
-      exit_price: t.exit_price,
-      quantity: t.quantity,
-      pnl: t.pnl,
-      entry_date: entryDate.toISOString(),
-      exit_date: exitDate.toISOString(),
-      setup: t.setup,
-      timeframe: '15m',
-    };
-  });
+  // Fake trades and a pre-warmed report only make sense for a truly empty
+  // account - never inject these into an account with real trading
+  // history. The journal-entry seed below is a separate concern (it only
+  // ever adds content when today is otherwise blank) so it runs
+  // regardless of trade history.
+  if (!hasRealTrades) {
+    const demoTrades = [
+      { symbol: 'EURUSD', direction: 'LONG', entry_price: 1.0850, exit_price: 1.0891, quantity: 1, pnl: 410, setup: 'Breakout', daysAgo: 1 },
+      { symbol: 'NAS100', direction: 'SHORT', entry_price: 18420, exit_price: 18395, quantity: 0.5, pnl: 125, setup: 'Reversal', daysAgo: 2 },
+      { symbol: 'AAPL', direction: 'LONG', entry_price: 218.40, exit_price: 216.90, quantity: 10, pnl: -150, setup: 'Trend Continuation', daysAgo: 3 },
+      { symbol: 'GBPUSD', direction: 'SHORT', entry_price: 1.2740, exit_price: 1.2695, quantity: 1, pnl: 450, setup: 'Support/Resistance', daysAgo: 5 },
+      { symbol: 'BTCUSD', direction: 'LONG', entry_price: 61200, exit_price: 62050, quantity: 0.1, pnl: 85, setup: 'Breakout', daysAgo: 6 },
+      { symbol: 'XAUUSD', direction: 'SHORT', entry_price: 2410, exit_price: 2418, quantity: 1, pnl: -80, setup: 'Reversal', daysAgo: 8 },
+    ];
 
-  const { data: insertedTrades, error: tradesError } = await supabase
-    .from('trades')
-    .insert(tradeRows)
-    .select('id');
+    const tradeRows = demoTrades.map(t => {
+      const exitDate = daysAgo(t.daysAgo);
+      const entryDate = new Date(exitDate);
+      entryDate.setHours(entryDate.getHours() - 1);
+      return {
+        user_id: userId,
+        symbol: t.symbol,
+        direction: t.direction,
+        entry_price: t.entry_price,
+        exit_price: t.exit_price,
+        quantity: t.quantity,
+        pnl: t.pnl,
+        entry_date: entryDate.toISOString(),
+        exit_date: exitDate.toISOString(),
+        setup: t.setup,
+        timeframe: '15m',
+      };
+    });
 
-  if (tradesError) {
-    console.error('Error seeding tour demo trades:', tradesError);
-    return EMPTY_IDS;
+    const { data: insertedTrades, error: tradesError } = await supabase
+      .from('trades')
+      .insert(tradeRows)
+      .select('id');
+
+    if (tradesError) {
+      console.error('Error seeding tour demo trades:', tradesError);
+    } else {
+      tradeIds = (insertedTrades || []).map(t => t.id);
+    }
+
+    try {
+      // Pre-warm this week's report so the Weekly Review tour step has
+      // something ready immediately, with a forced fresh computation
+      // rather than whatever Calendar's own (non-forced) load might have
+      // cached already.
+      const today = new Date();
+      const weekStart = new Date(today);
+      weekStart.setDate(today.getDate() - today.getDay());
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6);
+
+      await generateReport(
+        userId,
+        'weekly',
+        toLocalDateStr(weekStart),
+        toLocalDateStr(weekEnd),
+        true
+      );
+    } catch (err) {
+      console.error('Error generating tour demo weekly report:', err);
+    }
   }
 
-  const tradeIds = (insertedTrades || []).map(t => t.id);
   let journalEntryId: string | null = null;
 
   try {
@@ -90,56 +121,61 @@ export async function seedTourDemoData(userId: string): Promise<TourDemoDataIds>
       .maybeSingle();
 
     if (folder) {
-      // Dated today (not a past day) since that's the date the Journal
-      // page opens by default - and left as raw, unorganized text on
-      // purpose so the "Organize with Nova" button (only rendered once
-      // there's real content to act on) actually appears during that
-      // tour step instead of falling back to "not currently visible."
       const todayLocal = toLocalDateStr(new Date());
-      const { data: entry, error: entryError } = await supabase
-        .from('journal_entries')
-        .insert({
-          user_id: userId,
-          folder_id: folder.id,
-          entry_date: todayLocal,
-          title: `${todayLocal.slice(5, 7)}-${todayLocal.slice(8, 10)}-${todayLocal.slice(0, 4)} Entry 1`,
-          content: 'went long gbpusd at 1.2740, half lot, waited for the retest into the demand zone before pulling the trigger. closed out around 1.2695 target hit, total 450 profit. felt disciplined today, didnt rush the entry',
-          tags: [],
-          attachments: [],
-        })
-        .select('id')
-        .single();
 
-      if (entryError) {
-        console.error('Error seeding tour demo journal entry:', entryError);
-      } else if (entry) {
-        journalEntryId = entry.id;
+      // Journal.tsx filters entries by whatever account is currently
+      // selected, which defaults to the user's most-recently-created
+      // trading account (see accountContext.tsx) - not "no account." An
+      // entry seeded with a null account_id silently never matches that
+      // filter for any account that already has a trading account set
+      // up, so the "Organize with Nova" button never appears even though
+      // the entry really was created. Match that same default here.
+      const { data: mostRecentAccount } = await supabase
+        .from('user_broker_connections')
+        .select('id')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      // Only seed if today is genuinely empty - never add a fake entry
+      // alongside real content someone already wrote today.
+      const { count: existingCount } = await supabase
+        .from('journal_entries')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('folder_id', folder.id)
+        .eq('entry_date', todayLocal);
+
+      if (!existingCount) {
+        // Left as raw, unorganized text on purpose so the "Organize with
+        // Nova" button (only rendered once there's real content to act
+        // on) actually appears during that tour step instead of falling
+        // back to "not currently visible."
+        const { data: entry, error: entryError } = await supabase
+          .from('journal_entries')
+          .insert({
+            user_id: userId,
+            folder_id: folder.id,
+            account_id: mostRecentAccount?.id ?? null,
+            entry_date: todayLocal,
+            title: `${todayLocal.slice(5, 7)}-${todayLocal.slice(8, 10)}-${todayLocal.slice(0, 4)} Entry 1`,
+            content: 'went long gbpusd at 1.2740, half lot, waited for the retest into the demand zone before pulling the trigger. closed out around 1.2695 target hit, total 450 profit. felt disciplined today, didnt rush the entry',
+            tags: [],
+            attachments: [],
+          })
+          .select('id')
+          .single();
+
+        if (entryError) {
+          console.error('Error seeding tour demo journal entry:', entryError);
+        } else if (entry) {
+          journalEntryId = entry.id;
+        }
       }
     }
   } catch (err) {
     console.error('Error seeding tour demo journal entry:', err);
-  }
-
-  try {
-    // Pre-warm this week's report so the Weekly Review tour step has
-    // something ready immediately, with a forced fresh computation
-    // rather than whatever Calendar's own (non-forced) load might have
-    // cached already.
-    const today = new Date();
-    const weekStart = new Date(today);
-    weekStart.setDate(today.getDate() - today.getDay());
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekStart.getDate() + 6);
-
-    await generateReport(
-      userId,
-      'weekly',
-      toLocalDateStr(weekStart),
-      toLocalDateStr(weekEnd),
-      true
-    );
-  } catch (err) {
-    console.error('Error generating tour demo weekly report:', err);
   }
 
   return { tradeIds, journalEntryId };
