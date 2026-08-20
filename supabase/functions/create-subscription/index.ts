@@ -78,6 +78,14 @@ Deno.serve(async (req: Request) => {
       mode: 'subscription',
       success_url: `${origin}/dashboard?success=true`,
       cancel_url: `${origin}/payment?canceled=true`,
+      // Kept from the previously-deployed version, which had automatic tax
+      // when this file didn't - redeploying without it would have quietly
+      // switched off tax calculation on every future checkout.
+      automatic_tax: { enabled: true },
+      // Required by Stripe whenever automatic_tax runs against an existing
+      // customer: without it Stripe refuses the session rather than saving
+      // the address it just collected.
+      customer_update: { address: 'auto' },
       subscription_data: {
         trial_period_days: 7,
         metadata: {
@@ -89,8 +97,12 @@ Deno.serve(async (req: Request) => {
       },
     });
 
+    // sessionId is what the current frontend consumes via Stripe.js
+    // redirectToCheckout; url is Stripe's current recommendation (that
+    // helper is deprecated). Returning both keeps today's frontend working
+    // untouched while allowing a straight redirect later.
     return new Response(
-      JSON.stringify({ sessionId: session.id }),
+      JSON.stringify({ sessionId: session.id, url: session.url }),
       {
         headers: {
           ...corsHeaders,
