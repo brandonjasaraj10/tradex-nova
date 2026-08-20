@@ -77,12 +77,21 @@ export default function Calendar() {
 
       if (tradesError) throw tradesError;
 
-      const { data: journals, error: journalsError } = await supabase
+      let journalQuery = supabase
         .from('journal_entries')
-        .select('entry_date, template_data')
+        .select('entry_date, template_data, manual_pnl')
         .eq('user_id', user.id)
         .gte('entry_date', toLocalDateStr(startOfMonth))
         .lte('entry_date', toLocalDateStr(endOfMonth));
+
+      // Journal entries carry their own account_id, so they have to be
+      // scoped the same way trades are - without this, picking a single
+      // account still added up every other account's journal P&L.
+      if (selectedAccount) {
+        journalQuery = journalQuery.eq('account_id', selectedAccount.id);
+      }
+
+      const { data: journals, error: journalsError } = await journalQuery;
 
       if (journalsError) throw journalsError;
 
@@ -123,14 +132,26 @@ export default function Calendar() {
             psychScore = template?.end_of_day_summary?.nova_score || null;
           }
 
+          // A journal entry with a manual_pnl is a real logged trade, not
+          // just a note - the Dashboard's calendar already counts these,
+          // so counting them here too keeps the two calendars showing the
+          // same P&L for the same day instead of this one printing
+          // "Journal" over a day that actually has money on it.
+          const journalPnl = journal.manual_pnl ?? null;
+          const hasPnl = journalPnl !== null;
+
           if (existing) {
             existing.psychologyScore = psychScore;
             existing.hasJournal = true;
+            if (hasPnl) {
+              existing.pnl += Number(journalPnl);
+              existing.tradeCount += 1;
+            }
           } else {
             dataMap.set(dateKey, {
               date: dateKey,
-              pnl: 0,
-              tradeCount: 0,
+              pnl: hasPnl ? Number(journalPnl) : 0,
+              tradeCount: hasPnl ? 1 : 0,
               psychologyScore: psychScore,
               hasJournal: true
             });
@@ -551,8 +572,8 @@ export default function Calendar() {
             <p className="text-sm text-gray-400">Track your daily performance and psychology</p>
           </div>
 
-          <div className="flex-1 min-h-0 flex flex-col xl:flex-row gap-4">
-            <div className="flex-1 bg-[#111]/80 backdrop-blur-sm border border-white/[0.05] rounded-2xl p-3 md:p-4 lg:p-6 flex flex-col min-h-0" data-tour="calendar-page">
+          <div className="flex-1 min-h-0 flex flex-col md:flex-row gap-4">
+            <div className="flex-1 min-w-0 bg-[#111]/80 backdrop-blur-sm border border-white/[0.05] rounded-2xl p-3 md:p-4 lg:p-6 flex flex-col min-h-0" data-tour="calendar-page">
               <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
                 <div className="flex items-center gap-2">
                   <button
@@ -647,6 +668,30 @@ export default function Calendar() {
                       {renderCalendar()}
                     </div>
 
+                    {viewMode === 'pnl' && (
+                      <div className="mt-4 pt-4 border-t border-white/5">
+                        <div className="text-xs text-gray-400 mb-2 font-semibold">Day Results</div>
+                        <div className="flex items-center gap-4 flex-wrap">
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-3 h-3 rounded-md bg-gradient-to-br from-blue-500/30 via-blue-400/20 to-blue-600/15 border border-blue-400/40 shadow-md shadow-blue-500/10" />
+                            <span className="text-[10px] text-blue-400">Profit</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-3 h-3 rounded-md bg-gradient-to-br from-slate-600/20 via-gray-600/15 to-zinc-600/10 border border-slate-500/40 shadow-sm shadow-slate-500/5" />
+                            <span className="text-[10px] text-slate-300">Loss</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-3 h-3 rounded-md bg-white/5 border border-blue-400/70 shadow-lg shadow-blue-500/40" />
+                            <span className="text-[10px] text-blue-400">Journal only</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-3 h-3 rounded-md bg-white/[0.03] border border-white/10" />
+                            <span className="text-[10px] text-gray-500">No activity</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {viewMode === 'psychology' && (
                       <div className="mt-4 pt-4 border-t border-white/5">
                         <div className="text-xs text-gray-400 mb-2 font-semibold">Mental State Spectrum</div>
@@ -678,7 +723,7 @@ export default function Calendar() {
               </div>
             </div>
 
-            <div className="xl:w-80 xl:min-w-[320px] flex flex-col gap-3">
+            <div className="md:w-64 md:min-w-[240px] lg:w-80 lg:min-w-[320px] md:overflow-y-auto flex flex-col gap-3">
               {viewMode === 'pnl' ? (
                 <>
                   <div className="bg-[#111]/80 backdrop-blur-sm border border-white/[0.05] rounded-2xl p-4">
