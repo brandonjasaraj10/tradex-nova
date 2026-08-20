@@ -151,10 +151,13 @@ async function getAllUnifiedTrades(
       .gte('entry_date', toLocalDateStr(dateRange[0]))
       .lte('entry_date', toLocalDateStr(dateRange[1]));
   }
-  // journal_entries has no account/broker-connection column, so a
-  // per-account filter can't apply to journal-logged P&L - only to
-  // trades. That's a real gap (journal entries aren't tied to an
-  // account), not something to paper over with a fake filter.
+  // journal_entries carries its own account_id, so journal-logged P&L
+  // scopes to the selected account exactly like trades do. Leaving this
+  // unfiltered meant a single-account view still summed every other
+  // account's journal P&L.
+  if (accountId) {
+    journalQuery = journalQuery.eq('account_id', accountId);
+  }
 
   const [tradesResult, journalResult] = await Promise.all([
     tradesQuery,
@@ -265,12 +268,18 @@ export async function getDailyPnL(
   // set. Without this, a day with real journal content but no trade/P&L was
   // completely invisible on the calendar - no indicator, and clicking it did
   // nothing since it was treated as empty.
-  const { data: journalEntries, error: journalError } = await supabase
+  let journalDayQuery = supabase
     .from('journal_entries')
     .select('entry_date')
     .eq('user_id', user.id)
     .gte('entry_date', startStr)
     .lte('entry_date', endStr);
+
+  if (accountId) {
+    journalDayQuery = journalDayQuery.eq('account_id', accountId);
+  }
+
+  const { data: journalEntries, error: journalError } = await journalDayQuery;
 
   if (!journalError && journalEntries) {
     for (const entry of journalEntries) {

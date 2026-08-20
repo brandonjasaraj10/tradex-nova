@@ -218,9 +218,7 @@ export default function Dashboard() {
       const { data: tradesData, error: tradesError } = await tradesQuery;
       if (tradesError) throw tradesError;
 
-      // journal_entries has no per-account column, so a per-account
-      // filter can't apply to journal-logged P&L - only to trades.
-      const journalQuery = supabase
+      let journalQuery = supabase
         .from('journal_entries')
         .select('*')
         .eq('user_id', user.id)
@@ -229,6 +227,12 @@ export default function Dashboard() {
         .lte('entry_date', toLocalDateStr(dateRange.endDate))
         .order('entry_date', { ascending: false })
         .limit(20);
+
+      // journal_entries does carry account_id, so journal-logged P&L
+      // scopes to the selected account exactly like trades do.
+      if (selectedAccount) {
+        journalQuery = journalQuery.eq('account_id', selectedAccount.id);
+      }
 
       const { data: journalData, error: journalError } = await journalQuery;
       if (journalError) throw journalError;
@@ -431,9 +435,7 @@ export default function Dashboard() {
 
       const { data: tradesData } = await tradesQuery;
 
-      // journal_entries has no per-account column, so a per-account
-      // filter can't apply to journal-logged P&L - only to trades.
-      const journalScoreQuery = supabase
+      let journalScoreQuery = supabase
         .from('journal_entries')
         .select('manual_pnl, entry_date, created_at')
         .eq('user_id', user.id)
@@ -442,6 +444,12 @@ export default function Dashboard() {
         .lte('entry_date', toLocalDateStr(dateRange.endDate))
         .order('entry_date', { ascending: false })
         .limit(100);
+
+      // journal_entries does carry account_id, so journal-logged P&L
+      // scopes to the selected account exactly like trades do.
+      if (selectedAccount) {
+        journalScoreQuery = journalScoreQuery.eq('account_id', selectedAccount.id);
+      }
 
       const { data: journalData, error: journalScoreError } = await journalScoreQuery;
       if (journalScoreError) throw journalScoreError;

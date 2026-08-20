@@ -1,6 +1,13 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { supabase } from './supabase';
 import { useAuth } from './auth';
+
+// "All Accounts" is a real, deliberate choice that happens to be
+// represented as `null`. It needs its own stored sentinel so it can be
+// told apart from "the user hasn't picked anything yet" - otherwise
+// every refetch silently replaces it with a single account.
+const SELECTED_ACCOUNT_KEY = 'tradex_selected_account';
+const ALL_ACCOUNTS = 'ALL';
 
 interface Account {
   id: string;
@@ -22,6 +29,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccount, setSelectedAccountState] = useState<Account | null>(null);
+  const hasResolvedInitialSelection = useRef(false);
 
   const fetchAccounts = async () => {
     if (!user) return;
@@ -52,9 +60,28 @@ export function AccountProvider({ children }: { children: ReactNode }) {
 
     setAccounts(transformedAccounts);
 
-    if (transformedAccounts.length > 0 && !selectedAccount) {
-      setSelectedAccountState(transformedAccounts[0]);
+    if (!hasResolvedInitialSelection.current) {
+      // Only ever pick a default once per session. Re-running this on
+      // every refetch is what used to wipe out an "All Accounts" choice
+      // and silently drop the user back onto a single account.
+      hasResolvedInitialSelection.current = true;
+
+      const saved = localStorage.getItem(SELECTED_ACCOUNT_KEY);
+      if (saved === ALL_ACCOUNTS) {
+        setSelectedAccountState(null);
+      } else {
+        const savedAccount = saved ? transformedAccounts.find(a => a.id === saved) : undefined;
+        setSelectedAccountState(savedAccount || transformedAccounts[0] || null);
+      }
+      return;
     }
+
+    // Keep the selection pointing at live data, and fall back to "All
+    // Accounts" if the selected account was deleted out from under us.
+    setSelectedAccountState(prev => {
+      if (!prev) return null;
+      return transformedAccounts.find(a => a.id === prev.id) || null;
+    });
   };
 
   useEffect(() => {
@@ -63,6 +90,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
 
   const setSelectedAccount = async (account: Account | null) => {
     setSelectedAccountState(account);
+    localStorage.setItem(SELECTED_ACCOUNT_KEY, account ? account.id : ALL_ACCOUNTS);
   };
 
   return (
