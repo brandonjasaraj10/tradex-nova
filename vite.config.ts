@@ -45,7 +45,11 @@ export default defineConfig({
           'icon-512x512.svg',
           'site.webmanifest',
           'sitemap.xml',
-          'robots.txt'
+          'robots.txt',
+          // publicDir is false, so anything in public/ that isn't listed
+          // here simply never reaches dist/ and 404s in production.
+          'founder-video.mp4',
+          'founder-video-poster.jpg'
         ];
 
         for (const file of filesToCopy) {

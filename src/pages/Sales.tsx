@@ -1323,6 +1323,52 @@ export default function Sales() {
         </div>
       </div>
 
+      {/* Founder Video Section */}
+      <div className="py-16 sm:py-24 lg:py-32 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 via-transparent to-transparent" />
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+          >
+            <div className="text-center mb-8 sm:mb-10">
+              <div className="inline-block px-4 py-1.5 rounded-full text-xs sm:text-sm font-semibold tracking-[0.2em] bg-blue-500/10 text-blue-400 border border-blue-400/30 mb-4">
+                FROM THE FOUNDER
+              </div>
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4 px-4">
+                Why I built TradeX
+              </h2>
+              <p className="text-base sm:text-lg text-gray-400 px-4 max-w-2xl mx-auto">
+                A quick word on what this is, who it's for, and where it's going.
+              </p>
+            </div>
+
+            {/*
+              preload="metadata" so visitors only download the ~12MB video if
+              they actually press play - otherwise landing on the page would
+              pull it down for everyone. playsInline keeps iOS from hijacking
+              it into fullscreen. No autoplay: it has voice audio, and
+              browsers block autoplay-with-sound anyway.
+            */}
+            <div className="rounded-2xl overflow-hidden border border-white/10 bg-black shadow-2xl shadow-blue-500/10">
+              <video
+                className="w-full aspect-video bg-black"
+                controls
+                preload="metadata"
+                playsInline
+                poster="/founder-video-poster.jpg"
+              >
+                <source src="/founder-video.mp4" type="video/mp4" />
+                Your browser doesn't support embedded video. You can still join the
+                waitlist below.
+              </video>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+
       {/* Pricing Section */}
       <div className="py-16 sm:py-24 lg:py-32 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-gold-400/5 via-transparent to-transparent" />
