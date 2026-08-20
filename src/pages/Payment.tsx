@@ -228,7 +228,12 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
           originalPrice: '$24.99',
           description: 'Founding member rate, locked in',
           icon: Zap,
-          features: ['7-day free trial', 'Your price never rises', 'Cancel anytime', 'All Pro features'],
+          // Shared items first and in the same order on both cards, then the
+          // plan's own extras - so annual reads as a superset of monthly at a
+          // glance rather than a different list. Annual previously omitted
+          // "All Pro features" entirely, which made the pricier plan look
+          // like it included less.
+          features: ['7-day free trial', 'All Pro features', 'Your price never rises', 'Cancel anytime'],
           highlight: false,
           savings: '40% off, forever',
           popular: false,
@@ -244,7 +249,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
           originalPrice: '$20.83',
           description: 'Founding member rate, best value',
           icon: Crown,
-          features: ['7-day free trial', '2 months free vs monthly', 'Your price never rises', 'Priority support'],
+          features: ['7-day free trial', 'All Pro features', 'Your price never rises', '2 months free vs monthly', 'Priority support'],
           highlight: true,
           savings: '40% off, forever',
           billedAs: '$149.90 billed annually',
@@ -259,7 +264,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
           period: '/month',
           description: 'Perfect for getting started',
           icon: Zap,
-          features: ['7-day free trial', 'Cancel anytime', 'All Pro features'],
+          features: ['7-day free trial', 'All Pro features', 'Cancel anytime'],
           highlight: false,
           savings: null,
           popular: false,
@@ -274,7 +279,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
           originalPrice: '$24.99',
           description: 'Best value for serious traders',
           icon: Crown,
-          features: ['7-day free trial', '2 months free vs monthly', 'All Pro features', 'Priority support'],
+          features: ['7-day free trial', 'All Pro features', '2 months free vs monthly', 'Priority support'],
           highlight: true,
           savings: '2 months free',
           billedAs: '$249.90 billed annually',
