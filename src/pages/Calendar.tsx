@@ -373,15 +373,36 @@ export default function Calendar() {
     // Month-based weeks (1-7, 8-14, 15-21, 22-end) can't line up with
     // Sun-Sat grid rows, so anchoring each card to the row holding its
     // last day punched holes in the Week column - August 2026 landed
-    // cards on rows 1, 2, 3 and 5 with row 4 blank. Stacking them from
-    // the top keeps the column contiguous no matter how a month falls;
-    // each card is labelled with its own date range anyway.
+    // cards on rows 1, 2, 3 and 5 with row 4 blank.
+    //
+    // Instead: find the first row that actually holds a real week rather
+    // than a stub (August 2026 opens with a lone Saturday the 1st, which
+    // shouldn't carry a summary card), then pack the cards down from
+    // there. That stays roughly date-aligned while being gap-free by
+    // construction - there are always four weeks and never fewer than
+    // four rows, and the clamp keeps the last card on the grid.
     const weekEndDays = [7, 14, 21, daysInMonth]
       .filter((d, i, arr) => d <= daysInMonth && arr.indexOf(d) === i);
 
+    const MIN_DAYS_FOR_WEEK_CARD = 4;
+    const rowDayCounts = Array.from({ length: rows }, (_, row) => {
+      let count = 0;
+      for (let col = 0; col < 7; col++) {
+        const dayNum = row * 7 + col - startingDayOfWeek + 1;
+        if (dayNum >= 1 && dayNum <= daysInMonth) count++;
+      }
+      return count;
+    });
+
+    const firstSubstantialRow = rowDayCounts.findIndex(c => c >= MIN_DAYS_FOR_WEEK_CARD);
+    const startRow = Math.min(
+      firstSubstantialRow < 0 ? 0 : firstSubstantialRow,
+      Math.max(0, rows - weekEndDays.length)
+    );
+
     weekEndDays.forEach((endDay, weekIndex) => {
       const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(endDay).padStart(2, '0')}`;
-      weekReportRows.set(weekIndex, dateKey);
+      weekReportRows.set(startRow + weekIndex, dateKey);
     });
 
     currentDay = 1;
