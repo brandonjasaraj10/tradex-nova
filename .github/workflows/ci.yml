@@ -9,6 +9,22 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+
+    # src/lib/supabase.ts throws at import time if these are unset, and
+    # three test files import modules that pull it in - so `npm test` and
+    # `npm run build` died on import before running anything. .env is
+    # gitignored, so CI never had them and every run since this workflow
+    # was added on 2026-08-16 failed for this reason alone.
+    #
+    # Deliberately fake. The suite is pure unit tests over parsing and
+    # calculation and never opens a connection; these only need to exist.
+    # Using an obviously-invalid URL means anything that DID try to reach
+    # Supabase would fail loudly here rather than quietly talk to the real
+    # production project from CI.
+    env:
+      VITE_SUPABASE_URL: http://localhost:54321
+      VITE_SUPABASE_ANON_KEY: ci-placeholder-not-a-real-credential
+
     steps:
       - uses: actions/checkout@v4
 
