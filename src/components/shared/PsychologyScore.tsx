@@ -14,6 +14,28 @@ const TIMEFRAMES: { value: TimeFrame; label: string }[] = [
   { value: 'all', label: 'All Time' },
 ];
 
+// Shown when the user has journaled before but this particular window is
+// empty - a normal, expected state (a rest day, a quiet week), not a
+// reason to throw the whole card away and show first-run onboarding.
+const EMPTY_COPY: Record<TimeFrame, { title: string; body: string }> = {
+  daily: {
+    title: 'Nothing logged today',
+    body: 'Your mindset before and after the session is the part most traders never write down. Two minutes now is worth a lot later.',
+  },
+  weekly: {
+    title: 'A quiet week so far',
+    body: 'No psychology entries this week yet. Even a flat, uneventful week is worth noting - it is a baseline to compare against.',
+  },
+  monthly: {
+    title: 'No entries this month',
+    body: 'Nothing logged for this month yet. Patterns show up over weeks, so it is worth getting a few entries down.',
+  },
+  all: {
+    title: 'No psychology entries yet',
+    body: 'Once you start logging how you felt around your trades, your score and trends will build up here.',
+  },
+};
+
 export default function PsychologyScore() {
   const navigate = useNavigate();
   const { refreshTrigger } = useDataSync();
@@ -21,6 +43,7 @@ export default function PsychologyScore() {
   const [data, setData] = useState<PsychologyScoreAggregates | null>(null);
   const [loading, setLoading] = useState(true);
   const [hasTrades, setHasTrades] = useState(false);
+  const [hasAnyEntries, setHasAnyEntries] = useState(false);
 
   useEffect(() => {
     loadScores();
@@ -32,16 +55,27 @@ export default function PsychologyScore() {
       const scores = await getPsychologyScores(timeFrame);
       setData(scores);
 
-      if (scores.totalEntries === 0) {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const { data: trades } = await supabase
-            .from('trades')
-            .select('id')
-            .eq('user_id', user.id)
-            .limit(1);
+      if (scores.totalEntries > 0) {
+        setHasAnyEntries(true);
+      } else {
+        // An empty timeframe is not the same as "never journaled". Without
+        // this check, picking "Today" on a day with no entry replaced the
+        // entire card - timeframe toggle included - with the first-run
+        // onboarding screen, leaving no way back to Week/Month/All Time.
+        const allTime = timeFrame === 'all' ? scores : await getPsychologyScores('all');
+        setHasAnyEntries(allTime.totalEntries > 0);
 
-          setHasTrades((trades?.length || 0) > 0);
+        if (allTime.totalEntries === 0) {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            const { data: trades } = await supabase
+              .from('trades')
+              .select('id')
+              .eq('user_id', user.id)
+              .limit(1);
+
+            setHasTrades((trades?.length || 0) > 0);
+          }
         }
       }
     } catch (error) {
@@ -105,7 +139,10 @@ export default function PsychologyScore() {
     );
   }
 
-  if (!data || data.totalEntries === 0) {
+  // Only take over the whole card for a genuine first-time user. Someone
+  // who has journaled before just has a quiet timeframe, and needs to keep
+  // the toggle so they can look at another one.
+  if (!data || (data.totalEntries === 0 && !hasAnyEntries)) {
     return (
       <Card variant="gradient" className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 p-5 border border-blue-500/20 h-full">
         <div className="flex flex-col items-center justify-center h-full text-center">
@@ -160,6 +197,36 @@ export default function PsychologyScore() {
           </div>
         </div>
 
+        {data.totalEntries === 0 ? (
+          <div className="flex-1 min-h-0 flex flex-col items-center justify-center text-center px-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3 }}
+              className="w-14 h-14 rounded-2xl bg-blue-400/10 border border-blue-400/20 flex items-center justify-center mb-4"
+            >
+              <Calendar className="w-6 h-6 text-blue-400" />
+            </motion.div>
+            <h3 className="text-base font-medium mb-1">{EMPTY_COPY[timeFrame].title}</h3>
+            <p className="text-sm text-gray-400 mb-5 max-w-xs">{EMPTY_COPY[timeFrame].body}</p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => navigate('/journal')}
+                className="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg text-sm font-medium transition-colors"
+              >
+                Log today's mindset
+              </button>
+              {timeFrame !== 'all' && (
+                <button
+                  onClick={() => setTimeFrame('all')}
+                  className="px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 rounded-lg text-sm font-medium transition-colors"
+                >
+                  See all time
+                </button>
+              )}
+            </div>
+          </div>
+        ) : (
         <div className="flex-1 overflow-y-auto space-y-4 min-h-0">
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -384,6 +451,7 @@ export default function PsychologyScore() {
             <span className="relative">View Journal Entries</span>
           </motion.button>
         </div>
+        )}
       </div>
     </Card>
   );
