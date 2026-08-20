@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
-import { Shield, CheckCircle2, Lock, AlertCircle, ArrowLeft, Zap, Crown, TrendingUp, Sparkles, Users, Star, Gift } from 'lucide-react';
+import { Shield, CheckCircle2, Lock, AlertCircle, ArrowLeft, Zap, Crown, TrendingUp, Sparkles, Star, Gift } from 'lucide-react';
 import Button from '../components/shared/Button';
 import { supabase } from '../lib/supabase';
 
@@ -208,8 +208,16 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
     })), []
   );
 
-  // Founder pricing keeps the same 2-months-free shape as standard annual:
-  // $14.99 x 12 = $179.88, charged $149.90.
+  /*
+    Both founder plans are exactly 40% off their standard counterparts
+    ($24.99 -> $14.99 and $249.90 -> $149.90), so both cards state the same
+    "40% off, forever" and strike through the price a non-founder pays.
+    Previously monthly said "Save $10/mo" while annual said "Save $29.98" -
+    per-month against per-year - which made the monthly plan look like the
+    weaker deal at a glance when the discount is identical. Annual's extra
+    advantage (two months free versus paying founder-monthly all year) is
+    stated as a feature rather than mixed into the same number.
+  */
   const plans = isFounder
     ? [
         {
@@ -220,9 +228,9 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
           originalPrice: '$24.99',
           description: 'Founding member rate, locked in',
           icon: Zap,
-          features: ['7-day free trial', 'Price never rises', 'Cancel anytime', 'All Pro features'],
+          features: ['7-day free trial', 'Your price never rises', 'Cancel anytime', 'All Pro features'],
           highlight: false,
-          savings: 'Save $10/mo',
+          savings: '40% off, forever',
           popular: false,
         },
         {
@@ -230,12 +238,12 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
           name: 'Annual',
           price: '$149.90',
           period: '/year',
-          originalPrice: '$179.88',
+          originalPrice: '$249.90',
           description: 'Founding member rate, best value',
           icon: Crown,
-          features: ['7-day free trial', '2 months FREE', 'Price never rises', 'Priority support'],
+          features: ['7-day free trial', '2 months free vs monthly', 'Your price never rises', 'Priority support'],
           highlight: true,
-          savings: 'Save $29.98',
+          savings: '40% off, forever',
           equivalent: '$12.49/mo',
           popular: true,
         },
@@ -261,9 +269,9 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
           originalPrice: '$299.88',
           description: 'Best value for serious traders',
           icon: Crown,
-          features: ['7-day free trial', '2 months FREE', 'All Pro features', 'Priority support'],
+          features: ['7-day free trial', '2 months free vs monthly', 'All Pro features', 'Priority support'],
           highlight: true,
-          savings: 'Save $49.98',
+          savings: '2 months free',
           equivalent: '$20.83/mo',
           popular: true,
         },
@@ -348,21 +356,46 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
             </motion.div>
           )}
 
+          {/*
+            Replaced a "2,500+ traders trust TradeX" star-rating badge. There
+            are no paying customers yet, so it was a fabricated number in the
+            single most trust-sensitive spot on the site - right where someone
+            is deciding whether to hand over a card. Reassurance that is
+            actually true converts here; an invented one is only ever a
+            liability. Founders additionally get the real deadline, which is
+            genuine urgency rather than a manufactured countdown.
+          */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 rounded-full"
+            className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-gray-400"
           >
-            <div className="flex items-center gap-1">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <Star key={i} className="w-3.5 h-3.5 text-blue-500 fill-blue-500" />
-              ))}
-            </div>
-            <span className="text-sm text-gray-400">
-              <span className="text-white font-medium">2,500+</span> traders trust TradeX
+            <span className="inline-flex items-center gap-1.5">
+              <Gift className="w-4 h-4 text-blue-400" />
+              7 days free
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <Lock className="w-4 h-4 text-blue-400" />
+              Cancel anytime
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <Shield className="w-4 h-4 text-blue-400" />
+              No charge today
             </span>
           </motion.div>
+
+          {isFounder && (
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="mt-4 text-sm text-gray-400"
+            >
+              Founding member pricing ends the day we launch.{' '}
+              <span className="text-white font-medium">Lock it in and it never rises.</span>
+            </motion.p>
+          )}
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -401,14 +434,23 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
                     <div>
                       <div className="flex items-center gap-2">
                         <h3 className="font-semibold text-lg">{plan.name}</h3>
+                        {/*
+                          Was "Popular" with a people icon - a claim about
+                          other customers, of which there are currently none.
+                          "Best Value" is the same badge slot but states a
+                          fact about the price rather than about a crowd that
+                          doesn't exist yet, so it can't be contradicted.
+                          Worth revisiting once there's real usage data: a
+                          truthful "Most Popular" outperforms it.
+                        */}
                         {plan.popular && (
                           <motion.div
                             animate={{ scale: [1, 1.05, 1] }}
                             transition={{ duration: 2, repeat: Infinity }}
                             className="flex items-center gap-1 px-2 py-0.5 bg-blue-500/20 rounded-md"
                           >
-                            <Users className="w-3 h-3 text-blue-400" />
-                            <span className="text-xs font-medium text-blue-400">Popular</span>
+                            <Sparkles className="w-3 h-3 text-blue-400" />
+                            <span className="text-xs font-medium text-blue-400">Best Value</span>
                           </motion.div>
                         )}
                       </div>
