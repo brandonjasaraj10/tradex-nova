@@ -95,6 +95,34 @@ about so nobody assumes they're intentional:
   button style, inconsistent with the blue-accented, `#0A0A0A`-card
   look the actual pages use. Some older code may still reference these.
 
+- **[Measured 2026-08-19] `gold-*` is still undefined, in 149 places.**
+  The `Button.tsx` fix below only covered that one component. `gold-400`
+  /`gold-500` are *not* defined in `tailwind.config.js` or `index.css`,
+  yet 149 usages remain across 14 files (Sales, Payment, Settings,
+  Dashboard, Footer, NotFound, WaitlistCapture, SplashScreen,
+  LoadingScreen, NOVAScore, TradeXScore, AccountSelector, CSVUpload,
+  BrokerConnectionsList).
+
+  Undefined utilities fail *differently* depending on the property, so
+  what renders today is accidental rather than designed — measured live
+  on `/sales`, where 97 gold-classed elements produce 12 distinct
+  renderings:
+  - `text-gold-400` → no rule emitted, so text inherits: renders **white**
+  - `bg-gold-400/20`, `from-/to-/via-gold-*` → **nothing at all**
+  - `border-gold-400/30` → falls back to Tailwind's default border
+    colour, **`#e5e7eb` light grey**
+  - `from-white to-gold-400/70` + `bg-clip-text` (the "TradeX Pro"
+    pricing heading) → gradient runs white → **transparent**, so the
+    heading fades out. That fade is a side effect of the missing colour,
+    not a design decision.
+
+  Deliberately left alone: it's cosmetic, it currently looks good, and
+  the owner's call (2026-08-19) was not to touch it right before launch.
+  Fixing it is a real fork, not a find-and-replace — either define a
+  genuine gold palette and accept that ~149 spots visibly change, or
+  hardcode today's accidental rendering and lock it in permanently.
+  Worth doing as part of a deliberate design pass, not in passing.
+
 None of this needs an urgent fix — it's here so future work (including
 future Claude Code sessions) doesn't mistake old leftovers for the
 current design.
