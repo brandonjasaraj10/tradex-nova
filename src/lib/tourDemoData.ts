@@ -28,10 +28,18 @@ function toLocalDateStr(date: Date): string {
 // trades, so this never touches an account with actual trading history.
 // Always paired with cleanupTourDemoData() once the tour ends.
 export async function seedTourDemoData(userId: string): Promise<TourDemoDataIds> {
+  // Sweep up anything a previous interrupted tour left behind before
+  // seeding again, so demo rows can never accumulate across runs.
+  await cleanupTourDemoData(userId);
+
+  // Real trades only - demo rows are excluded by the sweep above, but be
+  // explicit so a leftover row can never make this think the account has
+  // genuine trading history.
   const { count } = await supabase
     .from('trades')
     .select('id', { count: 'exact', head: true })
-    .eq('user_id', userId);
+    .eq('user_id', userId)
+    .eq('is_tour_demo', false);
 
   const hasRealTrades = !!count && count > 0;
 
@@ -68,6 +76,7 @@ export async function seedTourDemoData(userId: string): Promise<TourDemoDataIds>
         exit_date: exitDate.toISOString(),
         setup: t.setup,
         timeframe: '15m',
+        is_tour_demo: true,
       };
     });
 
@@ -163,6 +172,7 @@ export async function seedTourDemoData(userId: string): Promise<TourDemoDataIds>
             content: 'went long gbpusd at 1.2740, half lot, waited for the retest into the demand zone before pulling the trigger. closed out around 1.2695 target hit, total 450 profit. felt disciplined today, didnt rush the entry',
             tags: [],
             attachments: [],
+            is_tour_demo: true,
           })
           .select('id')
           .single();
@@ -181,22 +191,34 @@ export async function seedTourDemoData(userId: string): Promise<TourDemoDataIds>
   return { tradeIds, journalEntryId };
 }
 
-export async function cleanupTourDemoData(userId: string, ids: TourDemoDataIds) {
+// Deletes by the is_tour_demo flag rather than by remembered ids. Ids
+// only lived in a React ref, so a page reload mid-tour lost them and
+// stranded fake trades in a real account forever - which is exactly what
+// happened on a live account. A database flag survives reloads, closed
+// tabs, and even a tour abandoned in a previous session.
+export async function cleanupTourDemoData(userId: string) {
   try {
-    if (ids.tradeIds.length > 0) {
-      await supabase.from('trades').delete().in('id', ids.tradeIds);
+    const { data: removedTrades } = await supabase
+      .from('trades')
+      .delete()
+      .eq('user_id', userId)
+      .eq('is_tour_demo', true)
+      .select('id');
+
+    await supabase
+      .from('journal_entries')
+      .delete()
+      .eq('user_id', userId)
+      .eq('is_tour_demo', true);
+
+    // Visiting Calendar during the tour auto-generates a cached weekly
+    // report for every week shown, and those hold numbers derived from
+    // the demo trades. Only clear them when demo trades actually existed
+    // - otherwise this would wipe the real reports of an account that
+    // has genuine trading history and simply replayed the tour.
+    if (removedTrades && removedTrades.length > 0) {
+      await supabase.from('trading_reports').delete().eq('user_id', userId);
     }
-    if (ids.journalEntryId) {
-      await supabase.from('journal_entries').delete().eq('id', ids.journalEntryId);
-    }
-    // Not just the one report we generated - visiting Calendar during the
-    // tour auto-generates a cached report for every week shown, and those
-    // get left behind holding stale numbers once the underlying demo
-    // trades are gone. Safe to delete all of this user's reports here
-    // specifically because seeding only ever ran for a zero-trade account,
-    // so every trading_reports row that exists by tour-end is tour-demo
-    // fallout, not anything real.
-    await supabase.from('trading_reports').delete().eq('user_id', userId);
   } catch (err) {
     console.error('Error cleaning up tour demo data:', err);
   }

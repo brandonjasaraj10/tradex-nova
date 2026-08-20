@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from './supabase';
 import { useAuth } from './auth';
-import { seedTourDemoData, cleanupTourDemoData, type TourDemoDataIds } from './tourDemoData';
+import { seedTourDemoData, cleanupTourDemoData } from './tourDemoData';
 
 export type TourStep = {
   id: string;
@@ -225,7 +225,6 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
   const [hasCheckedTourStatus, setHasCheckedTourStatus] = useState(false);
   const hasEndedRef = useRef(false);
   const hasStartedRef = useRef(false);
-  const demoDataIdsRef = useRef<TourDemoDataIds | null>(null);
   const hasSeededDemoDataRef = useRef(false);
 
   useEffect(() => {
@@ -240,9 +239,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     // seeing the tour at all.
     if (isActive && user && !hasSeededDemoDataRef.current) {
       hasSeededDemoDataRef.current = true;
-      seedTourDemoData(user.id).then(ids => {
-        demoDataIdsRef.current = ids;
-      });
+      seedTourDemoData(user.id);
     }
   }, [isActive, user]);
 
@@ -305,10 +302,11 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     setIsActive(false);
     setCurrentStep(0);
 
-    if (demoDataIdsRef.current) {
-      cleanupTourDemoData(user.id, demoDataIdsRef.current);
-      demoDataIdsRef.current = null;
-    }
+    // Unconditional: cleanup finds demo rows by their database flag, so
+    // it still works after a reload wiped whatever this session knew.
+    // The old `if (ref)` guard is exactly why interrupted tours stranded
+    // fake trades in real accounts.
+    cleanupTourDemoData(user.id);
 
     try {
       await supabase
