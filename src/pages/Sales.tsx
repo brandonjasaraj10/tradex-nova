@@ -229,6 +229,11 @@ export default function Sales() {
                   buttonText="Join Waitlist"
                   variant="stacked"
                 />
+                <p className="mt-3 text-sm text-gray-400">
+                  Join before launch to lock in{' '}
+                  <span className="text-gray-500 line-through">$24.99</span>{' '}
+                  <span className="text-blue-400 font-semibold">$14.99/mo</span>, forever.
+                </p>
               </div>
             </motion.div>
 
@@ -1324,7 +1329,7 @@ export default function Sales() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <div className="text-center mb-10 sm:mb-16">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4 px-4">Simple, Transparent Pricing</h2>
-            <p className="text-base sm:text-lg md:text-xl text-gray-400 px-4">Everything you need to master your trading journey.</p>
+            <p className="text-base sm:text-lg md:text-xl text-gray-400 px-4">Join the waitlist before launch and lock in founding member pricing.</p>
           </div>
 
           <motion.div
@@ -1336,14 +1341,15 @@ export default function Sales() {
             <div className="p-6 md:p-8 lg:p-10 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-gold-400/50 transition-all">
               <div className="text-center mb-10 md:mb-12">
                 <div className="inline-block px-4 py-1.5 rounded-full text-sm font-medium bg-gradient-to-r from-gold-400/20 to-gold-500/20 text-gold-400 border border-gold-400/30 mb-4">
-                  Complete Trading Platform
+                  Founding Member Pricing
                 </div>
                 <h3 className="text-2xl md:text-3xl font-bold mb-2 bg-gradient-to-r from-white to-gold-400/70 bg-clip-text text-transparent">TradeX Pro</h3>
                 <div className="text-4xl md:text-5xl font-bold mb-2">
-                  <span className="text-gold-400">$24.99</span>
+                  <span className="text-2xl md:text-3xl text-gray-500 line-through mr-3">$24.99</span>
+                  <span className="text-gold-400">$14.99</span>
                   <span className="text-lg md:text-xl font-normal text-gray-400">/month</span>
                 </div>
-                <p className="text-sm md:text-base text-gray-400">7-day free trial • Cancel anytime</p>
+                <p className="text-sm md:text-base text-gray-400">Locked in forever • 7-day free trial • Cancel anytime</p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8 mb-10 md:mb-12">
@@ -1369,7 +1375,7 @@ export default function Sales() {
                 variant="stacked"
               />
               <p className="text-center text-sm text-gray-400 mt-4">
-                Be the first to know when we launch
+                Join now to lock in $14.99/mo — this price ends at launch
               </p>
             </div>
           </motion.div>
