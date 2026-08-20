@@ -1,4 +1,5 @@
-import { Suspense, lazy, useState } from 'react';
+import { Suspense, useState } from 'react';
+import { lazyWithReload } from './lib/lazyWithReload';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './lib/auth';
 import { AccountProvider } from './lib/accountContext';
@@ -14,21 +15,25 @@ import ProfileSetup from './components/auth/ProfileSetup';
 import TourOverlay from './components/tour/TourOverlay';
 import PageLoader from './components/shared/PageLoader';
 
-const Sales = lazy(() => import('./pages/Sales'));
-const Auth = lazy(() => import('./pages/Auth'));
-const Payment = lazy(() => import('./pages/Payment'));
-const Dashboard = lazy(() => import('./pages/Dashboard'));
-const Journal = lazy(() => import('./pages/Journal'));
-const Analytics = lazy(() => import('./pages/Analytics'));
-const Calendar = lazy(() => import('./pages/Calendar'));
-const Settings = lazy(() => import('./pages/Settings'));
-const Profile = lazy(() => import('./pages/Profile'));
-const NovaAssistant = lazy(() => import('./pages/NovaAssistant'));
-const Checklists = lazy(() => import('./pages/Checklists'));
-const TermsOfService = lazy(() => import('./pages/TermsOfService'));
-const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
-const RiskDisclaimer = lazy(() => import('./pages/RiskDisclaimer'));
-const NotFound = lazy(() => import('./pages/NotFound'));
+// lazyWithReload, not React's bare lazy: a deploy renames every hashed chunk
+// and deletes the old ones, so anyone with the page already open asks for a
+// file that no longer exists and hits "Failed to fetch dynamically imported
+// module". Seen for real in production from an Instagram in-app browser.
+const Sales = lazyWithReload('Sales', () => import('./pages/Sales'));
+const Auth = lazyWithReload('Auth', () => import('./pages/Auth'));
+const Payment = lazyWithReload('Payment', () => import('./pages/Payment'));
+const Dashboard = lazyWithReload('Dashboard', () => import('./pages/Dashboard'));
+const Journal = lazyWithReload('Journal', () => import('./pages/Journal'));
+const Analytics = lazyWithReload('Analytics', () => import('./pages/Analytics'));
+const Calendar = lazyWithReload('Calendar', () => import('./pages/Calendar'));
+const Settings = lazyWithReload('Settings', () => import('./pages/Settings'));
+const Profile = lazyWithReload('Profile', () => import('./pages/Profile'));
+const NovaAssistant = lazyWithReload('NovaAssistant', () => import('./pages/NovaAssistant'));
+const Checklists = lazyWithReload('Checklists', () => import('./pages/Checklists'));
+const TermsOfService = lazyWithReload('TermsOfService', () => import('./pages/TermsOfService'));
+const PrivacyPolicy = lazyWithReload('PrivacyPolicy', () => import('./pages/PrivacyPolicy'));
+const RiskDisclaimer = lazyWithReload('RiskDisclaimer', () => import('./pages/RiskDisclaimer'));
+const NotFound = lazyWithReload('NotFound', () => import('./pages/NotFound'));
 
 const PUBLIC_PATHS = ['/', '/auth', '/sales', '/terms', '/privacy', '/risk-disclaimer', '/payment'];
 
