@@ -236,15 +236,18 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
         {
           id: 'annual' as PlanType,
           name: 'Annual',
-          price: '$149.90',
-          period: '/year',
-          originalPrice: '$249.90',
+          price: '$12.49',
+          period: '/month',
+          // $20.83 is what a non-founder pays per month on annual
+          // ($249.90/12), so this is the same 40% cut as the monthly card
+          // and both cards compare like with like.
+          originalPrice: '$20.83',
           description: 'Founding member rate, best value',
           icon: Crown,
           features: ['7-day free trial', '2 months free vs monthly', 'Your price never rises', 'Priority support'],
           highlight: true,
           savings: '40% off, forever',
-          equivalent: '$12.49/mo',
+          billedAs: '$149.90 billed annually',
           popular: true,
         },
       ]
@@ -264,15 +267,17 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
         {
           id: 'annual' as PlanType,
           name: 'Annual',
-          price: '$249.90',
-          period: '/year',
-          originalPrice: '$299.88',
+          price: '$20.83',
+          period: '/month',
+          // Struck against the monthly plan's own price, so the saving being
+          // shown is exactly what switching to annual is worth.
+          originalPrice: '$24.99',
           description: 'Best value for serious traders',
           icon: Crown,
           features: ['7-day free trial', '2 months free vs monthly', 'All Pro features', 'Priority support'],
           highlight: true,
           savings: '2 months free',
-          equivalent: '$20.83/mo',
+          billedAs: '$249.90 billed annually',
           popular: true,
         },
       ];
@@ -482,8 +487,17 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
                     </span>
                     <span className="text-gray-400">{plan.period}</span>
                   </div>
-                  {plan.equivalent && (
-                    <p className="text-sm text-gray-500 mt-1">Equivalent to {plan.equivalent}</p>
+                  {/*
+                    Annual leads with its monthly-equivalent price and states
+                    the real amount charged underneath. Headlining $249.90
+                    against the monthly card's $24.99 made the better-value
+                    plan look ten times more expensive at a glance; showing
+                    per-month on both cards makes them directly comparable and
+                    annual visibly cheaper. The full amount and billing
+                    frequency stay right below it, so nothing is hidden.
+                  */}
+                  {plan.billedAs && (
+                    <p className="text-sm text-gray-400 mt-1">{plan.billedAs}</p>
                   )}
                 </div>
 
