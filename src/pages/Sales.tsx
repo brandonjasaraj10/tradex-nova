@@ -1551,7 +1551,9 @@ export default function Sales() {
               />
             </div>
             <p className="text-xs sm:text-sm text-gray-500 mt-4 sm:mt-6 px-4">
-              Be the first to know when we launch
+              Join before launch to lock in{' '}
+              <span className="line-through">$24.99</span>{' '}
+              <span className="text-blue-400 font-semibold">$14.99/mo</span>, forever.
             </p>
           </motion.div>
         </div>
