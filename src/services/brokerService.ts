@@ -23,6 +23,7 @@ export interface BrokerConnection {
   currency?: string;
   ownership_type?: 'personal' | 'funded' | 'prop';
   last_balance_update?: string;
+  broker_type?: string;
   brokers?: { name: string } | null;
 }
 

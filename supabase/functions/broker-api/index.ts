@@ -79,7 +79,8 @@ Deno.serve(async (req: Request) => {
           currency,
           ownership_type,
           last_balance_update,
-          broker_id
+          broker_id,
+          broker_type
         `)
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });

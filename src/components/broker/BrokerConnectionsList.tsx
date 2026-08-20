@@ -22,6 +22,7 @@ export default function BrokerConnectionsList() {
   const [isCreating, setIsCreating] = useState(false);
   const [newAccountName, setNewAccountName] = useState('');
   const [selectedBrokerId, setSelectedBrokerId] = useState('');
+  const [otherBrokerName, setOtherBrokerName] = useState('');
   const [editingBalance, setEditingBalance] = useState<BrokerConnection | null>(null);
   const [startingBalance, setStartingBalance] = useState('');
   const [currency, setCurrency] = useState('USD');
@@ -97,19 +98,25 @@ export default function BrokerConnectionsList() {
       return;
     }
 
+    if (selectedBrokerId === '__other__' && !otherBrokerName.trim()) {
+      alert('Please enter the name of your broker or prop firm');
+      return;
+    }
+
     setIsCreating(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
+      const isOther = selectedBrokerId === '__other__';
       const selectedBroker = brokers.find(b => b.id === selectedBrokerId);
 
       const { error } = await supabase
         .from('user_broker_connections')
         .insert({
           user_id: user.id,
-          broker_id: selectedBrokerId || null,
-          broker_type: selectedBroker?.name || 'manual',
+          broker_id: isOther ? null : (selectedBrokerId || null),
+          broker_type: isOther ? otherBrokerName.trim() : (selectedBroker?.name || 'manual'),
           account_name: newAccountName.trim(),
           status: 'connected',
           starting_balance: parseFloat(startingBalance),
@@ -120,9 +127,19 @@ export default function BrokerConnectionsList() {
 
       if (error) throw error;
 
+      // Not shown to the user - just lets us see which unlisted
+      // brokers/prop firms come up most so we know what to add next.
+      if (isOther) {
+        await supabase.from('broker_requests').insert({
+          user_id: user.id,
+          requested_name: otherBrokerName.trim(),
+        });
+      }
+
       setShowAddAccount(false);
       setNewAccountName('');
       setSelectedBrokerId('');
+      setOtherBrokerName('');
       setStartingBalance('');
       setCurrency('USD');
       setOwnershipType('personal');
@@ -272,8 +289,8 @@ export default function BrokerConnectionsList() {
           animate={{ opacity: 1, y: 0 }}
           className="p-6 rounded-xl bg-black/40 border border-white/10 hover:border-gold-400/30 transition-all duration-300"
         >
-          <div className="flex items-start justify-between">
-            <div className="flex items-start gap-4 flex-1">
+          <div className="flex flex-wrap items-start justify-between gap-y-3">
+            <div className="flex items-start gap-4 flex-1 min-w-[240px]">
               <div className="w-12 h-12 rounded-lg bg-gold-400/10 flex items-center justify-center flex-shrink-0">
                 <Link2 className="w-6 h-6 text-gold-400" />
               </div>
@@ -287,7 +304,8 @@ export default function BrokerConnectionsList() {
                   </span>
                 </div>
                 <p className="text-sm text-gray-400 mb-2">
-                  {connection.brokers?.name || 'Manual Account'}
+                  {connection.brokers?.name
+                    || (connection.broker_type && connection.broker_type !== 'manual' ? connection.broker_type : 'Manual Account')}
                   {connection.account_type && connection.account_type !== 'live' && (
                     <span className="ml-2 px-2 py-0.5 rounded text-xs bg-blue-500/10 text-blue-400 capitalize">
                       {connection.account_type}
@@ -417,6 +435,7 @@ export default function BrokerConnectionsList() {
                   setShowAddAccount(false);
                   setNewAccountName('');
                   setSelectedBrokerId('');
+                  setOtherBrokerName('');
                 }}
                 className="p-2 hover:bg-white/5 rounded-lg transition-colors"
               >
@@ -453,7 +472,17 @@ export default function BrokerConnectionsList() {
                       {broker.display_name || broker.name}
                     </option>
                   ))}
+                  <option value="__other__">Other - not listed</option>
                 </select>
+                {selectedBrokerId === '__other__' && (
+                  <input
+                    type="text"
+                    value={otherBrokerName}
+                    onChange={(e) => setOtherBrokerName(e.target.value)}
+                    placeholder="Enter your broker or prop firm's name"
+                    className="w-full mt-2 px-4 py-2.5 rounded-lg bg-black/30 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                  />
+                )}
               </div>
 
               <div>
@@ -530,6 +559,7 @@ export default function BrokerConnectionsList() {
                   setShowAddAccount(false);
                   setNewAccountName('');
                   setSelectedBrokerId('');
+                  setOtherBrokerName('');
                   setStartingBalance('');
                   setCurrency('USD');
                   setOwnershipType('personal');
@@ -541,7 +571,7 @@ export default function BrokerConnectionsList() {
                 variant="primary"
                 onClick={handleCreateAccount}
                 isLoading={isCreating}
-                disabled={!newAccountName.trim() || !startingBalance || parseFloat(startingBalance) <= 0}
+                disabled={!newAccountName.trim() || !startingBalance || parseFloat(startingBalance) <= 0 || (selectedBrokerId === '__other__' && !otherBrokerName.trim())}
               >
                 Create Account
               </Button>

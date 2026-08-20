@@ -28,6 +28,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
   const [isCreating, setIsCreating] = useState(false);
   const [newAccountName, setNewAccountName] = useState('');
   const [selectedBrokerId, setSelectedBrokerId] = useState('');
+  const [otherBrokerName, setOtherBrokerName] = useState('');
   const [startingBalance, setStartingBalance] = useState('');
   const [currency, setCurrency] = useState('USD');
   const [ownershipType, setOwnershipType] = useState<'personal' | 'funded' | 'prop'>('personal');
@@ -64,26 +65,31 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
       alert('Please enter a valid starting balance');
       return;
     }
+    if (selectedBrokerId === '__other__' && !otherBrokerName.trim()) {
+      alert('Please enter the name of your broker or prop firm');
+      return;
+    }
 
     setIsCreating(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
+      const isOther = selectedBrokerId === '__other__';
       const selectedBroker = brokers.find(b => b.id === selectedBrokerId);
 
       const connectionData: any = {
         user_id: user.id,
         account_name: newAccountName.trim(),
         status: 'connected',
-        broker_type: selectedBroker?.name || 'manual',
+        broker_type: isOther ? otherBrokerName.trim() : (selectedBroker?.name || 'manual'),
         starting_balance: parseFloat(startingBalance),
         current_balance: parseFloat(startingBalance),
         currency,
         ownership_type: ownershipType,
       };
 
-      if (selectedBrokerId) {
+      if (selectedBrokerId && !isOther) {
         connectionData.broker_id = selectedBrokerId;
       }
 
@@ -93,9 +99,19 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
 
       if (error) throw error;
 
+      // Not shown to the user - just lets us see which unlisted
+      // brokers/prop firms come up most so we know what to add next.
+      if (isOther) {
+        await supabase.from('broker_requests').insert({
+          user_id: user.id,
+          requested_name: otherBrokerName.trim(),
+        });
+      }
+
       setShowAddAccount(false);
       setNewAccountName('');
       setSelectedBrokerId('');
+      setOtherBrokerName('');
       setStartingBalance('');
       setCurrency('USD');
       setOwnershipType('personal');
@@ -223,6 +239,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
                   setShowAddAccount(false);
                   setNewAccountName('');
                   setSelectedBrokerId('');
+                  setOtherBrokerName('');
                   setStartingBalance('');
                   setCurrency('USD');
                   setOwnershipType('personal');
@@ -262,7 +279,17 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
                       {broker.display_name || broker.name}
                     </option>
                   ))}
+                  <option value="__other__">Other - not listed</option>
                 </select>
+                {selectedBrokerId === '__other__' && (
+                  <input
+                    type="text"
+                    value={otherBrokerName}
+                    onChange={(e) => setOtherBrokerName(e.target.value)}
+                    placeholder="Enter your broker or prop firm's name"
+                    className="w-full mt-2 px-4 py-2.5 rounded-lg bg-black/30 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                  />
+                )}
               </div>
 
               <div>
@@ -339,6 +366,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
                   setShowAddAccount(false);
                   setNewAccountName('');
                   setSelectedBrokerId('');
+                  setOtherBrokerName('');
                   setStartingBalance('');
                   setCurrency('USD');
                   setOwnershipType('personal');
@@ -350,7 +378,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
                 variant="primary"
                 onClick={handleCreateAccount}
                 isLoading={isCreating}
-                disabled={!newAccountName.trim() || !startingBalance || parseFloat(startingBalance) <= 0}
+                disabled={!newAccountName.trim() || !startingBalance || parseFloat(startingBalance) <= 0 || (selectedBrokerId === '__other__' && !otherBrokerName.trim())}
               >
                 Create Account
               </Button>
