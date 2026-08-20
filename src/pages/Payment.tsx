@@ -27,6 +27,8 @@ const FloatingParticle = ({ delay, duration, x, size }: { delay: number; duratio
 const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
 const stripeMonthlyPriceId = import.meta.env.VITE_STRIPE_PRICE_ID;
 const stripeAnnualPriceId = import.meta.env.VITE_STRIPE_ANNUAL_PRICE_ID;
+const stripeFounderMonthlyPriceId = import.meta.env.VITE_STRIPE_FOUNDER_PRICE_ID;
+const stripeFounderAnnualPriceId = import.meta.env.VITE_STRIPE_FOUNDER_ANNUAL_PRICE_ID;
 const stripePromise = stripePublicKey ? loadStripe(stripePublicKey) : null;
 
 type PlanType = 'monthly' | 'annual';
@@ -44,9 +46,35 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
   const [manualLoading, setManualLoading] = useState(false);
   const [success, setSuccess] = useState('');
   const [selectedPlan, setSelectedPlan] = useState<PlanType>('annual');
+  const [isFounder, setIsFounder] = useState(false);
 
   useEffect(() => {
     setStripeConfigured(!!stripePublicKey && !!stripeMonthlyPriceId);
+  }, []);
+
+  /*
+    Display only - create-subscription independently re-checks this same
+    function before letting a founder price through, so a user who flips
+    this flag in their own browser still can't buy at the founder price.
+    Falls back to standard pricing if the founder price ids aren't
+    configured, so a missing env var degrades to full price rather than to
+    a broken checkout button.
+  */
+  useEffect(() => {
+    let cancelled = false;
+
+    async function checkFounderEligibility() {
+      if (!stripeFounderMonthlyPriceId && !stripeFounderAnnualPriceId) return;
+
+      const { data, error: rpcError } = await supabase.rpc('is_founder_eligible');
+
+      if (!cancelled && !rpcError && data === true) {
+        setIsFounder(true);
+      }
+    }
+
+    checkFounderEligibility();
+    return () => { cancelled = true; };
   }, []);
 
   const handleSubscribe = async () => {
@@ -55,7 +83,9 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
       return;
     }
 
-    const priceId = selectedPlan === 'annual' ? stripeAnnualPriceId : stripeMonthlyPriceId;
+    const priceId = selectedPlan === 'annual'
+      ? (isFounder && stripeFounderAnnualPriceId ? stripeFounderAnnualPriceId : stripeAnnualPriceId)
+      : (isFounder && stripeFounderMonthlyPriceId ? stripeFounderMonthlyPriceId : stripeMonthlyPriceId);
 
     if (!priceId) {
       setError('Selected plan is not available. Please try another option.');
@@ -178,34 +208,66 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
     })), []
   );
 
-  const plans = [
-    {
-      id: 'monthly' as PlanType,
-      name: 'Monthly',
-      price: '$24.99',
-      period: '/month',
-      description: 'Perfect for getting started',
-      icon: Zap,
-      features: ['7-day free trial', 'Cancel anytime', 'All Pro features'],
-      highlight: false,
-      savings: null,
-      popular: false,
-    },
-    {
-      id: 'annual' as PlanType,
-      name: 'Annual',
-      price: '$249.90',
-      period: '/year',
-      originalPrice: '$299.88',
-      description: 'Best value for serious traders',
-      icon: Crown,
-      features: ['7-day free trial', '2 months FREE', 'All Pro features', 'Priority support'],
-      highlight: true,
-      savings: 'Save $49.98',
-      equivalent: '$20.83/mo',
-      popular: true,
-    },
-  ];
+  // Founder pricing keeps the same 2-months-free shape as standard annual:
+  // $14.99 x 12 = $179.88, charged $149.90.
+  const plans = isFounder
+    ? [
+        {
+          id: 'monthly' as PlanType,
+          name: 'Monthly',
+          price: '$14.99',
+          period: '/month',
+          originalPrice: '$24.99',
+          description: 'Founding member rate, locked in',
+          icon: Zap,
+          features: ['7-day free trial', 'Price never rises', 'Cancel anytime', 'All Pro features'],
+          highlight: false,
+          savings: 'Save $10/mo',
+          popular: false,
+        },
+        {
+          id: 'annual' as PlanType,
+          name: 'Annual',
+          price: '$149.90',
+          period: '/year',
+          originalPrice: '$179.88',
+          description: 'Founding member rate, best value',
+          icon: Crown,
+          features: ['7-day free trial', '2 months FREE', 'Price never rises', 'Priority support'],
+          highlight: true,
+          savings: 'Save $29.98',
+          equivalent: '$12.49/mo',
+          popular: true,
+        },
+      ]
+    : [
+        {
+          id: 'monthly' as PlanType,
+          name: 'Monthly',
+          price: '$24.99',
+          period: '/month',
+          description: 'Perfect for getting started',
+          icon: Zap,
+          features: ['7-day free trial', 'Cancel anytime', 'All Pro features'],
+          highlight: false,
+          savings: null,
+          popular: false,
+        },
+        {
+          id: 'annual' as PlanType,
+          name: 'Annual',
+          price: '$249.90',
+          period: '/year',
+          originalPrice: '$299.88',
+          description: 'Best value for serious traders',
+          icon: Crown,
+          features: ['7-day free trial', '2 months FREE', 'All Pro features', 'Priority support'],
+          highlight: true,
+          savings: 'Save $49.98',
+          equivalent: '$20.83/mo',
+          popular: true,
+        },
+      ];
 
   const testimonials = [
     { name: 'Alex M.', role: 'Day Trader', date: 'Jun 2026', text: 'Finally something that actually tracks my trades properly. Been using it for 3 months now and my win rate is up 12%.' },
@@ -267,7 +329,24 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
           <h1 className="text-4xl md:text-5xl font-bold mb-3 bg-gradient-to-r from-white via-white to-gray-400 bg-clip-text text-transparent">
             Elevate Your Trading
           </h1>
-          <p className="text-gray-400 text-lg mb-6">Choose the plan that fits your journey</p>
+          <p className="text-gray-400 text-lg mb-6">
+            {isFounder
+              ? 'Your founding member pricing is applied below.'
+              : 'Choose the plan that fits your journey'}
+          </p>
+
+          {isFounder && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="inline-flex items-center gap-2 px-4 py-2 mb-6 rounded-full bg-blue-500/10 border border-blue-400/30"
+            >
+              <Sparkles className="w-4 h-4 text-blue-400" />
+              <span className="text-sm font-semibold text-blue-400">
+                Founding member — your price never rises
+              </span>
+            </motion.div>
+          )}
 
           <motion.div
             initial={{ opacity: 0, y: 10 }}
