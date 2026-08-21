@@ -4,6 +4,7 @@ import { CheckCircle2, ArrowRight, Brain, Target, LineChart, Zap, AlertTriangle,
 import Button from '../components/shared/Button';
 import Footer from '../components/layout/Footer';
 import WaitlistCapture from '../components/shared/WaitlistCapture';
+import LaunchCountdown from '../components/shared/LaunchCountdown';
 import { useState } from 'react';
 
 const features = [
@@ -229,7 +230,8 @@ export default function Sales() {
                   buttonText="Join Waitlist"
                   variant="stacked"
                 />
-                <p className="mt-3 text-sm text-gray-400">
+                <LaunchCountdown className="mt-6" />
+                  <p className="mt-4 text-sm text-gray-400">
                   Join before launch to lock in{' '}
                   <span className="text-gray-500 line-through">$24.99</span>{' '}
                   <span className="text-blue-400 font-semibold">$14.99/mo</span>, forever.
