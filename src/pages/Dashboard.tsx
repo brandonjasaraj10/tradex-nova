@@ -118,7 +118,7 @@ export default function Dashboard() {
   const [newRule, setNewRule] = useState({ name: '', description: '', category: 'other' as const });
   const [calendarViewMode, setCalendarViewMode] = useState<'pnl' | 'psychology'>('pnl');
   const [privacyMode, setPrivacyMode] = useState(false);
-  const [averageRuleAdherence, setAverageRuleAdherence] = useState(0);
+  const [averageRuleAdherence, setAverageRuleAdherence] = useState<number | null>(null);
   const [selectedReport, setSelectedReport] = useState<TradingReport | null>(null);
   const [showReportModal, setShowReportModal] = useState(false);
   const [loadingReport, setLoadingReport] = useState(false);
@@ -492,7 +492,7 @@ export default function Dashboard() {
 
       if (confluencesData.length === 0) {
         await initializeDefaultConfluences();
-        const newData = await getUserConfluences();
+        const newData = await getUserConfluences(selectedAccount?.id);
         setConfluences(newData);
       } else {
         setConfluences(confluencesData);
@@ -557,9 +557,13 @@ export default function Dashboard() {
     }
   };
 
-  const averageConfluenceUsage = confluences.length > 0
-    ? Math.round(confluences.reduce((acc, conf) => acc + conf.usage_rate, 0) / confluences.length)
-    : 0;
+  // Averages only confluences that have actually been tracked. Counting
+  // untracked ones as 0 pulled the figure down and made a real 100% rate
+  // read as a fraction of it.
+  const trackedConfluences = confluences.filter(c => c.usage_rate !== null);
+  const averageConfluenceUsage = trackedConfluences.length > 0
+    ? Math.round(trackedConfluences.reduce((acc, conf) => acc + (conf.usage_rate as number), 0) / trackedConfluences.length)
+    : null;
 
   // Handle month navigation
   const navigateMonth = (direction: 'prev' | 'next') => {
@@ -1294,7 +1298,7 @@ export default function Dashboard() {
                       <TrendingUp className="w-4 h-4 text-blue-400" />
                       <div className="text-right">
                         <div className="text-xs text-gray-400">Avg. Adherence</div>
-                        <div className="text-lg font-bold text-blue-400">{averageConfluenceUsage}%</div>
+                        <div className="text-lg font-bold text-blue-400">{averageConfluenceUsage === null ? '--' : `${averageConfluenceUsage}%`}</div>
                       </div>
                     </div>
                     <Button
@@ -1313,7 +1317,7 @@ export default function Dashboard() {
                       <TrendingUp className="w-4 h-4 text-blue-400" />
                       <div className="text-right">
                         <div className="text-xs text-gray-400">Avg. Adherence</div>
-                        <div className="text-lg font-bold text-blue-400">{averageRuleAdherence}%</div>
+                        <div className="text-lg font-bold text-blue-400">{averageRuleAdherence === null ? '--' : `${averageRuleAdherence}%`}</div>
                       </div>
                     </div>
                     <Button
@@ -1460,7 +1464,7 @@ export default function Dashboard() {
                           <div className="text-xs text-gray-400">Usage</div>
                           <div className={`text-sm font-medium ${
                             confluence.enabled ? 'text-blue-400' : 'text-gray-500'
-                          }`}>{confluence.usage_rate}%</div>
+                          }`}>{confluence.usage_rate === null ? '--' : `${confluence.usage_rate}%`}</div>
                         </div>
                         <div className="w-16 h-2 bg-[#222] rounded-full overflow-hidden">
                           <div
@@ -1469,7 +1473,7 @@ export default function Dashboard() {
                                 ? 'bg-gradient-to-r from-blue-500 to-blue-400'
                                 : 'bg-gray-600'
                             }`}
-                            style={{ width: `${confluence.usage_rate}%` }}
+                            style={{ width: `${confluence.usage_rate ?? 0}%` }}
                           />
                         </div>
                         <button

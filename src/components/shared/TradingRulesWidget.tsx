@@ -6,9 +6,12 @@ import PageLoader from './PageLoader';
 import { getTradingRules, type TradingRule } from '../../services/tradingRules';
 import { getJournalEntryRules } from '../../services/tradingRules';
 import { supabase } from '../../lib/supabase';
+import { useDataSync } from '../../lib/dataSync';
+import { useAccount } from '../../lib/accountContext';
 
 interface RuleWithStats extends TradingRule {
-  adherence_rate: number;
+  // null = never tracked yet, which is not the same as 0%
+  adherence_rate: number | null;
 }
 
 const CATEGORY_ICONS = {
@@ -20,13 +23,22 @@ const CATEGORY_ICONS = {
 };
 
 export default function TradingRulesWidget() {
+  const { refreshTrigger } = useDataSync();
+  const { selectedAccount } = useAccount();
   const [rules, setRules] = useState<RuleWithStats[]>([]);
-  const [overallAdherence, setOverallAdherence] = useState(0);
+  const [overallAdherence, setOverallAdherence] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
+  /*
+    Recalculates whenever journal data changes or the account is switched,
+    the same way every other data panel in the app does. With an empty
+    dependency array this ran once on mount and never again, so marking a
+    rule followed in the journal left the dashboard showing a stale figure
+    until a full page reload - which is what made adherence look dead.
+  */
   useEffect(() => {
     loadRulesWithStats();
-  }, []);
+  }, [refreshTrigger, selectedAccount?.id]);
 
   async function loadRulesWithStats() {
     try {
@@ -48,10 +60,15 @@ export default function TradingRulesWidget() {
 
       setRules(rulesWithStats);
 
-      if (rulesWithStats.length > 0) {
-        const avgAdherence = rulesWithStats.reduce((sum, r) => sum + r.adherence_rate, 0) / rulesWithStats.length;
-        setOverallAdherence(Math.round(avgAdherence));
-      }
+      // Average across rules that have been tracked. Including untracked
+      // rules as 0 dragged the overall figure down for rules the trader
+      // simply hasn't logged against yet.
+      const tracked = rulesWithStats.filter(r => r.adherence_rate !== null);
+      setOverallAdherence(
+        tracked.length > 0
+          ? Math.round(tracked.reduce((sum, r) => sum + (r.adherence_rate as number), 0) / tracked.length)
+          : null
+      );
     } catch (error) {
       console.error('Error loading rules with stats:', error);
     } finally {
@@ -59,21 +76,37 @@ export default function TradingRulesWidget() {
     }
   }
 
-  async function calculateRuleAdherence(ruleId: string): Promise<number> {
+  /*
+    Returns null - not 0 - when a rule has never been tracked. They are very
+    different statements: 0% means "you broke this every single time", which
+    is what a brand new rule used to display before it had ever been marked.
+
+    Scoped to the selected account by joining through journal_entries, the
+    same as every other figure on the dashboard. Without that, switching
+    accounts left adherence unchanged because it was silently averaging
+    every account together.
+  */
+  async function calculateRuleAdherence(ruleId: string): Promise<number | null> {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('journal_entry_rules')
-        .select('followed')
+        .select('followed, journal_entries!inner(account_id)')
         .eq('rule_id', ruleId);
 
+      if (selectedAccount) {
+        query = query.eq('journal_entries.account_id', selectedAccount.id);
+      }
+
+      const { data, error } = await query;
+
       if (error) throw error;
-      if (!data || data.length === 0) return 0;
+      if (!data || data.length === 0) return null;
 
       const followedCount = data.filter(entry => entry.followed === true).length;
       return Math.round((followedCount / data.length) * 100);
     } catch (error) {
       console.error('Error calculating adherence:', error);
-      return 0;
+      return null;
     }
   }
 
@@ -82,12 +115,12 @@ export default function TradingRulesWidget() {
     return Icon;
   }
 
-  function getAdherenceColor(rate: number) {
-    return rate >= 90 ? 'text-blue-400' : 'text-gray-400';
+  function getAdherenceColor(rate: number | null) {
+    return rate !== null && rate >= 90 ? 'text-blue-400' : 'text-gray-400';
   }
 
-  function getAdherenceBgColor(rate: number) {
-    return rate >= 90 ? 'bg-blue-400/10 border-blue-400/20' : 'bg-gray-400/10 border-gray-400/20';
+  function getAdherenceBgColor(rate: number | null) {
+    return rate !== null && rate >= 90 ? 'bg-blue-400/10 border-blue-400/20' : 'bg-gray-400/10 border-gray-400/20';
   }
 
   if (loading) {
@@ -145,9 +178,15 @@ export default function TradingRulesWidget() {
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-blue-400 font-medium">Active</span>
                         <span className="text-xs text-gray-400">
-                          Following <span className={`font-medium ${getAdherenceColor(rule.adherence_rate)}`}>
-                            {rule.adherence_rate}%
-                          </span> of the time
+                          {rule.adherence_rate === null ? (
+                            'Not tracked yet'
+                          ) : (
+                            <>
+                              Following <span className={`font-medium ${getAdherenceColor(rule.adherence_rate)}`}>
+                                {rule.adherence_rate}%
+                              </span> of the time
+                            </>
+                          )}
                         </span>
                       </div>
                     </div>
@@ -161,15 +200,15 @@ export default function TradingRulesWidget() {
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-gray-400">Overall Rule Adherence</span>
               <span className={`text-lg font-bold ${getAdherenceColor(overallAdherence)}`}>
-                {overallAdherence}%
+                {overallAdherence === null ? '--' : `${overallAdherence}%`}
               </span>
             </div>
             <div className="w-full bg-white/5 rounded-full h-2 overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all duration-500 ${
-                  overallAdherence >= 90 ? 'bg-blue-400' : 'bg-gray-400'
+                  overallAdherence !== null && overallAdherence >= 90 ? 'bg-blue-400' : 'bg-gray-400'
                 }`}
-                style={{ width: `${overallAdherence}%` }}
+                style={{ width: `${overallAdherence ?? 0}%` }}
               />
             </div>
           </div>

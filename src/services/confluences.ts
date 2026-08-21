@@ -6,7 +6,8 @@ export interface Confluence {
   name: string;
   description: string;
   enabled: boolean;
-  usage_rate: number;
+  // null = never tracked yet, distinct from 0% (tracked, never present)
+  usage_rate: number | null;
   order_index: number;
   created_at: string;
   updated_at: string;
@@ -21,14 +22,64 @@ export interface TradingPlanSettings {
   updated_at: string;
 }
 
-export async function getUserConfluences(): Promise<Confluence[]> {
+/*
+  usage_rate is a stored column that nothing in the app has ever written.
+  Every confluence is created with 0 and stays 0 forever, so the dashboard's
+  per-confluence "Usage" and the "Avg. Adherence" figure derived from it were
+  permanently 0% no matter how the trader actually traded - a confluence
+  marked present on 2 of 2 entries still displayed 0%.
+
+  Rather than maintain a denormalised counter that can drift out of date, the
+  rate is computed from the journal_entry_confluences rows that already
+  record it, at read time. Null means "never tracked", which is a different
+  statement from 0% ("recorded, and never present").
+
+  Optionally scoped to one account so the figure matches the rest of the
+  dashboard when an account is selected.
+*/
+export async function getUserConfluences(accountId?: string | null): Promise<Confluence[]> {
   const { data, error } = await supabase
     .from('trading_confluences')
     .select('*')
     .order('order_index', { ascending: true });
 
   if (error) throw error;
-  return data || [];
+  const confluences = data || [];
+  if (confluences.length === 0) return [];
+
+  let usageQuery = supabase
+    .from('journal_entry_confluences')
+    .select('confluence_id, present, journal_entries!inner(account_id)')
+    .in('confluence_id', confluences.map(c => c.id));
+
+  if (accountId) {
+    usageQuery = usageQuery.eq('journal_entries.account_id', accountId);
+  }
+
+  const { data: usage, error: usageError } = await usageQuery;
+
+  if (usageError) {
+    // A usage lookup failure shouldn't hide the trader's confluences - show
+    // them with an unknown rate rather than failing the whole panel.
+    console.error('Error loading confluence usage:', usageError);
+    return confluences.map(c => ({ ...c, usage_rate: null }));
+  }
+
+  const totals = new Map<string, { tracked: number; present: number }>();
+  (usage || []).forEach((row: any) => {
+    const t = totals.get(row.confluence_id) || { tracked: 0, present: 0 };
+    t.tracked += 1;
+    if (row.present === true) t.present += 1;
+    totals.set(row.confluence_id, t);
+  });
+
+  return confluences.map(c => {
+    const t = totals.get(c.id);
+    return {
+      ...c,
+      usage_rate: t && t.tracked > 0 ? Math.round((t.present / t.tracked) * 100) : null,
+    };
+  });
 }
 
 export async function getTradingPlanSettings(): Promise<TradingPlanSettings | null> {
