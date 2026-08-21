@@ -31,9 +31,50 @@ const isValidId = (id: unknown): id is string =>
 
 export const analyticsEnabled = isValidId(MEASUREMENT_ID);
 
+const OPT_OUT_KEY = 'tradex_analytics_opt_out';
+
+/*
+  Per-device opt-out, so the team's own visits don't pollute the reports.
+
+  Visiting any page with ?noanalytics=1 stores a flag in that browser and
+  nothing is ever sent from it again; ?noanalytics=0 undoes it. The flag is
+  read before gtag loads, and also sets Google's own ga-disable-<ID> switch,
+  which suppresses collection even if the tag is loaded by anything else.
+
+  Deliberately not IP-based. GA's built-in internal-traffic filter matches on
+  IP, which misses a phone on cellular, any other network, and silently stops
+  working whenever a residential IP is reassigned - failing open, with no
+  signal that it has stopped excluding anyone. A per-device flag keeps working
+  wherever that browser goes. The trade-off is that it has to be set once per
+  browser, and is lost if site data is cleared.
+*/
+function isOptedOut(): boolean {
+  try {
+    const param = new URLSearchParams(window.location.search).get('noanalytics');
+    if (param === '1') {
+      localStorage.setItem(OPT_OUT_KEY, '1');
+      return true;
+    }
+    if (param === '0') {
+      localStorage.removeItem(OPT_OUT_KEY);
+      return false;
+    }
+    return localStorage.getItem(OPT_OUT_KEY) === '1';
+  } catch {
+    // private mode or blocked storage - measure rather than silently drop
+    return false;
+  }
+}
+
 export function initAnalytics(): void {
   if (!analyticsEnabled || typeof window === 'undefined') return;
   if (window.gtag) return; // already initialised (StrictMode double-invokes)
+
+  if (isOptedOut()) {
+    // Google reads this exact global and drops everything for that id.
+    (window as unknown as Record<string, unknown>)[`ga-disable-${MEASUREMENT_ID}`] = true;
+    return;
+  }
 
   const script = document.createElement('script');
   script.async = true;
@@ -57,6 +98,7 @@ export function initAnalytics(): void {
 }
 
 export function trackPageView(path: string, title?: string): void {
+  // gtag is never defined on an opted-out device, so this is also inert there
   if (!analyticsEnabled || !window.gtag) return;
   window.gtag('event', 'page_view', {
     page_path: path,
