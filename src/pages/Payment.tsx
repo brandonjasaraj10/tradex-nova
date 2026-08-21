@@ -402,7 +402,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
               transition={{ delay: 0.5 }}
               className="mt-4 text-sm text-gray-400"
             >
-              Founding member pricing ends the day we launch.{' '}
+              Founding member pricing closes Tuesday, August 25 at 10PM MDT.{' '}
               <span className="text-white font-medium">Lock it in and it never rises.</span>
             </motion.p>
           )}
