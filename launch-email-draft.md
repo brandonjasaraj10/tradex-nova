@@ -15,16 +15,19 @@ reads like a person wrote it matches what they opted into.
 
 ---
 
-## Subject line — pick one
+## Subject line — CHOSEN
 
-1. `TradeX Nova is live` — shortest, cleanest, no hype
-2. `It's live — and your founder price is locked` — leads with their benefit
-3. `You're in — TradeX Nova is live` — leads with belonging
+**`It's live — and your founder price is locked`**
 
-Recommend **2**. Under 45 characters, states the benefit that is actually
-theirs, and doesn't manufacture pressure.
+44 characters, so it won't truncate on mobile. Leads with the benefit that
+is actually theirs rather than with the product name, and the urgency is
+real rather than manufactured.
 
 **Preview text:** `Your $14.99 never rises. Here's how to get started.`
+
+Preview text matters as much as the subject here - it's the second line
+every inbox shows, and leaving it unset means Gmail pulls "Hi {{first_name}},
+TradeX Nova is live" instead, wasting the slot.
 
 ---
 
