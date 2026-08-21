@@ -51,10 +51,22 @@ Deno.serve(async (req: Request) => {
     const enhancedSystemPrompt = systemPrompt + TRADING_VOCABULARY_SYSTEM_PROMPT;
     console.log('System prompt length:', enhancedSystemPrompt.length);
 
+    /*
+      Tuned for latency - "Organize with Nova" was taking well over 20
+      seconds and users sit and watch it.
+
+      effort 'low': this is mechanical extraction into a fixed schema, not
+      a reasoning problem. Medium effort spends thinking tokens deliberating
+      over a task whose answer is already stated in the transcript.
+
+      max_tokens 2048: the reply is one small JSON object. 8192 left room
+      for a runaway response to keep generating long past the useful answer,
+      and generation length is the dominant cost here.
+    */
     const response = await anthropic.messages.create({
       model: MODEL,
-      max_tokens: 8192,
-      output_config: { effort: 'medium' },
+      max_tokens: 2048,
+      output_config: { effort: 'low' },
       system: enhancedSystemPrompt,
       messages: [{ role: 'user', content: correctedTranscript }],
     });

@@ -820,16 +820,25 @@ export default function Journal() {
       const carriedPostMarketNotes = entryForm.post_market_notes;
 
       if (isIncrementalUpdate) {
-        // Work out what the newly-added text is about on its own before
-        // deciding whether it belongs in this entry at all - a second,
-        // distinct position on the same day gets its own entry (matching
-        // "Add Another Entry"), it doesn't get folded into this one, since
-        // position fields (symbol, direction, size, risk, P&L) can only
-        // hold one trade's values each.
-        const probeData = await processVoiceJournalEntry(newTextOnly, undefined, namedConfluences(), namedRules());
+        // A second, distinct position on the same day gets its own entry
+        // (matching "Add Another Entry") rather than being folded into this
+        // one, since position fields (symbol, direction, size, risk, P&L)
+        // can only hold one trade's values each.
+        //
+        // This used to run a throwaway "probe" extraction first purely to
+        // read the symbol, then a second full extraction to actually merge -
+        // two sequential model round trips on every incremental organize,
+        // which is most of the reason it took 20+ seconds. The model now
+        // makes that same-trade-or-not call inside the single request and
+        // reports it as is_new_position.
+        voiceData = await processVoiceJournalEntry(newTextOnly, entryForm, namedConfluences(), namedRules());
+
         const currentSymbol = (entryForm.symbol || '').trim().toUpperCase();
-        const newSymbol = (probeData.symbol || '').trim().toUpperCase();
-        isNewPositionEntry = !!newSymbol && !!currentSymbol && newSymbol !== currentSymbol;
+        const newSymbol = (voiceData.symbol || '').trim().toUpperCase();
+        // Trust the model's judgement, but keep the symbol comparison as a
+        // backstop so an omitted flag can't silently merge two trades.
+        isNewPositionEntry = voiceData.is_new_position === true
+          || (!!newSymbol && !!currentSymbol && newSymbol !== currentSymbol);
 
         if (isNewPositionEntry) {
           if (currentEntry) {
@@ -840,9 +849,6 @@ export default function Journal() {
             setDailyEntries(freshEntries);
             resetEntryForm(freshEntries);
           }
-          voiceData = probeData;
-        } else {
-          voiceData = await processVoiceJournalEntry(newTextOnly, entryForm, namedConfluences(), namedRules());
         }
       } else {
         voiceData = await processVoiceJournalEntry(newTextOnly, undefined, namedConfluences(), namedRules());

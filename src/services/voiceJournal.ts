@@ -1,6 +1,11 @@
 import { supabase } from '../lib/supabase';
 
 export interface VoiceJournalData {
+  // Set by the model when updating an existing entry and the new text turns
+  // out to describe a different position. Lets one request answer both
+  // "is this the same trade?" and "extract it" - it used to take two
+  // sequential round trips, which is most of why organizing felt slow.
+  is_new_position?: boolean;
   title?: string;
   symbol?: string;
   direction?: string;
@@ -106,6 +111,15 @@ The user is UPDATING an existing journal entry. Here's what they already have:
 - Omit fields that should remain unchanged (they'll be preserved by the frontend)
 - For content: provide the NEW content to be ADDED (frontend will append it)
 - Exception: If correcting/updating content, provide the full new HTML content
+
+**IS THIS EVEN THE SAME TRADE? (decide this FIRST)**
+The position fields above hold exactly one trade between them, so text about
+a *different* position cannot be merged into this entry - it needs its own.
+Set "is_new_position": true when the new text describes a position on a
+DIFFERENT symbol than the existing entry above, and in that case IGNORE all
+the merge rules and extract the new text standalone, as a fresh entry.
+Set "is_new_position": false for anything that adds to, corrects, or reflects
+on the SAME trade - including notes with no symbol at all.
 ` : '';
 
     const confluencesRulesPrompt = (userConfluences.length > 0 || userRules.length > 0) ? `
@@ -509,6 +523,7 @@ After logging, confirm with:
 **Output Requirements:**
 Return ONLY valid JSON (no markdown code blocks, no backticks, no explanations):
 {
+  "is_new_position": "true ONLY when updating an existing entry AND the new text is about a different symbol - see the section above. Omit otherwise.",
   "title": "Professional, descriptive title (e.g., 'AUD/USD Short +$5,000 | 2-Day Hold', 'AAPL Long Scalp +$250')",
   "symbol": "TRADING_SYMBOL",
   "direction": "LONG or SHORT (extract from context, omit if not mentioned)",
