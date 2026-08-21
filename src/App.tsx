@@ -1,4 +1,4 @@
-import { Suspense, useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { lazyWithReload } from './lib/lazyWithReload';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './lib/auth';
@@ -14,6 +14,7 @@ import WelcomeAnimation from './components/shared/WelcomeAnimation';
 import ProfileSetup from './components/auth/ProfileSetup';
 import TourOverlay from './components/tour/TourOverlay';
 import PageLoader from './components/shared/PageLoader';
+import { trackPageView } from './lib/analytics';
 
 // lazyWithReload, not React's bare lazy: a deploy renames every hashed chunk
 // and deletes the old ones, so anyone with the page already open asks for a
@@ -168,6 +169,17 @@ function AppContent() {
   const location = useLocation();
   const pathname = location.pathname.replace(/\/$/, '') || '/';
   const isPublicPage = PUBLIC_PATHS.includes(pathname);
+
+  /*
+    Report each route change to GA4. In a single-page app the browser
+    performs exactly one document load, so GA's built-in pageview would
+    record the landing page and nothing after it - every navigation from
+    the landing page into signup, payment or the dashboard would be
+    invisible, which is precisely the funnel worth measuring.
+  */
+  useEffect(() => {
+    trackPageView(location.pathname + location.search);
+  }, [location.pathname, location.search]);
 
   if (isPublicPage) {
     return <PublicLayout />;

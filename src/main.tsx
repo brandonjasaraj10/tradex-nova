@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import * as Sentry from '@sentry/react';
 import App from './App';
+import { initAnalytics } from './lib/analytics';
 import './index.css';
 
 const sentryDsn = import.meta.env.VITE_SENTRY_DSN;
@@ -12,6 +13,9 @@ if (sentryDsn) {
     environment: import.meta.env.MODE,
   });
 }
+
+// No-op unless VITE_GA_MEASUREMENT_ID is set, same gating as Sentry above.
+initAnalytics();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
