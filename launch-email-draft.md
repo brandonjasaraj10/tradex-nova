@@ -26,14 +26,14 @@ real rather than manufactured.
 **Preview text:** `Your $14.99 never rises. Here's how to get started.`
 
 Preview text matters as much as the subject here - it's the second line
-every inbox shows, and leaving it unset means Gmail pulls "Hi, TradeX Nova
+every inbox shows, and leaving it unset means Gmail pulls "Hey, TradeX Nova
 is live" instead, wasting the slot.
 
 ---
 
 ## Body
 
-Hi,
+Hey,
 
 TradeX Nova is live.
 
@@ -59,9 +59,9 @@ Here's what you're getting:
 - Import your history from any broker with a CSV, or log a trade by voice
   in about ten seconds
 
-I built this because I needed it and nothing out there did the job. I was
-keeping notes in spreadsheets that never told me anything useful about my
-own trading.
+I built this because every other journal I tried was more complicated than
+it needed to be. They missed the things that actually mattered, and made
+journaling feel like a chore — which is how you end up not doing it at all.
 
 If something's broken or missing, just reply — this comes straight to me,
 and I'll read every one.
