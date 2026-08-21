@@ -1,18 +1,19 @@
 import { useEffect, useState } from 'react';
 
 /*
-  Launch: Sunday 23 August 2026, 10:00 PM MST.
+  Launch: Sunday 23 August 2026, 10:00 PM Mountain time.
 
-  MST is UTC-7, so 22:00 MST == 05:00 UTC the following day. Pinned as an
-  absolute UTC instant rather than a local-time string so the countdown means
-  the same moment for every visitor regardless of their own timezone - a
-  trader in London and one in Denver both see it hit zero simultaneously.
+  Mountain time is on DAYLIGHT saving in August (MDT, UTC-6), not MST
+  (UTC-7) which only applies in winter - so 22:00 local == 04:00 UTC the
+  next day. Confirmed with Brandon that the intent is 10PM as the clock
+  actually reads in Denver; pinning it to literal MST would have fired an
+  hour late, at 11PM on his own clock.
 
-  Note this is fixed-offset MST (UTC-7) as stated, not America/Denver, which
-  would be on daylight time (UTC-6) in August. If the intent was 10PM as the
-  clock reads in Denver during summer, this should be 04:00Z instead.
+  Stored as an absolute UTC instant rather than a local-time string so the
+  countdown means the same moment for every visitor wherever they are - a
+  trader in London and one in Denver see it hit zero simultaneously.
 */
-export const LAUNCH_AT = new Date('2026-08-24T05:00:00Z');
+export const LAUNCH_AT = new Date('2026-08-24T04:00:00Z');
 
 function remaining(target: Date) {
   const ms = target.getTime() - Date.now();
@@ -57,7 +58,7 @@ export default function LaunchCountdown({ className = '' }: { className?: string
   return (
     <div className={className}>
       <p className="text-xs sm:text-sm text-gray-400 mb-2">
-        Launching <span className="text-white font-medium">Sunday, August 23 at 10:00 PM MST</span>
+        Launching <span className="text-white font-medium">Sunday, August 23 at 10:00 PM MDT</span>
       </p>
       <div className="flex items-center justify-center gap-2 sm:gap-3">
         {units.map(([value, label]) => (
