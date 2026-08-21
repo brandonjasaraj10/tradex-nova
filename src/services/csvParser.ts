@@ -15,6 +15,84 @@ export interface CSVTrade {
   comment?: string;
 }
 
+/*
+  Column aliases across brokers and instrument types.
+
+  The app claims support for stocks, options, futures, forex and crypto, but
+  the importer only recognised MetaTrader exports plus a "generic" shape that
+  required a literal "symbol" AND "profit" header. Nothing else matched, so a
+  Tradovate futures export ("Contract", "P/L"), a Coinbase crypto export
+  ("Product", "Total") or a Thinkorswim options export ("Qty", "Net Price")
+  was rejected outright as "Unsupported CSV format".
+
+  Order matters - the first alias found wins, so more specific names are
+  listed before generic ones.
+*/
+const HEADER_ALIASES = {
+  symbol: ['symbol', 'ticker', 'instrument', 'contract', 'product', 'pair', 'market', 'asset', 'security'],
+  side: ['side', 'type', 'action', 'direction', 'b/s', 'buy/sell', 'position', 'transaction type'],
+  quantity: ['volume', 'lots', 'quantity', 'qty', 'contracts', 'shares', 'size', 'units', 'amount', 'filled'],
+  openPrice: ['open price', 'entry price', 'avg price', 'average price', 'fill price', 'net price', 'price', 'entry'],
+  closePrice: ['close price', 'exit price', 'closing price', 'exit'],
+  openTime: ['open time', 'entry time', 'opened', 'entry date', 'date/time', 'timestamp', 'created at', 'time', 'date'],
+  closeTime: ['close time', 'exit time', 'closed', 'exit date'],
+  pnl: ['profit', 'pnl', 'p/l', 'p&l', 'realized p&l', 'realized pnl', 'realized', 'net p&l', 'net pnl', 'gain/loss', 'gain', 'return'],
+  commission: ['commission', 'commissions', 'fee', 'fees'],
+  swap: ['swap', 'rollover', 'funding', 'interest'],
+  comment: ['comment', 'note', 'notes', 'description', 'memo'],
+} as const;
+
+/*
+  Every way a broker writes "this was a buy" or "this was a sell".
+  Options platforms use open/close language (BTO = buy to open, STC = sell to
+  close), futures platforms often use Bought/Sold or a bare B/S. Checked
+  longest-first so "sell to open" isn't matched by a stray "s".
+*/
+const BUY_WORDS = ['buy to open', 'buy to close', 'bought', 'bto', 'btc_', 'buy', 'long', 'b'];
+const SELL_WORDS = ['sell to open', 'sell to close', 'sold', 'stc', 'sto', 'sell', 'short', 's'];
+
+function findKey(row: Record<string, any>, aliases: readonly string[]): string | undefined {
+  const keys = Object.keys(row);
+  for (const alias of aliases) {
+    const exact = keys.find(k => k.toLowerCase().trim() === alias);
+    if (exact) return exact;
+  }
+  for (const alias of aliases) {
+    const partial = keys.find(k => k.toLowerCase().includes(alias));
+    if (partial) return partial;
+  }
+  return undefined;
+}
+
+export function normalizeSide(raw: string | undefined): 'buy' | 'sell' | null {
+  if (!raw) return null;
+  const v = raw.toLowerCase().trim();
+  if (!v) return null;
+  // "buy to close" covers a short, so check the sell phrases that contain
+  // "buy"/"sell" as whole phrases before falling back to single words.
+  for (const w of SELL_WORDS) {
+    if (w.length > 1 && v.includes(w)) return 'sell';
+  }
+  for (const w of BUY_WORDS) {
+    if (w.length > 1 && v.includes(w)) return 'buy';
+  }
+  if (v === 'b') return 'buy';
+  if (v === 's') return 'sell';
+  return null;
+}
+
+function toNumber(raw: any): number | undefined {
+  if (raw === undefined || raw === null || raw === '') return undefined;
+  // Strips currency symbols, thousands separators, and accounting-style
+  // parentheses for negatives: "($1,234.50)" -> -1234.5
+  const s = String(raw).trim();
+  const negative = /^\(.*\)$/.test(s);
+  const cleaned = s.replace(/[()$€£¥,\s]/g, '');
+  const n = parseFloat(cleaned);
+  if (isNaN(n)) return undefined;
+  return negative ? -Math.abs(n) : n;
+}
+
 export class CSVParser {
   static detectFormat(headers: string[]): 'mt4' | 'mt5' | 'generic' | null {
     const headerStr = headers.join(',').toLowerCase();
@@ -23,7 +101,18 @@ export class CSVParser {
       return headerStr.includes('magic') ? 'mt5' : 'mt4';
     }
 
-    if (headerStr.includes('symbol') && headerStr.includes('profit')) {
+    /*
+      Accept anything we can actually read rather than demanding two exact
+      words: an instrument column, plus either a side or a P&L column. That
+      covers futures, options, crypto and equity exports whose headers share
+      no vocabulary with MetaTrader's.
+    */
+    const probe = Object.fromEntries(headers.map(h => [h, '']));
+    const hasSymbol = !!findKey(probe, HEADER_ALIASES.symbol);
+    const hasSide = !!findKey(probe, HEADER_ALIASES.side);
+    const hasPnl = !!findKey(probe, HEADER_ALIASES.pnl);
+
+    if (hasSymbol && (hasSide || hasPnl)) {
       return 'generic';
     }
 
@@ -113,31 +202,60 @@ export class CSVParser {
     }
   }
 
+  /*
+    Tolerant row reader for every non-MetaTrader export. Previously this
+    required a symbol, a side, a price AND a time column, all matched by a
+    single hard-coded substring, and it dropped the row if any were missing.
+    Crypto and options exports routinely lack one of them (a Coinbase fill
+    has no "type", a closed-option line may carry only a net P&L), so whole
+    files imported as zero trades.
+
+    Now: an instrument plus either a readable side or a P&L is enough. A row
+    is only rejected when there is genuinely nothing to record.
+  */
   static parseGenericRow(row: any): CSVTrade | null {
     try {
-      const symbolKey = Object.keys(row).find(k => k.toLowerCase().includes('symbol'));
-      const typeKey = Object.keys(row).find(k => k.toLowerCase().includes('type') || k.toLowerCase().includes('side'));
-      const volumeKey = Object.keys(row).find(k => k.toLowerCase().includes('volume') || k.toLowerCase().includes('lots') || k.toLowerCase().includes('size'));
-      const priceKey = Object.keys(row).find(k => k.toLowerCase().includes('price') || k.toLowerCase().includes('entry'));
-      const profitKey = Object.keys(row).find(k => k.toLowerCase().includes('profit') || k.toLowerCase().includes('pnl'));
-      const timeKey = Object.keys(row).find(k => k.toLowerCase().includes('time') || k.toLowerCase().includes('date'));
+      const symbolKey = findKey(row, HEADER_ALIASES.symbol);
+      const sideKey = findKey(row, HEADER_ALIASES.side);
+      const qtyKey = findKey(row, HEADER_ALIASES.quantity);
+      const openPriceKey = findKey(row, HEADER_ALIASES.openPrice);
+      const closePriceKey = findKey(row, HEADER_ALIASES.closePrice);
+      const openTimeKey = findKey(row, HEADER_ALIASES.openTime);
+      const closeTimeKey = findKey(row, HEADER_ALIASES.closeTime);
+      const pnlKey = findKey(row, HEADER_ALIASES.pnl);
+      const commissionKey = findKey(row, HEADER_ALIASES.commission);
+      const swapKey = findKey(row, HEADER_ALIASES.swap);
+      const commentKey = findKey(row, HEADER_ALIASES.comment);
 
-      if (!symbolKey || !typeKey || !priceKey || !timeKey) {
-        return null;
-      }
+      const symbol = symbolKey ? String(row[symbolKey] || '').trim() : '';
+      if (!symbol) return null;
 
-      const type = row[typeKey]?.toLowerCase();
-      if (!type || (!type.includes('buy') && !type.includes('sell') && !type.includes('long') && !type.includes('short'))) {
-        return null;
-      }
+      const side = sideKey ? normalizeSide(row[sideKey]) : null;
+      const profit = pnlKey ? toNumber(row[pnlKey]) : undefined;
+
+      // Need at least a direction or a result - a row with neither says
+      // nothing about a trade.
+      if (!side && profit === undefined) return null;
+
+      // Quantity stays as written: crypto is fractional (0.35 BTC), futures
+      // and options are whole contracts, equities are shares. Defaulting a
+      // missing size to a made-up number would misstate risk, so leave it 0.
+      const volume = qtyKey ? (toNumber(row[qtyKey]) ?? 0) : 0;
 
       return {
-        symbol: row[symbolKey],
-        type: (type.includes('buy') || type.includes('long')) ? 'buy' : 'sell',
-        volume: volumeKey ? parseFloat(row[volumeKey] || '0') : 0.01,
-        open_price: parseFloat(row[priceKey] || '0'),
-        open_time: this.parseDate(row[timeKey]),
-        profit: profitKey ? parseFloat(row[profitKey]) : undefined,
+        symbol,
+        // With no explicit side, a profitable close reads as a long by
+        // convention; the P&L itself is what the journal actually uses.
+        type: side ?? 'buy',
+        volume,
+        open_price: openPriceKey ? (toNumber(row[openPriceKey]) ?? 0) : 0,
+        close_price: closePriceKey ? toNumber(row[closePriceKey]) : undefined,
+        open_time: openTimeKey ? this.parseDate(row[openTimeKey]) : new Date().toISOString().replace('T', ' ').substring(0, 19),
+        close_time: closeTimeKey ? this.parseDate(row[closeTimeKey]) : undefined,
+        profit,
+        commission: commissionKey ? toNumber(row[commissionKey]) : undefined,
+        swap: swapKey ? toNumber(row[swapKey]) : undefined,
+        comment: commentKey ? row[commentKey] : undefined,
       };
     } catch (error) {
       console.error('Error parsing generic row:', error);

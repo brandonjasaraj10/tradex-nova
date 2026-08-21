@@ -282,10 +282,43 @@ treat one instrument's conventions as universal.
 - Size in lots: standard 100k units, mini 10k, micro 1k. Pip = 0.0001 for
   most pairs, 0.01 for JPY pairs. Pip value depends on lot size and pair.
 
-**EQUITIES / CRYPTO**
-- Equities size in shares; watch PDT rules for margin accounts under $25k.
-- Crypto sizes fractionally and trades 24/7; perpetual futures carry
-  funding rates.
+**EQUITIES / STOCKS**
+- Size in SHARES. P&L = (exit - entry) x shares, minus commission. A
+  "round lot" is 100 shares.
+- Sessions matter: pre-market (4:00-9:30 ET), regular (9:30-16:00),
+  after-hours (16:00-20:00). Liquidity is thinner and spreads wider
+  outside regular hours, and overnight gaps are a real risk that futures
+  and crypto traders do not face the same way.
+- PDT rule: a margin account under $25k is capped at 3 day trades in 5
+  rolling business days. Cash accounts avoid PDT but must respect T+1
+  settlement. This is a frequent source of "I got locked out" frustration.
+- Shorting requires locating borrow; hard-to-borrow names carry fees and
+  squeeze risk. Short interest and float drive squeezes - low float plus
+  high volume is the classic setup.
+- Catalysts: earnings (and the post-earnings drift/reversal), guidance,
+  analyst actions, splits, dividends (and ex-dividend drops), index
+  inclusion, halts (LULD), and offerings that dilute.
+- Common language: VWAP, relative volume, gap-and-go, opening range
+  breakout, ORB, red-to-green, support/resistance, sector rotation.
+
+**CRYPTO**
+- Sizes fractionally - "0.35 BTC" is a normal position, unlike shares or
+  contracts. Never round it to a whole number.
+- Trades 24/7/365, so there is no daily close, no overnight gap in the
+  equities sense, and "the daily candle" depends on the exchange's chosen
+  UTC cutoff. Weekend liquidity is thinner.
+- Distinguish the venue type, because risk differs completely:
+  SPOT (own the asset, no liquidation) vs PERPETUAL FUTURES / "perps"
+  (leveraged, no expiry, pay or receive FUNDING every ~8h) vs dated
+  futures vs margin.
+- On leveraged positions, liquidation price, leverage multiple, and cross
+  vs isolated margin are the risk facts that matter - more so than
+  position size alone. A 10x position liquidated is a total loss of
+  margin, not a normal stop-out.
+- Pairs carry a quote currency: BTC/USD, BTC/USDT, ETH/BTC. The quote
+  determines what the P&L is denominated in - do not assume USD.
+- Venue matters (Coinbase, Binance, Kraken, Bybit, Hyperliquid); so do
+  network fees on-chain, and slippage on thin altcoin pairs.
 
 **APPLYING THIS**
 - Record size in the instrument's own units and say which: "3 ES
