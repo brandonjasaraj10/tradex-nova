@@ -42,6 +42,18 @@ ChartJS.register(
   Legend
 );
 
+/*
+  Chart colours, from BRAND_GUIDE.md: gains/positive are blue, losses and
+  negative values are grey - deliberately not the green/red most trading
+  apps use. Named here because several charts were hand-writing hex codes
+  and drifting: the Long/Short pie had both slices blue, "Average P&L by
+  Day" painted negative bars blue, and the symbol chart used a different
+  grey than everywhere else. One definition each so a chart can't quietly
+  colour a loss like a win.
+*/
+const CHART_POSITIVE = '#3B82F6';
+const CHART_NEGATIVE = '#9CA3AF';
+
 const commonOptions = {
   responsive: true,
   maintainAspectRatio: false,
@@ -280,7 +292,7 @@ export default function Analytics() {
       datasets: [{
         label: 'P&L by Symbol',
         data: sorted.length > 0 ? sorted.map(([, pnl]) => Number(pnl.toFixed(2))) : [0],
-        backgroundColor: sorted.map(([, pnl]) => pnl >= 0 ? '#3B82F6' : '#6B7280'),
+        backgroundColor: sorted.map(([, pnl]) => pnl >= 0 ? CHART_POSITIVE : CHART_NEGATIVE),
         borderWidth: 1,
       }],
     };
@@ -296,7 +308,7 @@ export default function Analytics() {
       datasets: [{
         label: 'Trade Types',
         data: total > 0 ? [longCount, shortCount] : [1, 0],
-        backgroundColor: ['#3B82F6', '#60A5FA'],
+        backgroundColor: [CHART_POSITIVE, CHART_NEGATIVE],
         borderWidth: 0,
       }],
     };
@@ -327,7 +339,9 @@ export default function Analytics() {
       datasets: [{
         label: 'Average P&L by Day',
         data,
-        backgroundColor: '#3B82F6',
+        // Per-bar, not one flat colour: a losing weekday is a negative
+        // value and was being drawn the same blue as a winning one.
+        backgroundColor: data.map(v => v >= 0 ? CHART_POSITIVE : CHART_NEGATIVE),
         borderRadius: 6,
       }],
     };
