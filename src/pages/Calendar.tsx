@@ -676,8 +676,18 @@ export default function Calendar() {
                   </div>
                 ) : (
                   <>
+                    {/*
+                      Rows fill the window when there's room (1fr) but never
+                      compress below a usable cell (the minmax floor). Plain
+                      auto-rows-fr let a 6-row month flatten into unreadable
+                      strips on a short window; a bare floor with no overflow
+                      pushed the whole page into scrolling instead. Scrolling
+                      here - inside the grid only - keeps the page itself
+                      fixed, so the month header, stats and legend stay put
+                      and only the day cells move.
+                    */}
                     <div
-                      className="grid grid-cols-8 auto-rows-fr gap-1 lg:gap-2"
+                      className="grid grid-cols-8 auto-rows-[minmax(4.25rem,1fr)] gap-1 lg:gap-2 overflow-y-auto"
                       style={{
                         flex: '1 1 0',
                         minHeight: 0
