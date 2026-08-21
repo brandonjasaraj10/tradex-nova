@@ -1423,7 +1423,7 @@ export default function Sales() {
                 variant="stacked"
               />
               <p className="text-center text-sm text-gray-400 mt-4">
-                Join now to lock in $14.99/mo — founding member pricing closes Tuesday, August 25
+                Join now to lock in $14.99/mo — this price ends at launch
               </p>
             </div>
           </motion.div>
