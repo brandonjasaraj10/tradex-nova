@@ -412,7 +412,7 @@ export default function Calendar() {
 
         if (cellIndex < startingDayOfWeek || currentDay > daysInMonth) {
           cells.push(
-            <div key={`empty-${row}-${col}`} className="w-full h-full border border-white/10 bg-white/[0.03] rounded-md transition-all duration-300" />
+            <div key={`empty-${row}-${col}`} className="w-full aspect-square border border-white/10 bg-white/[0.03] rounded-md transition-all duration-300" />
           );
         } else {
           const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(currentDay).padStart(2, '0')}`;
@@ -426,7 +426,7 @@ export default function Calendar() {
             : null;
 
           cells.push(
-            <div key={currentDay} className="relative group w-full h-full">
+            <div key={currentDay} className="relative group w-full aspect-square">
               <button
                 onClick={() => navigate(`/journal?date=${dateKey}`)}
                 onMouseEnter={() => setHoveredDay(dateKey)}
@@ -581,17 +581,21 @@ export default function Calendar() {
     ? Math.round(monthStats.avgPsychScore / monthStats.psychScoreCount)
     : 0;
 
+  // min-h, not h + overflow-hidden. The old pair meant "exactly the window
+  // height, never more", so a 6-row month on a laptop had nowhere to go and
+  // compressed. min-h fills the screen when content is short and grows
+  // normally when it isn't.
   return (
-    <div className="h-[calc(100vh-4rem)] bg-black text-white overflow-hidden flex flex-col">
-      <div className="flex-1 overflow-auto p-4 md:p-6">
-        <div className="max-w-7xl mx-auto h-full flex flex-col">
+    <div className="min-h-[calc(100vh-4rem)] bg-black text-white flex flex-col">
+      <div className="flex-1 p-4 md:p-6">
+        <div className="max-w-7xl mx-auto flex flex-col">
           <div className="mb-4">
             <h1 className="text-2xl md:text-3xl font-bold mb-1 text-white">Trading Calendar</h1>
             <p className="text-sm text-gray-400">Track your daily performance and psychology</p>
           </div>
 
-          <div className="flex-1 min-h-0 flex flex-col md:flex-row gap-4">
-            <div className="flex-1 min-w-0 bg-[#111]/80 backdrop-blur-sm border border-white/[0.05] rounded-2xl p-3 md:p-4 lg:p-6 flex flex-col min-h-0" data-tour="calendar-page">
+          <div className="flex-1 flex flex-col md:flex-row gap-4">
+            <div className="flex-1 min-w-0 bg-[#111]/80 backdrop-blur-sm border border-white/[0.05] rounded-2xl p-3 md:p-4 lg:p-6 flex flex-col" data-tour="calendar-page">
               <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
                 <div className="flex items-center gap-2">
                   <button
@@ -661,7 +665,7 @@ export default function Calendar() {
                 </div>
               </div>
 
-              <div className="flex-1 min-h-0 flex flex-col">
+              <div className="flex-1 flex flex-col">
                 <div className="grid grid-cols-8 gap-1 lg:gap-2 mb-2">
                   {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Week'].map(day => (
                     <div key={day} className="text-center text-[10px] lg:text-xs font-semibold text-gray-500 py-1">
@@ -677,22 +681,17 @@ export default function Calendar() {
                 ) : (
                   <>
                     {/*
-                      Rows fill the window when there's room (1fr) but never
-                      compress below a usable cell (the minmax floor). Plain
-                      auto-rows-fr let a 6-row month flatten into unreadable
-                      strips on a short window; a bare floor with no overflow
-                      pushed the whole page into scrolling instead. Scrolling
-                      here - inside the grid only - keeps the page itself
-                      fixed, so the month header, stats and legend stay put
-                      and only the day cells move.
+                      Cells are sized from WIDTH (aspect-square), not from
+                      whatever vertical space happens to be left over. Row
+                      height derived from leftover height is what made the
+                      same month look different on a laptop and a monitor -
+                      squished on one, roomy on the other. Deriving from
+                      width means the grid holds identical proportions on
+                      every screen and simply scales; if the result is taller
+                      than the window, the page scrolls, which is the honest
+                      trade rather than crushing the cells to fit.
                     */}
-                    <div
-                      className="grid grid-cols-8 auto-rows-[minmax(4.25rem,1fr)] gap-1 lg:gap-2 overflow-y-auto"
-                      style={{
-                        flex: '1 1 0',
-                        minHeight: 0
-                      }}
-                    >
+                    <div className="grid grid-cols-8 gap-1 lg:gap-2">
                       {renderCalendar()}
                     </div>
 
