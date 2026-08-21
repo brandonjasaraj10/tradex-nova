@@ -14,7 +14,7 @@ import WelcomeAnimation from './components/shared/WelcomeAnimation';
 import ProfileSetup from './components/auth/ProfileSetup';
 import TourOverlay from './components/tour/TourOverlay';
 import PageLoader from './components/shared/PageLoader';
-import { trackPageView } from './lib/analytics';
+import { trackPageView, setAuthState } from './lib/analytics';
 
 // lazyWithReload, not React's bare lazy: a deploy renames every hashed chunk
 // and deletes the old ones, so anyone with the page already open asks for a
@@ -167,8 +167,16 @@ function PrivateLayout() {
 
 function AppContent() {
   const location = useLocation();
+  const { user, loading: authLoading } = useAuth();
   const pathname = location.pathname.replace(/\/$/, '') || '/';
   const isPublicPage = PUBLIC_PATHS.includes(pathname);
+
+  // Wait for the auth check to settle, otherwise every returning user is
+  // briefly reported as logged out on load and the segment is wrong.
+  useEffect(() => {
+    if (authLoading) return;
+    setAuthState(!!user);
+  }, [user, authLoading]);
 
   /*
     Report each route change to GA4. In a single-page app the browser
@@ -178,8 +186,11 @@ function AppContent() {
     invisible, which is precisely the funnel worth measuring.
   */
   useEffect(() => {
-    trackPageView(location.pathname + location.search);
-  }, [location.pathname, location.search]);
+    // The public/private split already computed above is exactly the
+    // marketing-vs-app boundary, so reuse it rather than maintaining a
+    // second list that could drift out of step with routing.
+    trackPageView(location.pathname + location.search, isPublicPage ? 'marketing' : 'app');
+  }, [location.pathname, location.search, isPublicPage]);
 
   if (isPublicPage) {
     return <PublicLayout />;

@@ -97,12 +97,43 @@ export function initAnalytics(): void {
   gtag('config', MEASUREMENT_ID, { send_page_view: false });
 }
 
-export function trackPageView(path: string, title?: string): void {
+/*
+  Set as a user property (not just an event parameter) so GA can segment a
+  whole session by it. Lets "new visitors" be measured without existing
+  customers logging in every day being counted as returning traffic in the
+  same reports.
+*/
+export function setAuthState(isLoggedIn: boolean): void {
+  if (!analyticsEnabled || !window.gtag) return;
+  window.gtag('set', 'user_properties', {
+    user_state: isLoggedIn ? 'logged_in' : 'logged_out',
+  });
+}
+
+/*
+  Marketing traffic and in-app usage share one domain, so without a way to
+  tell them apart every acquisition number silently degrades over time. A
+  trader journalling daily returns ~30x a month while a prospect visits once,
+  so within weeks logged-in sessions drown out the visitors you're actually
+  trying to measure: bounce rate collapses, engagement looks great, and
+  conversion rate becomes meaningless because most of the denominator is
+  existing customers.
+
+  Every event therefore carries page_type ('marketing' for the landing page,
+  pricing, signup and checkout; 'app' for everything behind the login) so
+  reports can be filtered to one or the other. Both are worth keeping - the
+  marketing side answers "is the funnel working", the app side answers "which
+  features get used" - they just must not be added together.
+*/
+export type PageType = 'marketing' | 'app';
+
+export function trackPageView(path: string, pageType: PageType, title?: string): void {
   // gtag is never defined on an opted-out device, so this is also inert there
   if (!analyticsEnabled || !window.gtag) return;
   window.gtag('event', 'page_view', {
     page_path: path,
     page_location: window.location.origin + path,
     page_title: title ?? document.title,
+    page_type: pageType,
   });
 }
