@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, Check, X, Info, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
+import { Bell, X, Info, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 
@@ -189,12 +189,30 @@ export default function NotificationPopup({ isOpen, onClose }: NotificationPopup
             ) : (
               <div className="divide-y divide-white/5">
                 {notifications.map(notification => (
+                  /*
+                    The whole row marks itself read. Previously the only way
+                    to do it was a 14px check icon held at opacity-0 until
+                    hover - invisible until you happened to mouse over it,
+                    and unreachable entirely on a touch screen, which has no
+                    hover. Keyboard users get the same action via Enter or
+                    Space.
+                  */
                   <motion.div
                     key={notification.id}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
+                    role={!notification.read ? 'button' : undefined}
+                    tabIndex={!notification.read ? 0 : undefined}
+                    aria-label={!notification.read ? `Mark "${notification.title}" as read` : undefined}
+                    onClick={() => !notification.read && markAsRead(notification.id)}
+                    onKeyDown={(e) => {
+                      if (!notification.read && (e.key === 'Enter' || e.key === ' ')) {
+                        e.preventDefault();
+                        markAsRead(notification.id);
+                      }
+                    }}
                     className={`p-4 hover:bg-white/5 transition-colors group ${
-                      !notification.read ? 'bg-white/[0.02]' : ''
+                      !notification.read ? 'bg-white/[0.02] cursor-pointer' : ''
                     }`}
                   >
                     <div className="flex gap-3">
@@ -205,21 +223,22 @@ export default function NotificationPopup({ isOpen, onClose }: NotificationPopup
                         <div className="flex items-start justify-between gap-2 mb-1">
                           <h4 className="text-sm font-medium">{notification.title}</h4>
                           <div className="flex items-center gap-1 flex-shrink-0">
-                            {!notification.read && (
-                              <button
-                                onClick={() => markAsRead(notification.id)}
-                                className="p-1 hover:bg-white/10 rounded transition-colors opacity-0 group-hover:opacity-100"
-                                title="Mark as read"
-                              >
-                                <Check size={14} />
-                              </button>
-                            )}
+                            {/*
+                              Always visible, and a real tap target rather
+                              than a 14px icon revealed on hover. stopPropagation
+                              so removing a notification doesn't also trigger
+                              the row's mark-as-read underneath it.
+                            */}
                             <button
-                              onClick={() => deleteNotification(notification.id)}
-                              className="p-1 hover:bg-white/10 rounded transition-colors opacity-0 group-hover:opacity-100"
-                              title="Delete"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteNotification(notification.id);
+                              }}
+                              className="p-1.5 -m-0.5 text-gray-500 hover:text-white hover:bg-white/10 rounded transition-colors"
+                              title="Remove notification"
+                              aria-label={`Remove "${notification.title}"`}
                             >
-                              <X size={14} />
+                              <X size={16} />
                             </button>
                           </div>
                         </div>
