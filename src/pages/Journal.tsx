@@ -1594,8 +1594,15 @@ export default function Journal() {
                     </div>
                   </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div>
+                {/*
+                  Two-up before four-up: at md these four fields each got a
+                  quarter of the width, which is too narrow for a pair of
+                  Long/Short buttons or a three-word button - "Short" was
+                  clipped and the psychology label spilled over its
+                  neighbour. Four across only once there's genuinely room.
+                */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="min-w-0">
                     <label className="block text-sm font-medium text-gray-300 mb-2">Symbol/Pair</label>
                     <input
                       type="text"
@@ -1647,19 +1654,27 @@ export default function Journal() {
                     />
                   </div>
 
-                  <div>
+                  <div className="min-w-0">
                     <label className="block text-sm font-medium text-gray-300 mb-2">Psychology</label>
+                    {/*
+                      min-h rather than a hard h-[42px]: the label wraps in a
+                      narrow column, and a fixed height meant the wrapped text
+                      overflowed the button and overlapped the field next to
+                      it. Shorter label too - the surrounding column is
+                      already titled "Psychology", so repeating the word
+                      three times was what forced the wrap.
+                    */}
                     <button
                       type="button"
                       onClick={() => setShowPsychologyTemplate(!showPsychologyTemplate)}
-                      className={`w-full flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm transition-colors border h-[42px] ${
+                      className={`w-full flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm leading-tight text-center transition-colors border min-h-[42px] ${
                         showPsychologyTemplate
                           ? 'bg-blue-400/20 text-blue-400 border-blue-400/40'
                           : 'bg-blue-400/10 text-blue-400 hover:bg-blue-400/20 border-blue-400/20'
                       }`}
                     >
-                      <Brain size={16} />
-                      {showPsychologyTemplate ? 'Hide Psychology Journal' : 'Add Psychology Journal'}
+                      <Brain size={16} className="flex-shrink-0" />
+                      {showPsychologyTemplate ? 'Hide Journal' : 'Add Journal'}
                     </button>
                   </div>
                 </div>
