@@ -5,6 +5,7 @@ import { useAuth } from '../lib/auth';
 import Button from '../components/shared/Button';
 import PasswordStrengthIndicator, { isPasswordValid } from '../components/auth/PasswordStrengthIndicator';
 import EarlyAccessModal from '../components/shared/EarlyAccessModal';
+import Logo from '../components/shared/Logo';
 import { LogIn, UserPlus, Eye, EyeOff, Lock } from 'lucide-react';
 
 type AuthMode = 'login' | 'signup' | 'forgot-password' | 'verify-code' | 'reset-password';
@@ -688,7 +689,24 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-8">
+    <div className="relative min-h-screen flex items-center justify-center px-4 py-8">
+      {/*
+        Signing out drops you here, and this screen previously had no logo,
+        no home link and no nav - the only way back to the public site was
+        editing the URL. The one existing "/" link lives on the access-code
+        screen, which a returning user never sees. Rendered for every auth
+        mode so login, signup, and the whole password-reset flow all have a
+        way out.
+      */}
+      <Link
+        to="/"
+        aria-label="Back to TradeX home"
+        className="absolute top-5 left-5 sm:top-6 sm:left-6 inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+      >
+        <Logo className="h-7 w-7" />
+        <span className="font-semibold text-lg">TradeX</span>
+      </Link>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
