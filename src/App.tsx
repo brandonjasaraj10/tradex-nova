@@ -101,7 +101,21 @@ function PrivateLayout() {
     );
   }
 
-  if (showWelcome && user && profile) {
+  /*
+    Once a welcome is pending, the app must never render underneath it.
+
+    This gate used to also require `profile`, but the dashboard below did
+    not - so in the window where the user was set and the profile was still
+    being fetched, this check failed, the app rendered, and the animation
+    only appeared once the profile landed. That's the flash of dashboard
+    before the welcome. Holding on the loader instead keeps the animation
+    strictly first, and it still waits for the profile so the greeting uses
+    the real first name rather than an email prefix.
+  */
+  if (showWelcome && user) {
+    if (!profile) {
+      return <PageLoader fullScreen />;
+    }
     return (
       <WelcomeAnimation
         firstName={getFirstName()}
