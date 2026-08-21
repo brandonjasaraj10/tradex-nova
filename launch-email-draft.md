@@ -26,14 +26,14 @@ real rather than manufactured.
 **Preview text:** `Your $14.99 never rises. Here's how to get started.`
 
 Preview text matters as much as the subject here - it's the second line
-every inbox shows, and leaving it unset means Gmail pulls "Hi {{first_name}},
-TradeX Nova is live" instead, wasting the slot.
+every inbox shows, and leaving it unset means Gmail pulls "Hi, TradeX Nova
+is live" instead, wasting the slot.
 
 ---
 
 ## Body
 
-Hi {{first_name}},
+Hi,
 
 TradeX Nova is live.
 
@@ -82,6 +82,11 @@ Founder, TradeX Nova
 2. **No real payment has ever completed.** Worth one real $14.99 charge
    (refundable) before sending, so the first person through isn't the test.
 
-3. **Personalisation:** confirm Resend has first names for these contacts.
-   If not, drop `{{first_name}}` and open with "Hi," — a broken merge tag
-   in the first line undoes the personal tone the format is buying.
+3. ~~Personalisation~~ — **resolved, no merge tag.** The waitlist form only
+   ever collected an email; the table has no name column and the Resend sync
+   sends none. `{{first_name}}` would have rendered as an empty gap in the
+   opening line. Opens with a plain "Hi," instead.
+
+   Worth collecting a first name on signup *after* launch if you want
+   personalised sends later - but not worth touching the signup form two
+   days before launch for 11 contacts you cannot backfill anyway.
