@@ -77,27 +77,27 @@ export default function WeeklySummaryCard({ report, onClick, privacyMode = false
           </div>
         ) : (
           <div className="flex-1 min-h-0 flex flex-col justify-center">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-1.5">
               <span className="text-[9px] lg:text-[10px] whitespace-nowrap text-gray-400">P&L</span>
-              <span className={`text-[11px] lg:text-xs font-bold ${report.total_pnl >= 0 ? 'text-[#3B82F6]' : 'text-gray-400'}`}>
+              <span className={`text-[10px] lg:text-[11px] font-bold ${report.total_pnl >= 0 ? 'text-[#3B82F6]' : 'text-gray-400'}`}>
                 {report.total_pnl >= 0 ? '+' : ''}{formatCurrency(report.total_pnl)}
               </span>
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-1.5">
               <span className="text-[9px] lg:text-[10px] whitespace-nowrap text-gray-400">Win Rate</span>
-              <span className="text-[11px] lg:text-xs font-bold text-white">{report.win_rate.toFixed(0)}%</span>
+              <span className="text-[10px] lg:text-[11px] font-bold text-white">{report.win_rate.toFixed(0)}%</span>
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-1.5">
               <span className="text-[9px] lg:text-[10px] whitespace-nowrap text-gray-400">Trades</span>
-              <span className="text-[11px] lg:text-xs font-bold text-white">{report.total_trades}</span>
+              <span className="text-[10px] lg:text-[11px] font-bold text-white">{report.total_trades}</span>
             </div>
 
             {report.avg_psychology_score > 0 && (
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-1.5">
                 <span className="text-[9px] lg:text-[10px] whitespace-nowrap text-gray-400">Psych</span>
-                <span className="text-[11px] lg:text-xs font-medium text-white">
+                <span className="text-[10px] lg:text-[11px] font-medium text-white">
                   {report.avg_psychology_score.toFixed(0)}
                 </span>
               </div>

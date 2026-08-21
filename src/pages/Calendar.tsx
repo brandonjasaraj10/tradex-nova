@@ -750,7 +750,12 @@ export default function Calendar() {
               </div>
             </div>
 
-            <div className="md:w-64 md:min-w-[240px] lg:w-80 lg:min-w-[320px] md:overflow-y-auto flex flex-col gap-3">
+            {/*
+              No internal scrollbar on the stats column - a panel that scrolls
+              separately from the page reads as broken rather than intentional.
+              The page itself scrolls when the content needs it.
+            */}
+            <div className="md:w-64 md:min-w-[240px] lg:w-80 lg:min-w-[320px] flex flex-col gap-3">
               {viewMode === 'pnl' ? (
                 <>
                   <div className="bg-[#111]/80 backdrop-blur-sm border border-white/[0.05] rounded-2xl p-4">
