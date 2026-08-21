@@ -237,6 +237,31 @@ export default function PrivacyPolicy() {
             <p className="mt-4">
               You can control cookies through your browser settings. Note that disabling cookies may limit Service functionality.
             </p>
+
+            <h3 className="text-xl font-semibold text-white mb-3 mt-6">Analytics and Session Recording</h3>
+            <p className="mb-4">
+              We use Google Analytics to understand how visitors find and navigate our website, and PostHog to
+              understand how the application itself is used - which features are opened, where people encounter
+              difficulty, and whether they return over time.
+            </p>
+            <p className="mb-4">
+              PostHog also records anonymized playback of app sessions, showing which elements were clicked and
+              navigated. <strong className="text-white">These recordings are masked: all on-screen text and all
+              form inputs are obscured before anything leaves your browser.</strong> Your trade figures, account
+              balances, positions and journal entries are never captured in a recording, and the text of elements
+              you click is stripped from analytics events. What we see is layout and interaction - not your
+              trading data.
+            </p>
+            <p className="mb-4">
+              Analytics identify your account only by its internal ID. We do not send your name, email address or
+              any trading data to these providers.
+            </p>
+            <p>
+              You can opt out of all analytics and session recording on any device by visiting{' '}
+              <span className="text-blue-400">tradexnova.com/?noanalytics=1</span> in that browser. The preference
+              is stored on your device and applies until you clear your browser data or reverse it with{' '}
+              <span className="text-blue-400">?noanalytics=0</span>.
+            </p>
           </section>
 
           <section>

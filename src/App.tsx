@@ -15,6 +15,7 @@ import ProfileSetup from './components/auth/ProfileSetup';
 import TourOverlay from './components/tour/TourOverlay';
 import PageLoader from './components/shared/PageLoader';
 import { trackPageView, setAuthState } from './lib/analytics';
+import { captureAppPageView, identifyUser, resetUser } from './lib/productAnalytics';
 
 // lazyWithReload, not React's bare lazy: a deploy renames every hashed chunk
 // and deletes the old ones, so anyone with the page already open asks for a
@@ -176,6 +177,10 @@ function AppContent() {
   useEffect(() => {
     if (authLoading) return;
     setAuthState(!!user);
+    // Tie activity to an account so retention/churn is readable per user;
+    // reset on sign-out so the next person on a shared device isn't merged
+    // into the previous one's history.
+    if (user) identifyUser(user.id); else resetUser();
   }, [user, authLoading]);
 
   /*
@@ -189,7 +194,9 @@ function AppContent() {
     // The public/private split already computed above is exactly the
     // marketing-vs-app boundary, so reuse it rather than maintaining a
     // second list that could drift out of step with routing.
-    trackPageView(location.pathname + location.search, isPublicPage ? 'marketing' : 'app');
+    const pageType = isPublicPage ? 'marketing' : 'app';
+    trackPageView(location.pathname + location.search, pageType);
+    captureAppPageView(location.pathname + location.search, pageType);
   }, [location.pathname, location.search, isPublicPage]);
 
   if (isPublicPage) {

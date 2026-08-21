@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import * as Sentry from '@sentry/react';
 import App from './App';
 import { initAnalytics } from './lib/analytics';
+import { initProductAnalytics } from './lib/productAnalytics';
 import './index.css';
 
 const sentryDsn = import.meta.env.VITE_SENTRY_DSN;
@@ -16,6 +17,8 @@ if (sentryDsn) {
 
 // No-op unless VITE_GA_MEASUREMENT_ID is set, same gating as Sentry above.
 initAnalytics();
+// No-op unless VITE_POSTHOG_KEY is set, and silenced by the same opt-out.
+initProductAnalytics();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
