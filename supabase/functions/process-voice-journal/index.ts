@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import Anthropic from "npm:@anthropic-ai/sdk@0.116.0";
-import { correctTradingTerms, TRADING_VOCABULARY_SYSTEM_PROMPT } from "../_shared/tradingVocabulary.ts";
+import { correctTradingTerms, TRADING_VOCABULARY_SYSTEM_PROMPT, INSTRUMENT_KNOWLEDGE_SYSTEM_PROMPT } from "../_shared/tradingVocabulary.ts";
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY ?? '' });
@@ -48,7 +48,7 @@ Deno.serve(async (req: Request) => {
     }
 
     // Enhance system prompt with trading vocabulary instructions
-    const enhancedSystemPrompt = systemPrompt + TRADING_VOCABULARY_SYSTEM_PROMPT;
+    const enhancedSystemPrompt = systemPrompt + TRADING_VOCABULARY_SYSTEM_PROMPT + INSTRUMENT_KNOWLEDGE_SYSTEM_PROMPT;
     console.log('System prompt length:', enhancedSystemPrompt.length);
 
     /*

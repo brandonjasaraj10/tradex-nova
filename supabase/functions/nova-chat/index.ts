@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import Anthropic from "npm:@anthropic-ai/sdk@0.116.0";
-import { correctTradingTerms, TRADING_VOCABULARY_SYSTEM_PROMPT } from "../_shared/tradingVocabulary.ts";
+import { correctTradingTerms, TRADING_VOCABULARY_SYSTEM_PROMPT, INSTRUMENT_KNOWLEDGE_SYSTEM_PROMPT } from "../_shared/tradingVocabulary.ts";
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY ?? '' });
@@ -486,7 +486,8 @@ Key Principles:
 - Always tie recommendations to their specific goals and style
 - Make analysis feel personal and valuable, not generic
 
-${TRADING_VOCABULARY_SYSTEM_PROMPT}`;
+${TRADING_VOCABULARY_SYSTEM_PROMPT}
+${INSTRUMENT_KNOWLEDGE_SYSTEM_PROMPT}`;
 
 const TOOLS: Anthropic.Tool[] = [
   {
