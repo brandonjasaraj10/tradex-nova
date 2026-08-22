@@ -394,8 +394,17 @@ export default function NovaAssistant() {
     );
   }
 
+  /*
+    No h-screen/overflow-y-auto on the root below, unlike before. That made
+    the page its own scroll box sitting inside the document, with the message
+    list a third scroller inside that. Reaching the end of one handed off to
+    the next, and that handoff reads as the scroll stopping short of the top
+    or bottom and needing a second push. Every other page in the app simply
+    lets the document scroll; this now matches them, leaving the message list
+    as the only nested scroller - which is what a chat should have.
+  */
   return (
-    <div className="h-screen bg-black overflow-y-auto">
+    <div className="bg-black">
       <div className="absolute inset-0 bg-gradient-to-br from-blue-400/5 via-transparent to-blue-500/5 pointer-events-none" />
 
       <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 relative z-10">
