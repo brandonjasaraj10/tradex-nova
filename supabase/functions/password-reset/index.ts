@@ -127,82 +127,83 @@ Deno.serve(async (req: Request) => {
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <!--
-              Declaring colour-scheme support is what stops Gmail and Apple Mail
-              force-inverting this email. Without it, dark mode flipped the design
-              inside out: the intentionally dark card was inverted to light while
-              the light page went dark, and the grey footer text ended up dark-on-
-              dark and effectively unreadable on a phone.
+              Gmail's mobile app inverts on its own heuristics and ignores both
+              colour-scheme meta and prefers-color-scheme, so this does not try
+              to control the theme. It is built so BOTH renderings look like
+              TradeX: light on a light client, and - because Gmail flips light
+              to dark - the app's own dark-with-blue look on a phone.
 
-              The email is dark-first now, matching the app, so it looks the same
-              in both light and dark clients rather than depending on which one
-              guesses correctly.
+              Every colour is a mid-tone that stays itself when inverted. An
+              earlier version used #1D4ED8 for the code, which lightened into
+              purple; brand blue #3B82F6 stays blue either way.
+
+              The logo is drawn with table cells rather than an <img>, because
+              most clients block remote images by default and a branded email
+              that arrives unbranded defeats the point. These are the same three
+              bars as the in-app mark.
             -->
-            <meta name="color-scheme" content="dark light">
-            <meta name="supported-color-schemes" content="dark light">
-            <style>
-              :root { color-scheme: dark light; supported-color-schemes: dark light; }
-              /* Clients that still adjust get explicit values rather than a guess. */
-              @media (prefers-color-scheme: dark) {
-                .tx-page { background-color: #0A0A0A !important; }
-                .tx-card { background-color: #141414 !important; }
-                .tx-heading { color: #ffffff !important; }
-                .tx-body { color: #b4b4b4 !important; }
-                .tx-footer { color: #8a8a8a !important; }
-                .tx-code { color: #60A5FA !important; }
-              }
-            </style>
           </head>
-          <body class="tx-page" style="margin: 0; padding: 0; background-color: #0A0A0A; font-family: Arial, Helvetica, sans-serif;">
-            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="tx-page" style="background-color: #0A0A0A;">
+          <body style="margin: 0; padding: 0; background-color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;">
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #ffffff;">
               <tr>
-                <td align="center" style="padding: 20px 10px;">
-                  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 600px;">
-                    <!-- Header -->
+                <td align="center" style="padding: 40px 16px;">
+                  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 560px;">
+
+                    <!-- Logo: three bars + wordmark -->
                     <tr>
-                      <td align="center" style="padding: 30px 0;">
-                        <h1 class="tx-heading" style="margin: 0; font-size: 32px; font-weight: bold; color: #ffffff;">TradeX</h1>
-                      </td>
-                    </tr>
-                    <!-- Main Content Card -->
-                    <tr>
-                      <td>
-                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="tx-card" style="background-color: #141414; border-radius: 12px; border: 1px solid #262626;">
+                      <td align="center" style="padding-bottom: 32px;">
+                        <table role="presentation" cellspacing="0" cellpadding="0" border="0">
                           <tr>
-                            <td style="padding: 30px;">
-                              <h2 class="tx-heading" style="margin: 0 0 15px 0; font-size: 24px; font-weight: bold; color: #ffffff;">Password Reset Code</h2>
-                              <p class="tx-body" style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.5; color: #b4b4b4;">You requested to reset your password. Use the code below to continue:</p>
-                              <!-- Code Box -->
-                              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-                                <tr>
-                                  <td align="center" style="padding: 25px 0;">
-                                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="background-color: #000000; border-radius: 8px; border: 1px solid #2f2f2f;">
-                                      <tr>
-                                        <td style="padding: 20px 30px;">
-                                          <span class="tx-code" style="font-size: 32px; font-family: 'Courier New', Courier, monospace; letter-spacing: 8px; color: #60A5FA; font-weight: bold;">${resetCode}</span>
-                                        </td>
-                                      </tr>
-                                    </table>
-                                  </td>
-                                </tr>
-                              </table>
-                              <p class="tx-body" style="margin: 0 0 10px 0; font-size: 14px; line-height: 1.5; color: #b4b4b4;">This code will expire in 15 minutes.</p>
-                              <p class="tx-body" style="margin: 0; font-size: 14px; line-height: 1.5; color: #b4b4b4;">If you didn't request this, you can safely ignore this email.</p>
+                            <td valign="middle" style="padding-right: 4px;">
+                              <div style="width: 4px; height: 22px; background-color: #3B82F6; border-radius: 2px; font-size: 0; line-height: 22px;">&nbsp;</div>
+                            </td>
+                            <td valign="middle" style="padding-right: 4px;">
+                              <div style="width: 4px; height: 30px; background-color: #3B82F6; border-radius: 2px; font-size: 0; line-height: 30px;">&nbsp;</div>
+                            </td>
+                            <td valign="middle" style="padding-right: 12px;">
+                              <div style="width: 4px; height: 14px; background-color: #3B82F6; border-radius: 2px; font-size: 0; line-height: 14px;">&nbsp;</div>
+                            </td>
+                            <td valign="middle">
+                              <span style="font-size: 26px; font-weight: 700; letter-spacing: -0.5px; color: #111111;">TradeX</span>
                             </td>
                           </tr>
                         </table>
                       </td>
                     </tr>
+
+                    <!-- Card -->
+                    <tr>
+                      <td>
+                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #ffffff; border: 1px solid #e2e2e2; border-radius: 14px;">
+                          <tr>
+                            <td style="padding: 36px 32px;">
+                              <h1 style="margin: 0 0 12px 0; font-size: 21px; font-weight: 700; color: #111111; letter-spacing: -0.3px;">Reset your password</h1>
+                              <p style="margin: 0 0 28px 0; font-size: 15px; line-height: 1.6; color: #555555;">Enter this code in TradeX to choose a new password.</p>
+
+                              <!-- Code -->
+                              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                                <tr>
+                                  <td align="center" style="background-color: #f4f8ff; border: 1px solid #3B82F6; border-radius: 10px; padding: 22px 16px;">
+                                    <span style="font-size: 36px; font-family: 'SF Mono', Menlo, Consolas, 'Courier New', monospace; letter-spacing: 10px; color: #3B82F6; font-weight: 700;">${resetCode}</span>
+                                  </td>
+                                </tr>
+                              </table>
+
+                              <p style="margin: 24px 0 0 0; font-size: 14px; line-height: 1.6; color: #555555;">This code expires in <span style="color: #111111; font-weight: 600;">15 minutes</span>. If you didn&rsquo;t ask to reset your password, you can ignore this email &mdash; nothing will change.</p>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+
                     <!-- Footer -->
                     <tr>
-                      <td align="center" style="padding: 25px 0 10px 0;">
-                        <p class="tx-footer" style="margin: 0; font-size: 12px; color: #8a8a8a;">TradeX - Your personal AI Trading Assistant &amp; Journal</p>
+                      <td align="center" style="padding: 28px 0 0 0;">
+                        <p style="margin: 0 0 6px 0; font-size: 13px; color: #555555;">TradeX &mdash; your AI trading journal</p>
+                        <p style="margin: 0; font-size: 12px; color: #777777;">Automated message, please don&rsquo;t reply.</p>
                       </td>
                     </tr>
-                    <tr>
-                      <td align="center" style="padding: 0 0 20px 0;">
-                        <p class="tx-footer" style="margin: 0; font-size: 11px; color: #8a8a8a;">This is an automated message. Please do not reply to this email.</p>
-                      </td>
-                    </tr>
+
                   </table>
                 </td>
               </tr>

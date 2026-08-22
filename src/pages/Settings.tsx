@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import ConfirmModal from '../components/shared/ConfirmModal';
 import {
@@ -35,6 +36,7 @@ interface Subscription {
 
 export default function Settings() {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const { refreshPreferences } = usePreferences();
   const [activeTab, setActiveTab] = useState('personal');
   const [loading, setLoading] = useState(false);
@@ -127,42 +129,6 @@ export default function Settings() {
     }
   };
 
-  const handleActivateSubscription = async () => {
-    setSubLoading(true);
-
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        alert('Please log in to activate subscription');
-        return;
-      }
-
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/activate-subscription`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          action: 'activate',
-          duration: 30,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to activate subscription');
-      }
-
-      await loadSubscription();
-      alert('Subscription activated successfully!');
-    } catch (err) {
-      console.error('Activation error:', err);
-      alert(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setSubLoading(false);
-    }
-  };
 
   const handleManageBilling = async () => {
     setSubLoading(true);
@@ -680,20 +646,26 @@ export default function Settings() {
                     </div>
                   ) : (
                     <div className="bg-gradient-to-br from-gray-500/10 to-transparent border border-gray-500/20 rounded-xl p-6">
+                      {/*
+                        This was an "Activate Subscription (Testing)" button
+                        offering a free 30-day subscription. The endpoint behind
+                        it was locked down to require real Stripe verification,
+                        so it could only ever fail - but it was still sitting in
+                        Settings, shown to every user without a subscription,
+                        offering something it could not deliver. It now points at
+                        the real checkout.
+                      */}
                       <div className="text-center py-8">
                         <CreditCard size={48} className="mx-auto mb-4 text-gray-400" />
                         <h3 className="text-lg font-semibold text-white mb-2">No Active Subscription</h3>
                         <p className="text-sm text-gray-400 mb-6">
-                          Activate your subscription to access all premium features
+                          Subscribe to unlock your journal, analytics and Nova.
                         </p>
-                        <Button
-                          onClick={handleActivateSubscription}
-                          disabled={subLoading}
-                        >
-                          {subLoading ? 'Activating...' : 'Activate Subscription (Testing)'}
+                        <Button onClick={() => navigate('/payment')}>
+                          View plans
                         </Button>
                         <p className="text-xs text-gray-500 mt-3">
-                          This will activate a 30-day subscription for testing
+                          7-day free trial &middot; cancel anytime
                         </p>
                       </div>
                     </div>
