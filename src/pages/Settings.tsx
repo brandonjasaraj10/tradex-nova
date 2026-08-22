@@ -69,6 +69,12 @@ export default function Settings() {
 
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+  const [deleting, setDeleting] = useState(false);
+
   const fadeInUp = {
     hidden: { opacity: 0, y: 20 },
     visible: {
@@ -205,6 +211,49 @@ export default function Settings() {
       alert(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setSubLoading(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    // Belt and braces - the button is already disabled unless both are set,
+    // but this is the one action in the app that cannot be undone.
+    if (deleteConfirmText !== 'DELETE' || !deletePassword) return;
+
+    setDeleteError('');
+    setDeleting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setDeleteError('Your session expired. Please sign in again.');
+        setDeleting(false);
+        return;
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-account`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ password: deletePassword }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        setDeleteError(result.error || 'Could not delete your account.');
+        setDeleting(false);
+        return;
+      }
+
+      // The account no longer exists, so clear the local session rather than
+      // leaving a token for a deleted user sitting in the browser.
+      await supabase.auth.signOut();
+      window.location.href = '/';
+    } catch (err) {
+      console.error('Account deletion error:', err);
+      setDeleteError('Something went wrong. Please try again or contact support.');
+      setDeleting(false);
     }
   };
 
@@ -562,6 +611,88 @@ export default function Settings() {
                     >
                       {loading ? 'Updating...' : 'Update Password'}
                     </Button>
+                  </div>
+
+                  {/*
+                    Account deletion. The Privacy Policy promises "Delete your
+                    account and data" and claims the GDPR right to erasure, but
+                    nothing in the product could do it - a request meant editing
+                    the database by hand.
+
+                    Deliberately heavy to trigger: it is irreversible, so it
+                    takes an explicit reveal, the exact word DELETE typed out,
+                    and the account password. A single misclick should never be
+                    able to destroy someone's trading history.
+                  */}
+                  <div className="mt-10 pt-8 border-t border-white/10">
+                    <h3 className="text-base font-semibold text-white mb-1">Delete account</h3>
+                    <p className="text-sm text-gray-400 mb-4">
+                      Permanently deletes your account, journal entries, trades and screenshots.
+                      Any active subscription is cancelled. This cannot be undone.
+                    </p>
+
+                    {!showDeleteAccount ? (
+                      <button
+                        onClick={() => setShowDeleteAccount(true)}
+                        className="text-sm text-red-400 hover:text-red-300 underline underline-offset-4 transition-colors"
+                      >
+                        I want to delete my account
+                      </button>
+                    ) : (
+                      <div className="space-y-4 rounded-xl border border-red-500/30 bg-red-500/[0.04] p-5">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-2">
+                            Type <span className="font-mono text-white">DELETE</span> to confirm
+                          </label>
+                          <input
+                            type="text"
+                            value={deleteConfirmText}
+                            onChange={(e) => setDeleteConfirmText(e.target.value)}
+                            className="w-full px-4 py-2.5 rounded-lg bg-black/30 border border-white/10 text-white placeholder-gray-600 focus:border-red-400/50 outline-none transition-all"
+                            placeholder="DELETE"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-2">
+                            Confirm your password
+                          </label>
+                          <input
+                            type="password"
+                            value={deletePassword}
+                            onChange={(e) => setDeletePassword(e.target.value)}
+                            className="w-full px-4 py-2.5 rounded-lg bg-black/30 border border-white/10 text-white placeholder-gray-600 focus:border-red-400/50 outline-none transition-all"
+                            placeholder="Your password"
+                          />
+                        </div>
+
+                        {deleteError && (
+                          <div className="text-sm text-red-400 bg-red-400/10 border border-red-400/20 p-3 rounded-lg">
+                            {deleteError}
+                          </div>
+                        )}
+
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={handleDeleteAccount}
+                            disabled={deleting || deleteConfirmText !== 'DELETE' || !deletePassword}
+                            className="px-4 py-2 rounded-lg text-sm font-medium bg-red-500/90 hover:bg-red-500 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                          >
+                            {deleting ? 'Deleting...' : 'Permanently delete my account'}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setShowDeleteAccount(false);
+                              setDeleteConfirmText('');
+                              setDeletePassword('');
+                              setDeleteError('');
+                            }}
+                            className="text-sm text-gray-400 hover:text-white transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
