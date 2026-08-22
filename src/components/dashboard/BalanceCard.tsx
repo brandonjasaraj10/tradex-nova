@@ -4,17 +4,30 @@ import { Wallet, TrendingUp, TrendingDown, DollarSign, RefreshCw, X, AlertCircle
 import Card from '../shared/Card';
 import { balanceService, type BalanceData } from '../../services/balanceService';
 import { useAccount } from '../../lib/accountContext';
+import { useDataSync } from '../../lib/dataSync';
 
 export default function BalanceCard() {
   const { selectedAccount } = useAccount();
+  const { refreshTrigger } = useDataSync();
   const [balanceData, setBalanceData] = useState<BalanceData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showNotification, setShowNotification] = useState(true);
 
+  /*
+    Recalculate, then read - and do it whenever the data changes, not only
+    when the account is switched.
+
+    current_balance is a stored column, so reading it alone returns whatever
+    it was last set to. It was only ever recomputed by the manual refresh
+    button, which meant logging a trade or a journal entry left the headline
+    balance showing a stale figure until someone thought to press it. Adding
+    refreshTrigger also means the card reacts to the same signal every other
+    panel already listens to.
+  */
   useEffect(() => {
     loadBalance();
-  }, [selectedAccount]);
+  }, [selectedAccount, refreshTrigger]);
 
   const loadBalance = async () => {
     setIsLoading(true);
@@ -22,6 +35,7 @@ export default function BalanceCard() {
       let data: BalanceData | null = null;
 
       if (selectedAccount) {
+        await balanceService.recalculateBalance(selectedAccount.id);
         data = await balanceService.getAccountBalance(selectedAccount.id);
       } else {
         data = await balanceService.getCombinedBalance();

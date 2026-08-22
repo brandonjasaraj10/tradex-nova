@@ -193,6 +193,24 @@ export class BalanceService {
         return null;
       }
 
+      /*
+        Recalculate every account before summing. current_balance is a stored
+        column, so summing it directly returns whatever each account was last
+        set to - in "All Accounts" the total would silently lag behind the
+        per-account figures, which do get recalculated on read.
+
+        Ids are fetched first so each can be recomputed; the amounts are then
+        read back fresh.
+      */
+      const { data: ids } = await supabase
+        .from('user_broker_connections')
+        .select('id')
+        .eq('user_id', targetUserId);
+
+      if (ids?.length) {
+        await Promise.all(ids.map((c: { id: string }) => this.recalculateBalance(c.id)));
+      }
+
       const { data: connections, error } = await supabase
         .from('user_broker_connections')
         .select('starting_balance, current_balance, currency')
