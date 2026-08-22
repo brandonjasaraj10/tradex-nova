@@ -30,6 +30,8 @@ import { getTrades } from '../services/trades';
 import type { Trade } from '../types/trade';
 import { getUserConfluences, type Confluence } from '../services/confluences';
 import { supabase } from '../lib/supabase';
+import { uploadScreenshot, deleteScreenshot } from '../lib/screenshots';
+import ScreenshotImage from '../components/shared/ScreenshotImage';
 import {
   getTradingRules,
   getJournalEntryConfluences,
@@ -1136,18 +1138,13 @@ export default function Journal() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-
-      const { data, error } = await supabase.storage
-        .from('journal-screenshots')
-        .upload(fileName, file);
-
-      if (error) throw error;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('journal-screenshots')
-        .getPublicUrl(fileName);
+      /*
+        Stores the object PATH, not a public URL. The bucket is private, so a
+        URL minted here would be a permanent unauthenticated link to an image
+        that can show the user's account balance - which is exactly what this
+        replaced. The path is signed into a short-lived URL at render time.
+      */
+      const publicUrl = await uploadScreenshot(file, user.id);
 
       const label = type === 'before' ? beforeScreenshotLabel || file.name : afterScreenshotLabel || file.name;
 
@@ -1830,14 +1827,11 @@ export default function Journal() {
                     <div className="space-y-3">
                       {entryForm.before_screenshots.map((screenshot, index) => (
                         <div key={index} className="relative group cursor-pointer" onClick={() => setExpandedImage(screenshot)}>
-                          <img
-                            src={screenshot.url}
-                            alt={screenshot.label}
-                            className="w-full h-32 object-cover rounded-lg border border-white/10"
-                            onError={(e) => {
-                              e.currentTarget.src = 'https://via.placeholder.com/400x200?text=Invalid+Image';
-                            }}
-                          />
+                          <ScreenshotImage
+                              source={screenshot.url}
+                              alt={screenshot.label}
+                              className="w-full h-32 object-cover rounded-lg border border-white/10"
+                            />
                           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2 rounded-b-lg">
                             <p className="text-xs text-white font-medium truncate">{screenshot.label}</p>
                           </div>
@@ -1928,14 +1922,11 @@ export default function Journal() {
                     <div className="space-y-3">
                       {entryForm.after_screenshots.map((screenshot, index) => (
                         <div key={index} className="relative group cursor-pointer" onClick={() => setExpandedImage(screenshot)}>
-                          <img
-                            src={screenshot.url}
-                            alt={screenshot.label}
-                            className="w-full h-32 object-cover rounded-lg border border-white/10"
-                            onError={(e) => {
-                              e.currentTarget.src = 'https://via.placeholder.com/400x200?text=Invalid+Image';
-                            }}
-                          />
+                          <ScreenshotImage
+                              source={screenshot.url}
+                              alt={screenshot.label}
+                              className="w-full h-32 object-cover rounded-lg border border-white/10"
+                            />
                           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2 rounded-b-lg">
                             <p className="text-xs text-white font-medium truncate">{screenshot.label}</p>
                           </div>
@@ -2314,14 +2305,11 @@ export default function Journal() {
               >
                 <X size={24} />
               </button>
-              <img
-                src={expandedImage.url}
-                alt={expandedImage.label}
-                className="w-full h-full object-contain rounded-lg"
-                onError={(e) => {
-                  e.currentTarget.src = 'https://via.placeholder.com/800x600?text=Invalid+Image';
-                }}
-              />
+              <ScreenshotImage
+                  source={expandedImage.url}
+                  alt={expandedImage.label}
+                  className="w-full h-full object-contain rounded-lg"
+                />
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-4 rounded-b-lg">
                 <p className="text-lg text-white font-medium">{expandedImage.label}</p>
               </div>
