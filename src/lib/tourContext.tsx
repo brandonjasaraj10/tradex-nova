@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from './supabase';
 import { useAuth } from './auth';
+import { useDataSync } from './dataSync';
 import { seedTourDemoData, cleanupTourDemoData } from './tourDemoData';
 
 export type TourStep = {
@@ -13,180 +14,66 @@ export type TourStep = {
   maxHeight?: number;
 };
 
+/*
+  Five steps, down from twenty-three.
+
+  The benchmarks on product tours are unambiguous: median completion is
+  about 15%, every step past three or four measurably reduces it, and tours
+  over twenty steps lose a further 30-50%. The old tour ran twenty-three
+  steps across seven pages, which put the two things nothing else on the
+  market does - Organize with Nova, and Nova chat - at steps 8 and 14, well
+  past the point most people had already closed it. The best material was
+  the least likely to be seen.
+
+  What survives is the core loop plus the differentiators, in the order
+  someone actually needs them: the journal, the thing that makes journalling
+  effortless, the AI that reads it back, the payoff view, and a clear first
+  action. Calendar and Analytics keep one step between them because both are
+  self-evident from the sidebar; folders, screenshots, settings and the
+  metric-by-metric walkthrough are discoverable and were costing more
+  completions than they earned.
+
+  The greeting step went too. It cost a step to say hello and showed no
+  capability, so its warmth moved into the first real step instead.
+*/
 export const TOUR_STEPS: TourStep[] = [
-  {
-    id: 'welcome',
-    targetSelector: '[data-tour="dashboard-header"]',
-    title: 'Welcome to TradeX!',
-    content: "I'm Nova, your AI trading assistant. Let me show you around your new trading journal.",
-    position: 'bottom',
-    route: '/dashboard',
-  },
-  {
-    id: 'account-selector',
-    targetSelector: '[data-tour="account-selector"]',
-    title: 'Add Your Trading Accounts',
-    content: 'Add multiple trading accounts here - personal, funded, or prop firm - and switch between them any time to filter everything in TradeX to just that account.',
-    position: 'bottom',
-    route: '/dashboard',
-  },
-  {
-    id: 'quick-access',
-    targetSelector: '[data-tour="quick-access"]',
-    title: 'Quick Navigation',
-    content: 'Use these shortcuts to quickly access your Journal, Analytics, Nova AI, and Settings.',
-    position: 'bottom',
-    route: '/dashboard',
-  },
-  {
-    id: 'metrics',
-    targetSelector: '[data-tour="metrics"]',
-    title: 'Your Performance Metrics',
-    content: 'Track your trading performance at a glance - P&L, win rate, profit factor, and your Nova Score. This is what it looks like once you have some trades logged.',
-    position: 'bottom',
-    route: '/dashboard',
-  },
-  {
-    id: 'calendar-page',
-    targetSelector: '[data-tour="calendar-page"]',
-    title: 'Trading Calendar',
-    content: 'Visualize your trading activity day by day - P&L or psychology score. Click any day to jump straight to your journal entry for it.',
-    position: 'top',
-    route: '/calendar',
-  },
-  {
-    id: 'calendar-weekly-review',
-    targetSelector: '[data-tour="calendar-weekly-review"]',
-    title: 'Weekly Review Cards',
-    content: "Every week gets an auto-generated summary card - trades, win rate, and key takeaways - right alongside that week's days.",
-    position: 'left',
-    route: '/calendar',
-  },
-  {
-    id: 'calendar-psych-toggle',
-    targetSelector: '[data-tour="calendar-psych-toggle"]',
-    title: 'Switch to Psychology View',
-    content: 'Toggle to Psych to see the same calendar mapped by your mental and emotional state instead of dollars - great for spotting patterns in your mindset over time.',
-    position: 'bottom',
-    route: '/calendar',
-  },
-  {
-    id: 'nova-chat',
-    targetSelector: '[data-tour="nova-chat"]',
-    title: 'Nova AI Assistant',
-    content: "Ask me anything about your trades, get insights, or discuss strategies. I'm here to help you improve!",
-    position: 'bottom',
-    route: '/nova',
-  },
-  {
-    id: 'checklists',
-    targetSelector: '[data-tour="checklists-page"]',
-    title: 'Trading Plan & Confluences',
-    content: 'Define your trading rules and confluences here, then track how often you actually follow them. Consistency is key to profitable trading!',
-    position: 'top',
-    route: '/checklists',
-  },
   {
     id: 'journal-intro',
     targetSelector: '[data-tour="journal-header"]',
-    title: 'Your Trading Journal',
-    content: 'Document every trade, capture your thoughts, and track your psychological state. This is where real improvement happens.',
+    title: 'This is where it all happens',
+    content: "I'm Nova. Your journal is the heart of TradeX - log a trade, capture what you were thinking, and track how you felt. Let me show you the fastest way to use it.",
     position: 'bottom',
-    route: '/journal',
-  },
-  {
-    id: 'journal-folders',
-    targetSelector: '[data-tour="journal-folders"]',
-    title: 'Organize with Folders',
-    content: 'Use the Daily Journal folder for your trading reflections and the Notes folder for important observations and strategies.',
-    position: 'right',
-    route: '/journal',
-  },
-  {
-    id: 'journal-editor',
-    targetSelector: '[data-tour="journal-editor"]',
-    title: 'Document Your Trading Journey',
-    content: 'Write detailed entries with formatting, add screenshots, track your mood, and tag important concepts.',
-    position: 'bottom',
-    route: '/journal',
-  },
-  {
-    id: 'journal-voice-input',
-    targetSelector: '[data-tour="journal-voice-input"]',
-    title: 'Voice Journaling',
-    content: 'Click the button, speak your thoughts, and Nova will automatically organize and format your entry for you.',
-    position: 'left',
     route: '/journal',
   },
   {
     id: 'journal-organize-nova',
     targetSelector: '[data-tour="journal-organize-nova"]',
-    title: 'Or Just Type and Organize',
-    content: "Prefer typing? Write your notes in plain, messy language and this button appears - click it and Nova reorganizes what you wrote and fills in the details for you, same as voice.",
+    title: 'Never format an entry again',
+    content: "Type your notes however they come out - messy, half-finished, whatever. Hit this and I'll pull out the symbol, direction, size and P&L, and write it up properly. You can talk it out instead with Voice Input.",
     position: 'left',
     route: '/journal',
   },
   {
-    id: 'journal-screenshots',
-    targetSelector: '[data-tour="journal-screenshots"]',
-    title: 'Attach Chart Screenshots',
-    content: 'Upload before and after screenshots of your trades, or paste an image URL. They stay attached to the entry for whenever you want to look back.',
-    position: 'top',
-    route: '/journal',
-  },
-  {
-    id: 'analytics-intro',
-    targetSelector: '[data-tour="analytics-header"]',
-    title: 'Deep Analytics',
-    content: 'Analyze your trading performance with detailed charts and metrics. Understand what works and what needs improvement.',
+    id: 'nova-chat',
+    targetSelector: '[data-tour="nova-chat"]',
+    title: 'Ask me what you keep getting wrong',
+    content: "I read your entries and your trades, so I can tell you what's actually costing you money - the setups you force, the days you overtrade, the patterns you can't see from the inside.",
     position: 'bottom',
-    route: '/analytics',
+    route: '/nova',
   },
   {
-    id: 'analytics-nova-score',
-    targetSelector: '[data-tour="analytics-nova-score"]',
-    title: 'Your Nova Score',
-    content: 'A comprehensive score based on profitability, consistency, risk management, discipline, and execution.',
-    position: 'right',
-    route: '/analytics',
-  },
-  {
-    id: 'analytics-charts',
-    targetSelector: '[data-tour="analytics-charts"]',
-    title: 'Performance Charts',
-    content: 'Visualize P&L trends, win rates by symbol, time of day performance, and more to optimize your strategy.',
+    id: 'calendar-page',
+    targetSelector: '[data-tour="calendar-page"]',
+    title: 'Your month at a glance',
+    content: 'Every day coloured by P&L, or switch it to psychology score to see how your state of mind tracked your results. Click any day to open that entry.',
     position: 'top',
-    route: '/analytics',
-  },
-  {
-    id: 'analytics-insights',
-    targetSelector: '[data-tour="analytics-insights"]',
-    title: 'AI-Powered Insights',
-    content: 'I analyze your trading patterns automatically and provide personalized recommendations to improve your results.',
-    position: 'top',
-    route: '/analytics',
-  },
-  {
-    id: 'settings-intro',
-    targetSelector: '[data-tour="settings-header"]',
-    title: 'Account Settings',
-    content: 'Manage your profile, security settings, subscription, and preferences all in one place.',
-    position: 'bottom',
-    route: '/settings',
-  },
-  {
-    id: 'settings-accounts',
-    targetSelector: '[data-tour="settings-brokers"]',
-    title: 'Manage Your Trading Accounts',
-    content: 'Add trading accounts and import your trade history from any broker via CSV or statement upload.',
-    position: 'top',
-    route: '/settings',
+    route: '/calendar',
   },
   {
     id: 'tour-complete',
     targetSelector: '[data-tour="sidebar-logo"]',
-    title: "You're All Set!",
-    content: "You've completed the tour! Start by adding a trading account or manually logging your first trade. I'm always here if you need help.",
+    title: "That's the whole tour",
+    content: "Best first move: add your trading account in Settings, then import your history from a CSV or log one trade by hand. Everything else fills in from there - and I'm in the sidebar whenever you need me.",
     position: 'right',
     route: '/dashboard',
   },
@@ -219,6 +106,7 @@ export function useTour() {
 
 export function TourProvider({ children }: { children: React.ReactNode }) {
   const { user, setIsFirstTimeUser } = useAuth();
+  const { forceRefresh } = useDataSync();
   const [isActive, setIsActive] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [tourCompleted, setTourCompleted] = useState(false);
@@ -239,9 +127,20 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     // seeing the tour at all.
     if (isActive && user && !hasSeededDemoDataRef.current) {
       hasSeededDemoDataRef.current = true;
-      seedTourDemoData(user.id);
+      /*
+        Refresh once the seed lands. Every page has already fetched its data
+        by the time this resolves, so without a nudge the demo rows sit in
+        the database unseen. That broke the "Organize with Nova" step
+        outright - the button it points at only renders when the editor has
+        content, so the step showed "element is not currently visible" while
+        the entry existed in the database the whole time.
+      */
+      seedTourDemoData(user.id).then((ids) => {
+        demoDataIdsRef.current = ids;
+        forceRefresh();
+      });
     }
-  }, [isActive, user]);
+  }, [isActive, user, forceRefresh]);
 
   useEffect(() => {
     // Gate purely on tour_completed (durable, from the DB) rather than
