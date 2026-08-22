@@ -19,6 +19,7 @@ import Button from '../components/shared/Button';
 import BrokerConnectionsList from '../components/broker/BrokerConnectionsList';
 import { useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
+import PasswordStrengthIndicator, { isPasswordValid } from '../components/auth/PasswordStrengthIndicator';
 import { usePreferences } from '../lib/preferencesContext';
 
 interface UserProfile {
@@ -53,6 +54,10 @@ export default function Settings() {
     new: '',
     confirm: ''
   });
+  // Inline error instead of alert(): the old handler used browser alerts,
+  // which on the "current password is wrong" path is both jarring and
+  // easy to dismiss without reading.
+  const [passwordError, setPasswordError] = useState('');
 
   const [preferences, setPreferences] = useState({
     timezone: 'UTC',
@@ -266,18 +271,59 @@ export default function Settings() {
   };
 
   const handleChangePassword = async () => {
+    if (!user?.email) return;
+
     if (passwords.new !== passwords.confirm) {
-      alert('New passwords do not match');
+      setPasswordError('New passwords do not match');
       return;
     }
 
-    if (passwords.new.length < 6) {
-      alert('Password must be at least 6 characters');
+    /*
+      Same strength rule as signup (8+ chars, upper, lower, number) rather
+      than the 6-character minimum this used to apply on its own. Otherwise
+      someone signs up under the strict rule and immediately weakens their
+      password to "abc123" from this screen, and the strength meter they saw
+      at signup never reappears to tell them.
+    */
+    if (!isPasswordValid(passwords.new)) {
+      setPasswordError('Password must be at least 8 characters and include an uppercase letter, a lowercase letter, and a number');
       return;
     }
 
+    if (passwords.new === passwords.current) {
+      setPasswordError('New password must be different from your current one');
+      return;
+    }
+
+    setPasswordError('');
     setLoading(true);
     try {
+      /*
+        Prove the current password before changing it.
+
+        This screen collected "Current Password" and required it to be
+        non-empty, but never actually checked it - the update went straight
+        through. Verified against a real account: the password could be
+        changed, and then used to sign in, without the old one ever being
+        supplied. That means anyone reaching an already-signed-in session -
+        an unattended laptop, a shared computer - could take the account
+        over and lock the real owner out.
+
+        Re-signing in with the supplied current password is the check.
+        Supabase has no "verify password" call, and a failed sign-in does
+        not disturb the existing session, so this is the standard approach.
+      */
+      const { error: reauthError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: passwords.current,
+      });
+
+      if (reauthError) {
+        setPasswordError('Current password is incorrect');
+        setLoading(false);
+        return;
+      }
+
       const { error } = await supabase.auth.updateUser({
         password: passwords.new
       });
@@ -289,7 +335,7 @@ export default function Settings() {
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (error) {
       console.error('Error changing password:', error);
-      alert('Failed to change password');
+      setPasswordError(error instanceof Error ? error.message : 'Failed to change password');
     } finally {
       setLoading(false);
     }
@@ -525,6 +571,22 @@ export default function Settings() {
                       </div>
                     </div>
                   </div>
+
+                  {/*
+                    Same strength meter as signup. Without it this screen held
+                    a weaker rule than the one the user was held to when they
+                    registered, and gave no indication of what counted as
+                    strong enough until the submit failed.
+                  */}
+                  {passwords.new && (
+                    <PasswordStrengthIndicator password={passwords.new} />
+                  )}
+
+                  {passwordError && (
+                    <div className="text-sm text-red-400 bg-red-400/10 border border-red-400/20 p-3 rounded-lg">
+                      {passwordError}
+                    </div>
+                  )}
 
                   <div className="pt-4">
                     <Button
