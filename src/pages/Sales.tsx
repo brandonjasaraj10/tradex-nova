@@ -1400,9 +1400,18 @@ export default function Sales() {
                 their real price on the paywall, where eligibility is known.
               */}
               <div className="text-center mb-10 md:mb-12">
-                <div className="inline-block px-4 py-1.5 rounded-full text-sm font-medium bg-white/10 text-white border border-white/20 mb-4">
-                  {launched ? 'TradeX Pro' : 'Founding Member Pricing'}
-                </div>
+                {/*
+                  Pre-launch the badge earns its place by saying something the
+                  heading doesn't - that this is founder pricing. After launch
+                  there is no second thing to say, and repeating "TradeX Pro"
+                  directly above the heading that already says it just adds
+                  noise, so it comes off entirely.
+                */}
+                {!launched && (
+                  <div className="inline-block px-4 py-1.5 rounded-full text-sm font-medium bg-white/10 text-white border border-white/20 mb-4">
+                    Founding Member Pricing
+                  </div>
+                )}
                 <h3 className="text-2xl md:text-3xl font-bold mb-2">TradeX Pro</h3>
                 <div className="text-4xl md:text-5xl font-bold mb-2">
                   {!launched && (
