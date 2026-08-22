@@ -47,10 +47,23 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     id: 'journal-organize-nova',
-    targetSelector: '[data-tour="journal-organize-nova"]',
+    /*
+      Points at the editor, which always renders - not at the "Organize with
+      Nova" button, which only appears once the editor has content.
+
+      Targeting the button meant this step depended on demo data being
+      written and displayed before the step ran, and that is a race: pages
+      fetch on mount, the seed resolves later, and which wins varies. When
+      it lost, the user's second step was a yellow "this element is not
+      currently visible" warning. Seeding earlier narrowed the window but
+      could not close it. A step in a five-step tour cannot be allowed to
+      fail on timing, so it now describes the button rather than pointing at
+      it - the editor beneath it is always there.
+    */
+    targetSelector: '[data-tour="journal-editor"]',
     title: 'Never format an entry again',
-    content: "Type your notes however they come out - messy, half-finished, whatever. Hit this and I'll pull out the symbol, direction, size and P&L, and write it up properly. You can talk it out instead with Voice Input.",
-    position: 'left',
+    content: "Type your notes however they come out - messy, half-finished, whatever. An Organize with Nova button appears above once you start writing: hit it and I'll pull out the symbol, direction, size and P&L, and write it up properly. Or talk it out with Voice Input.",
+    position: 'bottom',
     route: '/journal',
   },
   {
@@ -121,26 +134,35 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user?.id]);
 
-  useEffect(() => {
-    // Seed once, the moment the tour actually becomes visible - not
-    // earlier, so this never runs for an account that never ends up
-    // seeing the tour at all.
-    if (isActive && user && !hasSeededDemoDataRef.current) {
+  /*
+    Seed BEFORE the tour becomes visible, not after.
+
+    Seeding while the tour was already running was a race nobody could win:
+    pages fetch on mount, the insert resolves later, and whether the demo
+    data appeared depended on which finished first. Nudging a refresh
+    afterwards only narrowed the window - on the replay path the journal
+    still mounted, loaded nothing, and left the "Organize with Nova" step
+    pointing at a button that only exists when an entry is open.
+
+    Awaiting the seed before activating removes the race entirely: by the
+    time any page renders for the tour, the rows are already there.
+  */
+  const seedThenStart = useCallback(async () => {
+    if (!user) return;
+    if (!hasSeededDemoDataRef.current) {
       hasSeededDemoDataRef.current = true;
-      /*
-        Refresh once the seed lands. Every page has already fetched its data
-        by the time this resolves, so without a nudge the demo rows sit in
-        the database unseen. That broke the "Organize with Nova" step
-        outright - the button it points at only renders when the editor has
-        content, so the step showed "element is not currently visible" while
-        the entry existed in the database the whole time.
-      */
-      seedTourDemoData(user.id).then((ids) => {
-        demoDataIdsRef.current = ids;
-        forceRefresh();
-      });
+      try {
+        demoDataIdsRef.current = await seedTourDemoData(user.id);
+      } catch (err) {
+        // A failed seed should not block the tour - it just means emptier
+        // screens, which is better than no tour at all.
+        console.error('Tour demo seeding failed:', err);
+      }
+      forceRefresh();
     }
-  }, [isActive, user, forceRefresh]);
+    setCurrentStep(0);
+    setIsActive(true);
+  }, [user, forceRefresh]);
 
   useEffect(() => {
     // Gate purely on tour_completed (durable, from the DB) rather than
@@ -160,13 +182,12 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
       const timer = setTimeout(() => {
         if (!hasEndedRef.current && !hasStartedRef.current) {
           hasStartedRef.current = true;
-          setCurrentStep(0);
-          setIsActive(true);
+          void seedThenStart();
         }
       }, 1500);
       return () => clearTimeout(timer);
     }
-  }, [tourCompleted, hasCheckedTourStatus, isActive]);
+  }, [tourCompleted, hasCheckedTourStatus, isActive, seedThenStart]);
 
   const checkTourStatus = async () => {
     if (!user) return;
@@ -251,10 +272,17 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
   const restartTour = useCallback(() => {
     hasEndedRef.current = false;
     hasStartedRef.current = true;
+    /*
+      Re-arm the seeding guard. It is a ref that only flips once per mount,
+      so without clearing it a replay in the same session runs with no demo
+      data - and the "Organize with Nova" step points at a button that only
+      exists when the editor has content, so it would fail exactly the way
+      it did before the refresh fix.
+    */
+    hasSeededDemoDataRef.current = false;
     setTourCompleted(false);
-    setCurrentStep(0);
-    setIsActive(true);
-  }, []);
+    void seedThenStart();
+  }, [seedThenStart]);
 
   const currentStepData = isActive ? TOUR_STEPS[currentStep] : null;
 

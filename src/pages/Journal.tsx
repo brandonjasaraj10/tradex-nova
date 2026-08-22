@@ -515,11 +515,18 @@ export default function Journal() {
     };
   }, [entryForm, confluenceStatus, ruleStatus]);
 
+  /*
+    Also reload on refreshTrigger. The trigger's other effect only reloads
+    folders and rules, so a forceRefresh() left the entry list showing
+    whatever it had fetched on mount - which is why tour demo data written
+    after the page loaded never appeared, and the "Organize with Nova" step
+    pointed at a button that only renders when an entry is open.
+  */
   useEffect(() => {
     if (selectedFolder) {
       loadEntries(selectedFolder.id, selectedAccount?.id);
     }
-  }, [selectedFolder, selectedAccount]);
+  }, [selectedFolder, selectedAccount, refreshTrigger]);
 
   const loadFolders = async () => {
     try {

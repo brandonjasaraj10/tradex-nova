@@ -14,7 +14,8 @@ import {
   Check,
   Eye,
   EyeOff,
-  ExternalLink
+  ExternalLink,
+  Play
 } from 'lucide-react';
 import Button from '../components/shared/Button';
 import BrokerConnectionsList from '../components/broker/BrokerConnectionsList';
@@ -22,6 +23,7 @@ import { useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 import PasswordStrengthIndicator, { isPasswordValid } from '../components/auth/PasswordStrengthIndicator';
 import { usePreferences } from '../lib/preferencesContext';
+import { useTour } from '../lib/tourContext';
 
 interface UserProfile {
   first_name: string;
@@ -38,6 +40,7 @@ export default function Settings() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { refreshPreferences } = usePreferences();
+  const { restartTour } = useTour();
   const [activeTab, setActiveTab] = useState('personal');
   const [loading, setLoading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -212,6 +215,22 @@ export default function Settings() {
     } finally {
       setSubLoading(false);
     }
+  };
+
+  /*
+    Clears tour_completed as well as starting the tour. Without that, the
+    flag stays true and the tour would not re-arm on a later sign-in - and
+    the seeding step keys off the same run, so demo data would not appear.
+  */
+  const handleReplayTour = async () => {
+    if (user) {
+      await supabase
+        .from('user_profiles')
+        .update({ tour_completed: false })
+        .eq('user_id', user.id);
+    }
+    restartTour();
+    navigate('/dashboard');
   };
 
   const handleDeleteAccount = async () => {
@@ -922,6 +941,24 @@ export default function Settings() {
                       className={saveSuccess ? 'bg-blue-600 hover:bg-blue-700' : ''}
                     >
                       {saveSuccess ? 'Saved!' : loading ? 'Saving...' : 'Save Preferences'}
+                    </Button>
+                  </div>
+
+                  {/*
+                    Replaying the tour had no entry point anywhere in the app.
+                    restartTour() existed in the context but was wired to
+                    nothing, so anyone who pressed skip - or finished it and
+                    later wanted a reminder - could never see it again short of
+                    someone editing tour_completed in the database by hand.
+                  */}
+                  <div className="mt-10 pt-8 border-t border-white/10">
+                    <h3 className="text-base font-semibold text-white mb-1">Product tour</h3>
+                    <p className="text-sm text-gray-400 mb-4">
+                      Take the quick walkthrough again &mdash; the journal, Nova, and where your
+                      results show up. Takes about a minute.
+                    </p>
+                    <Button variant="secondary" onClick={handleReplayTour} icon={<Play size={16} />}>
+                      Replay tour
                     </Button>
                   </div>
                 </div>
