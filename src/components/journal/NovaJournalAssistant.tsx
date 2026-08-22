@@ -403,7 +403,7 @@ export default function NovaJournalAssistant({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {isSupported && (
+          {NOVA_VOICE_OUTPUT_ENABLED && isSupported && (
             <button
               onClick={handleSpeakerToggle}
               className={`p-2 rounded-lg transition-colors ${autoSpeak ? 'bg-blue-400/20 text-blue-400' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}

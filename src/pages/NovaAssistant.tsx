@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ConfirmModal from '../components/shared/ConfirmModal';
 import { Mic, Send, Sparkles, Trash2, RotateCw, TrendingUp, Brain, Zap, Target, Clock, LineChart, Activity, DollarSign, BarChart2, AlertCircle, CheckCircle2, Flame, Award, BookOpen, Volume2, VolumeX, Settings, History, X, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { useNova } from '../lib/novaContext';
+import { NOVA_VOICE_OUTPUT_ENABLED } from '../lib/featureFlags';
 import { useNavigate } from 'react-router-dom';
 import { useVoice } from '../hooks/useVoice';
 import { useTour } from '../lib/tourContext';
@@ -653,7 +654,7 @@ export default function NovaAssistant() {
                   )}
                 </div>
                 <div className="flex gap-2">
-                  {isSupported && (
+                  {NOVA_VOICE_OUTPUT_ENABLED && isSupported && (
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
@@ -777,7 +778,7 @@ export default function NovaAssistant() {
                     }}
                   />
                   <div className="absolute right-3 top-1/2 -translate-y-1/2 flex gap-2">
-                    {isSupported && (
+                    {NOVA_VOICE_OUTPUT_ENABLED && isSupported && (
                       <div className="relative">
                         {isListening && (
                           <>
