@@ -6,6 +6,7 @@ import Button from '../components/shared/Button';
 import PasswordStrengthIndicator, { isPasswordValid } from '../components/auth/PasswordStrengthIndicator';
 import EarlyAccessModal from '../components/shared/EarlyAccessModal';
 import Logo from '../components/shared/Logo';
+import { useHasLaunched } from '../lib/launch';
 import { LogIn, UserPlus, Eye, EyeOff, Lock } from 'lucide-react';
 
 type AuthMode = 'login' | 'signup' | 'forgot-password' | 'verify-code' | 'reset-password';
@@ -14,6 +15,7 @@ export default function Auth() {
   const [searchParams] = useSearchParams();
   const mode = searchParams.get('mode');
   const [authMode, setAuthMode] = useState<AuthMode>(mode === 'signup' ? 'signup' : 'login');
+  const hasLaunchedNow = useHasLaunched();
   const [hasEarlyAccess, setHasEarlyAccess] = useState(false);
   const [showEarlyAccessModal, setShowEarlyAccessModal] = useState(false);
   const [email, setEmail] = useState('');
@@ -639,7 +641,14 @@ export default function Auth() {
     }
   };
 
-  if (!hasEarlyAccess) {
+  /*
+    The access-code wall is a pre-launch device only. Once TradeX is open,
+    anyone must be able to sign up - gating that on a code the public was
+    never given would turn launch night into a wall of people who cannot
+    get in. Flips on the shared LAUNCH_AT instant, so it opens by itself at
+    10PM rather than needing a deploy at the exact moment.
+  */
+  if (!hasLaunchedNow && !hasEarlyAccess) {
     return (
       <>
         <div className="min-h-screen flex items-center justify-center px-4 py-8">

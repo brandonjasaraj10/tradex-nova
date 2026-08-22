@@ -3,8 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Instagram, Lock } from 'lucide-react';
 import Logo from '../shared/Logo';
 import EarlyAccessModal from '../shared/EarlyAccessModal';
+import { useHasLaunched } from '../../lib/launch';
 
 export default function Footer() {
+  const launched = useHasLaunched();
   const [showEarlyAccess, setShowEarlyAccess] = useState(false);
   const navigate = useNavigate();
 

@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { CheckCircle2, ArrowRight, Brain, Target, LineChart, Zap, AlertTriangle, ChevronRight, School as Psychology, TrendingUp, Eye, Clock, BarChart2, Sparkles, Calendar, BookOpen, ChevronLeft, Plus, Smile, Meh, Frown, DollarSign, Award, MessageSquare, Check } from 'lucide-react';
 import Button from '../components/shared/Button';
 import Footer from '../components/layout/Footer';
-import WaitlistCapture from '../components/shared/WaitlistCapture';
+import SignupOrWaitlist from '../components/shared/SignupOrWaitlist';
+import { useHasLaunched } from '../lib/launch';
 import LaunchCountdown from '../components/shared/LaunchCountdown';
 import { useState } from 'react';
 
@@ -154,6 +155,7 @@ const proFeatures = [
 ];
 
 export default function Sales() {
+  const launched = useHasLaunched();
   const [showPsychologyCalendar, setShowPsychologyCalendar] = useState(false);
   const [journalView, setJournalView] = useState<'entry' | 'psychology'>('entry');
   const { scrollYProgress } = useScroll();
@@ -224,18 +226,20 @@ export default function Sales() {
 
             <motion.div variants={fadeInUp} className="flex justify-center px-4">
               <div className="w-full max-w-md">
-                <WaitlistCapture
-                  size="lg"
+                <SignupOrWaitlist
                   placeholder="Enter your email to join waitlist"
-                  buttonText="Join Waitlist"
-                  variant="stacked"
+                  preLaunchFootnote={
+                    <>
+                      <LaunchCountdown className="mt-6" />
+                      <p className="mt-4 text-sm text-gray-400">
+                        Join before launch to lock in{' '}
+                        <span className="text-gray-500 line-through">$24.99</span>{' '}
+                        <span className="text-blue-400 font-semibold">$14.99/mo</span>, forever.
+                      </p>
+                    </>
+                  }
+                  postLaunchFootnote={<LaunchCountdown className="mt-6" />}
                 />
-                <LaunchCountdown className="mt-6" />
-                  <p className="mt-4 text-sm text-gray-400">
-                  Join before launch to lock in{' '}
-                  <span className="text-gray-500 line-through">$24.99</span>{' '}
-                  <span className="text-blue-400 font-semibold">$14.99/mo</span>, forever.
-                </p>
               </div>
             </motion.div>
 
@@ -1387,17 +1391,33 @@ export default function Sales() {
             className="max-w-3xl mx-auto"
           >
             <div className="p-6 md:p-8 lg:p-10 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-gold-400/50 transition-all">
+              {/*
+                The public price has to change at launch. $14.99 is founder
+                pricing - only for people already on the waitlist, and only
+                until Tuesday - so advertising it to every visitor after
+                launch promises a price checkout will not honour, and they
+                would discover that at the card form. Founders still see
+                their real price on the paywall, where eligibility is known.
+              */}
               <div className="text-center mb-10 md:mb-12">
-                <div className="inline-block px-4 py-1.5 rounded-full text-sm font-medium bg-gradient-to-r from-gold-400/20 to-gold-500/20 text-gold-400 border border-gold-400/30 mb-4">
-                  Founding Member Pricing
+                <div className="inline-block px-4 py-1.5 rounded-full text-sm font-medium bg-white/10 text-white border border-white/20 mb-4">
+                  {launched ? 'TradeX Pro' : 'Founding Member Pricing'}
                 </div>
-                <h3 className="text-2xl md:text-3xl font-bold mb-2 bg-gradient-to-r from-white to-gold-400/70 bg-clip-text text-transparent">TradeX Pro</h3>
+                <h3 className="text-2xl md:text-3xl font-bold mb-2">TradeX Pro</h3>
                 <div className="text-4xl md:text-5xl font-bold mb-2">
-                  <span className="text-2xl md:text-3xl text-gray-500 line-through mr-3">$24.99</span>
-                  <span className="text-gold-400">$14.99</span>
+                  {!launched && (
+                    <span className="text-2xl md:text-3xl text-gray-500 line-through mr-3">$24.99</span>
+                  )}
+                  <span className="bg-gradient-to-b from-white to-white/70 bg-clip-text text-transparent">
+                    {launched ? '$24.99' : '$14.99'}
+                  </span>
                   <span className="text-lg md:text-xl font-normal text-gray-400">/month</span>
                 </div>
-                <p className="text-sm md:text-base text-gray-400">Locked in forever • 7-day free trial • Cancel anytime</p>
+                <p className="text-sm md:text-base text-gray-400">
+                  {launched
+                    ? '7-day free trial • Cancel anytime'
+                    : 'Locked in forever • 7-day free trial • Cancel anytime'}
+                </p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8 mb-10 md:mb-12">
@@ -1416,15 +1436,13 @@ export default function Sales() {
                 ))}
               </div>
 
-              <WaitlistCapture
-                size="lg"
-                placeholder="Enter your email"
-                buttonText="Join Waitlist"
-                variant="stacked"
+              <SignupOrWaitlist
+                preLaunchFootnote={
+                  <p className="text-center text-sm text-gray-400 mt-4">
+                    Join now to lock in $14.99/mo — this price ends at launch
+                  </p>
+                }
               />
-              <p className="text-center text-sm text-gray-400 mt-4">
-                Join now to lock in $14.99/mo — this price ends at launch
-              </p>
             </div>
           </motion.div>
         </div>
@@ -1590,19 +1608,17 @@ export default function Sales() {
             <p className="text-base sm:text-lg md:text-xl text-gray-400 mb-8 sm:mb-10 max-w-2xl mx-auto px-4">
               Join traders who have transformed their results with AI-powered insights from NOVA.
             </p>
-            <div className="max-w-md mx-auto px-4">
-              <WaitlistCapture
-                size="lg"
-                placeholder="Enter your email"
-                buttonText="Join Waitlist"
-                variant="stacked"
-              />
-            </div>
-            <p className="text-xs sm:text-sm text-gray-500 mt-4 sm:mt-6 px-4">
-              Join before launch to lock in{' '}
-              <span className="line-through">$24.99</span>{' '}
-              <span className="text-blue-400 font-semibold">$14.99/mo</span>, forever.
-            </p>
+              <div className="max-w-md mx-auto px-4">
+                <SignupOrWaitlist
+                  preLaunchFootnote={
+                    <p className="text-xs sm:text-sm text-gray-500 mt-4 sm:mt-6">
+                      Join before launch to lock in{' '}
+                      <span className="line-through">$24.99</span>{' '}
+                      <span className="text-blue-400 font-semibold">$14.99/mo</span>, forever.
+                    </p>
+                  }
+                />
+              </div>
           </motion.div>
         </div>
       </div>
