@@ -528,7 +528,7 @@ export default function Calendar() {
         const weekReport = getWeekReportForDate(weekEndDateKey);
         if (weekReport) {
           cells.push(
-            <div key={`report-${row}`} className="w-full h-full" data-tour="calendar-weekly-review">
+            <div key={`report-${row}`} className="w-full h-full hidden md:block" data-tour="calendar-weekly-review">
               <WeeklySummaryCard
                 report={weekReport}
                 onClick={() => handleOpenReport(weekReport)}
@@ -539,12 +539,12 @@ export default function Calendar() {
           );
         } else {
           cells.push(
-            <div key={`empty-report-${row}`} className="w-full h-full" />
+            <div key={`empty-report-${row}`} className="w-full h-full hidden md:block" />
           );
         }
       } else {
         cells.push(
-          <div key={`empty-report-${row}`} className="w-full h-full" />
+          <div key={`empty-report-${row}`} className="w-full h-full hidden md:block" />
         );
       }
     }
@@ -666,9 +666,19 @@ export default function Calendar() {
               </div>
 
               <div className="flex-1 flex flex-col">
-                <div className="grid grid-cols-8 gap-1 lg:gap-2 mb-2">
+                <div className="grid grid-cols-7 md:grid-cols-8 gap-1 lg:gap-2 mb-2">
                   {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Week'].map(day => (
-                    <div key={day} className="text-center text-[10px] lg:text-xs font-semibold text-gray-500 py-1">
+                    <div
+                      key={day}
+                      /*
+                        The weekly summary needs more width than a phone has:
+                        squeezed into a seventh of a 375px screen it truncated to
+                        "A..." and "Win Ra". The day grid is what matters on a
+                        phone, and the same summaries stay reachable by tapping
+                        through to the reports view.
+                      */
+                      className={`text-center text-[10px] lg:text-xs font-semibold text-gray-500 py-1 ${day === 'Week' ? 'hidden md:block' : ''}`}
+                    >
                       {day}
                     </div>
                   ))}
@@ -691,7 +701,7 @@ export default function Calendar() {
                       than the window, the page scrolls, which is the honest
                       trade rather than crushing the cells to fit.
                     */}
-                    <div className="grid grid-cols-8 gap-1 lg:gap-2">
+                    <div className="grid grid-cols-7 md:grid-cols-8 gap-1 lg:gap-2">
                       {renderCalendar()}
                     </div>
 

@@ -56,8 +56,17 @@ export default function Sidebar({ onCollapseChange, mobileOpen = false, onMobile
         />
       )}
 
+      {/*
+        Position is declared once, as `fixed lg:sticky`. It used to also say
+        `sticky top-0` earlier in the same class list, and Tailwind resolves
+        competing position utilities by their order in the generated CSS
+        rather than the order written here - so `sticky` won on mobile. The
+        sidebar was slid off-screen by -translate-x-full but still occupied
+        its full width in the flex row, squeezing the page into a narrow
+        column shoved off the right edge. That was the broken phone layout.
+      */}
       <aside className={`
-        bg-[#0A0A0A] border-r border-white/[0.05] h-screen sticky top-0 z-50
+        bg-[#0A0A0A] border-r border-white/[0.05] h-screen top-0 left-0 z-50
         transition-all duration-300 ease-in-out
         ${isCollapsed ? 'w-16' : 'w-64'}
         fixed lg:sticky
