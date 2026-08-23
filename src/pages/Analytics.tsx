@@ -152,16 +152,24 @@ export default function Analytics() {
     const loadNovaScore = async () => {
       if (!user) return;
       try {
-        const { data: tradesData, error: tradesError } = await supabase
+        /*
+          Scope the NOVA Score to the selected account.
+
+          Every other figure on this page already scopes by account, and the
+          Dashboard's copy of this same score does too - but this query
+          filtered on user_id alone, so the score shown here was computed
+          from every account at once. The same score therefore read
+          differently on the Dashboard and on Analytics for the same user at
+          the same moment.
+        */
+        let scoreTradesQuery = supabase
           .from('trades')
           .select('pnl, entry_date, exit_date, created_at')
           .eq('user_id', user.id)
           .order('entry_date', { ascending: false })
           .limit(100);
 
-        if (tradesError) throw tradesError;
-
-        const { data: journalData, error: journalError } = await supabase
+        let scoreJournalQuery = supabase
           .from('journal_entries')
           .select('manual_pnl, entry_date, created_at')
           .eq('user_id', user.id)
@@ -169,6 +177,15 @@ export default function Analytics() {
           .order('entry_date', { ascending: false })
           .limit(100);
 
+        if (selectedAccount) {
+          scoreTradesQuery = scoreTradesQuery.eq('broker_id', selectedAccount.id);
+          scoreJournalQuery = scoreJournalQuery.eq('account_id', selectedAccount.id);
+        }
+
+        const { data: tradesData, error: tradesError } = await scoreTradesQuery;
+        if (tradesError) throw tradesError;
+
+        const { data: journalData, error: journalError } = await scoreJournalQuery;
         if (journalError) throw journalError;
 
         const tradeItems = (tradesData || []).map((t: any) => ({
@@ -185,16 +202,19 @@ export default function Analytics() {
           }));
 
         const allTrades = [...tradeItems, ...journalItems];
-        if (allTrades.length > 0) {
-          const score = await calculateNOVAScore(allTrades);
-          setNovaScore(score);
-        }
+        // Clear on an empty account rather than leaving the last one's
+        // score on screen - the old guard only ever set a score, so
+        // switching to an account with no trades kept showing the previous
+        // account's numbers.
+        setNovaScore(allTrades.length > 0 ? await calculateNOVAScore(allTrades) : null);
       } catch (error) {
         console.error('Error loading NOVA score:', error);
       }
     };
     loadNovaScore();
-  }, [user, refreshTrigger]);
+    // selectedAccount belongs here: without it the score never recomputed
+    // when the account changed, so it kept showing the account you left.
+  }, [user, refreshTrigger, selectedAccount]);
 
   const pnlChartData = useMemo(() => {
     if (rawTrades.length === 0) {

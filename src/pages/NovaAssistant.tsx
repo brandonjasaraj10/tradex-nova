@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useVoice } from '../hooks/useVoice';
 import { useTour } from '../lib/tourContext';
 import { useAuth } from '../lib/auth';
+import { useAccount } from '../lib/accountContext';
 import { userProfileService } from '../services/userProfileService';
 import { formatNovaMessage } from '../utils/formatNovaMessage';
 import PersonalizationModal from '../components/nova/PersonalizationModal';
@@ -55,6 +56,7 @@ function formatRelativeTime(dateStr: string): string {
 export default function NovaAssistant() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { selectedAccount } = useAccount();
   const { tourCompleted } = useTour();
   const { messages, isTyping, isLoading, currentSessionId, sendMessage, clearHistory, startVoiceSession, loadSession, createNewSession, deleteSession, submitFeedback } = useNova();
   const [input, setInput] = useState('');
@@ -187,20 +189,37 @@ export default function NovaAssistant() {
       if (!user) return;
       setStatsLoading(true);
       try {
+        /*
+          Scope to the selected account, the same as the Dashboard's copy of
+          this score. Filtering on user_id alone meant the NOVA Score here
+          was computed across every account, so the same score read
+          differently on this page than on the Dashboard for one user at one
+          moment - which is worse than either number alone, because it makes
+          both look untrustworthy.
+        */
+        let novaTradesQuery = supabase
+          .from('trades')
+          .select('pnl, entry_date, exit_date, created_at')
+          .eq('user_id', user.id)
+          .order('entry_date', { ascending: false })
+          .limit(100);
+
+        let novaJournalQuery = supabase
+          .from('journal_entries')
+          .select('id, title, entry_type, manual_pnl, entry_date, created_at')
+          .eq('user_id', user.id)
+          .not('manual_pnl', 'is', null)
+          .order('entry_date', { ascending: false })
+          .limit(100);
+
+        if (selectedAccount) {
+          novaTradesQuery = novaTradesQuery.eq('broker_id', selectedAccount.id);
+          novaJournalQuery = novaJournalQuery.eq('account_id', selectedAccount.id);
+        }
+
         const [{ data: tradesData }, { data: journalData }] = await Promise.all([
-          supabase
-            .from('trades')
-            .select('pnl, entry_date, exit_date, created_at')
-            .eq('user_id', user.id)
-            .order('entry_date', { ascending: false })
-            .limit(100),
-          supabase
-            .from('journal_entries')
-            .select('id, title, entry_type, manual_pnl, entry_date, created_at')
-            .eq('user_id', user.id)
-            .not('manual_pnl', 'is', null)
-            .order('entry_date', { ascending: false })
-            .limit(100),
+          novaTradesQuery,
+          novaJournalQuery,
         ]);
 
         const tradeItems = (tradesData || []).map((t: any) => ({
@@ -242,7 +261,9 @@ export default function NovaAssistant() {
     };
 
     loadStatsAndActivity();
-  }, [user]);
+    // selectedAccount belongs here, or the score keeps showing the account
+    // you switched away from.
+  }, [user, selectedAccount]);
 
   useEffect(() => {
     if ((isConversationMode || autoSpeak) && messages.length > 0) {

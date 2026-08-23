@@ -423,12 +423,25 @@ export default function Dashboard() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      /*
+        Deliberately NOT filtered by the dashboard's date range.
+
+        The NOVA Score is presented as an overall competency measure - it is
+        labelled with tiers like "Intermediate" and "Advanced" - and both
+        Analytics and the Nova page compute it from the most recent 100
+        trades regardless of date. This copy was the only one narrowed to the
+        date picker, so the same score read differently depending on which
+        page you were on: seen live as 73 on Analytics and "--" on the
+        Dashboard, same account, same moment, because the dashboard's
+        default window happened to exclude the trades.
+
+        The surrounding P&L and win-rate tiles stay date-ranged; only the
+        score is all-time, so it means one thing everywhere.
+      */
       let tradesQuery = supabase
         .from('trades')
         .select('pnl, entry_date, exit_date, created_at')
         .eq('user_id', user.id)
-        .gte('entry_date', dateRange.startDate.toISOString())
-        .lte('entry_date', dateRange.endDate.toISOString())
         .order('entry_date', { ascending: false })
         .limit(100);
 
@@ -443,8 +456,6 @@ export default function Dashboard() {
         .select('manual_pnl, entry_date, created_at')
         .eq('user_id', user.id)
         .not('manual_pnl', 'is', null)
-        .gte('entry_date', toLocalDateStr(dateRange.startDate))
-        .lte('entry_date', toLocalDateStr(dateRange.endDate))
         .order('entry_date', { ascending: false })
         .limit(100);
 
