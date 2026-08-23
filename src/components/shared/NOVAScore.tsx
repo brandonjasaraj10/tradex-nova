@@ -8,6 +8,17 @@ interface NOVAScoreProps {
   breakdown: NOVAScoreBreakdown | null;
   size?: 'sm' | 'md' | 'lg';
   showBreakdown?: boolean;
+  /*
+    What period these figures cover, e.g. "Jul 25 - Aug 23" or "All-time".
+
+    Required context, not decoration. The same metric legitimately differs
+    between screens - profit factor was 1.62 all-time and 2.24 over the last
+    30 days on one real account - and with both just labelled "Profit
+    Factor" the only reasonable conclusion is that one is broken. Naming the
+    window is what makes two different numbers understandable instead of
+    suspicious.
+  */
+  periodLabel?: string;
 }
 
 /*
@@ -31,7 +42,8 @@ function formatMoney(value: number): string {
 export default function NOVAScore({
   breakdown,
   size = 'md',
-  showBreakdown = true
+  showBreakdown = true,
+  periodLabel
 }: NOVAScoreProps) {
   const [expanded, setExpanded] = useState(false);
 
@@ -98,6 +110,17 @@ export default function NOVAScore({
     if (value < 70) return '#3B82F6';
     return '#2563EB';
   };
+
+  /*
+    Below this, the score describes a handful of trades rather than a trader.
+
+    It matters more now that the panel follows the date picker: selecting a
+    quiet week can leave a single trade in range, and one winning trade
+    otherwise renders as a confident "Elite". The score is still shown - it
+    is the honest result for that window - but it says what it is standing
+    on, so nobody reads a week of luck as a verdict on their trading.
+  */
+  const MIN_TRADES_FOR_A_MEANINGFUL_SCORE = 10;
 
   const getScoreLabel = (score: number) => {
     if (score >= 85) return 'Elite';
@@ -279,7 +302,9 @@ export default function NOVAScore({
             </p>
           </div>
           <p className="text-xs text-gray-400">
-            {getScoreLabel(breakdown.overall_score)}
+            {breakdown.total_trades < MIN_TRADES_FOR_A_MEANINGFUL_SCORE
+              ? `Based on ${breakdown.total_trades} ${breakdown.total_trades === 1 ? 'trade' : 'trades'}`
+              : getScoreLabel(breakdown.overall_score)}
           </p>
         </motion.div>
       </div>
@@ -401,9 +426,9 @@ export default function NOVAScore({
                         <Target size={14} className="text-blue-400" />
                         Performance Metrics
                       </h4>
-                      <p className="text-[10px] text-gray-500 mt-0.5 ml-[22px]">
-                        All-time &middot; not affected by the date range
-                      </p>
+                      {periodLabel && (
+                        <p className="text-[10px] text-gray-500 mt-0.5 ml-[22px]">{periodLabel}</p>
+                      )}
                     </div>
                     <div className="grid grid-cols-2 gap-3 text-xs mb-4">
                       <motion.div whileHover={{ scale: 1.05 }}>

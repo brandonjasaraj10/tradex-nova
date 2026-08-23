@@ -154,19 +154,22 @@ export default function Analytics() {
       if (!user) return;
       try {
         /*
-          Scope the NOVA Score to the selected account.
+          Scope the NOVA Score to the selected account and date range, so it
+          answers the same question as everything else on the page.
 
-          Every other figure on this page already scopes by account, and the
-          Dashboard's copy of this same score does too - but this query
-          filtered on user_id alone, so the score shown here was computed
-          from every account at once. The same score therefore read
-          differently on the Dashboard and on Analytics for the same user at
-          the same moment.
+          Both filters were missing at different times and each produced the
+          same symptom - the score disagreeing with the identical score on
+          another page for the same user at the same moment. Account scoping
+          was the first fix; the date range is the second. The panel prints
+          the window it covers, so when it does differ from a figure computed
+          over a different span, the reason is visible.
         */
         let scoreTradesQuery = supabase
           .from('trades')
           .select('pnl, entry_date, exit_date, created_at')
           .eq('user_id', user.id)
+          .gte('entry_date', dateRange.startDate.toISOString())
+          .lte('entry_date', dateRange.endDate.toISOString())
           .order('entry_date', { ascending: false })
           .limit(100);
 
@@ -175,6 +178,8 @@ export default function Analytics() {
           .select('manual_pnl, entry_date, created_at')
           .eq('user_id', user.id)
           .not('manual_pnl', 'is', null)
+          .gte('entry_date', toLocalDateStr(dateRange.startDate))
+          .lte('entry_date', toLocalDateStr(dateRange.endDate))
           .order('entry_date', { ascending: false })
           .limit(100);
 
@@ -215,7 +220,8 @@ export default function Analytics() {
     loadNovaScore();
     // selectedAccount belongs here: without it the score never recomputed
     // when the account changed, so it kept showing the account you left.
-  }, [user, refreshTrigger, selectedAccount]);
+    // dateRange likewise, now that the score follows the picker.
+  }, [user, refreshTrigger, selectedAccount, dateRange]);
 
   const pnlChartData = useMemo(() => {
     if (rawTrades.length === 0) {

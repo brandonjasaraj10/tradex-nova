@@ -33,3 +33,19 @@ export function formatRatio(value: number | null | undefined, totalTrades = 1): 
   if (!isFinite(value) || value >= NO_LOSS_SENTINEL) return 'No losses yet';
   return value.toFixed(2);
 }
+
+/*
+  Writes the window a set of figures covers, for display under their heading.
+
+  This exists because two screens legitimately showed different values for
+  the same named metric - profit factor read 1.62 in the all-time score panel
+  and 2.24 on a tile covering the last 30 days - and with nothing stating the
+  window, the only sensible reading was that one of them was broken. Naming
+  the period is what makes an honest difference legible.
+*/
+export function formatPeriodLabel(start: Date, end: Date): string {
+  const fmt = (d: Date) =>
+    d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const sameDay = start.toDateString() === end.toDateString();
+  return sameDay ? fmt(start) : `${fmt(start)} – ${fmt(end)}`;
+}
