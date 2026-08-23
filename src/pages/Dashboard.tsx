@@ -147,7 +147,7 @@ export default function Dashboard() {
         case 'yearly': bounds = getYearBounds(now); break;
       }
 
-      const report = await generateReport(user.id, reportType, bounds.start, bounds.end);
+      const report = await generateReport(user.id, reportType, bounds.start, bounds.end, false, selectedAccount?.id ?? null);
       setSelectedReport(report);
       setShowReportModal(true);
     } catch (error) {

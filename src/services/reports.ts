@@ -39,7 +39,9 @@ export async function generateReport(
   reportType: 'weekly' | 'monthly' | 'quarterly' | 'yearly',
   periodStart: string,
   periodEnd: string,
-  forceRefresh: boolean = false
+  forceRefresh: boolean = false,
+  // Omit for "All Accounts"; pass an id to scope the report to one account.
+  accountId?: string | null
 ): Promise<TradingReport> {
   const { data: { session } } = await supabase.auth.getSession();
 
@@ -61,7 +63,8 @@ export async function generateReport(
         report_type: reportType,
         period_start: periodStart,
         period_end: periodEnd,
-        force_refresh: forceRefresh
+        force_refresh: forceRefresh,
+        account_id: accountId ?? null
       })
     }
   );

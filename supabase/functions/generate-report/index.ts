@@ -15,6 +15,8 @@ interface GenerateReportRequest {
   period_start: string;
   period_end: string;
   force_refresh?: boolean;
+  // null/absent means "All Accounts"; an id scopes the report to one account.
+  account_id?: string | null;
 }
 
 interface UnifiedTrade {
@@ -66,6 +68,7 @@ Deno.serve(async (req: Request) => {
       period_start,
       period_end,
       force_refresh = false,
+      account_id = null,
     }: GenerateReportRequest = await req.json();
 
     if (!report_type || !period_start || !period_end) {
@@ -97,13 +100,23 @@ Deno.serve(async (req: Request) => {
     const user_id = authUser.id;
 
     if (!force_refresh) {
-      const { data: existing } = await supabase
-        .from("trading_reports")
-        .select("*")
-        .eq("user_id", user_id)
-        .eq("report_type", report_type)
-        .eq("period_start", period_start)
-        .maybeSingle();
+      /*
+        The cache is keyed (user_id, report_type, period_start) with no
+        account dimension, so a report generated while one account was
+        selected would be served for every other account too. Until that
+        key changes, only cache the all-accounts view and always compute a
+        per-account report fresh - stale-but-shared numbers are worse than
+        recomputing.
+      */
+      const { data: existing } = account_id
+        ? { data: null }
+        : await supabase
+            .from("trading_reports")
+            .select("*")
+            .eq("user_id", user_id)
+            .eq("report_type", report_type)
+            .eq("period_start", period_start)
+            .maybeSingle();
 
       if (existing) {
         const report = mapDbToReport(existing);
@@ -118,25 +131,44 @@ Deno.serve(async (req: Request) => {
     periodEndPlusOne.setDate(periodEndPlusOne.getDate() + 1);
     const periodEndStr = periodEndPlusOne.toISOString();
 
-    const [tradesResult, journalResult] = await Promise.all([
-      supabase
-        .from("trades")
-        .select("pnl, symbol, direction, entry_date, exit_date")
-        .eq("user_id", user_id)
-        .gte("entry_date", period_start)
-        .lt("entry_date", periodEndStr)
-        .order("entry_date", { ascending: true }),
-      supabase
-        .from("journal_entries")
-        .select(
-          "id, manual_pnl, symbol, entry_date, template_data, trade_duration"
-        )
-        .eq("user_id", user_id)
-        .not("manual_pnl", "is", null)
-        .gte("entry_date", period_start)
-        .lte("entry_date", period_end)
-        .order("entry_date", { ascending: true }),
-    ]);
+    /*
+      Scope to the selected account.
+
+      Both queries filtered on user_id alone, so every report summed every
+      account together regardless of which one was selected - a trader
+      running a funded account alongside a personal one saw one blended
+      number in the weekly cards and in the dashboard reports. Confirmed on
+      a two-account test user: $1,000 on one account and $9,999 on another
+      reported as $10,999 for either.
+
+      Trades attach to an account by broker_id, journal entries by
+      account_id, matching how every other feature joins them. With no
+      account_id the behaviour is unchanged, which is what "All Accounts"
+      wants.
+    */
+    let tradesQuery = supabase
+      .from("trades")
+      .select("pnl, symbol, direction, entry_date, exit_date")
+      .eq("user_id", user_id)
+      .gte("entry_date", period_start)
+      .lt("entry_date", periodEndStr)
+      .order("entry_date", { ascending: true });
+
+    let journalQuery = supabase
+      .from("journal_entries")
+      .select("id, manual_pnl, symbol, entry_date, template_data, trade_duration")
+      .eq("user_id", user_id)
+      .not("manual_pnl", "is", null)
+      .gte("entry_date", period_start)
+      .lte("entry_date", period_end)
+      .order("entry_date", { ascending: true });
+
+    if (account_id) {
+      tradesQuery = tradesQuery.eq("broker_id", account_id);
+      journalQuery = journalQuery.eq("account_id", account_id);
+    }
+
+    const [tradesResult, journalResult] = await Promise.all([tradesQuery, journalQuery]);
 
     const allTrades: UnifiedTrade[] = [];
 
@@ -185,7 +217,8 @@ Deno.serve(async (req: Request) => {
         report_type,
         period_start,
         period_end,
-        force_refresh
+        force_refresh,
+        account_id
       );
       return new Response(
         JSON.stringify({ report: saved, cached: false }),
@@ -459,7 +492,8 @@ Deno.serve(async (req: Request) => {
       report_type,
       period_start,
       period_end,
-      force_refresh
+      force_refresh,
+      account_id
     );
 
     return new Response(JSON.stringify({ report: saved, cached: false }), {
@@ -522,8 +556,20 @@ async function saveReport(
   report_type: string,
   period_start: string,
   period_end: string,
-  force_refresh: boolean
+  force_refresh: boolean,
+  account_id?: string | null
 ) {
+  /*
+    Never persist a per-account report. trading_reports is unique on
+    (user_id, report_type, period_start) with no account column, so writing
+    one account's figures there would hand them to every other account and
+    to the all-accounts view. Per-account reports are returned straight to
+    the caller instead; only the all-accounts report is cached.
+  */
+  if (account_id) {
+    return report;
+  }
+
   const summary = {
     total_trades: report.total_trades,
     winning_trades: report.winning_trades,

@@ -219,7 +219,7 @@ export default function Calendar() {
           reports.push(existing);
         } else {
           try {
-            const report = await generateReport(user.id, 'weekly', week.start, week.end, false);
+            const report = await generateReport(user.id, 'weekly', week.start, week.end, false, selectedAccount?.id ?? null);
             reports.push(report && report.total_trades !== undefined ? report : buildEmptyWeeklyReport(week.start, week.end));
           } catch (reportError) {
             console.error('Error generating weekly report:', reportError);
