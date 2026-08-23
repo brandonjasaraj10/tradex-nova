@@ -32,6 +32,7 @@ import { getTradingRules, createTradingRule, updateTradingRule, deleteTradingRul
 import { generateReport, getWeekBounds, getMonthBounds, getQuarterBounds, getYearBounds, type TradingReport } from '../services/reports';
 import TradingReportModal from '../components/reports/TradingReportModal';
 import { toLocalDateStr } from '../utils/dateHelpers';
+import { formatProfitFactor } from '../utils/formatMetrics';
 
 
 const buildCalendarData = (
@@ -819,7 +820,7 @@ export default function Dashboard() {
             </div>
             <div className="flex items-center gap-2 sm:gap-3">
               <span className="text-base sm:text-lg lg:text-xl xl:text-2xl font-bold">
-                {statsLoading ? '...' : performanceStats ? (performanceStats.profit_factor === Infinity ? '---' : performanceStats.profit_factor.toFixed(2)) : '0'}
+                {statsLoading ? '...' : performanceStats ? formatProfitFactor(performanceStats.profit_factor, performanceStats.total_trades) : '0'}
               </span>
               <div className="relative w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0">
                 <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">

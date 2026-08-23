@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Brain, TrendingUp, Shield, Target, Award, Zap, ChevronDown, ChevronUp } from 'lucide-react';
 import { NOVAScoreBreakdown } from '../../services/novaScore';
+import { formatRatio } from '../../utils/formatMetrics';
 
 interface NOVAScoreProps {
   breakdown: NOVAScoreBreakdown | null;
@@ -20,18 +21,6 @@ function formatHoldTime(minutes: number | null): string {
   const hours = minutes / 60;
   if (hours < 24) return `${hours.toFixed(1)}h`;
   return `${(hours / 24).toFixed(1)}d`;
-}
-
-/*
-  calculateNOVAScore returns a literal 10 for profit factor and win/loss
-  ratio when there are no losses at all - a sentinel standing in for a
-  division by zero, not a measured value. Printing it as "10.00" reads as a
-  real, extraordinary ratio. Until a loss exists there is no ratio to show.
-*/
-function formatRatio(value: number, totalTrades: number): string {
-  if (totalTrades === 0) return '--';
-  if (value >= 10) return 'No losses yet';
-  return value.toFixed(2);
 }
 
 function formatMoney(value: number): string {
@@ -393,10 +382,29 @@ export default function NOVAScore({
                     transition={{ delay: 0.2 }}
                   >
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-px bg-gradient-to-r from-transparent via-blue-500 to-transparent" />
-                    <h4 className="text-xs font-medium text-gray-300 mb-3 flex items-center gap-2">
-                      <Target size={14} className="text-blue-400" />
-                      Performance Metrics
-                    </h4>
+                    {/*
+                      State the period.
+
+                      These figures are all-time, while the stat tiles on the
+                      Dashboard and Analytics are scoped to whatever date
+                      range is selected. Both are correct and they legitimately
+                      differ - a real account showed profit factor 1.62 here
+                      across 20 trades and 2.24 on the Analytics tile across
+                      the last 10 - but with both labelled simply "Profit
+                      Factor" the only reasonable conclusion was that one of
+                      them was broken. The score is deliberately all-time
+                      because it is a competency measure, so the fix is to say
+                      which window each number covers.
+                    */}
+                    <div className="mb-3">
+                      <h4 className="text-xs font-medium text-gray-300 flex items-center gap-2">
+                        <Target size={14} className="text-blue-400" />
+                        Performance Metrics
+                      </h4>
+                      <p className="text-[10px] text-gray-500 mt-0.5 ml-[22px]">
+                        All-time &middot; not affected by the date range
+                      </p>
+                    </div>
                     <div className="grid grid-cols-2 gap-3 text-xs mb-4">
                       <motion.div whileHover={{ scale: 1.05 }}>
                         <p className="text-gray-400 text-[10px]">Win Rate</p>

@@ -15,6 +15,7 @@ import { useAuth } from '../lib/auth';
 import { generateInsights, getActiveInsights, dismissInsight, type Insight } from '../services/insights';
 import { supabase } from '../lib/supabase';
 import { toLocalDateStr } from '../utils/dateHelpers';
+import { formatProfitFactor } from '../utils/formatMetrics';
 
 import {
   Chart as ChartJS,
@@ -504,7 +505,7 @@ export default function Analytics() {
                   </div>
                   <h3 className="text-xs font-medium text-gray-400 mb-1">Profit Factor</h3>
                   <p className="text-2xl font-bold text-blue-400">
-                    {loading ? '...' : tradeStats ? (tradeStats.profit_factor === Infinity ? '---' : tradeStats.profit_factor.toFixed(2)) : '0'}
+                    {loading ? '...' : tradeStats ? formatProfitFactor(tradeStats.profit_factor, tradeStats.total_trades) : '0'}
                   </p>
                   <p className="text-[10px] text-gray-500 mt-1">Winners/Losers</p>
                 </div>
