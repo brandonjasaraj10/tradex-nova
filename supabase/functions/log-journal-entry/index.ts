@@ -318,12 +318,39 @@ Deno.serve(async (req: Request) => {
 
       if (updateError) throw updateError;
       journalEntry = updated;
+    /*
+      Attach the entry to an account.
+
+      Entries created here had no account_id at all, which made every trade
+      Nova logged an orphan: invisible whenever a specific account was
+      selected, yet still counted under "All Accounts". A user saw their
+      monthly total include P&L that no individual account could account
+      for - seen live as a $4,000 entry missing from a $5,000 account view
+      inside a $9,000 month.
+
+      Defaults to the most recently created account, which is what the
+      Journal page itself selects by default, so an entry logged by voice or
+      chat lands on the same account the user is looking at.
+    */
+    let defaultAccountId: string | null = null;
+    {
+      const { data: acct } = await supabaseClient
+        .from('broker_connections')
+        .select('id')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      defaultAccountId = acct?.id ?? null;
+    }
+
     } else {
       const { data: created, error: createError } = await supabaseClient
         .from('journal_entries')
         .insert({
           user_id: userId,
           folder_id: folder.id,
+          account_id: defaultAccountId,
           entry_date: entryDate,
           title: entryTitle,
           content: entryContent,

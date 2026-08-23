@@ -147,7 +147,10 @@ export default function Dashboard() {
         case 'yearly': bounds = getYearBounds(now); break;
       }
 
-      const report = await generateReport(user.id, reportType, bounds.start, bounds.end, false, selectedAccount?.id ?? null);
+      // force_refresh: the saved report is never invalidated when entries
+      // change, so "This Week" was showing a row cached before this week's
+      // trades existed - reporting no activity on a week that had some.
+      const report = await generateReport(user.id, reportType, bounds.start, bounds.end, true, selectedAccount?.id ?? null);
       setSelectedReport(report);
       setShowReportModal(true);
     } catch (error) {

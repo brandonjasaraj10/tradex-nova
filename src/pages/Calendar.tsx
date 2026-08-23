@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import { useAccount } from '../lib/accountContext';
 import { useDataSync } from '../lib/dataSync';
-import { generateReport, getWeeklyReports, getMonthBasedWeekBounds, getMonthWeeks, type TradingReport } from '../services/reports';
+import { generateReport, getMonthBasedWeekBounds, getMonthWeeks, type TradingReport } from '../services/reports';
 import WeeklySummaryCard from '../components/reports/WeeklySummaryCard';
 import TradingReportModal from '../components/reports/TradingReportModal';
 import PageLoader from '../components/shared/PageLoader';
@@ -210,21 +210,30 @@ export default function Calendar() {
       const month = currentDate.getMonth();
       const weeks = getMonthWeeks(year, month);
 
-      const savedReports = await getWeeklyReports(user.id, weeks[0].start, weeks[weeks.length - 1].end);
+      /*
+        Always compute, never serve the saved row.
 
+        trading_reports is written once and never invalidated when a journal
+        entry or trade changes, and this loop preferred a saved row over
+        recomputing - so a week's card kept showing whatever was true the
+        first time it was ever opened. Seen live: a week card reading
+        "+$6,000 / 3 trades" against data that summed to $5,000 / 2, and the
+        current week reading "No trades" because its row had been cached
+        before that week's entry was written.
+
+        The saved rows are also account-blind - they were all computed
+        before reports were scoped - so reusing one shows another account's
+        figures. Recomputing is cheap and correct; a wrong number in a
+        trading journal is worse than a slightly slower one.
+      */
       const reports: TradingReport[] = [];
       for (const week of weeks) {
-        const existing = savedReports.find(r => r.period_start === week.start);
-        if (existing) {
-          reports.push(existing);
-        } else {
-          try {
-            const report = await generateReport(user.id, 'weekly', week.start, week.end, false, selectedAccount?.id ?? null);
-            reports.push(report && report.total_trades !== undefined ? report : buildEmptyWeeklyReport(week.start, week.end));
-          } catch (reportError) {
-            console.error('Error generating weekly report:', reportError);
-            reports.push(buildEmptyWeeklyReport(week.start, week.end));
-          }
+        try {
+          const report = await generateReport(user.id, 'weekly', week.start, week.end, true, selectedAccount?.id ?? null);
+          reports.push(report && report.total_trades !== undefined ? report : buildEmptyWeeklyReport(week.start, week.end));
+        } catch (reportError) {
+          console.error('Error generating weekly report:', reportError);
+          reports.push(buildEmptyWeeklyReport(week.start, week.end));
         }
       }
 
