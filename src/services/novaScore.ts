@@ -11,6 +11,23 @@ export interface NOVAScoreBreakdown {
   profit_factor: number;
   avg_win_loss_ratio: number;
   total_trades: number;
+  /*
+    Real figures for the Performance Metrics panel. It previously derived
+    these from the summary numbers it already had, which produced values
+    that were not what their labels claimed: "Best Trade" was
+    max(win_rate, profit_factor) rendered as a percentage, "Success Streak"
+    was win_rate / 10 (so a single trade displayed a 10-trade streak),
+    "Monthly Growth" was profit_factor * 12, and "Avg Hold Time" was the
+    hardcoded string 2.4h for every user. They are computed from the trades
+    themselves here instead.
+  */
+  best_trade: number;
+  worst_trade: number;
+  // null when no trade carries a usable entry/exit pair - a journal entry
+  // logged for a day has no times, and inventing one would be the same
+  // mistake as the hardcoded 2.4h.
+  avg_hold_minutes: number | null;
+  longest_win_streak: number;
 }
 
 export interface TradeData {
@@ -33,7 +50,11 @@ export async function calculateNOVAScore(trades: TradeData[]): Promise<NOVAScore
       win_rate: 0,
       profit_factor: 0,
       avg_win_loss_ratio: 0,
-      total_trades: 0
+      total_trades: 0,
+      best_trade: 0,
+      worst_trade: 0,
+      avg_hold_minutes: null,
+      longest_win_streak: 0
     };
   }
 
@@ -71,6 +92,10 @@ export async function calculateNOVAScore(trades: TradeData[]): Promise<NOVAScore
   );
 
   return {
+    best_trade: Math.max(...trades.map(t => t.profit_loss)),
+    worst_trade: Math.min(...trades.map(t => t.profit_loss)),
+    avg_hold_minutes: calculateRealAverageHoldMinutes(trades),
+    longest_win_streak: calculateLongestWinStreak(trades),
     overall_score: Math.min(100, Math.max(0, overallScore)),
     consistency_score: Math.min(100, Math.max(0, Math.round(consistencyScore))),
     risk_management_score: Math.min(100, Math.max(0, Math.round(riskManagementScore))),
@@ -257,4 +282,46 @@ function calculateExecutionScore(trades: TradeData[], winRate: number): number {
   score += Math.min(largeWinRatio * 30, 30);
 
   return score;
+}
+
+
+/*
+  Average hold time from real timestamps only.
+
+  Returns null rather than a number when nothing usable exists. A trade
+  logged as a journal entry for a day has no entry/exit time - both collapse
+  to the same date - so averaging those in would quietly drag the figure
+  toward zero and present it as fact.
+*/
+function calculateRealAverageHoldMinutes(trades: TradeData[]): number | null {
+  const durations = trades
+    .map(t => {
+      const entry = new Date(t.entry_time).getTime();
+      const exit = new Date(t.exit_time).getTime();
+      if (isNaN(entry) || isNaN(exit)) return null;
+      const minutes = (exit - entry) / 60000;
+      return minutes > 0 ? minutes : null;
+    })
+    .filter((m): m is number => m !== null);
+
+  if (durations.length === 0) return null;
+  return durations.reduce((sum, m) => sum + m, 0) / durations.length;
+}
+
+// Longest run of consecutive wins, in chronological order.
+function calculateLongestWinStreak(trades: TradeData[]): number {
+  const chronological = [...trades].sort(
+    (a, b) => new Date(a.entry_time).getTime() - new Date(b.entry_time).getTime()
+  );
+  let best = 0;
+  let run = 0;
+  for (const t of chronological) {
+    if (t.profit_loss > 0) {
+      run += 1;
+      if (run > best) best = run;
+    } else {
+      run = 0;
+    }
+  }
+  return best;
 }

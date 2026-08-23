@@ -9,6 +9,36 @@ interface NOVAScoreProps {
   showBreakdown?: boolean;
 }
 
+/*
+  A trade logged as a journal entry for a day carries no entry/exit time, so
+  there is genuinely nothing to average. Showing a dash is honest; the
+  previous hardcoded "2.4h" was not.
+*/
+function formatHoldTime(minutes: number | null): string {
+  if (minutes === null) return '--';
+  if (minutes < 60) return `${Math.round(minutes)}m`;
+  const hours = minutes / 60;
+  if (hours < 24) return `${hours.toFixed(1)}h`;
+  return `${(hours / 24).toFixed(1)}d`;
+}
+
+/*
+  calculateNOVAScore returns a literal 10 for profit factor and win/loss
+  ratio when there are no losses at all - a sentinel standing in for a
+  division by zero, not a measured value. Printing it as "10.00" reads as a
+  real, extraordinary ratio. Until a loss exists there is no ratio to show.
+*/
+function formatRatio(value: number, totalTrades: number): string {
+  if (totalTrades === 0) return '--';
+  if (value >= 10) return 'No losses yet';
+  return value.toFixed(2);
+}
+
+function formatMoney(value: number): string {
+  const sign = value > 0 ? '+' : value < 0 ? '-' : '';
+  return `${sign}$${Math.abs(value).toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+}
+
 export default function NOVAScore({
   breakdown,
   size = 'md',
@@ -374,11 +404,11 @@ export default function NOVAScore({
                       </motion.div>
                       <motion.div whileHover={{ scale: 1.05 }}>
                         <p className="text-gray-400 text-[10px]">Profit Factor</p>
-                        <p className="font-bold text-white mt-1 text-sm">{breakdown.profit_factor.toFixed(2)}</p>
+                        <p className="font-bold text-white mt-1 text-sm">{formatRatio(breakdown.profit_factor, breakdown.total_trades)}</p>
                       </motion.div>
                       <motion.div whileHover={{ scale: 1.05 }}>
                         <p className="text-gray-400 text-[10px]">Avg W/L</p>
-                        <p className="font-bold text-white mt-1 text-sm">{breakdown.avg_win_loss_ratio.toFixed(2)}</p>
+                        <p className="font-bold text-white mt-1 text-sm">{formatRatio(breakdown.avg_win_loss_ratio, breakdown.total_trades)}</p>
                       </motion.div>
                       <motion.div whileHover={{ scale: 1.05 }}>
                         <p className="text-gray-400 text-[10px]">Total Trades</p>
@@ -386,21 +416,38 @@ export default function NOVAScore({
                       </motion.div>
                     </div>
                     <div className="border-t border-white/10 pt-3 grid grid-cols-2 gap-3 text-xs">
+                      {/*
+                        Every figure here is now read off the trades.
+
+                        These four used to be derived from the summary numbers
+                        beside them and did not mean what they said: Best Trade
+                        was max(win_rate, profit_factor) shown as a percentage,
+                        Success Streak was win_rate / 10 - which is why a single
+                        trade reported a 10-trade streak - Monthly Growth was
+                        profit_factor x 12, and Avg Hold Time was the constant
+                        "2.4h" for every user regardless of their trades.
+                      */}
                       <motion.div whileHover={{ scale: 1.05 }}>
                         <p className="text-gray-400 text-[10px]">Best Trade</p>
-                        <p className="font-bold text-white mt-1 text-sm">+{Math.max(...[breakdown.win_rate, breakdown.profit_factor]).toFixed(1)}%</p>
+                        <p className={`font-bold mt-1 text-sm ${breakdown.best_trade >= 0 ? 'text-blue-400' : 'text-gray-400'}`}>
+                          {formatMoney(breakdown.best_trade)}
+                        </p>
+                      </motion.div>
+                      <motion.div whileHover={{ scale: 1.05 }}>
+                        <p className="text-gray-400 text-[10px]">Worst Trade</p>
+                        <p className={`font-bold mt-1 text-sm ${breakdown.worst_trade >= 0 ? 'text-blue-400' : 'text-gray-400'}`}>
+                          {formatMoney(breakdown.worst_trade)}
+                        </p>
+                      </motion.div>
+                      <motion.div whileHover={{ scale: 1.05 }}>
+                        <p className="text-gray-400 text-[10px]">Best Win Streak</p>
+                        <p className="font-bold text-white mt-1 text-sm">
+                          {breakdown.longest_win_streak} {breakdown.longest_win_streak === 1 ? 'trade' : 'trades'}
+                        </p>
                       </motion.div>
                       <motion.div whileHover={{ scale: 1.05 }}>
                         <p className="text-gray-400 text-[10px]">Avg Hold Time</p>
-                        <p className="font-bold text-white mt-1 text-sm">2.4h</p>
-                      </motion.div>
-                      <motion.div whileHover={{ scale: 1.05 }}>
-                        <p className="text-gray-400 text-[10px]">Success Streak</p>
-                        <p className="font-bold text-white mt-1 text-sm">{Math.floor(breakdown.win_rate / 10)} trades</p>
-                      </motion.div>
-                      <motion.div whileHover={{ scale: 1.05 }}>
-                        <p className="text-gray-400 text-[10px]">Monthly Growth</p>
-                        <p className="font-bold text-white mt-1 text-sm">+{(breakdown.profit_factor * 12).toFixed(1)}%</p>
+                        <p className="font-bold text-white mt-1 text-sm">{formatHoldTime(breakdown.avg_hold_minutes)}</p>
                       </motion.div>
                     </div>
                   </motion.div>
