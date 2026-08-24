@@ -73,10 +73,20 @@ Deno.serve(async (req: Request) => {
     // etc.) at once, or neither. Fetch once and split by which fields
     // are actually populated instead of filtering on a column that was
     // never real.
-    const [journalResult, rulesResult, entryRulesResult, profileResult] = await Promise.all([
+    const [journalResult, tradesResult, rulesResult, entryRulesResult, profileResult] = await Promise.all([
       supabaseClient
         .from("journal_entries")
         .select("*")
+        .eq("user_id", user_id)
+        .gte("entry_date", cutoffDateStr)
+        .order("entry_date", { ascending: false }),
+      // Imported and synced trades live here, and insights never read them -
+      // the same gap that had Nova's tips and its analysis tool describing a
+      // fraction of the user's record. Psychology insights below stay on
+      // journal entries alone, since trades carry no mood or stress fields.
+      supabaseClient
+        .from("trades")
+        .select("pnl, entry_date, symbol")
         .eq("user_id", user_id)
         .gte("entry_date", cutoffDateStr)
         .order("entry_date", { ascending: false }),
@@ -99,7 +109,18 @@ Deno.serve(async (req: Request) => {
     if (journalResult.error) throw journalResult.error;
 
     const journalEntries = journalResult.data || [];
-    const trades = journalEntries.filter((e) => e.manual_pnl !== null && e.manual_pnl !== undefined);
+
+    const journalTrades = journalEntries.filter((e) => e.manual_pnl !== null && e.manual_pnl !== undefined);
+    const importedTrades = (tradesResult.data || []).map((t: any) => ({
+      manual_pnl: t.pnl,
+      entry_date: t.entry_date,
+      symbol: t.symbol,
+    }));
+
+    // Newest-first, matching what the journal query alone used to provide.
+    const trades = [...journalTrades, ...importedTrades].sort(
+      (a: any, b: any) => new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime()
+    );
     const psychologyEntries = journalEntries.filter((e) =>
       e.stress_level !== null || e.mood_before !== null || e.mood_after !== null ||
       e.confidence_level !== null || e.rule_following !== null
@@ -145,10 +166,22 @@ Deno.serve(async (req: Request) => {
       const session = getSession(t);
       const dateStr = getEntryDate(t);
 
-      if (!symbolPerformance[symbol]) symbolPerformance[symbol] = { count: 0, wins: 0, totalPnl: 0 };
-      symbolPerformance[symbol].count++;
-      symbolPerformance[symbol].totalPnl += pnl;
-      if (isWin) symbolPerformance[symbol].wins++;
+      /*
+        Only group trades that actually name an instrument.
+
+        getSymbol falls back to the string "Unknown" for entries with no
+        symbol, and that bucket then competed for best/worst symbol like a
+        real ticker - which is how the page came to tell a user "your
+        highest win rate is 67% on Unknown across 3 trades. This is where
+        your edge is strongest." It reads as a bug to anyone who sees it,
+        and the underlying claim is not about an instrument at all.
+      */
+      if (symbol && symbol !== "Unknown") {
+        if (!symbolPerformance[symbol]) symbolPerformance[symbol] = { count: 0, wins: 0, totalPnl: 0 };
+        symbolPerformance[symbol].count++;
+        symbolPerformance[symbol].totalPnl += pnl;
+        if (isWin) symbolPerformance[symbol].wins++;
+      }
 
       if (session !== "Unknown") {
         if (!sessionPerformance[session]) sessionPerformance[session] = { count: 0, wins: 0, totalPnl: 0 };
@@ -627,6 +660,26 @@ Deno.serve(async (req: Request) => {
         .delete()
         .eq("user_id", user_id);
     }
+
+    /*
+      Replace any active set rather than adding to it.
+
+      Two overlapping calls both check for existing rows, both find none, and
+      both insert - so the user gets every insight twice. Seen repeatedly at
+      ~210ms apart: React StrictMode double-invokes effects in development,
+      but nothing stops the same race in production, and a duplicated set is
+      indistinguishable from the product being broken.
+
+      Clearing the active set immediately before writing makes concurrent
+      calls converge on one set instead of accumulating. Dismissed rows are
+      left alone so that dismissing something keeps it dismissed.
+    */
+    await supabaseClient
+      .from("user_insights")
+      .delete()
+      .eq("user_id", user_id)
+      .eq("is_dismissed", false)
+      .gt("expires_at", new Date().toISOString());
 
     if (insights.length > 0) {
       // insight_text is NOT NULL on user_insights but none of the

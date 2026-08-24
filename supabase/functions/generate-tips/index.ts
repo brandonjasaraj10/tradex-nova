@@ -374,6 +374,26 @@ Deno.serve(async (req: Request) => {
         .eq("user_id", user_id);
     }
 
+    /*
+      Replace any active set rather than adding to it.
+
+      Two overlapping calls both check for existing rows, both find none, and
+      both insert - so the user gets every tip twice. Seen repeatedly at
+      ~210ms apart: React StrictMode double-invokes effects in development,
+      but nothing stops the same race in production, and a duplicated set is
+      indistinguishable from the product being broken.
+
+      Clearing the active set immediately before writing makes concurrent
+      calls converge on one set instead of accumulating. Dismissed rows are
+      left alone so that dismissing something keeps it dismissed.
+    */
+    await supabaseClient
+      .from("user_tips")
+      .delete()
+      .eq("user_id", user_id)
+      .eq("is_dismissed", false)
+      .gt("expires_at", new Date().toISOString());
+
     if (tips.length > 0) {
       const { error: insertError } = await supabaseClient
         .from("user_tips")
