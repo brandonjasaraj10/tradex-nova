@@ -753,13 +753,34 @@ export default function Settings() {
                           </div>
                           <p className="text-sm text-gray-400">Unlimited trades, advanced analytics, Nova AI</p>
                         </div>
-                        <p className="text-2xl font-bold text-gold-400">$24.99<span className="text-sm text-gray-400">/mo</span></p>
+                        {/*
+                          What Stripe is actually charging, not a number typed
+                          into the markup. This said $24.99 to everyone,
+                          including founder subscribers paying $14.99 - on the
+                          one screen someone checks after paying. Older rows
+                          predate the column, so the price is simply omitted
+                          rather than guessed.
+                        */}
+                        {subscription.unit_amount != null && (
+                          <p className="text-2xl font-bold text-gold-400">
+                            ${(subscription.unit_amount / 100).toFixed(2)}
+                            <span className="text-sm text-gray-400">
+                              /{subscription.billing_interval === 'year' ? 'yr' : 'mo'}
+                            </span>
+                          </p>
+                        )}
                       </div>
 
                       <div className="space-y-2 mb-4">
                         <div className="flex items-center gap-2 text-sm">
                           <Check size={16} className="text-blue-400" />
-                          <span className="text-gray-300">Unlimited broker connections</span>
+                          {/*
+                            Broker connections were removed as a feature, and
+                            trading accounts are capped at 10 - so "unlimited
+                            broker connections" promised something that does
+                            not exist, twice over.
+                          */}
+                          <span className="text-gray-300">Up to 10 trading accounts</span>
                         </div>
                         <div className="flex items-center gap-2 text-sm">
                           <Check size={16} className="text-blue-400" />

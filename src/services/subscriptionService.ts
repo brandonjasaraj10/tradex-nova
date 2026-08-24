@@ -20,6 +20,11 @@ export interface Subscription {
   current_period_end: string | null;
   cancel_at_period_end: boolean;
   grace_period_end: string | null;
+  // Written by subscriptionSync from the Stripe subscription item, so the UI
+  // can show the real price instead of a hard-coded one. Optional because
+  // rows created before these columns existed will not have them.
+  unit_amount?: number | null;
+  billing_interval?: string | null;
   created_at: string;
   updated_at: string;
 }

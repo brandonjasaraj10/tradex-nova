@@ -45,6 +45,16 @@ export async function syncSubscription(supabase: SupabaseClient, userId: string,
     current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
     current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
     cancel_at_period_end: subscription.cancel_at_period_end,
+    /*
+      What Stripe is actually charging, so the app never has to guess.
+
+      Settings hard-coded $24.99, which was wrong for every founder-price
+      subscriber - the exact screen they look at after paying. Stripe sends
+      this on every event; it was simply never stored.
+    */
+    stripe_price_id: subscription.items.data[0]?.price?.id ?? null,
+    unit_amount: subscription.items.data[0]?.price?.unit_amount ?? null,
+    billing_interval: subscription.items.data[0]?.price?.recurring?.interval ?? null,
     updated_at: new Date().toISOString(),
   };
 
