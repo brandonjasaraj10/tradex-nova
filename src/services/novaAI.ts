@@ -126,6 +126,26 @@ export class NovaAIService {
     return data.id;
   }
 
+  /*
+    Name the session, so the History drawer can tell conversations apart.
+
+    The title column has always existed and always held its default, so
+    every entry in that list read "New Conversation". Failing to set it is
+    not worth interrupting the user's message over - the chat still works
+    with a default title - so this logs and moves on rather than throwing.
+  */
+  async setSessionTitle(title: string): Promise<void> {
+    if (!this.userId || !title) return;
+
+    const { error } = await supabase
+      .from('nova_conversation_sessions')
+      .update({ title })
+      .eq('id', this.sessionId)
+      .eq('user_id', this.userId);
+
+    if (error) console.error('Error setting conversation title:', error);
+  }
+
   async clearHistory(): Promise<void> {
     if (!this.userId) return;
 

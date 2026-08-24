@@ -167,6 +167,26 @@ export function NovaProvider({ children }: { children: ReactNode }) {
     try {
       await novaService.saveMessage('user', content.trim(), userMsg.id);
 
+      /*
+        Name the conversation after the first thing the user said.
+
+        nova_conversation_sessions.title exists and defaults to "New
+        Conversation", and nothing ever wrote anything else - so every row
+        in the History drawer read "New Conversation", nine identical
+        entries with no way to tell them apart. The search box above them
+        searched titles, so it could not help either. A history you cannot
+        navigate is not history.
+
+        Only the first user message sets it, so the title stays put as the
+        conversation goes on.
+      */
+      const isFirstUserMessage = !messages.some(m => m.role === 'user');
+      if (isFirstUserMessage) {
+        const trimmed = content.trim();
+        const title = trimmed.length > 60 ? `${trimmed.slice(0, 57)}...` : trimmed;
+        await novaService.setSessionTitle(title);
+      }
+
       const response = await novaService.generateResponse(content.trim(), messages, images);
 
       const assistantMsg: ChatMessage = {
