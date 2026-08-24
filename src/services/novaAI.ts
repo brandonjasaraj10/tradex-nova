@@ -166,12 +166,31 @@ export class NovaAIService {
       const now = new Date();
       const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
+      /*
+        Tell Nova which account the user is actually looking at.
+
+        Without it, Nova answered across every account while the NOVA Score
+        panel beside the chat was scoped to the selected one - so the panel
+        could say 6 trades while Nova said 26, both correct, neither
+        explaining itself. Nova defaults to this account and says which one
+        it means, and can still be asked about all of them explicitly.
+
+        Read from localStorage rather than threaded through every caller:
+        accountContext is the owner of this value and already persists it
+        here, including an explicit "ALL" for the All Accounts choice.
+      */
+      const savedAccount = localStorage.getItem('tradex_selected_account');
+      const selectedAccountId =
+        savedAccount && savedAccount !== 'ALL' ? savedAccount : null;
+
       const requestBody: any = {
         messages,
         user: { id: session.user.id },
         client_context: {
           local_date: localDate,
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          selected_account_id: selectedAccountId,
+          viewing_all_accounts: selectedAccountId === null,
         },
       };
 

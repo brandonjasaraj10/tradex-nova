@@ -660,7 +660,7 @@ const TOOLS: Anthropic.Tool[] = [
           },
           account_id: {
             type: "string",
-            description: "Optional specific trading account ID to analyze. Omit to analyze all accounts."
+            description: "Trading account ID to analyze. Default to the account the user is currently viewing, given in the system prompt, so your figures match what is on their screen. Omit only when the user is viewing All Accounts or explicitly asks about every account."
           }
         },
         required: []
@@ -737,6 +737,8 @@ interface RequestPayload {
   client_context?: {
     local_date?: string;
     timezone?: string;
+    selected_account_id?: string | null;
+    viewing_all_accounts?: boolean;
   };
 }
 
@@ -828,6 +830,8 @@ Deno.serve(async (req: Request) => {
 
     const { messages, images, client_context }: RequestPayload = await req.json();
     const clientLocalDate = client_context?.local_date;
+    const selectedAccountId = client_context?.selected_account_id ?? null;
+    const viewingAllAccounts = client_context?.viewing_all_accounts ?? false;
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(
@@ -1012,7 +1016,35 @@ Deno.serve(async (req: Request) => {
     const dateContext = clientLocalDate
       ? `\n\nToday's date, in the user's own local timezone, is ${clientLocalDate}. Always use this (not your own sense of the current date) for "today", "yesterday", "this week", or any other relative date the user mentions, and as the entry_date default for log_journal_entry when they don't specify one.`
       : '';
-    const enhancedSystemPrompt = SYSTEM_PROMPT + profileContext + memoryContext + dateContext;
+
+    /*
+      Which account the user is looking at while they type.
+
+      Nova used to analyse every account regardless, while the NOVA Score
+      panel next to the chat was scoped to the selected one - so the panel
+      could read "6 trades" beside Nova saying 26. Both were right and
+      neither said which was which, which just makes both look wrong.
+
+      The name is looked up here rather than accepted from the request, so
+      the label Nova reads out is the account's real name. RLS applies, so
+      an id belonging to someone else simply returns nothing.
+    */
+    let accountContext = '';
+    if (viewingAllAccounts) {
+      accountContext = `\n\nThe user is currently viewing All Accounts. Analyse across every account unless they name a specific one, and say that your figures cover all accounts.`;
+    } else if (selectedAccountId) {
+      const { data: account } = await supabaseClient
+        .from('broker_connections')
+        .select('account_name')
+        .eq('id', selectedAccountId)
+        .maybeSingle();
+
+      if (account) {
+        accountContext = `\n\nThe user is currently viewing the account "${account.account_name}" (id ${selectedAccountId}). Pass this id as account_id when you call analyze_trading_performance, so your numbers match the ones on screen, and name the account when you report them. If they ask about a different account or about all of them, use that instead - and if it is genuinely ambiguous which account they mean, ask before answering.`;
+      }
+    }
+
+    const enhancedSystemPrompt = SYSTEM_PROMPT + profileContext + memoryContext + dateContext + accountContext;
 
     // Cache the system prompt (~4,400 tokens) and tool definitions (tools
     // render before system, so one breakpoint here covers both). This
