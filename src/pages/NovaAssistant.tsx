@@ -238,12 +238,21 @@ export default function NovaAssistant() {
         const allTrades = [...tradeItems, ...journalItems];
         setScoreBreakdown(allTrades.length > 0 ? await calculateNOVAScore(allTrades) : null);
 
-        const { data: recentEntries } = await supabase
+        // Scoped to the selected account like the score above it. Without
+        // this, switching accounts left the activity list unchanged, so it
+        // listed entries belonging to an account the user was not looking at.
+        let activityQuery = supabase
           .from('journal_entries')
           .select('id, title, entry_type, created_at')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
           .limit(3);
+
+        if (selectedAccount) {
+          activityQuery = activityQuery.eq('account_id', selectedAccount.id);
+        }
+
+        const { data: recentEntries } = await activityQuery;
 
         setRecentActivity(
           (recentEntries || []).map((e: any) => ({
