@@ -16,7 +16,7 @@ import { useAuth } from '../lib/auth';
 import { generateInsights, getActiveInsights, dismissInsight, type Insight } from '../services/insights';
 import { supabase } from '../lib/supabase';
 import { toLocalDateStr } from '../utils/dateHelpers';
-import { formatPeriodLabel, formatProfitFactor } from '../utils/formatMetrics';
+import { formatPeriodLabel, formatProfitFactor, valueColorClass } from '../utils/formatMetrics';
 
 import {
   Chart as ChartJS,
@@ -470,7 +470,7 @@ export default function Analytics() {
                     </div>
                   </div>
                   <h3 className="text-xs font-medium text-gray-400 mb-1">Total P&L</h3>
-                  <p className={`text-2xl font-bold ${loading ? 'text-gray-400' : tradeStats && tradeStats.total_pnl >= 0 ? 'text-blue-400' : 'text-gray-400'}`}>
+                  <p className={`text-2xl font-bold ${loading ? 'text-gray-400' : valueColorClass(tradeStats?.total_pnl)}`}>
                     {loading ? '...' : tradeStats ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(tradeStats.total_pnl) : '$0'}
                   </p>
                   <p className="text-[10px] text-gray-500 mt-1">{tradeStats?.total_trades || 0} trades</p>
@@ -541,7 +541,7 @@ export default function Analytics() {
         <motion.div variants={fadeInUp} className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <motion.div whileHover={{ scale: 1.02, y: -4 }} transition={{ duration: 0.2 }}>
             <Card variant="default" className="p-5 relative overflow-hidden group cursor-pointer">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 via-blue-500/5 to-blue-500/0 opacity-0 group-hover:opacity-100 transition-all duration-300" />
+              <div className={`absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-all duration-300 ${loading || !((tradeStats?.average_win ?? 0) > 0) ? 'from-gray-500/0 via-gray-500/5 to-gray-500/0' : 'from-blue-500/0 via-blue-500/5 to-blue-500/0'}`} />
               <div className="relative">
                 <div className="flex items-center justify-between mb-3">
                   <div className="p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
@@ -549,7 +549,7 @@ export default function Analytics() {
                   </div>
                 </div>
                 <h3 className="text-xs font-medium text-gray-400 mb-1">Average Profit</h3>
-                <p className="text-2xl font-bold text-blue-400">
+                <p className={`text-2xl font-bold ${loading ? 'text-gray-400' : valueColorClass(tradeStats?.average_win)}`}>
                   {loading ? '...' : tradeStats ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(tradeStats.average_win) : '$0'}
                 </p>
                 <p className="text-[10px] text-gray-500 mt-1">Per winning trade</p>
@@ -567,7 +567,7 @@ export default function Analytics() {
                   </div>
                 </div>
                 <h3 className="text-xs font-medium text-gray-400 mb-1">Average Loss</h3>
-                <p className="text-2xl font-bold text-gray-400">
+                <p className={`text-2xl font-bold ${loading ? 'text-gray-400' : valueColorClass(tradeStats?.average_loss)}`}>
                   {loading ? '...' : tradeStats ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(tradeStats.average_loss) : '$0'}
                 </p>
                 <p className="text-[10px] text-gray-500 mt-1">Per losing trade</p>
@@ -595,7 +595,7 @@ export default function Analytics() {
 
           <motion.div whileHover={{ scale: 1.02, y: -4 }} transition={{ duration: 0.2 }}>
             <Card variant="default" className="p-5 relative overflow-hidden group cursor-pointer">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 via-blue-500/5 to-blue-500/0 opacity-0 group-hover:opacity-100 transition-all duration-300" />
+              <div className={`absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-all duration-300 ${loading || !((tradeStats?.largest_win ?? 0) > 0) ? 'from-gray-500/0 via-gray-500/5 to-gray-500/0' : 'from-blue-500/0 via-blue-500/5 to-blue-500/0'}`} />
               <div className="relative">
                 <div className="flex items-center justify-between mb-3">
                   <div className="p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
@@ -603,7 +603,7 @@ export default function Analytics() {
                   </div>
                 </div>
                 <h3 className="text-xs font-medium text-gray-400 mb-1">Best Trade</h3>
-                <p className="text-2xl font-bold text-blue-400">
+                <p className={`text-2xl font-bold ${loading ? 'text-gray-400' : valueColorClass(tradeStats?.largest_win)}`}>
                   {loading ? '...' : tradeStats ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(tradeStats.largest_win) : '$0'}
                 </p>
                 <p className="text-[10px] text-gray-500 mt-1">Largest win</p>

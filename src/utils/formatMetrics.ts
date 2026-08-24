@@ -61,3 +61,24 @@ export function formatWinLossRatio(value: number | null | undefined, totalTrades
   const formatted = formatRatio(value, totalTrades);
   return /^[\d.]+$/.test(formatted) ? `${formatted}:1` : formatted;
 }
+
+/*
+  Blue for a gain, grey for a loss - the app's colour rule, applied from the
+  value rather than hard-coded per tile.
+
+  Several stat tiles printed their number in blue unconditionally because the
+  value "can't be negative": average win and best trade are computed from
+  winning trades only, so today they are always zero or positive. That is a
+  property of the current query, not of the tile, and nothing would catch it
+  changing - a negative number would simply render in the colour that means
+  profit. Deriving the colour from the value costs nothing and cannot drift.
+
+  Zero counts as neutral: an account with no winning trades has not gained
+  anything, so "$0.00" in gain-blue would overstate it.
+*/
+export function valueColorClass(value: number | null | undefined): string {
+  if (value === null || value === undefined || !isFinite(value) || value === 0) {
+    return 'text-gray-400';
+  }
+  return value > 0 ? 'text-blue-400' : 'text-gray-400';
+}
