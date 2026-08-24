@@ -14,23 +14,37 @@
   ratio to state - the denominator is zero - and the codebase had three
   different answers for it: novaScore substituted the literal 10, trades.ts
   returned Infinity, and the pages rendered that as "---". So the same
-  account could read "10.00" on one screen and "---" on another, and
-  neither told the user anything true. It now says so in words.
+  account could read "10.00" on one screen and "---" on another, and neither
+  told the user anything true.
+
+  It renders as an em dash. These values sit in large bold slots sized for
+  "1.38", so the earlier wording - "No losses yet" - wrapped onto three lines
+  and read as something being broken. The dash says "not applicable" at a
+  glance and stays the same size as a number; where the reason is worth
+  giving, the tile carries it as a caption underneath instead.
 */
 
 // novaScore.ts substitutes this when there is no loss to divide by. It is a
 // sentinel, not a measurement, so it must never be printed as a ratio.
 const NO_LOSS_SENTINEL = 10;
 
+export const NO_LOSS_LABEL = 'No losses yet';
+
+/** True when there is no loss to divide by, so callers can caption it. */
+export function isNoLossCase(value: number | null | undefined, totalTrades = 1): boolean {
+  if (value === null || value === undefined || totalTrades === 0) return false;
+  return !isFinite(value) || value >= NO_LOSS_SENTINEL;
+}
+
 export function formatProfitFactor(value: number | null | undefined, totalTrades = 1): string {
   if (value === null || value === undefined || totalTrades === 0) return '--';
-  if (!isFinite(value) || value >= NO_LOSS_SENTINEL) return 'No losses yet';
+  if (isNoLossCase(value, totalTrades)) return '\u2014';
   return value.toFixed(2);
 }
 
 export function formatRatio(value: number | null | undefined, totalTrades = 1): string {
   if (value === null || value === undefined || totalTrades === 0) return '--';
-  if (!isFinite(value) || value >= NO_LOSS_SENTINEL) return 'No losses yet';
+  if (isNoLossCase(value, totalTrades)) return '\u2014';
   return value.toFixed(2);
 }
 

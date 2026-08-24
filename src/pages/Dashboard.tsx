@@ -33,7 +33,7 @@ import { getTradingRules, createTradingRule, updateTradingRule, deleteTradingRul
 import { generateReport, getWeekBounds, getMonthBounds, getQuarterBounds, getYearBounds, type TradingReport } from '../services/reports';
 import TradingReportModal from '../components/reports/TradingReportModal';
 import { toLocalDateStr } from '../utils/dateHelpers';
-import { formatPeriodLabel, formatProfitFactor } from '../utils/formatMetrics';
+import { formatPeriodLabel, formatProfitFactor, isNoLossCase, NO_LOSS_LABEL } from '../utils/formatMetrics';
 
 
 const buildCalendarData = (
@@ -840,6 +840,15 @@ export default function Dashboard() {
                 </svg>
               </div>
             </div>
+            {/*
+              The reason lives here rather than in the value slot above, which
+              is sized for "1.38" - a sentence there wrapped onto three lines
+              and looked broken. Same shape as the sibling tiles, which all
+              carry a small caption under the number.
+            */}
+            {!statsLoading && performanceStats && isNoLossCase(performanceStats.profit_factor, performanceStats.total_trades) && (
+              <p className="text-[10px] text-gray-500 mt-1">{NO_LOSS_LABEL}</p>
+            )}
           </Card>
 
           <Card variant="gradient" className="bg-[#111]/80 p-3 sm:p-4">

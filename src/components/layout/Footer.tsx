@@ -64,13 +64,25 @@ export default function Footer() {
               &copy; {new Date().getFullYear()} TradeX. All rights reserved.
             </p>
             <div className="flex flex-col md:flex-row items-center gap-4 mt-4 md:mt-0">
-              <button
-                onClick={() => setShowEarlyAccess(true)}
-                className="flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300 transition-colors"
-              >
-                <Lock size={14} />
-                Early Access
-              </button>
+              {/*
+                Gone once the site is open. The access code existed to let a
+                few people in before launch; afterwards it is a locked door
+                next to an unlocked one, and it invites visitors to hunt for a
+                code instead of just signing up.
+
+                `launched` was already computed here and simply never used -
+                the typecheck flagged it as an unused variable, which is what
+                a gate that was written but never wired up looks like.
+              */}
+              {!launched && (
+                <button
+                  onClick={() => setShowEarlyAccess(true)}
+                  className="flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300 transition-colors"
+                >
+                  <Lock size={14} />
+                  Early Access
+                </button>
+              )}
               <p className="text-sm text-gray-400">
                 Designed with precision. Built for traders.
               </p>
