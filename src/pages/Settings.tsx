@@ -25,16 +25,22 @@ import { supabase } from '../lib/supabase';
 import PasswordStrengthIndicator, { isPasswordValid } from '../components/auth/PasswordStrengthIndicator';
 import { usePreferences } from '../lib/preferencesContext';
 import { useTour } from '../lib/tourContext';
+/*
+  Settings used to declare its own three-field Subscription type and query the
+  table by hand. That is how it drifted: the local copy had no
+  grace_period_end, so it could not have applied the real access rule even if
+  it wanted to. Using the service means this screen and the paywall read the
+  same row through the same code.
+*/
+import {
+  getSubscription,
+  evaluateSubscriptionAccess,
+  type Subscription,
+} from '../services/subscriptionService';
 
 interface UserProfile {
   first_name: string;
   last_name: string;
-}
-
-interface Subscription {
-  status: string;
-  current_period_end: string | null;
-  cancel_at_period_end: boolean;
 }
 
 export default function Settings() {
@@ -48,6 +54,9 @@ export default function Settings() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const subscriptionAccess = subscription
+    ? evaluateSubscriptionAccess(subscription, new Date())
+    : null;
   const [subLoading, setSubLoading] = useState(false);
 
   const [profile, setProfile] = useState<UserProfile>({
@@ -125,15 +134,7 @@ export default function Settings() {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
-        .from('subscriptions')
-        .select('status, current_period_end, cancel_at_period_end')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (error) throw error;
-
-      setSubscription(data);
+      setSubscription(await getSubscription());
     } catch (error) {
       console.error('Error loading subscription:', error);
     }
@@ -724,7 +725,23 @@ export default function Settings() {
                     <p className="text-sm text-gray-400">Manage your subscription and billing</p>
                   </div>
 
-                  {subscription && subscription.status === 'active' ? (
+                  {/*
+                    Access, not the literal string 'active'.
+
+                    This tested status === 'active' alone, so a trialing
+                    subscription fell into the "No Active Subscription" branch -
+                    while the details panel directly below read the status field
+                    and said "Trialing". The same screen contradicted itself, and
+                    worse, the Cancel Subscription button lives in this branch, so
+                    a user on a trial had no way to cancel from the app at all.
+
+                    evaluateSubscriptionAccess is the same function the paywall
+                    uses and mirrors has_active_subscription() in the database, so
+                    this screen now agrees with what actually grants access:
+                    trialing counts, and so does a cancelled subscription whose
+                    paid period has not run out yet.
+                  */}
+                  {subscription && subscriptionAccess?.hasAccess ? (
                     <div className="bg-gradient-to-br from-gold-400/10 to-transparent border border-gold-400/20 rounded-xl p-6">
                       <div className="flex items-start justify-between mb-4">
                         <div>

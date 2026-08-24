@@ -72,7 +72,13 @@ export default function Header({ sidebarCollapsed = false, sidebarOpen = false, 
             <Menu size={20} />
           </button>
           <h2 className="text-xs sm:text-sm font-medium text-gray-400 truncate">
-            Good morning, {profile?.first_name || user?.email?.split('@')[0] || 'User'}
+            {/*
+              Time-agnostic. This said "Good morning" around the clock, so it
+              greeted people at midnight with the wrong half of the day - and a
+              greeting that is visibly wrong reads as the app not knowing
+              anything about you.
+            */}
+            Welcome, {profile?.first_name || user?.email?.split('@')[0] || 'User'}
           </h2>
         </div>
 

@@ -14,6 +14,9 @@ const ADMIN_USER_IDS = [
 type UserProfile = {
   first_name: string | null;
   last_name: string | null;
+  // Selected by the profile query and used to tell a genuinely new user
+  // from a returning one; declaring it keeps the type honest about the row.
+  tour_completed?: boolean | null;
 };
 
 type AuthContextType = {

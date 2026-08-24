@@ -16,8 +16,28 @@ interface PreferencesContextType {
 
 const PreferencesContext = createContext<PreferencesContextType | undefined>(undefined);
 
+/*
+  Start from the browser's actual timezone rather than UTC.
+
+  A new account had no saved preference, so Settings showed "UTC+0:00" to
+  someone in Denver - a setting that looks deliberately chosen and is simply
+  the fallback. The browser already knows the answer, and the app reads it
+  this way elsewhere when telling Nova what "today" means.
+
+  Note this preference is currently only displayed and saved; no date
+  formatting reads it yet, so this makes the screen honest rather than
+  changing behaviour.
+*/
+function detectTimezone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  } catch {
+    return 'UTC';
+  }
+}
+
 const defaultPreferences: UserPreferences = {
-  timezone: 'UTC',
+  timezone: detectTimezone(),
   currency: 'USD',
   dateFormat: 'MM/DD/YYYY'
 };

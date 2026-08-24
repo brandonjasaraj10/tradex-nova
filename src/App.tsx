@@ -140,7 +140,19 @@ function PrivateLayout() {
     return (
       <WelcomeAnimation
         firstName={getFirstName()}
-        isFirstTime={isFirstTimeUser}
+        /*
+          isFirstTimeUser is React state set only inside signUp, and Stripe
+          checkout is a full navigation away and back - so it is gone by the
+          time someone returns from paying, and a brand new account was
+          greeted with "Welcome Back" on its very first entry.
+
+          tour_completed is the durable version of the same fact, already on
+          the profile and already fetched. tourContext gates on it for exactly
+          this reason, having been caught by transient state once before;
+          replaying the tour only changes local state, never this column, so
+          it stays a reliable "has never been onboarded" signal.
+        */
+        isFirstTime={isFirstTimeUser || !profile.tour_completed}
         onComplete={() => {
           setShowWelcome(false);
           // Drop ?success=true, or refreshing the dashboard would replay the
