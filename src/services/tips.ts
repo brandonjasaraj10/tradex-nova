@@ -33,8 +33,9 @@ export async function generateTips(userId: string, forceRefresh: boolean = false
         'Content-Type': 'application/json',
         'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY
       },
+      // No user_id: the function derives identity from the JWT in the
+      // Authorization header above, and ignored this field anyway.
       body: JSON.stringify({
-        user_id: userId,
         force_refresh: forceRefresh
       })
     }

@@ -8,7 +8,6 @@ const corsHeaders = {
 };
 
 interface GenerateInsightsRequest {
-  user_id: string;
   force_refresh?: boolean;
 }
 
@@ -18,14 +17,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { user_id, force_refresh = false }: GenerateInsightsRequest = await req.json();
-
-    if (!user_id) {
-      return new Response(
-        JSON.stringify({ error: "user_id is required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    const { force_refresh = false }: GenerateInsightsRequest = await req.json();
 
     const authHeader = req.headers.get("Authorization");
     const supabaseClient = createClient(
@@ -33,6 +25,29 @@ Deno.serve(async (req: Request) => {
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
       { global: { headers: { Authorization: authHeader ?? "" } } }
     );
+
+    /*
+      Identity comes from the verified JWT, never from the request body -
+      the same pattern as generate-tips and every other function fixed this
+      session.
+
+      Taking it from the body was not exploitable: this client uses the anon
+      key, so RLS evaluates as the caller, and passing someone else's id was
+      tested against the live database - reads came back empty and a delete
+      aimed at another user's rows left them untouched. But that made RLS
+      the single thing standing between this function and a cross-user hole.
+      log-journal-entry had exactly this shape and became a real write hole
+      the moment it started using the service-role key. Not depending on
+      that costs nothing.
+    */
+    const { data: { user: authUser }, error: authError } = await supabaseClient.auth.getUser();
+    if (authError || !authUser) {
+      return new Response(
+        JSON.stringify({ error: "User authentication required" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    const user_id = authUser.id;
 
     if (!force_refresh) {
       const { data: existingInsights } = await supabaseClient

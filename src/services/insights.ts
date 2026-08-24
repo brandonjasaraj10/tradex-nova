@@ -33,8 +33,9 @@ export async function generateInsights(userId: string, forceRefresh: boolean = f
         'Content-Type': 'application/json',
         'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY
       },
+      // No user_id: the function derives identity from the JWT in the
+      // Authorization header above.
       body: JSON.stringify({
-        user_id: userId,
         force_refresh: forceRefresh
       })
     }
