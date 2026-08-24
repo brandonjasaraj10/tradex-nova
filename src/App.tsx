@@ -3,6 +3,7 @@ import { lazyWithReload } from './lib/lazyWithReload';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './lib/auth';
 import { AccountProvider } from './lib/accountContext';
+import { DateRangeProvider } from './lib/dateRangeContext';
 import { NovaProvider } from './lib/novaContext';
 import { TourProvider, TourNavigationSetter } from './lib/tourContext';
 import { DataSyncProvider } from './lib/dataSync';
@@ -212,11 +213,13 @@ function App() {
       <PreferencesProvider>
         <DataSyncProvider>
           <AccountProvider>
+            <DateRangeProvider>
             <NovaProvider>
               <TourProvider>
                 <AppContent />
               </TourProvider>
             </NovaProvider>
+            </DateRangeProvider>
           </AccountProvider>
         </DataSyncProvider>
       </PreferencesProvider>

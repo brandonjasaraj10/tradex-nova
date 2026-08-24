@@ -7,6 +7,7 @@ import NOVAScore from '../components/shared/NOVAScore';
 import DateRangePicker from '../components/shared/DateRangePicker';
 import AccountSelector from '../components/shared/AccountSelector';
 import { useAccount } from '../lib/accountContext';
+import { useDateRange } from '../lib/dateRangeContext';
 import { useDataSync } from '../lib/dataSync';
 import { getTradeStats, getTradesForCharts } from '../services/trades';
 import { calculateNOVAScore, type NOVAScoreBreakdown } from '../services/novaScore';
@@ -93,14 +94,10 @@ export default function Analytics() {
   const { refreshTrigger } = useDataSync();
   const { user } = useAuth();
 
-  const getDefaultDateRange = () => {
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - 29);
-    return { startDate, endDate };
-  };
-
-  const [dateRange, setDateRange] = useState(getDefaultDateRange());
+  // Shared across pages and remembered between visits - see dateRangeContext.
+  // This used to be local state with a per-page default, so switching pages
+  // silently changed the window and coming back discarded the choice.
+  const { dateRange, setDateRange } = useDateRange();
   const [tradeStats, setTradeStats] = useState<TradeStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [insights, setInsights] = useState<Insight[]>([]);

@@ -7,6 +7,7 @@ import DateRangePicker from '../components/shared/DateRangePicker';
 import AccountSelector from '../components/shared/AccountSelector';
 import BalanceCard from '../components/dashboard/BalanceCard';
 import { useAccount } from '../lib/accountContext';
+import { useDateRange } from '../lib/dateRangeContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import NOVAScore from '../components/shared/NOVAScore';
@@ -124,14 +125,10 @@ export default function Dashboard() {
   const [showReportModal, setShowReportModal] = useState(false);
   const [loadingReport, setLoadingReport] = useState(false);
 
-  const getDefaultDateRange = () => {
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - 6);
-    return { startDate, endDate };
-  };
-
-  const [dateRange, setDateRange] = useState(getDefaultDateRange());
+  // Shared across pages and remembered between visits - see dateRangeContext.
+  // This used to be local state with a per-page default, so switching pages
+  // silently changed the window and coming back discarded the choice.
+  const { dateRange, setDateRange } = useDateRange();
 
   const handleGenerateReport = async (reportType: 'weekly' | 'monthly' | 'quarterly' | 'yearly') => {
     const user = (await supabase.auth.getUser()).data.user;
