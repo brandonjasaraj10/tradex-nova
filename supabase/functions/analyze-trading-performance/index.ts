@@ -43,20 +43,55 @@ Deno.serve(async (req: Request) => {
     midpointDate.setDate(midpointDate.getDate() - Math.floor(days_back / 2));
     const midpointDateStr = midpointDate.toISOString();
 
-    // journal_entries has no category or account_id column - a single
-    // entry can carry both trade fields (manual_pnl, symbol) and
-    // psychology fields (stress_level, mood, etc.) at once, or neither,
-    // and there's no per-account link at all. Fetch once and split by
-    // which fields are actually populated instead.
-    const journalQuery = supabaseClient
+    // journal_entries has no category column - a single entry can carry
+    // both trade fields (manual_pnl, symbol) and psychology fields
+    // (stress_level, mood, etc.) at once, or neither. Fetch once and split
+    // by which fields are actually populated instead.
+    //
+    // It does have account_id, despite what the comment here used to claim,
+    // and account_id has been an accepted parameter of this function all
+    // along while nothing ever filtered on it - so asking Nova about one
+    // account silently answered for all of them.
+    let journalQuery = supabaseClient
       .from("journal_entries")
       .select("*")
       .eq("user_id", user_id)
       .gte("entry_date", cutoffDateStr)
       .order("entry_date", { ascending: false });
 
+    if (account_id) {
+      journalQuery = journalQuery.eq("account_id", account_id);
+    }
+
+    /*
+      Trades live in their own table, and this function never looked at it.
+
+      Everything a CSV import or broker sync writes lands in `trades`, so
+      Nova's answers were drawn from journal entries alone. On a real test
+      account that meant Nova told the user they had "6 trades over the last
+      90 days" when the account held 26, and reported consistency 13 and
+      discipline 0 against the 50s displayed on the very page the chat is
+      embedded in. Users do not read that as two data sources - they read it
+      as the product not knowing their own numbers.
+
+      Mapped onto the journal shape so the analysis below still handles one
+      kind of object. Psychology analysis deliberately keeps using journal
+      entries only: trades carry no mood, stress or confidence fields.
+    */
+    let tradesQuery = supabaseClient
+      .from("trades")
+      .select("pnl, entry_date, exit_date, symbol")
+      .eq("user_id", user_id)
+      .gte("entry_date", cutoffDateStr)
+      .order("entry_date", { ascending: false });
+
+    if (account_id) {
+      tradesQuery = tradesQuery.eq("broker_id", account_id);
+    }
+
     const [
       journalResult,
+      tradesResult,
       rulesResult,
       confluencesResult,
       profileResult,
@@ -65,6 +100,7 @@ Deno.serve(async (req: Request) => {
       balanceResult,
     ] = await Promise.all([
       journalQuery,
+      tradesQuery,
       supabaseClient
         .from("trading_rules")
         .select("*")
@@ -99,7 +135,21 @@ Deno.serve(async (req: Request) => {
     if (journalResult.error) throw journalResult.error;
 
     const journalEntries = journalResult.data || [];
-    const trades = journalEntries.filter((e: any) => e.manual_pnl !== null && e.manual_pnl !== undefined);
+
+    const journalTrades = journalEntries.filter((e: any) => e.manual_pnl !== null && e.manual_pnl !== undefined);
+    const importedTrades = (tradesResult.data || []).map((t: any) => ({
+      manual_pnl: t.pnl,
+      entry_date: t.entry_date,
+      exit_date: t.exit_date,
+      symbol: t.symbol,
+    }));
+
+    // Newest-first: several analyses below slice off the front of this list
+    // to talk about "recent" trades, an ordering that came free from the
+    // journal query alone and would be lost by plain concatenation.
+    const trades = [...journalTrades, ...importedTrades].sort(
+      (a: any, b: any) => new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime()
+    );
     const psychologyEntries = journalEntries.filter((e: any) =>
       e.stress_level !== null || e.mood_before !== null || e.mood_after !== null ||
       e.confidence_level !== null || e.rule_following !== null
@@ -130,6 +180,9 @@ Deno.serve(async (req: Request) => {
     const avgLoss = losingTrades.length > 0
       ? losingTrades.reduce((sum, t) => sum + getPnl(t), 0) / losingTrades.length
       : 0;
+
+    const grossProfit = winningTrades.reduce((sum, t) => sum + getPnl(t), 0);
+    const grossLoss = Math.abs(losingTrades.reduce((sum, t) => sum + getPnl(t), 0));
 
     const symbolFrequency: Record<string, { count: number; wins: number; losses: number; totalPnl: number }> = {};
     const sessionPerformance: Record<string, { count: number; wins: number; pnl: number }> = {};
@@ -216,7 +269,10 @@ Deno.serve(async (req: Request) => {
       ruleCompliance[rule.id] = { rule_name: rule.name || rule.rule_text, followed: 0, broken: 0, rate: 0 };
     });
 
-    const entryIdSet = new Set(trades.map((t) => t.id));
+    // Journal entries only: journal_entry_rules can only ever point at a
+    // journal entry, and imported trades carry no id here at all - including
+    // them would just seed the set with undefined.
+    const entryIdSet = new Set(journalTrades.map((t: any) => t.id));
     entryRules.forEach((er) => {
       if (!entryIdSet.has(er.journal_entry_id)) return;
       const ruleId = er.rule_id;
@@ -397,7 +453,18 @@ Deno.serve(async (req: Request) => {
         total_pnl: totalPnL,
         avg_win: avgWin,
         avg_loss: avgLoss,
-        profit_factor: avgLoss !== 0 ? Math.abs(avgWin / avgLoss) : 0,
+        /*
+          Profit factor is gross profit over gross loss. This reported
+          avgWin / avgLoss instead, which is the average win/loss ratio - a
+          different, consistently flatter-looking number. On a real account
+          it made Nova announce a profit factor of 1.88 while every other
+          screen in the app said 1.38 for the same trades, overstating it by
+          more than a third.
+
+          Both are worth having, so both are sent now under their own names.
+        */
+        profit_factor: grossLoss !== 0 ? grossProfit / grossLoss : 0,
+        avg_win_loss_ratio: avgLoss !== 0 ? Math.abs(avgWin / avgLoss) : 0,
         consistency_score: consistencyScore,
         discipline_score: disciplineScore,
         avg_trades_per_day: Math.round(avgTradesPerDay * 10) / 10,
