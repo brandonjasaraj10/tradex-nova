@@ -537,7 +537,21 @@ export default function Calendar() {
         const weekReport = getWeekReportForDate(weekEndDateKey);
         if (weekReport) {
           cells.push(
-            <div key={`report-${row}`} className="w-full h-full hidden md:block" data-tour="calendar-weekly-review">
+            /*
+              aspect-square, exactly like the day cells beside it.
+
+              This was w-full h-full, which has no height of its own, so the
+              card's content set the row height instead. A filled week has
+              five lines - P&L, win rate, trades, psych - against "No trades"
+              in an empty one, so that single row grew taller than the rest
+              while the day cells stayed square, leaving a band of dead space
+              under the days and what looked like a gap in the calendar.
+
+              Every column is the same width, so a square here is the same
+              height as a day cell, and the row can no longer be stretched by
+              what happens to be in the card.
+            */
+            <div key={`report-${row}`} className="w-full aspect-square hidden md:block" data-tour="calendar-weekly-review">
               <WeeklySummaryCard
                 report={weekReport}
                 onClick={() => handleOpenReport(weekReport)}
@@ -548,7 +562,7 @@ export default function Calendar() {
           );
         } else {
           cells.push(
-            <div key={`empty-report-${row}`} className="w-full h-full hidden md:block" />
+            <div key={`empty-report-${row}`} className="w-full aspect-square hidden md:block" />
           );
         }
       } else {

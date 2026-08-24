@@ -76,7 +76,15 @@ export default function WeeklySummaryCard({ report, onClick, privacyMode = false
             <Eye size={10} className="text-gray-600" />
           </div>
         ) : (
-          <div className="flex-1 min-h-0 flex flex-col justify-center">
+          /*
+            leading-tight, because the four stat rows at default line-height
+            came to 66px inside a 65px card on a 1280-wide screen - one pixel
+            over, so the bottom row (Psych) lost its descenders to
+            overflow-hidden. Tightening the leading buys about 10px across the
+            four rows, which clears it on every desktop width rather than
+            just the one it was measured on.
+          */
+          <div className="flex-1 min-h-0 flex flex-col justify-center leading-tight">
             <div className="flex items-center justify-between gap-1.5">
               <span className="text-[9px] lg:text-[10px] whitespace-nowrap text-gray-400">P&L</span>
               <span className={`text-[10px] lg:text-[11px] font-bold ${report.total_pnl >= 0 ? 'text-[#3B82F6]' : 'text-gray-400'}`}>
