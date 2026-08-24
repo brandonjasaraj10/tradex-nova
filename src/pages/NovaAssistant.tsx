@@ -16,7 +16,7 @@ import ConversationArchive from '../components/nova/ConversationArchive';
 import { generateInsights, getActiveInsights, dismissInsight, type Insight } from '../services/insights';
 import { generateTips, getActiveTips, dismissTip, type Tip } from '../services/tips';
 import { correctTradingTerms } from '../utils/tradingVocabulary';
-import { calculateNOVAScore, type NOVAScoreBreakdown } from '../services/novaScore';
+import { calculateNOVAScore, MIN_TRADES_FOR_CONSISTENCY, type NOVAScoreBreakdown } from '../services/novaScore';
 import { formatProfitFactor, formatWinLossRatio } from '../utils/formatMetrics';
 import { getTradingRules, type TradingRule } from '../services/tradingRules';
 import { supabase } from '../lib/supabase';
@@ -1043,7 +1043,19 @@ export default function NovaAssistant() {
                   {[
                     { label: 'Profitability', icon: TrendingUp, value: scoreBreakdown.profitability_score, note: `${scoreBreakdown.win_rate.toFixed(0)}% win rate, ${formatProfitFactor(scoreBreakdown.profit_factor, scoreBreakdown.total_trades)} profit factor` },
                     { label: 'Risk Management', icon: Target, value: scoreBreakdown.risk_management_score, note: `Avg win/loss ratio ${formatWinLossRatio(scoreBreakdown.avg_win_loss_ratio, scoreBreakdown.total_trades)}` },
-                    { label: 'Consistency', icon: Activity, value: scoreBreakdown.consistency_score, note: `Based on ${scoreBreakdown.total_trades} trades` },
+                    {
+                      label: 'Consistency',
+                      icon: Activity,
+                      value: scoreBreakdown.consistency_score,
+                      /*
+                        Under the threshold this score is a flat placeholder,
+                        so saying "Based on 6 trades" credited it to trades the
+                        calculation had thrown away. Say which it is.
+                      */
+                      note: scoreBreakdown.total_trades < MIN_TRADES_FOR_CONSISTENCY
+                        ? `Needs ${MIN_TRADES_FOR_CONSISTENCY} trades to measure - ${scoreBreakdown.total_trades} so far`
+                        : `Based on ${scoreBreakdown.total_trades} trades`
+                    },
                     { label: 'Discipline', icon: Award, value: scoreBreakdown.discipline_score, note: 'Confluence use and overtrading check' },
                   ].map((row, i) => (
                     <div key={i} className="bg-white/5 rounded-xl p-3 border border-white/5">

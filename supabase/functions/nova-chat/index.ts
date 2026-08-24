@@ -79,7 +79,12 @@ Performance Metrics (computed from all of the above):
 - Performance by direction (long vs short)
 - Entry reason and exit reason frequency and success rates
 - Overtrading detection (daily trade frequency spikes)
-- Consistency score and discipline score
+- P&L variability score and rule-compliance score (pnl_variability_score,
+  rule_compliance_score). These are NOT the Consistency and Discipline
+  figures shown in the NOVA Score panel on screen - those are computed
+  differently and will not match. Describe these as what they are (how much
+  P&L varies trade to trade, and the share of logged rules followed), and
+  never present them as the user's NOVA Score sub-scores.
 - Trend analysis (recent vs older period comparison)
 - Balance trajectory and account growth
 

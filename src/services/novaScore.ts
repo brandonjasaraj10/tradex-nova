@@ -119,8 +119,18 @@ function calculateProfitabilityScore(winRate: number, profitFactor: number, avgW
   return winRateScore + profitFactorScore + ratioScore;
 }
 
+/*
+  Consistency needs enough trades to have something to be consistent across.
+
+  Below this it returns a flat 50 - a placeholder, not a measurement. The UI
+  has to know the difference: the Nova page labelled this score "Based on N
+  trades", which claimed it was measured from exactly the trades the function
+  had just discarded.
+*/
+export const MIN_TRADES_FOR_CONSISTENCY = 10;
+
 function calculateConsistencyScore(trades: TradeData[]): number {
-  if (trades.length < 10) return 50;
+  if (trades.length < MIN_TRADES_FOR_CONSISTENCY) return 50;
 
   const sortedByDate = [...trades].sort((a, b) =>
     new Date(a.entry_time).getTime() - new Date(b.entry_time).getTime()

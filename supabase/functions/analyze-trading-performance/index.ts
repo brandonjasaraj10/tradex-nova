@@ -471,8 +471,22 @@ Deno.serve(async (req: Request) => {
         */
         profit_factor: grossLoss !== 0 ? grossProfit / grossLoss : 0,
         avg_win_loss_ratio: avgLoss !== 0 ? Math.abs(avgWin / avgLoss) : 0,
-        consistency_score: consistencyScore,
-        discipline_score: disciplineScore,
+        /*
+          Named for what they actually measure, not "consistency" and
+          "discipline".
+
+          Those two names are also used by the NOVA Score panel on screen,
+          which computes them completely differently - consistency there is
+          the spread of win rate across rolling 10-trade windows, discipline
+          there is confluence use plus hold time plus an overtrading penalty.
+          Here they are the coefficient of variation of P&L, and the share of
+          logged rules followed. On one real account the panel showed 50 and
+          50 while Nova, quoting these, said 13 and 0 for the same trades in
+          the same moment. Two different measurements are fine; two different
+          measurements wearing one name is not.
+        */
+        pnl_variability_score: consistencyScore,
+        rule_compliance_score: disciplineScore,
         avg_trades_per_day: Math.round(avgTradesPerDay * 10) / 10,
         max_trades_in_day: maxTradesInDay,
         overtrading_days: overtradingDays,
