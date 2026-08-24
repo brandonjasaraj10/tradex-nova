@@ -695,7 +695,7 @@ export default function Journal() {
   const handleVoiceTranscript = async (text: string) => {
     setIsProcessingVoice(true);
     try {
-      const voiceData: VoiceJournalData = await processVoiceJournalEntry(text, entryForm, namedConfluences(), namedRules());
+      const voiceData: VoiceJournalData = await processVoiceJournalEntry(text, entryForm, namedConfluences(), namedRules(), selectedAccount?.id ?? null);
       applyConfluenceRuleStatus(voiceData);
 
       setEntryForm(prev => ({
@@ -840,7 +840,7 @@ export default function Journal() {
         // which is most of the reason it took 20+ seconds. The model now
         // makes that same-trade-or-not call inside the single request and
         // reports it as is_new_position.
-        voiceData = await processVoiceJournalEntry(newTextOnly, entryForm, namedConfluences(), namedRules());
+        voiceData = await processVoiceJournalEntry(newTextOnly, entryForm, namedConfluences(), namedRules(), selectedAccount?.id ?? null);
 
         const currentSymbol = (entryForm.symbol || '').trim().toUpperCase();
         const newSymbol = (voiceData.symbol || '').trim().toUpperCase();
@@ -860,7 +860,7 @@ export default function Journal() {
           }
         }
       } else {
-        voiceData = await processVoiceJournalEntry(newTextOnly, undefined, namedConfluences(), namedRules());
+        voiceData = await processVoiceJournalEntry(newTextOnly, undefined, namedConfluences(), namedRules(), selectedAccount?.id ?? null);
       }
 
       applyConfluenceRuleStatus(voiceData);

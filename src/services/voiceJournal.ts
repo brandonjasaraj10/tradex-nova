@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { balanceService } from './balanceService';
 
 export interface VoiceJournalData {
   // Set by the model when updating an existing entry and the new text turns
@@ -71,11 +72,58 @@ export async function processVoiceJournalEntry(
   transcript: string,
   existingEntry?: any,
   userConfluences: NamedItem[] = [],
-  userRules: NamedItem[] = []
+  userRules: NamedItem[] = [],
+  accountId?: string | null
 ): Promise<VoiceJournalData> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
+
+    /*
+      The account's real balance, so "I risked 2%" can become a number.
+
+      Nova had no idea what any percentage was worth, so a trader saying they
+      risked 2% at a 1:2 target got "2" dropped into position size and nothing
+      else - no risk amount, no resulting P&L, and a percentage sitting in a
+      field that means lots or contracts.
+
+      This is fetched rather than inferred, and everything below is guarded on
+      it being present. An account with no balance set gets the percentages
+      recorded as stated and no invented figures - a made-up balance would
+      produce confident, wrong money in a trading journal, which is worse than
+      leaving the arithmetic undone.
+    */
+    let balanceContext = '';
+    if (accountId) {
+      try {
+        const balance = await balanceService.getAccountBalance(accountId);
+        if (balance && balance.current_balance > 0) {
+          balanceContext = `
+
+ACCOUNT BALANCE - USE THIS FOR ALL PERCENTAGE MATH:
+- Starting balance: ${balance.currency} ${balance.starting_balance}
+- Current balance: ${balance.currency} ${balance.current_balance}
+
+When the trader states risk as a percentage ("risking 2%", "half a percent"),
+calculate the money it represents from the CURRENT balance and state both.
+2% of ${balance.current_balance} is ${(balance.current_balance * 0.02).toFixed(2)}.
+
+When they give a reward-to-risk ratio ("1:2", "two to one", "3R") AND say the
+target was reached, calculate the resulting profit as risk amount x the reward
+side, and put that number in manual_pnl. Risking 2% at 1:2 on this balance is
+a profit of ${(balance.current_balance * 0.02 * 2).toFixed(2)}.
+
+If they say the stop was hit instead, manual_pnl is the risk amount as a
+NEGATIVE number.
+
+Never guess at a balance. Everything above is the real figure for this
+account; use it and no other.`;
+        }
+      } catch {
+        // A balance lookup failure must not stop the entry being organized -
+        // it just means the percentages stay percentages.
+      }
+    }
 
     const hasExistingData = existingEntry && (
       existingEntry.title ||
@@ -398,7 +446,24 @@ CONVERSION EXAMPLES (HTML FORMAT):
 • "made 5k" → "<li><strong>P&L:</strong> +$5,000</li>" AND manual_pnl: 5000 in JSON
 • "lost 2 grand" → "<li><strong>P&L:</strong> -$2,000</li>" AND manual_pnl: -2000 in JSON
 • "traded 0.5 lots" → "<li><strong>Position Size:</strong> 0.5 lots</li>" AND position_size: "0.5 lots" in JSON
-• "risked 1%" → "<li><strong>Position Size / Risk:</strong> 1%</li>" AND position_size: "1%" in JSON
+
+POSITION SIZE vs RISK - these are different things and must not be mixed:
+• position_size is HOW MUCH WAS TRADED - lots, contracts, shares. Only fill it
+  when they actually say a size. It is stored as a number, so a percentage put
+  here silently becomes a meaningless bare figure: "risked 2%" landing in
+  position_size is stored as 2, which reads as 2 lots.
+• A stated risk PERCENTAGE is not a position size. Never put it in
+  position_size. Record it in the content, with the money it represents when
+  the balance is known:
+  "risked 2%" with a 100000 balance →
+    "<li><strong>Risk:</strong> 2% ($2,000.00)</li>"
+  and with no balance available →
+    "<li><strong>Risk:</strong> 2%</li>"
+• A reward-to-risk ratio belongs in the content too, with the money when known:
+  "1:2 target, take profit hit" on 2% of 100000 →
+    "<li><strong>Target:</strong> 1:2 &mdash; $4,000.00</li>"
+  and manual_pnl: 4000
+• "stopped out" on that same trade → manual_pnl: -2000
 • "Asian session" → "<li><strong>Session:</strong> Asian</li>"
 • "bearish candle break" → "<li>Primary setup type: Bearish breakout</li>"
 • "I was super stressed" → "<li>Elevated stress levels affecting decision clarity</li>"
@@ -635,6 +700,8 @@ CRITICAL RULES:
       throw new Error('You need to be signed in for Nova to organize an entry.');
     }
 
+    const systemPromptWithBalance = systemPrompt + balanceContext;
+
     const response = await fetch(
       `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-voice-journal`,
       {
@@ -646,7 +713,7 @@ CRITICAL RULES:
         },
         body: JSON.stringify({
           transcript,
-          systemPrompt
+          systemPrompt: systemPromptWithBalance
         }),
       }
     );
