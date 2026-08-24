@@ -404,6 +404,33 @@ deleted to leave a clean slate.
   aggregation/anonymization pipeline), not a doc fix — needs its own
   scoping whenever it's picked up.
 
+## Deferred on purpose (post-launch)
+
+Decided during the Nova AI page audit on 2026-08-23. None of these are
+bugs to hunt down again — they are known, deliberate, and fine to launch
+with.
+
+- **Nova's mic / voice conversation mode stays hidden.** Gated behind
+  `NOVA_VOICE_OUTPUT_ENABLED` in `src/lib/featureFlags.ts` (set `false`).
+  That flag deliberately covers both the speaker toggle and the "Start
+  Conversation" mic, because that mic enters conversation mode and speaks
+  replies whether or not autoSpeak is on. Voice *input* is a separate
+  feature and still works — dictating a journal entry, and the mic in the
+  Journal's Nova panel, both only transcribe. Flip the flag to `true` to
+  bring it all back; no other change needed.
+- **No image upload on the Nova AI page.** `sendMessage` and
+  `generateResponse` both accept images and the Journal's Nova panel uses
+  that path, but the Nova AI page has no attach control. Noted, not
+  wanted for launch.
+- **Tips and AI Insights cover all accounts, and say so.** They are
+  generated per user with no account column on `user_tips` /
+  `user_insights`, while the NOVA Score, Performance Metrics, Recent
+  Activity and Nova's own chat answers all follow the account selector.
+  Rather than scope them, both sections carry an "Across all accounts"
+  line (shown only to users with more than one account). Real per-account
+  scoping would need a schema change plus a decision about what "All
+  Accounts" means — worth doing later, not wrong in the meantime.
+
 ## How to work with me
 
 - I'm not a developer. Explain things in plain English, no jargon.
