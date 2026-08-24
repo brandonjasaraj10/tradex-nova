@@ -88,7 +88,47 @@ Deno.serve(async (req: Request) => {
 
     if (journalError) throw journalError;
 
-    const trades = (journalEntries || []).filter((e: any) => e.manual_pnl !== null && e.manual_pnl !== undefined);
+    /*
+      Nova's advice has to cover the same trades the rest of the app counts.
+
+      This used to read journal_entries alone, so everything in the trades
+      table - CSV imports, and anything a broker sync writes - was invisible
+      to it. On a real test account that was 20 of 26 trades, and it showed:
+      the page rendered a tip reading "your solid win rate shows you have an
+      edge" computed from 3 journal entries at 66.7%, directly above a NOVA
+      Score panel reporting the true figure over all 10 trades in range.
+      Advice contradicting the numbers printed beside it is worse than no
+      advice, because it puts both in doubt.
+
+      Trades are mapped onto the journal shape (manual_pnl / entry_date)
+      rather than the scoring code being taught about two shapes - every tip
+      below reads only those two fields.
+    */
+    const { data: tradeRows, error: tradeError } = await supabaseClient
+      .from("trades")
+      .select("pnl, entry_date, symbol")
+      .eq("user_id", user_id)
+      .gte("entry_date", cutoffDateStr);
+
+    if (tradeError) throw tradeError;
+
+    const journalTrades = (journalEntries || [])
+      .filter((e: any) => e.manual_pnl !== null && e.manual_pnl !== undefined);
+
+    const importedTrades = (tradeRows || []).map((t: any) => ({
+      manual_pnl: t.pnl,
+      entry_date: t.entry_date,
+      symbol: t.symbol,
+    }));
+
+    // Sorted newest-first because the "recent losses" tip below takes
+    // trades.slice(0, 5) and relies on that order. Before the merge it came
+    // free from the journal query's ORDER BY; concatenating two sources
+    // silently broke it, which would have made a "take a break after
+    // losses" tip fire off an arbitrary five trades rather than the latest.
+    const trades = [...journalTrades, ...importedTrades].sort(
+      (a: any, b: any) => new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime()
+    );
 
     const { data: tradingRules } = await supabaseClient
       .from("trading_rules")
