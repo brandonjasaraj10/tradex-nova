@@ -109,8 +109,14 @@ export default function BalanceCard() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-blue-300 mb-1">Set Your Account Balance</p>
+              {/*
+                Points at the account switcher in the header rather than a
+                four-step path into Settings. Creating an account and setting
+                its balance happen in the same place up there, so sending
+                people to Settings sent them away from the thing they needed.
+              */}
               <p className="text-xs text-gray-300 leading-relaxed">
-                Track your performance by adding your starting balance. Go to <span className="font-medium text-blue-400">Settings → Personal Info</span> and it's under <span className="font-medium text-blue-400">Trading Accounts</span>. Click the dollar icon ($) next to your account.
+                Track your performance by adding your starting balance. Use the <span className="font-medium text-blue-400">account menu</span> in the top right &mdash; pick an account, or add one and set its balance while you create it.
               </p>
             </div>
             <button

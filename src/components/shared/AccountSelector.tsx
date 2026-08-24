@@ -93,9 +93,11 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
         connectionData.broker_id = selectedBrokerId;
       }
 
-      const { error } = await supabase
+      const { data: created, error } = await supabase
         .from('user_broker_connections')
-        .insert(connectionData);
+        .insert(connectionData)
+        .select('id, account_name, broker_id')
+        .single();
 
       if (error) throw error;
 
@@ -116,6 +118,30 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
       setCurrency('USD');
       setOwnershipType('personal');
       setIsOpen(false);
+
+      /*
+        Switch to the account that was just created.
+
+        Creating one only refreshed the list; the selector stayed on whatever
+        was chosen before, so the dashboard did not change and it looked like
+        nothing had happened - you had to go back and pick the new account
+        yourself to see the balance you had just set. Nobody creates an
+        account in order to keep looking at a different one.
+
+        Selected before the refresh so the switch is immediate; the refetch
+        then reconciles this against the full list. broker_type is resolved
+        there from broker_id, so this stands in with the same fallback the
+        transform uses until it lands.
+      */
+      if (created) {
+        onAccountChange({
+          id: created.id,
+          account_name: created.account_name,
+          broker_type: isOther ? otherBrokerName.trim() : (selectedBroker?.name || 'Manual'),
+          is_active: false,
+        });
+      }
+
       onAccountsUpdate?.();
     } catch (error) {
       console.error('Create account error:', error);
