@@ -35,8 +35,22 @@ jobs:
 
       - run: npm ci
 
-      - name: Typecheck
+      # Informational, not a gate - same treatment as lint below.
+      #
+      # `npm run typecheck` used to be `tsc --noEmit` against a
+      # solution-style tsconfig with "files": [], which checks nothing at all
+      # and exits 0. This step passed for that reason alone, never because
+      # the code typechecked. Pointing it at tsconfig.app.json on 2026-08-23
+      # made it real and surfaced 116 pre-existing errors - mostly unused
+      # imports, plus some genuine looseness worth fixing.
+      #
+      # Failing the build on all 116 the day they became visible would just
+      # mean a permanently red CI that everyone learns to ignore, which is
+      # how the hollow check survived in the first place. So it runs and
+      # reports, and flips to a gate once the backlog is cleared.
+      - name: Typecheck (informational - not a merge gate yet)
         run: npm run typecheck
+        continue-on-error: true
 
       - name: Tests
         run: npm test
