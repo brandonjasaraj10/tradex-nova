@@ -183,6 +183,23 @@ export default function Sales() {
           <div className="flex items-center gap-2">
             <h1 className="text-base sm:text-lg font-medium">TradeX</h1>
           </div>
+          {/*
+            The way back in for people who already have an account.
+
+            Every call to action on this page said "Start My Free Trial" and
+            pointed at /auth?mode=signup. A returning subscriber had to click
+            the button offering a free trial they are already past, then find
+            "Already have an account? Sign in" at the foot of the signup form.
+            It worked, but nobody's first instinct is to start a trial in order
+            to reach an account they already pay for - and the header's
+            right-hand side, where everyone looks, was empty.
+          */}
+          <Link
+            to="/auth?mode=signin"
+            className="text-sm font-medium text-gray-300 hover:text-white transition-colors"
+          >
+            Sign In
+          </Link>
         </div>
       </motion.div>
 
