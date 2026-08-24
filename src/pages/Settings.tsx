@@ -792,20 +792,44 @@ export default function Settings() {
                         </div>
                       </div>
 
-                      {subscription.status === 'trialing' && subscription.current_period_end && (
-                        <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                          <p className="text-sm text-blue-300">
-                            Trial ends on {new Date(subscription.current_period_end).toLocaleDateString()}
-                          </p>
-                        </div>
-                      )}
+                      {/*
+                        One line saying what is actually going to happen.
 
+                        "Renews on ..." rendered whenever a period end existed,
+                        so after cancelling it still promised a renewal - the
+                        single worst thing to show someone who just cancelled,
+                        because it reads as the cancellation not having worked.
+                        A trial also matched both blocks at once and showed
+                        "Trial ends on" and "Renews on" with the same date.
+
+                        Three states, one block: cancelled, on trial, renewing.
+                      */}
                       {subscription.current_period_end && (
-                        <div className="mb-4 p-3 bg-gray-500/10 border border-gray-500/20 rounded-lg">
-                          <p className="text-sm text-gray-300">
-                            Renews on {new Date(subscription.current_period_end).toLocaleDateString()}
-                          </p>
-                        </div>
+                        subscription.cancel_at_period_end ? (
+                          <div className="mb-4 p-3 bg-gray-500/10 border border-gray-500/20 rounded-lg">
+                            <p className="text-sm text-gray-200 font-medium">
+                              {subscription.status === 'trialing' ? 'Trial cancelled' : 'Subscription cancelled'}
+                            </p>
+                            <p className="text-xs text-gray-400 mt-0.5">
+                              You keep access until {new Date(subscription.current_period_end).toLocaleDateString()}. You won&rsquo;t be charged again.
+                            </p>
+                          </div>
+                        ) : subscription.status === 'trialing' ? (
+                          <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                            <p className="text-sm text-blue-300">
+                              Free trial ends {new Date(subscription.current_period_end).toLocaleDateString()}
+                              {subscription.unit_amount != null && (
+                                <>, then ${(subscription.unit_amount / 100).toFixed(2)}/{subscription.billing_interval === 'year' ? 'yr' : 'mo'}</>
+                              )}
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="mb-4 p-3 bg-gray-500/10 border border-gray-500/20 rounded-lg">
+                            <p className="text-sm text-gray-300">
+                              Renews on {new Date(subscription.current_period_end).toLocaleDateString()}
+                            </p>
+                          </div>
+                        )
                       )}
 
                       <div className="pt-4 border-t border-white/10">
@@ -822,14 +846,22 @@ export default function Settings() {
                           >
                             {subLoading ? 'Loading...' : 'Manage Billing'}
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={handleCancelSubscription}
-                            disabled={subLoading}
-                          >
-                            {subLoading ? 'Processing...' : 'Cancel Subscription'}
-                          </Button>
+                          {/*
+                            Hidden once already cancelled. Offering "Cancel
+                            Subscription" to someone who just cancelled invites
+                            them to do it twice and suggests the first attempt
+                            did not take.
+                          */}
+                          {!subscription.cancel_at_period_end && (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={handleCancelSubscription}
+                              disabled={subLoading}
+                            >
+                              {subLoading ? 'Processing...' : 'Cancel Subscription'}
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </div>

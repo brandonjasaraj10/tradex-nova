@@ -156,113 +156,98 @@ Deno.serve(async (req: Request) => {
         day: "numeric",
       });
 
+      /*
+        Same template as the welcome and password-reset emails.
+
+        This one still used the original dark design - #1a1a1a panels on
+        #f5f5f5 - written before the Gmail dark-mode work. Gmail's mobile app
+        inverts on its own heuristics and ignores colour-scheme entirely, so
+        that version flipped into colours nobody chose, and it looked like a
+        different company from every other email TradeX sends. Every colour
+        here is a mid-tone that stays itself either way, and the logo is drawn
+        in table cells so it still arrives branded when images are blocked.
+      */
       const emailHtml = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        </head>
-        <body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: Arial, Helvetica, sans-serif;">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #f5f5f5;">
-            <tr>
-              <td align="center" style="padding: 20px 10px;">
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 600px;">
-                  <!-- Header -->
-                  <tr>
-                    <td align="center" style="padding: 30px 0;">
-                      <h1 style="margin: 0; font-size: 32px; font-weight: bold; color: #1a1a1a;">TradeX</h1>
-                    </td>
-                  </tr>
-                  <!-- Main Content Card -->
-                  <tr>
-                    <td>
-                      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #1a1a1a; border-radius: 12px;">
-                        <tr>
-                          <td style="padding: 30px;">
-                            <h2 style="margin: 0 0 15px 0; font-size: 24px; font-weight: bold; color: #ffffff;">Subscription Cancellation Confirmed</h2>
-                            <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.5; color: #a0a0a0;">Hi ${firstName},</p>
-                            <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.5; color: #a0a0a0;">We're sorry to see you go. Your TradeX Pro subscription has been scheduled for cancellation.</p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; background-color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #ffffff;">
+    <tr>
+      <td align="center" style="padding: 40px 16px;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 560px;">
 
-                            <!-- Info Box -->
-                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-                              <tr>
-                                <td style="padding: 20px 0;">
-                                  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #000000; border-radius: 8px; border: 1px solid #3B82F6;">
-                                    <tr>
-                                      <td style="padding: 20px;">
-                                        <p style="margin: 0 0 10px 0; font-size: 14px; color: #a0a0a0;">Your subscription will remain active until:</p>
-                                        <p style="margin: 0; font-size: 20px; font-weight: bold; color: #3B82F6;">${formattedCancelDate}</p>
-                                      </td>
-                                    </tr>
-                                  </table>
-                                </td>
-                              </tr>
-                            </table>
+          <tr>
+            <td align="center" style="padding-bottom: 32px;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                <tr>
+                  <td valign="middle" style="padding-right: 4px;">
+                    <div style="width: 4px; height: 22px; background-color: #3B82F6; border-radius: 2px; font-size: 0; line-height: 22px;">&nbsp;</div>
+                  </td>
+                  <td valign="middle" style="padding-right: 4px;">
+                    <div style="width: 4px; height: 30px; background-color: #3B82F6; border-radius: 2px; font-size: 0; line-height: 30px;">&nbsp;</div>
+                  </td>
+                  <td valign="middle" style="padding-right: 12px;">
+                    <div style="width: 4px; height: 14px; background-color: #3B82F6; border-radius: 2px; font-size: 0; line-height: 14px;">&nbsp;</div>
+                  </td>
+                  <td valign="middle">
+                    <span style="font-size: 26px; font-weight: 700; letter-spacing: -0.5px; color: #111111;">TradeX</span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
 
-                            <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.5; color: #a0a0a0;">You'll continue to have full access to all TradeX Pro features until then, including:</p>
+          <tr>
+            <td>
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #ffffff; border: 1px solid #e2e2e2; border-radius: 14px;">
+                <tr>
+                  <td style="padding: 36px 32px;">
+                    <h1 style="margin: 0 0 12px 0; font-size: 21px; font-weight: 700; color: #111111; letter-spacing: -0.3px;">Your subscription is cancelled</h1>
+                    <p style="margin: 0 0 24px 0; font-size: 15px; line-height: 1.6; color: #555555;">${firstName}, that&rsquo;s done &mdash; you won&rsquo;t be charged again.</p>
 
-                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-                              <tr>
-                                <td style="padding: 8px 0;">
-                                  <span style="color: #10b981; font-size: 18px; margin-right: 8px;">✓</span>
-                                  <span style="color: #ffffff; font-size: 14px;">Unlimited broker connections</span>
-                                </td>
-                              </tr>
-                              <tr>
-                                <td style="padding: 8px 0;">
-                                  <span style="color: #10b981; font-size: 18px; margin-right: 8px;">✓</span>
-                                  <span style="color: #ffffff; font-size: 14px;">Advanced analytics and reports</span>
-                                </td>
-                              </tr>
-                              <tr>
-                                <td style="padding: 8px 0;">
-                                  <span style="color: #10b981; font-size: 18px; margin-right: 8px;">✓</span>
-                                  <span style="color: #ffffff; font-size: 14px;">Nova AI assistant</span>
-                                </td>
-                              </tr>
-                              <tr>
-                                <td style="padding: 8px 0;">
-                                  <span style="color: #10b981; font-size: 18px; margin-right: 8px;">✓</span>
-                                  <span style="color: #ffffff; font-size: 14px;">Priority support</span>
-                                </td>
-                              </tr>
-                            </table>
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                      <tr>
+                        <td style="background-color: #f4f8ff; border: 1px solid #3B82F6; border-radius: 10px; padding: 20px;">
+                          <p style="margin: 0 0 4px 0; font-size: 13px; color: #555555;">You keep full access until</p>
+                          <p style="margin: 0; font-size: 20px; font-weight: 700; color: #3B82F6;">${formattedCancelDate}</p>
+                        </td>
+                      </tr>
+                    </table>
 
-                            <p style="margin: 25px 0 20px 0; font-size: 16px; line-height: 1.5; color: #a0a0a0;">Changed your mind? You can reactivate your subscription anytime from your account settings.</p>
+                    <p style="margin: 24px 0 0 0; font-size: 15px; line-height: 1.6; color: #555555;">Nothing is deleted. Your trades, journal entries and notes stay exactly where they are, so if you come back it is all still here.</p>
 
-                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-                              <tr>
-                                <td align="center" style="padding: 20px 0;">
-                                  <a href="https://tradexnova.com/settings" style="display: inline-block; padding: 12px 30px; background-color: #3B82F6; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px;">Manage Subscription</a>
-                                </td>
-                              </tr>
-                            </table>
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-top: 24px;">
+                      <tr>
+                        <td align="center" style="background-color: #3B82F6; border-radius: 10px;">
+                          <a href="https://tradexnova.com/settings" style="display: block; padding: 15px 24px; font-size: 15px; font-weight: 600; color: #ffffff; text-decoration: none;">Resubscribe anytime</a>
+                        </td>
+                      </tr>
+                    </table>
 
-                            <p style="margin: 20px 0 0 0; font-size: 14px; line-height: 1.5; color: #666666;">If you have any questions or feedback, we'd love to hear from you. Reply to this email or contact our support team.</p>
-                          </td>
-                        </tr>
-                      </table>
-                    </td>
-                  </tr>
-                  <!-- Footer -->
-                  <tr>
-                    <td align="center" style="padding: 25px 0 10px 0;">
-                      <p style="margin: 0; font-size: 12px; color: #666666;">TradeX - Your personal AI Trading Assistant & Journal</p>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td align="center" style="padding: 0 0 20px 0;">
-                      <p style="margin: 0; font-size: 11px; color: #999999;">This is an automated message. Please do not reply to this email.</p>
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-          </table>
-        </body>
-        </html>
-      `;
+                    <p style="margin: 24px 0 0 0; font-size: 14px; line-height: 1.6; color: #555555;">If something pushed you away, we&rsquo;d genuinely like to know &mdash; just reply to this email.</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr>
+            <td align="center" style="padding: 28px 0 0 0;">
+              <p style="margin: 0 0 6px 0; font-size: 13px; color: #555555;">TradeX &mdash; your AI trading journal</p>
+              <p style="margin: 0; font-size: 12px; color: #777777;">You&rsquo;re getting this because you cancelled a TradeX subscription.</p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
 
       const resendApiKey = Deno.env.get("RESEND_API_KEY");
 
@@ -277,6 +262,11 @@ Deno.serve(async (req: Request) => {
             body: JSON.stringify({
               from: "TradeX <noreply@tradexnova.com>",
               to: [user.email],
+              // The email asks why they left and invites a reply, so replies
+              // have to reach a person - noreply would make that an empty
+              // gesture, and a cancellation is the one moment the answer is
+              // worth having.
+              reply_to: ["tradenovaai@gmail.com"],
               subject: "Your TradeX Subscription Has Been Cancelled",
               html: emailHtml,
             }),
