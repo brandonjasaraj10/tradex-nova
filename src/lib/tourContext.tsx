@@ -228,11 +228,19 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     setIsActive(false);
     setCurrentStep(0);
 
-    // Unconditional: cleanup finds demo rows by their database flag, so
-    // it still works after a reload wiped whatever this session knew.
-    // The old `if (ref)` guard is exactly why interrupted tours stranded
-    // fake trades in real accounts.
-    cleanupTourDemoData(user.id);
+    /*
+      Unconditional: cleanup finds demo rows by their database flag, so it
+      still works after a reload wiped whatever this session knew. The old
+      `if (ref)` guard is exactly why interrupted tours stranded fake trades
+      in real accounts.
+
+      Awaited, and followed by a refresh. Fired and forgotten, the rows went
+      but nothing told the screens to refetch - so the demo trades stayed
+      visible until the user happened to navigate away and back, which reads
+      as the tour data being real and sticking around.
+    */
+    await cleanupTourDemoData(user.id);
+    forceRefresh();
 
     try {
       await supabase
@@ -242,7 +250,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       console.error('Error marking tour completed:', err);
     }
-  }, [user, setIsFirstTimeUser]);
+  }, [user, setIsFirstTimeUser, forceRefresh]);
 
   const navigateToStep = useCallback(() => {}, []);
 

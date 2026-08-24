@@ -218,6 +218,24 @@ export async function cleanupTourDemoData(userId: string) {
     // has genuine trading history and simply replayed the tour.
     if (removedTrades && removedTrades.length > 0) {
       await supabase.from('trading_reports').delete().eq('user_id', userId);
+
+      /*
+        Tips and insights are derived from the demo trades too, and outlive
+        them: they are generated during the tour, written to their own
+        tables, and sit there for days.
+
+        So the tour ends, the fake trades vanish, and the dashboard keeps
+        announcing "Your 67% win rate across 6 trades shows a consistent
+        edge" to someone who has never placed a trade. Every new user meets
+        that on their first screen - a confident, specific, entirely
+        invented claim about their own trading.
+
+        Same condition as the reports above: only clear when demo trades
+        actually existed, so replaying the tour on a real account does not
+        wipe insights genuinely earned.
+      */
+      await supabase.from('user_tips').delete().eq('user_id', userId);
+      await supabase.from('user_insights').delete().eq('user_id', userId);
     }
   } catch (err) {
     console.error('Error cleaning up tour demo data:', err);
