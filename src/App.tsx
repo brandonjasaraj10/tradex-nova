@@ -63,6 +63,7 @@ function PublicLayout() {
 
 function PrivateLayout() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, profile, loading, showWelcome, needsProfile, needsSubscription, isFirstTimeUser, setShowWelcome, setNeedsProfile, setNeedsSubscription, refreshProfile, refreshSubscription } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -115,7 +116,24 @@ function PrivateLayout() {
     strictly first, and it still waits for the profile so the greeting uses
     the real first name rather than an email prefix.
   */
-  if (showWelcome && user) {
+  /*
+    Stripe sends people back to /dashboard?success=true, and nothing read it.
+
+    setShowWelcome is only ever called from signIn, so the animation played
+    for returning users signing in and never for the one person it was
+    written for - the new user arriving for the first time, which is what its
+    isFirstTime prop is about. Signing up does not call signIn, and neither
+    does coming back from checkout, since that session is already
+    authenticated. So paying dropped you straight onto the dashboard and into
+    the tour with no welcome at all.
+
+    Read during render rather than set from an effect: an effect runs after
+    the first paint, so the dashboard would flash before the animation
+    covered it - the exact problem the profile gate below was added to fix.
+  */
+  const justCompletedCheckout = new URLSearchParams(location.search).get('success') === 'true';
+
+  if ((showWelcome || justCompletedCheckout) && user) {
     if (!profile) {
       return <PageLoader fullScreen />;
     }
@@ -125,6 +143,11 @@ function PrivateLayout() {
         isFirstTime={isFirstTimeUser}
         onComplete={() => {
           setShowWelcome(false);
+          // Drop ?success=true, or refreshing the dashboard would replay the
+          // welcome every time.
+          if (justCompletedCheckout) {
+            navigate(location.pathname, { replace: true });
+          }
         }}
       />
     );
