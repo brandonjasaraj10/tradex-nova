@@ -80,7 +80,7 @@ Deno.serve(async (req: Request) => {
     */
     let tradesQuery = supabaseClient
       .from("trades")
-      .select("pnl, entry_date, exit_date, symbol")
+      .select("pnl, entry_date, exit_date, symbol, direction")
       .eq("user_id", user_id)
       .gte("entry_date", cutoffDateStr)
       .order("entry_date", { ascending: false });
@@ -137,11 +137,17 @@ Deno.serve(async (req: Request) => {
     const journalEntries = journalResult.data || [];
 
     const journalTrades = journalEntries.filter((e: any) => e.manual_pnl !== null && e.manual_pnl !== undefined);
+    // direction is carried through so the per-trade ledger in recent_trades
+    // is complete. Leaving it out stamped every imported trade "unknown",
+    // and Nova - reasonably - stopped trusting the ledger and rebuilt the
+    // list from the aggregates instead, which produced a trade-by-trade
+    // rundown that misreported one trade's P&L and omitted another.
     const importedTrades = (tradesResult.data || []).map((t: any) => ({
       manual_pnl: t.pnl,
       entry_date: t.entry_date,
       exit_date: t.exit_date,
       symbol: t.symbol,
+      direction: t.direction,
     }));
 
     // Newest-first: several analyses below slice off the front of this list
