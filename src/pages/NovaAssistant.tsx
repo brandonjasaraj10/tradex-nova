@@ -36,6 +36,26 @@ const quickActions: QuickAction[] = [
   { text: 'Best Trading Times', query: 'When should I trade?', icon: Clock },
 ];
 
+/*
+  Tips and insights are generated per user, across every account - unlike the
+  score, metrics, activity and Nova's own answers, which all follow the
+  account selector. Rather than scope them (which would need a schema change
+  and would mostly produce near-identical coaching per account), they say
+  which scope they cover.
+
+  Only shown to users who actually have more than one account. For everyone
+  with a single account the distinction does not exist, and the line would be
+  noise about a choice they have never had to make.
+*/
+function AllAccountsNote({ accountCount }: { accountCount: number }) {
+  if (accountCount < 2) return null;
+  return (
+    <p className="text-[10px] text-gray-500 mt-0.5 ml-6 font-normal">
+      Across all accounts
+    </p>
+  );
+}
+
 interface ActivityItem {
   action: string;
   time: string;
@@ -57,7 +77,7 @@ function formatRelativeTime(dateStr: string): string {
 export default function NovaAssistant() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { selectedAccount } = useAccount();
+  const { selectedAccount, accounts } = useAccount();
   const { tourCompleted } = useTour();
   const { messages, isTyping, isLoading, currentSessionId, sendMessage, clearHistory, startVoiceSession, loadSession, createNewSession, deleteSession, submitFeedback } = useNova();
   const [input, setInput] = useState('');
@@ -585,10 +605,13 @@ export default function NovaAssistant() {
                 boxShadow: '0 0 20px rgba(59, 130, 246, 0.15), inset 0 0 40px rgba(59, 130, 246, 0.05)',
               }}
             >
-              <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-blue-400" />
-                Trading Tips from NOVA
-              </h3>
+              <div className="mb-4">
+                <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-blue-400" />
+                  Trading Tips from NOVA
+                </h3>
+                <AllAccountsNote accountCount={accounts.length} />
+              </div>
               <div className="space-y-3">
                 {loadingTips ? (
                   <div className="flex items-center justify-center py-8">
@@ -1100,10 +1123,13 @@ export default function NovaAssistant() {
             boxShadow: '0 0 20px rgba(59, 130, 246, 0.15), inset 0 0 40px rgba(59, 130, 246, 0.05)',
           }}
         >
-          <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
-            <Brain className="w-4 h-4 text-blue-400" />
-            AI Insights
-          </h3>
+          <div className="mb-4">
+            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+              <Brain className="w-4 h-4 text-blue-400" />
+              AI Insights
+            </h3>
+            <AllAccountsNote accountCount={accounts.length} />
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {loadingInsights ? (
               <div className="col-span-full flex items-center justify-center py-8">
