@@ -238,9 +238,18 @@ export default function NovaAssistant() {
         const allTrades = [...tradeItems, ...journalItems];
         setScoreBreakdown(allTrades.length > 0 ? await calculateNOVAScore(allTrades) : null);
 
-        // Scoped to the selected account like the score above it. Without
-        // this, switching accounts left the activity list unchanged, so it
-        // listed entries belonging to an account the user was not looking at.
+        /*
+          Activity means both journal entries and trades, scoped to the
+          selected account.
+
+          Two things were wrong. It filtered on user_id alone, so switching
+          accounts left the list unchanged and it named entries from an
+          account the user was not looking at. And it only ever read
+          journal_entries, so an account holding nothing but imported trades
+          reported "No activity yet - log a trade or journal entry to get
+          started" to a user who had done exactly that. One real account
+          here has 6 trades and no journal entries and said precisely that.
+        */
         let activityQuery = supabase
           .from('journal_entries')
           .select('id, title, entry_type, created_at')
@@ -248,18 +257,48 @@ export default function NovaAssistant() {
           .order('created_at', { ascending: false })
           .limit(3);
 
+        let tradeActivityQuery = supabase
+          .from('trades')
+          .select('id, symbol, direction, pnl, created_at')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(3);
+
         if (selectedAccount) {
           activityQuery = activityQuery.eq('account_id', selectedAccount.id);
+          tradeActivityQuery = tradeActivityQuery.eq('broker_id', selectedAccount.id);
         }
 
-        const { data: recentEntries } = await activityQuery;
+        const [{ data: recentEntries }, { data: recentTradeRows }] = await Promise.all([
+          activityQuery,
+          tradeActivityQuery,
+        ]);
+
+        const journalActivity = (recentEntries || []).map((e: any) => ({
+          action: e.entry_type === 'psychology' ? `Logged psychology entry: ${e.title}` : `Logged trade entry: ${e.title}`,
+          at: e.created_at,
+          time: formatRelativeTime(e.created_at),
+          icon: e.entry_type === 'psychology' ? Brain : LineChart,
+        }));
+
+        const tradeActivity = (recentTradeRows || []).map((t: any) => {
+          const pnl = Number(t.pnl) || 0;
+          const sign = pnl >= 0 ? '+' : '-';
+          const amount = `${sign}$${Math.abs(pnl).toFixed(2)}`;
+          const direction = t.direction ? ` ${String(t.direction).toUpperCase()}` : '';
+          return {
+            action: `Trade: ${t.symbol || 'Unknown'}${direction} ${amount}`,
+            at: t.created_at,
+            time: formatRelativeTime(t.created_at),
+            icon: TrendingUp,
+          };
+        });
 
         setRecentActivity(
-          (recentEntries || []).map((e: any) => ({
-            action: e.entry_type === 'psychology' ? `Logged psychology entry: ${e.title}` : `Logged trade entry: ${e.title}`,
-            time: formatRelativeTime(e.created_at),
-            icon: e.entry_type === 'psychology' ? Brain : LineChart,
-          }))
+          [...journalActivity, ...tradeActivity]
+            .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
+            .slice(0, 3)
+            .map(({ at: _at, ...rest }) => rest)
         );
 
         setUserTradingRules(await getTradingRules(user.id));
