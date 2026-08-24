@@ -667,6 +667,7 @@ export default function Settings() {
                           </label>
                           <input
                             type="text"
+                            autoComplete="off"
                             value={deleteConfirmText}
                             onChange={(e) => setDeleteConfirmText(e.target.value)}
                             className="w-full px-4 py-2.5 rounded-lg bg-black/30 border border-white/10 text-white placeholder-gray-600 focus:border-red-400/50 outline-none transition-all"
@@ -677,8 +678,19 @@ export default function Settings() {
                           <label className="block text-sm font-medium text-gray-300 mb-2">
                             Confirm your password
                           </label>
+                          {/*
+                            current-password, so the browser understands this
+                            is an existing password being re-entered rather
+                            than a new one worth saving. Without the hint,
+                            Chrome and Safari pop their own native "Save
+                            password?" dialog as the page navigates away - a
+                            macOS system prompt appearing in the middle of
+                            deleting an account, which neither we can style
+                            nor the user expects.
+                          */}
                           <input
                             type="password"
+                            autoComplete="current-password"
                             value={deletePassword}
                             onChange={(e) => setDeletePassword(e.target.value)}
                             className="w-full px-4 py-2.5 rounded-lg bg-black/30 border border-white/10 text-white placeholder-gray-600 focus:border-red-400/50 outline-none transition-all"
