@@ -668,6 +668,17 @@ export default function NovaAssistant() {
                 <Activity className="w-4 h-4 text-blue-400" />
                 Performance Metrics
               </h3>
+              {/*
+                All-time, because this page has no date picker to follow.
+
+                The Dashboard and Analytics copies of this same score follow
+                their own pickers, and each page defaults to a different range
+                - this week and the last 30 days. So one account can read 35
+                here, 27 on Analytics and "--" on the Dashboard. One
+                calculation, three windows; without each naming its window it
+                reads as three broken scores instead of three answers.
+              */}
+              <p className="text-[10px] text-gray-500 -mt-3 mb-3 ml-6">All-time</p>
               <div className="grid grid-cols-2 gap-3">
                 {[
                   { label: 'NOVA Score', value: scoreBreakdown ? String(scoreBreakdown.overall_score) : '--', icon: Sparkles },
@@ -1011,10 +1022,14 @@ export default function NovaAssistant() {
             }}
           >
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-blue-400" />
-                NOVA Score Analysis
-              </h3>
+              <div>
+                <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-blue-400" />
+                  NOVA Score Analysis
+                </h3>
+                {/* All-time, same as the metrics above - no date picker here. */}
+                <p className="text-[10px] text-gray-500 mt-0.5 ml-6">All-time</p>
+              </div>
               <span className="text-3xl font-bold text-white">{scoreBreakdown ? scoreBreakdown.overall_score : '--'}</span>
             </div>
 

@@ -15,7 +15,7 @@ import { useAuth } from '../lib/auth';
 import { generateInsights, getActiveInsights, dismissInsight, type Insight } from '../services/insights';
 import { supabase } from '../lib/supabase';
 import { toLocalDateStr } from '../utils/dateHelpers';
-import { formatProfitFactor } from '../utils/formatMetrics';
+import { formatPeriodLabel, formatProfitFactor } from '../utils/formatMetrics';
 
 import {
   Chart as ChartJS,
@@ -455,6 +455,7 @@ export default function Analytics() {
                   breakdown={novaScore}
                   size="md"
                   showBreakdown={false}
+                  periodLabel={formatPeriodLabel(dateRange.startDate, dateRange.endDate)}
                 />
               </div>
             </div>

@@ -315,6 +315,19 @@ export default function NOVAScore({
               ? `Based on ${breakdown.total_trades} ${breakdown.total_trades === 1 ? 'trade' : 'trades'}`
               : getScoreLabel(breakdown.overall_score)}
           </p>
+          {/*
+            Shown on the compact score too, not just the expanded breakdown.
+
+            The same account reads 35 on the Nova page, 27 on Analytics and
+            "--" on the Dashboard, because each page covers a different window
+            - this week, the last 30 days, and everything. One calculation,
+            three windows, and until every one of them names its window that
+            looks like three broken scores rather than three answers to three
+            different questions.
+          */}
+          {periodLabel && (
+            <p className="text-[10px] text-gray-500">{periodLabel}</p>
+          )}
         </motion.div>
       </div>
 

@@ -772,7 +772,12 @@ export default function Dashboard() {
           {/* NOVAScore Card */}
           <Card variant="gradient" className="bg-gradient-to-br from-gold-400/10 to-gold-400/5 p-3 sm:p-4 border border-gold-400/20">
             <div className="flex flex-col items-center justify-center h-full">
-              <NOVAScore breakdown={novaScore} size="sm" showBreakdown={false} />
+              <NOVAScore
+                breakdown={novaScore}
+                size="sm"
+                showBreakdown={false}
+                periodLabel={formatPeriodLabel(dateRange.startDate, dateRange.endDate)}
+              />
             </div>
           </Card>
 
