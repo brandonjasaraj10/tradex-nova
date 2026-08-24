@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import ConfirmModal from '../components/shared/ConfirmModal';
+import SupportReportForm from '../components/settings/SupportReportForm';
 import {
   LogOut,
   User,
@@ -972,6 +973,14 @@ export default function Settings() {
                   </div>
 
                   <div className="space-y-4">
+                    {/*
+                      The form comes first, and email second. Reporting from
+                      inside the app carries the page and browser with it;
+                      email is the fallback for anything that does not fit a
+                      bug report, or for someone who cannot sign in.
+                    */}
+                    <SupportReportForm />
+
                     <div className="bg-gradient-to-br from-blue-500/10 to-transparent border border-blue-500/20 rounded-xl p-6">
                       <div className="flex items-start gap-4">
                         <div className="flex-shrink-0 w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
@@ -1006,7 +1015,7 @@ export default function Settings() {
                         </li>
                         <li className="flex items-start gap-2">
                           <Check size={16} className="text-blue-400 flex-shrink-0 mt-0.5" />
-                          <span>Broker connection assistance</span>
+                          <span>Importing trades and CSV statements</span>
                         </li>
                         <li className="flex items-start gap-2">
                           <Check size={16} className="text-blue-400 flex-shrink-0 mt-0.5" />

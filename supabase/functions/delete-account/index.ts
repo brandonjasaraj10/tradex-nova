@@ -17,9 +17,11 @@ import Stripe from "npm:stripe@17.7.0";
      here, so it happens before anything is destroyed and a failure aborts
      the whole thing.
 
-  2. Delete storage objects. Files do not cascade, so skipping this leaves
-     the user's trading screenshots sitting in the bucket after their
-     account is gone - exactly the data erasure was supposed to remove.
+  2. Delete storage objects from every bucket. Files do not cascade, so
+     skipping one leaves the user's trading screenshots sitting in it after
+     their account is gone - exactly the data erasure was supposed to
+     remove. Currently journal-screenshots and support-attachments; a new
+     bucket has to be added to that list.
 
   3. Delete the four tables whose foreign keys are NO ACTION rather than
      CASCADE: trades, balance_adjustments, trading_plan_settings and
@@ -121,16 +123,26 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // 2. Storage - files never cascade.
-    try {
-      const { data: files } = await admin.storage.from("journal-screenshots").list(user.id);
-      if (files?.length) {
-        await admin.storage
-          .from("journal-screenshots")
-          .remove(files.map((f: { name: string }) => `${user.id}/${f.name}`));
+    /*
+      2. Storage - files never cascade.
+
+      Every bucket holding user files has to be listed here. Anything missing
+      survives the account it belonged to, which is precisely the data
+      erasure was meant to remove - support attachments are screenshots of
+      the same trading screens as the journal ones. Adding a bucket to this
+      app means adding it to this list.
+    */
+    for (const bucket of ["journal-screenshots", "support-attachments"]) {
+      try {
+        const { data: files } = await admin.storage.from(bucket).list(user.id);
+        if (files?.length) {
+          await admin.storage
+            .from(bucket)
+            .remove(files.map((f: { name: string }) => `${user.id}/${f.name}`));
+        }
+      } catch (e) {
+        console.error(`Storage cleanup failed for ${bucket} (continuing):`, e);
       }
-    } catch (e) {
-      console.error("Storage cleanup failed (continuing):", e);
     }
 
     // 3. Non-cascading tables, children before parents.
