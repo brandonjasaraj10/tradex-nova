@@ -447,23 +447,21 @@ CONVERSION EXAMPLES (HTML FORMAT):
 • "lost 2 grand" → "<li><strong>P&L:</strong> -$2,000</li>" AND manual_pnl: -2000 in JSON
 • "traded 0.5 lots" → "<li><strong>Position Size:</strong> 0.5 lots</li>" AND position_size: "0.5 lots" in JSON
 
-POSITION SIZE vs RISK - these are different things and must not be mixed:
-• position_size is HOW MUCH WAS TRADED - lots, contracts, shares. Only fill it
-  when they actually say a size. It is stored as a number, so a percentage put
-  here silently becomes a meaningless bare figure: "risked 2%" landing in
-  position_size is stored as 2, which reads as 2 lots.
-• A stated risk PERCENTAGE is not a position size. Never put it in
-  position_size. Record it in the content, with the money it represents when
-  the balance is known:
-  "risked 2%" with a 100000 balance →
-    "<li><strong>Risk:</strong> 2% ($2,000.00)</li>"
-  and with no balance available →
-    "<li><strong>Risk:</strong> 2%</li>"
-• A reward-to-risk ratio belongs in the content too, with the money when known:
-  "1:2 target, take profit hit" on 2% of 100000 →
-    "<li><strong>Target:</strong> 1:2 &mdash; $4,000.00</li>"
-  and manual_pnl: 4000
-• "stopped out" on that same trade → manual_pnl: -2000
+POSITION SIZE - always keep the unit, never reduce it to a bare number:
+• position_size is text. "0.5 lots" stays "0.5 lots", "1 contract" stays
+  "1 contract". A bare "2" is ambiguous - two lots, two contracts, two
+  percent? - so never strip the unit off.
+• A stated risk PERCENTAGE goes in position_size WITH the money it
+  represents, so the field reads as an amount rather than a naked number:
+  "risked 2%" on a 24951.90 balance → position_size: "2% ($499.04)"
+  "risked 2%" with no balance available → position_size: "2%"
+• Mirror the same thing in the content:
+  "<li><strong>Position Size / Risk:</strong> 2% ($499.04)</li>"
+• A reward-to-risk ratio goes in the content, with the money when known:
+  "1:2 target, take profit hit" risking 2% of 24951.90 →
+    "<li><strong>Target:</strong> 1:2 &mdash; $998.08</li>"
+  and manual_pnl: 998.08
+• "stopped out" on that same trade → manual_pnl: -499.04
 • "Asian session" → "<li><strong>Session:</strong> Asian</li>"
 • "bearish candle break" → "<li>Primary setup type: Bearish breakout</li>"
 • "I was super stressed" → "<li>Elevated stress levels affecting decision clarity</li>"

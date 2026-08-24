@@ -432,8 +432,17 @@ export default function Journal() {
       const parsedManualPnl = form.manual_pnl && form.manual_pnl.trim() !== ''
         ? parseFloat(form.manual_pnl)
         : null;
+      /*
+        Kept as text, units and all.
+
+        parseFloat here is what silently destroyed the unit: "0.5 lots" was
+        stored as 0.5 and "2%" as 2, so a risk percentage and a lot size
+        became the same number. The column is text now, so what the trader
+        actually said survives - and nothing computes with this field, it is
+        only ever displayed.
+      */
       const parsedPositionSize = form.position_size && form.position_size.trim() !== ''
-        ? parseFloat(form.position_size)
+        ? form.position_size.trim()
         : null;
 
       const dataToSave = {

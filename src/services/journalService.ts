@@ -29,7 +29,9 @@ export interface JournalEntry {
   symbol?: string;
   direction?: string;
   trade_duration?: string;
-  position_size?: string;
+  // Text, with the unit intact - "0.5 lots", "1 contract", "2%".
+  // Nullable because clearing the field writes null rather than dropping it.
+  position_size?: string | null;
   manual_pnl?: number;
   tags: string[];
   attachments: any[];
