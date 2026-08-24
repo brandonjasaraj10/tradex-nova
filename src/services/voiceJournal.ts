@@ -617,12 +617,31 @@ CRITICAL RULES:
     - Don't repeat information already in the entry unless updating/correcting it
     - Smart context: "and then I closed at..." means add closing details, not create new trade`;
 
+    /*
+      The caller's own access token, not the anon key.
+
+      This sent the anon key as the bearer token. process-voice-journal
+      derives the user from that header via auth.getUser() - a change made
+      when identity stopped being trusted from the request body - and the anon
+      key is not a user token, so every call came back 401 and "Organize with
+      Nova" did nothing at all. The button span "Organizing..." and then
+      silently gave up.
+
+      The same token also carries the per-user rate limit and quota, which
+      cannot work without knowing who is calling.
+    */
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      throw new Error('You need to be signed in for Nova to organize an entry.');
+    }
+
     const response = await fetch(
       `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-voice-journal`,
       {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Authorization': `Bearer ${session.access_token}`,
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
