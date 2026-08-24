@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { TrendingUp, DollarSign, Target, Activity, Zap, Brain, AlertTriangle, CheckCircle2, Award, TrendingDown, Package, HelpCircle, X, Sparkles } from 'lucide-react';
+import { TrendingUp, DollarSign, Target, Activity, Zap, Brain, AlertTriangle, CheckCircle2, Award, TrendingDown, Package, X, Sparkles } from 'lucide-react';
 import Card from '../components/shared/Card';
 import Button from '../components/shared/Button';
 import NOVAScore from '../components/shared/NOVAScore';
@@ -541,16 +541,11 @@ export default function Analytics() {
         <motion.div variants={fadeInUp} className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <motion.div whileHover={{ scale: 1.02, y: -4 }} transition={{ duration: 0.2 }}>
             <Card variant="default" className="p-5 relative overflow-hidden group cursor-pointer">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 via-blue-500/5 to-blue-500/0 opacity-0 group-hover:opacity-100 transition-all duration-300" />
               <div className="relative">
                 <div className="flex items-center justify-between mb-3">
                   <div className="p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
                     <DollarSign className="w-4 h-4 text-blue-400" />
-                  </div>
-                  <div className="group relative">
-                    <HelpCircle className="w-4 h-4 text-gray-500 hover:text-gray-300 transition-colors cursor-help" />
-                    <div className="absolute right-0 top-6 w-48 p-2 bg-gray-900 border border-gray-700 rounded-lg text-xs text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                      Average profit per winning trade
-                    </div>
                   </div>
                 </div>
                 <h3 className="text-xs font-medium text-gray-400 mb-1">Average Profit</h3>
@@ -564,16 +559,11 @@ export default function Analytics() {
 
           <motion.div whileHover={{ scale: 1.02, y: -4 }} transition={{ duration: 0.2 }}>
             <Card variant="default" className="p-5 relative overflow-hidden group cursor-pointer">
+              <div className="absolute inset-0 bg-gradient-to-br from-gray-500/0 via-gray-500/5 to-gray-500/0 opacity-0 group-hover:opacity-100 transition-all duration-300" />
               <div className="relative">
                 <div className="flex items-center justify-between mb-3">
                   <div className="p-2 rounded-lg bg-gray-500/10 border border-gray-500/20">
                     <TrendingDown className="w-4 h-4 text-gray-400" />
-                  </div>
-                  <div className="group relative">
-                    <HelpCircle className="w-4 h-4 text-gray-500 hover:text-gray-300 transition-colors cursor-help" />
-                    <div className="absolute right-0 top-6 w-48 p-2 bg-gray-900 border border-gray-700 rounded-lg text-xs text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                      Average loss per losing trade
-                    </div>
                   </div>
                 </div>
                 <h3 className="text-xs font-medium text-gray-400 mb-1">Average Loss</h3>
@@ -587,16 +577,11 @@ export default function Analytics() {
 
           <motion.div whileHover={{ scale: 1.02, y: -4 }} transition={{ duration: 0.2 }}>
             <Card variant="default" className="p-5 relative overflow-hidden group cursor-pointer">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 via-blue-500/5 to-blue-500/0 opacity-0 group-hover:opacity-100 transition-all duration-300" />
               <div className="relative">
                 <div className="flex items-center justify-between mb-3">
                   <div className="p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
                     <Activity className="w-4 h-4 text-blue-400" />
-                  </div>
-                  <div className="group relative">
-                    <HelpCircle className="w-4 h-4 text-gray-500 hover:text-gray-300 transition-colors cursor-help" />
-                    <div className="absolute right-0 top-6 w-48 p-2 bg-gray-900 border border-gray-700 rounded-lg text-xs text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                      Total number of trades executed in the period
-                    </div>
                   </div>
                 </div>
                 <h3 className="text-xs font-medium text-gray-400 mb-1">Number of Trades</h3>
@@ -610,16 +595,11 @@ export default function Analytics() {
 
           <motion.div whileHover={{ scale: 1.02, y: -4 }} transition={{ duration: 0.2 }}>
             <Card variant="default" className="p-5 relative overflow-hidden group cursor-pointer">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 via-blue-500/5 to-blue-500/0 opacity-0 group-hover:opacity-100 transition-all duration-300" />
               <div className="relative">
                 <div className="flex items-center justify-between mb-3">
                   <div className="p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
                     <Package className="w-4 h-4 text-blue-400" />
-                  </div>
-                  <div className="group relative">
-                    <HelpCircle className="w-4 h-4 text-gray-500 hover:text-gray-300 transition-colors cursor-help" />
-                    <div className="absolute right-0 top-6 w-48 p-2 bg-gray-900 border border-gray-700 rounded-lg text-xs text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                      Largest single winning trade in the period
-                    </div>
                   </div>
                 </div>
                 <h3 className="text-xs font-medium text-gray-400 mb-1">Best Trade</h3>
