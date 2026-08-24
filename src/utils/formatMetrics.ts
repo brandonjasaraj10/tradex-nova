@@ -49,3 +49,15 @@ export function formatPeriodLabel(start: Date, end: Date): string {
   const sameDay = start.toDateString() === end.toDateString();
   return sameDay ? fmt(start) : `${fmt(start)} – ${fmt(end)}`;
 }
+
+/*
+  The "x:1" form of a win/loss ratio.
+
+  Separate from formatRatio because the no-loss case has to drop the suffix
+  as well as the number - "No losses yet:1" is not a thing anyone should
+  read. Same reason the callers cannot just append ":1" themselves.
+*/
+export function formatWinLossRatio(value: number | null | undefined, totalTrades = 1): string {
+  const formatted = formatRatio(value, totalTrades);
+  return /^[\d.]+$/.test(formatted) ? `${formatted}:1` : formatted;
+}

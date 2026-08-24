@@ -17,6 +17,7 @@ import { generateInsights, getActiveInsights, dismissInsight, type Insight } fro
 import { generateTips, getActiveTips, dismissTip, type Tip } from '../services/tips';
 import { correctTradingTerms } from '../utils/tradingVocabulary';
 import { calculateNOVAScore, type NOVAScoreBreakdown } from '../services/novaScore';
+import { formatProfitFactor, formatWinLossRatio } from '../utils/formatMetrics';
 import { getTradingRules, type TradingRule } from '../services/tradingRules';
 import { supabase } from '../lib/supabase';
 
@@ -600,8 +601,8 @@ export default function NovaAssistant() {
                 {[
                   { label: 'NOVA Score', value: scoreBreakdown ? String(scoreBreakdown.overall_score) : '--', icon: Sparkles },
                   { label: 'Win Rate', value: scoreBreakdown ? `${scoreBreakdown.win_rate.toFixed(0)}%` : '--', icon: TrendingUp },
-                  { label: 'Profit Factor', value: scoreBreakdown ? scoreBreakdown.profit_factor.toFixed(1) : '--', icon: DollarSign },
-                  { label: 'Avg Win/Loss', value: scoreBreakdown ? `${scoreBreakdown.avg_win_loss_ratio.toFixed(1)}:1` : '--', icon: BarChart2 },
+                  { label: 'Profit Factor', value: formatProfitFactor(scoreBreakdown?.profit_factor, scoreBreakdown?.total_trades ?? 0), icon: DollarSign },
+                  { label: 'Avg Win/Loss', value: formatWinLossRatio(scoreBreakdown?.avg_win_loss_ratio, scoreBreakdown?.total_trades ?? 0), icon: BarChart2 },
                 ].map((stat, i) => (
                   <motion.div
                     key={i}
@@ -969,8 +970,8 @@ export default function NovaAssistant() {
                   <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Score Breakdown</h4>
 
                   {[
-                    { label: 'Profitability', icon: TrendingUp, value: scoreBreakdown.profitability_score, note: `${scoreBreakdown.win_rate.toFixed(0)}% win rate, ${scoreBreakdown.profit_factor.toFixed(2)} profit factor` },
-                    { label: 'Risk Management', icon: Target, value: scoreBreakdown.risk_management_score, note: `Avg win/loss ratio ${scoreBreakdown.avg_win_loss_ratio.toFixed(2)}:1` },
+                    { label: 'Profitability', icon: TrendingUp, value: scoreBreakdown.profitability_score, note: `${scoreBreakdown.win_rate.toFixed(0)}% win rate, ${formatProfitFactor(scoreBreakdown.profit_factor, scoreBreakdown.total_trades)} profit factor` },
+                    { label: 'Risk Management', icon: Target, value: scoreBreakdown.risk_management_score, note: `Avg win/loss ratio ${formatWinLossRatio(scoreBreakdown.avg_win_loss_ratio, scoreBreakdown.total_trades)}` },
                     { label: 'Consistency', icon: Activity, value: scoreBreakdown.consistency_score, note: `Based on ${scoreBreakdown.total_trades} trades` },
                     { label: 'Discipline', icon: Award, value: scoreBreakdown.discipline_score, note: 'Confluence use and overtrading check' },
                   ].map((row, i) => (
