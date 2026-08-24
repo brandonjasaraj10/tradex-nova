@@ -313,7 +313,17 @@ Deno.serve(async (req: Request) => {
       }
 
       if (userProfile) {
-        if (userProfile.trading_style === "scalper" || userProfile.trading_style === "day_trader") {
+        /*
+          Read trading_approach with the values the wizard actually writes.
+
+          This checked trading_style against "scalper"/"day_trader"/
+          "swing_trader". The column is an unused Bolt-era leftover that
+          nothing writes, and those three values are not what the wizard
+          produces either - it writes scalping / day_trading / swing_trading
+          / position_trading to trading_approach. So these tips could not
+          have fired even once a profile existed.
+        */
+        if (userProfile.trading_approach === "scalping" || userProfile.trading_approach === "day_trading") {
           tips.push({
             user_id,
             tip_category: "timing",
@@ -321,11 +331,11 @@ Deno.serve(async (req: Request) => {
             content: "As a short-term trader, focus on major market overlaps when liquidity and volatility are highest.",
             icon_name: "Clock",
             priority: 7,
-            context_data: { trading_style: userProfile.trading_style },
+            context_data: { trading_approach: userProfile.trading_approach },
             generated_at: now.toISOString(),
             expires_at: expiresAt.toISOString(),
           });
-        } else if (userProfile.trading_style === "swing_trader") {
+        } else if (userProfile.trading_approach === "swing_trading") {
           tips.push({
             user_id,
             tip_category: "strategy",
@@ -333,7 +343,7 @@ Deno.serve(async (req: Request) => {
             content: "Swing traders benefit from 4H and daily charts. Don't let lower timeframe noise distract you.",
             icon_name: "TrendingUp",
             priority: 7,
-            context_data: { trading_style: userProfile.trading_style },
+            context_data: { trading_approach: userProfile.trading_approach },
             generated_at: now.toISOString(),
             expires_at: expiresAt.toISOString(),
           });
