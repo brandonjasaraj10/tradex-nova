@@ -264,7 +264,9 @@ function calculateExecutionScore(trades: TradeData[], winRate: number): number {
   else score += 10;
 
   const recentTrades = trades.slice(-20);
-  const recentWinRate = (recentTrades.filter(t => t.profit_loss > 0).length / recentTrades.length) * 100;
+  const recentWinRate = recentTrades.length > 0
+    ? (recentTrades.filter(t => t.profit_loss > 0).length / recentTrades.length) * 100
+    : 0;
 
   if (recentWinRate > winRate) {
     score += 30;
@@ -274,12 +276,27 @@ function calculateExecutionScore(trades: TradeData[], winRate: number): number {
     score += 10;
   }
 
-  const profitableTrades = trades.filter(t => t.profit_loss > 0);
-  const avgProfit = profitableTrades.reduce((sum, t) => sum + t.profit_loss, 0) / profitableTrades.length;
-  const largeWins = profitableTrades.filter(t => t.profit_loss > avgProfit * 2).length;
-  const largeWinRatio = largeWins / profitableTrades.length;
+  /*
+    With no winning trades there is nothing to say about how big the wins
+    were, so this component contributes nothing.
 
-  score += Math.min(largeWinRatio * 30, 30);
+    It used to divide by profitableTrades.length unguarded. With no winners
+    that is 0/0, and the NaN propagated through the weighted sum until
+    overall_score was itself NaN - which reached the screen as a literal
+    "NaN" where the score should be. It stayed hidden while the score always
+    covered all time, because some winning trade nearly always existed
+    somewhere in a user's history. A date-ranged score reaches it the first
+    time somebody selects a week they only lost in.
+  */
+  const profitableTrades = trades.filter(t => t.profit_loss > 0);
+
+  if (profitableTrades.length > 0) {
+    const avgProfit = profitableTrades.reduce((sum, t) => sum + t.profit_loss, 0) / profitableTrades.length;
+    const largeWins = profitableTrades.filter(t => t.profit_loss > avgProfit * 2).length;
+    const largeWinRatio = largeWins / profitableTrades.length;
+
+    score += Math.min(largeWinRatio * 30, 30);
+  }
 
   return score;
 }

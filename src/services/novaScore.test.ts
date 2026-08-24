@@ -100,3 +100,41 @@ describe('NOVA score real performance metrics', () => {
     expect(r.worst_trade).toBe(1000);
   });
 });
+
+/*
+  Windows containing no winning trade at all.
+
+  Only reachable since the score started following the date picker: over all
+  time nearly every account has some winner, but a single losing week is
+  ordinary. calculateExecutionScore divided by the number of profitable
+  trades without guarding zero, so these windows produced NaN for the
+  execution component and, through the weighted sum, for the overall score -
+  which reached the screen as a literal "NaN" in place of the number.
+*/
+describe('windows with no winning trades', () => {
+  it('scores a single losing trade without NaN', async () => {
+    const r = await calculateNOVAScore([t(-23.03, '2026-08-05T10:00:00Z', '2026-08-05T11:00:00Z')]);
+    expect(Number.isFinite(r.overall_score)).toBe(true);
+    expect(Number.isFinite(r.execution_score)).toBe(true);
+    expect(r.win_rate).toBe(0);
+    expect(r.total_trades).toBe(1);
+  });
+
+  it('scores an all-losing window without NaN', async () => {
+    const r = await calculateNOVAScore([
+      t(-5, '2026-08-01T10:00:00Z', '2026-08-01T11:00:00Z'),
+      t(-6, '2026-08-02T10:00:00Z', '2026-08-02T11:00:00Z'),
+      t(-7, '2026-08-03T10:00:00Z', '2026-08-03T11:00:00Z'),
+    ]);
+    expect(Number.isFinite(r.overall_score)).toBe(true);
+    expect(Number.isFinite(r.execution_score)).toBe(true);
+    expect(r.longest_win_streak).toBe(0);
+  });
+
+  it('every sub-score stays a real number, not just the overall', async () => {
+    const r = await calculateNOVAScore([t(-1, '2026-08-05T10:00:00Z', '2026-08-05T11:00:00Z')]);
+    for (const [k, v] of Object.entries(r)) {
+      if (typeof v === 'number') expect(Number.isFinite(v), `${k} was ${v}`).toBe(true);
+    }
+  });
+});

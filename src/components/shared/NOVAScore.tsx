@@ -105,11 +105,20 @@ export default function NOVAScore({
     );
   }
 
-  const getColor = (value: number) => {
-    if (value < 40) return '#60A5FA';
-    if (value < 70) return '#3B82F6';
-    return '#2563EB';
-  };
+  /*
+    The ring is always brand-blue - BRAND_GUIDE.md's colour for glows and
+    gradients - rather than shading by score.
+
+    It used to step through three blues by value (#60A5FA under 40, #3B82F6
+    under 70, #2563EB above). As a signal that was close to worthless: three
+    shades of the same hue, unlabelled, that nobody can decode into a
+    performance tier - and the number sits in the middle of the ring saying
+    it outright anyway. What it did do reliably was make a lower score look
+    washed out rather than lower, which reads as a rendering fault, not as
+    feedback. That became obvious once the score started following the date
+    picker and a narrower window dropped it into the palest band.
+  */
+  const SCORE_RING_COLOR = '#3B82F6';
 
   /*
     Below this, the score describes a handful of trades rather than a trader.
@@ -131,7 +140,7 @@ export default function NOVAScore({
   };
 
   const sizeClass = getSizeClass(size);
-  const scoreColor = getColor(breakdown.overall_score);
+  const scoreColor = SCORE_RING_COLOR;
   const radius = size === 'sm' ? 32 : size === 'lg' ? 60 : 45;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (breakdown.overall_score / 100) * circumference;
@@ -350,7 +359,7 @@ export default function NOVAScore({
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-3">
                   <div className="space-y-3">
                   {scoreMetrics.map((metric, index) => {
-                    const metricColor = getColor(metric.score);
+                    const metricColor = SCORE_RING_COLOR;
                     return (
                       <motion.div
                         key={metric.label}

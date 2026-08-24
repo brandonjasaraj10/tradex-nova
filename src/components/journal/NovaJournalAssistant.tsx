@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { NOVA_VOICE_OUTPUT_ENABLED } from '../../lib/featureFlags';
 import { motion } from 'framer-motion';
 import { Send, Sparkles, Mic, MicOff, Wand2, Image, FileText, Brain, Check, X, Volume2, VolumeX } from 'lucide-react';
 import { useNovaEntrySession } from '../../hooks/useNovaEntrySession';

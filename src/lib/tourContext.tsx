@@ -152,7 +152,13 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     if (!hasSeededDemoDataRef.current) {
       hasSeededDemoDataRef.current = true;
       try {
-        demoDataIdsRef.current = await seedTourDemoData(user.id);
+        // The seeded row ids used to be kept for cleanup; cleanup now finds
+        // them by their is_tour_demo flag instead, so nothing needs holding
+        // onto here. The ref this once assigned to no longer exists, and
+        // referencing it threw a ReferenceError that this catch swallowed as
+        // "seeding failed" on every single tour start - while the seeding
+        // above had in fact already succeeded.
+        await seedTourDemoData(user.id);
       } catch (err) {
         // A failed seed should not block the tour - it just means emptier
         // screens, which is better than no tour at all.
