@@ -7,8 +7,20 @@ import { initAnalytics } from './lib/analytics';
 import { initProductAnalytics } from './lib/productAnalytics';
 import './index.css';
 
+/*
+  Production only.
+
+  This initialised whenever the DSN was set, which includes every dev server
+  run - so errors from local development were filed against
+  tradex-nova-frontend and emailed out as high-priority alerts. A transient
+  mistake mid-edit produced two "ReferenceError in Dashboard" alerts that
+  looked exactly like a live outage and were never on the live site at all.
+
+  Alerting whose alerts are usually false is worse than none, because the
+  real one arrives looking like the others.
+*/
 const sentryDsn = import.meta.env.VITE_SENTRY_DSN;
-if (sentryDsn) {
+if (sentryDsn && import.meta.env.PROD) {
   Sentry.init({
     dsn: sentryDsn,
     environment: import.meta.env.MODE,
