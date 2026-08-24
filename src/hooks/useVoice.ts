@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { useToast } from '../lib/toastContext';
 
 interface UseVoiceOptions {
   onTranscript?: (text: string) => void;
@@ -7,6 +8,7 @@ interface UseVoiceOptions {
 }
 
 export function useVoice({ onTranscript, autoSpeak = false }: UseVoiceOptions = {}) {
+  const { showToast } = useToast();
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isSupported, setIsSupported] = useState(false);
@@ -113,7 +115,7 @@ export function useVoice({ onTranscript, autoSpeak = false }: UseVoiceOptions = 
       recognition.onerror = (event: any) => {
         console.error('Speech recognition error:', event.error);
         if (event.error === 'not-allowed') {
-          alert('Microphone access denied. Please allow microphone permissions in your browser.');
+          showToast('Microphone access was blocked. Allow it in your browser settings to use voice input.', 'error');
         } else if (event.error === 'no-speech') {
           console.log('No speech detected');
         }

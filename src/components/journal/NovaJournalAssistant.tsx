@@ -6,6 +6,7 @@ import { useNovaEntrySession } from '../../hooks/useNovaEntrySession';
 import { useVoice } from '../../hooks/useVoice';
 import { correctTradingTerms } from '../../utils/tradingVocabulary';
 import { formatNovaMessage } from '../../utils/formatNovaMessage';
+import { useToast } from '../../lib/toastContext';
 
 interface Screenshot {
   url: string;
@@ -85,6 +86,7 @@ export default function NovaJournalAssistant({
   sessionId,
   onSessionCreated
 }: NovaJournalAssistantProps) {
+  const { showToast } = useToast();
   const { messages, isTyping, isLoading, sendMessage } = useNovaEntrySession(sessionId, onSessionCreated);
   const [input, setInput] = useState('');
   const [autoSpeak, setAutoSpeak] = useState(false);
@@ -117,7 +119,7 @@ export default function NovaJournalAssistant({
 
   const toggleListening = () => {
     if (!isSupported) {
-      alert('Speech recognition is not supported in your browser.');
+      showToast('Voice input needs a browser that supports speech recognition - try Chrome or Safari.', 'error');
       return;
     }
 

@@ -5,11 +5,13 @@ import Button from '../shared/Button';
 import ConfirmModal from '../shared/ConfirmModal';
 import { brokerService, type BrokerConnection, type BrokerFromAPI } from '../../services/brokerService';
 import { supabase } from '../../lib/supabase';
+import { useToast } from '../../lib/toastContext';
 import CSVUpload from './CSVUpload';
 import EditBalanceModal from './EditBalanceModal';
 import { useAccount } from '../../lib/accountContext';
 
 export default function BrokerConnectionsList() {
+  const { showToast } = useToast();
   const { refreshAccounts, selectedAccount, setSelectedAccount } = useAccount();
   const [connections, setConnections] = useState<BrokerConnection[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -54,14 +56,14 @@ export default function BrokerConnectionsList() {
       const result = await response.json();
 
       if (result.success) {
-        alert(`Successfully imported ${result.imported} trades!`);
+        showToast(`Imported ${result.imported} ${result.imported === 1 ? 'trade' : 'trades'}.`, 'success');
         await loadConnections();
       } else {
-        alert(`Import failed: ${result.error || 'Unknown error'}`);
+        showToast(`Import failed: ${result.error || 'Unknown error'}`, 'error');
       }
     } catch (error) {
       console.error('Upload error:', error);
-      alert(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      showToast(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
     } finally {
       setUploadingIds(prev => {
         const newSet = new Set(prev);
@@ -90,16 +92,16 @@ export default function BrokerConnectionsList() {
 
   const handleCreateAccount = async () => {
     if (!newAccountName.trim()) {
-      alert('Please enter an account name');
+      showToast('Give the account a name first.', 'error');
       return;
     }
     if (!startingBalance || parseFloat(startingBalance) <= 0) {
-      alert('Please enter a valid starting balance');
+      showToast('Enter a starting balance for the account.', 'error');
       return;
     }
 
     if (selectedBrokerId === '__other__' && !otherBrokerName.trim()) {
-      alert('Please enter the name of your broker or prop firm');
+      showToast('Enter the name of your broker or prop firm.', 'error');
       return;
     }
 
@@ -147,7 +149,7 @@ export default function BrokerConnectionsList() {
       await refreshAccounts();
     } catch (error) {
       console.error('Create account error:', error);
-      alert('Failed to create account');
+      showToast('Could not create that account. Please try again.', 'error');
     } finally {
       setIsCreating(false);
     }

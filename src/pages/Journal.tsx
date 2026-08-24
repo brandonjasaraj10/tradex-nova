@@ -44,6 +44,7 @@ import { useVoice } from '../hooks/useVoice';
 import { processVoiceJournalEntry, type VoiceJournalData } from '../services/voiceJournal';
 import { correctTradingTerms } from '../utils/tradingVocabulary';
 import PageLoader from '../components/shared/PageLoader';
+import { useToast } from '../lib/toastContext';
 
 const DEFAULT_FOLDERS = [
   { name: 'Daily Journal', description: 'Daily trading reflections and general entries', icon: 'Calendar', color: '#3B82F6', template_type: 'default' },
@@ -72,6 +73,7 @@ const formatLocalDate = (date: Date) => {
 };
 
 export default function Journal() {
+  const { showToast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const { refreshTrigger, forceRefresh } = useDataSync();
   const { accounts, selectedAccount, setSelectedAccount, refreshAccounts } = useAccount();
@@ -1145,7 +1147,7 @@ export default function Journal() {
 
   const handleFileUpload = async (type: 'before' | 'after', file: File) => {
     if (!file.type.startsWith('image/')) {
-      alert('Please upload an image file');
+      showToast('That file is not an image. Attach a PNG, JPG or WEBP.', 'error');
       return;
     }
 
@@ -1185,7 +1187,7 @@ export default function Journal() {
       }
     } catch (error) {
       console.error('Error uploading file:', error);
-      alert('Failed to upload image. Please try again.');
+      showToast('Could not upload that image. Please try again.', 'error');
     } finally {
       setUploadingScreenshot(null);
     }

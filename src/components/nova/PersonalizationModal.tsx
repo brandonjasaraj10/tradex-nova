@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronRight, ChevronLeft, Check, TrendingUp, Target, Brain, Zap, Clock, Globe } from 'lucide-react';
 import { userProfileService, ProfileCreationData } from '../../services/userProfileService';
+import { useToast } from '../../lib/toastContext';
 
 interface PersonalizationModalProps {
   isOpen: boolean;
@@ -29,6 +30,7 @@ const steps = [
 ];
 
 export default function PersonalizationModal({ isOpen, onClose, onComplete, userId }: PersonalizationModalProps) {
+  const { showToast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<FormData>({
@@ -86,7 +88,7 @@ export default function PersonalizationModal({ isOpen, onClose, onComplete, user
       onClose();
     } catch (error) {
       console.error('Error saving profile:', error);
-      alert('Failed to save your profile. Please try again.');
+      showToast('Could not save your profile. Please try again.', 'error');
     } finally {
       setIsSubmitting(false);
     }

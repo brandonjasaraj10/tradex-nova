@@ -4,6 +4,7 @@ import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './lib/auth';
 import { AccountProvider } from './lib/accountContext';
 import { DateRangeProvider } from './lib/dateRangeContext';
+import { ToastProvider } from './lib/toastContext';
 import { NovaProvider } from './lib/novaContext';
 import { TourProvider, TourNavigationSetter } from './lib/tourContext';
 import { DataSyncProvider } from './lib/dataSync';
@@ -249,11 +250,13 @@ function App() {
         <DataSyncProvider>
           <AccountProvider>
             <DateRangeProvider>
-            <NovaProvider>
-              <TourProvider>
-                <AppContent />
-              </TourProvider>
-            </NovaProvider>
+              <ToastProvider>
+                <NovaProvider>
+                  <TourProvider>
+                    <AppContent />
+                  </TourProvider>
+                </NovaProvider>
+              </ToastProvider>
             </DateRangeProvider>
           </AccountProvider>
         </DataSyncProvider>

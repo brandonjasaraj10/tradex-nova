@@ -22,6 +22,7 @@ import Button from '../components/shared/Button';
 import BrokerConnectionsList from '../components/broker/BrokerConnectionsList';
 import { useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
+import { useToast } from '../lib/toastContext';
 import PasswordStrengthIndicator, { isPasswordValid } from '../components/auth/PasswordStrengthIndicator';
 import { usePreferences } from '../lib/preferencesContext';
 import { useTour } from '../lib/tourContext';
@@ -44,6 +45,7 @@ interface UserProfile {
 }
 
 export default function Settings() {
+  const { showToast } = useToast();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { refreshPreferences } = usePreferences();
@@ -147,7 +149,7 @@ export default function Settings() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        alert('Please log in to manage billing');
+        showToast('Please sign in again to manage billing.', 'error');
         return;
       }
 
@@ -171,7 +173,7 @@ export default function Settings() {
       window.location.href = url;
     } catch (err) {
       console.error('Billing portal error:', err);
-      alert(err instanceof Error ? err.message : 'An error occurred');
+      showToast(err instanceof Error ? err.message : 'Something went wrong. Please try again.', 'error');
     } finally {
       setSubLoading(false);
     }
@@ -188,7 +190,7 @@ export default function Settings() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        alert('Please log in to cancel subscription');
+        showToast('Please sign in again to cancel your subscription.', 'error');
         return;
       }
 
@@ -210,10 +212,10 @@ export default function Settings() {
 
       const result = await response.json();
       await loadSubscription();
-      alert(`Subscription cancelled successfully. Your access will continue until ${result.cancel_at}. A confirmation email has been sent to you.`);
+      showToast(`Subscription cancelled. You keep access until ${result.cancel_at}, and we've emailed you a confirmation.`, 'success');
     } catch (err) {
       console.error('Cancellation error:', err);
-      alert(err instanceof Error ? err.message : 'An error occurred');
+      showToast(err instanceof Error ? err.message : 'Something went wrong. Please try again.', 'error');
     } finally {
       setSubLoading(false);
     }
@@ -300,7 +302,7 @@ export default function Settings() {
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (error) {
       console.error('Error saving profile:', error);
-      alert('Failed to save profile');
+      showToast('Could not save your profile. Please try again.', 'error');
     } finally {
       setLoading(false);
     }
@@ -401,7 +403,7 @@ export default function Settings() {
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (error) {
       console.error('Error saving preferences:', error);
-      alert('Failed to save preferences');
+      showToast('Could not save your preferences. Please try again.', 'error');
     } finally {
       setLoading(false);
     }

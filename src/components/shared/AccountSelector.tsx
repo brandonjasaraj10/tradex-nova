@@ -5,6 +5,7 @@ import Button from './Button';
 import CSVUpload from '../broker/CSVUpload';
 import { supabase } from '../../lib/supabase';
 import { brokerService, type BrokerFromAPI } from '../../services/brokerService';
+import { useToast } from '../../lib/toastContext';
 
 interface Account {
   id: string;
@@ -21,6 +22,7 @@ interface AccountSelectorProps {
 }
 
 export default function AccountSelector({ accounts, selectedAccount, onAccountChange, onAccountsUpdate }: AccountSelectorProps) {
+  const { showToast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [showAddAccount, setShowAddAccount] = useState(false);
   const [showCSVUpload, setShowCSVUpload] = useState(false);
@@ -62,11 +64,11 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
   const handleCreateAccount = async () => {
     if (!newAccountName.trim()) return;
     if (!startingBalance || parseFloat(startingBalance) <= 0) {
-      alert('Please enter a valid starting balance');
+      showToast('Enter a starting balance for the account.', 'error');
       return;
     }
     if (selectedBrokerId === '__other__' && !otherBrokerName.trim()) {
-      alert('Please enter the name of your broker or prop firm');
+      showToast('Enter the name of your broker or prop firm.', 'error');
       return;
     }
 
@@ -145,7 +147,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
       onAccountsUpdate?.();
     } catch (error) {
       console.error('Create account error:', error);
-      alert('Failed to create account');
+      showToast('Could not create that account. Please try again.', 'error');
     } finally {
       setIsCreating(false);
     }
