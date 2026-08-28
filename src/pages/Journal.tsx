@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, CreditCard as Edit, Trash, Folder, Calendar, Save, X, ChevronLeft, ChevronRight, Settings, BookOpen, LineChart, Image, Tag as TagIcon, DollarSign, TrendingUp, TrendingDown, Maximize2, CheckSquare, Square, Upload, Brain, FileText, Mic, MicOff } from 'lucide-react';
+import { Plus, CreditCard as Edit, Trash, Folder, Calendar, Save, X, ChevronLeft, ChevronRight, Settings, BookOpen, LineChart, Image, Tag as TagIcon, DollarSign, TrendingUp, TrendingDown, Maximize2, CheckSquare, Square, Upload, Brain, Check, FileText, Mic, MicOff } from 'lucide-react';
 import Card from '../components/shared/Card';
 import Button from '../components/shared/Button';
 import ConfirmModal from '../components/shared/ConfirmModal';
@@ -41,6 +41,13 @@ import {
   type TradingRule
 } from '../services/tradingRules';
 import { useVoice } from '../hooks/useVoice';
+import PreTradeScales, { PRE_TRADE_SCALES, type ScaleValues } from '../components/journal/PreTradeScales';
+import {
+  getPsychologyChecks,
+  getJournalEntryPsychologyChecks,
+  upsertJournalEntryPsychologyCheck,
+  type PsychologyCheck
+} from '../services/psychologyChecks';
 import { processVoiceJournalEntry, type VoiceJournalData } from '../services/voiceJournal';
 import { correctTradingTerms } from '../utils/tradingVocabulary';
 import PageLoader from '../components/shared/PageLoader';
@@ -123,6 +130,10 @@ export default function Journal() {
     after_screenshots: [] as Array<{ url: string; label: string }>,
     pre_market_notes: '',
     post_market_notes: '',
+    // Null, not 0 - an unanswered scale is not a low rating.
+    pre_trade_emotional_state: null as number | null,
+    pre_trade_focus: null as number | null,
+    pre_trade_confidence: null as number | null,
     template_data: {},
   });
 
@@ -143,7 +154,9 @@ export default function Journal() {
   const [userRules, setUserRules] = useState<TradingRule[]>([]);
   const [confluenceStatus, setConfluenceStatus] = useState<Map<string, boolean | null>>(new Map());
   const [ruleStatus, setRuleStatus] = useState<Map<string, boolean | null>>(new Map());
-  const [checklistTab, setChecklistTab] = useState<'confluences' | 'rules'>('confluences');
+  const [checklistTab, setChecklistTab] = useState<'confluences' | 'rules' | 'psychology'>('confluences');
+  const [psychChecks, setPsychChecks] = useState<PsychologyCheck[]>([]);
+  const [psychStatus, setPsychStatus] = useState<Map<string, boolean | null>>(new Map());
   const [showPsychologyTemplate, setShowPsychologyTemplate] = useState(false);
   const [isProcessingVoice, setIsProcessingVoice] = useState(false);
   const [isAutoFilling, setIsAutoFilling] = useState(false);
@@ -226,6 +239,10 @@ export default function Journal() {
       ]);
 
       setUserConfluences(confluences.filter(c => c.enabled));
+      if (user) {
+        const checks = await getPsychologyChecks(user.id);
+        setPsychChecks(checks.filter(c => c.enabled));
+      }
       setUserRules(rules.filter(r => r.enabled));
     } catch (error) {
       console.error('Error loading confluences and rules:', error);
@@ -377,9 +394,11 @@ export default function Journal() {
   // Auto-save functionality
   const entryFormRef = React.useRef(entryForm);
   const confluenceStatusRef = React.useRef(confluenceStatus);
+  const psychStatusRef = React.useRef(psychStatus);
   const ruleStatusRef = React.useRef(ruleStatus);
   entryFormRef.current = entryForm;
   confluenceStatusRef.current = confluenceStatus;
+  psychStatusRef.current = psychStatus;
   ruleStatusRef.current = ruleStatus;
 
   const hasTemplateContent = (data: any): boolean => {
@@ -409,6 +428,15 @@ export default function Journal() {
       (form.after_screenshots && form.after_screenshots.length > 0) ||
       form.pre_market_notes?.trim() ||
       form.post_market_notes?.trim() ||
+      /*
+        A pre-trade rating counts as content on its own. Someone who opens the
+        journal, rates their focus at 2 and closes it again has recorded
+        something real - and before this, that entry was thrown away because
+        nothing else on the form had been filled in.
+      */
+      form.pre_trade_emotional_state != null ||
+      form.pre_trade_focus != null ||
+      form.pre_trade_confidence != null ||
       hasTemplateContent(form.template_data)
     );
   };
@@ -420,6 +448,7 @@ export default function Journal() {
     const form = entryFormRef.current;
     const confStatus = confluenceStatusRef.current;
     const rlStatus = ruleStatusRef.current;
+    const psStatus = psychStatusRef.current;
 
     if (!folder || !date) return;
 
@@ -491,9 +520,21 @@ export default function Journal() {
           notes: ''
         }));
 
+      /*
+        Only answers that were actually given are written. An untouched check
+        stays absent rather than being stored as false - "did not answer" and
+        "answered no" are different things, and the second one is worth
+        spotting in hindsight.
+      */
+      const psychUpdates = Array.from(psStatus.entries())
+        .filter(([, confirmed]) => confirmed !== null);
+
       await Promise.all([
         confluenceUpdates.length > 0 ? batchUpdateJournalEntryConfluences(entryId, confluenceUpdates) : Promise.resolve(),
-        ruleUpdates.length > 0 ? batchUpdateJournalEntryRules(entryId, ruleUpdates) : Promise.resolve()
+        ruleUpdates.length > 0 ? batchUpdateJournalEntryRules(entryId, ruleUpdates) : Promise.resolve(),
+        ...psychUpdates.map(([checkId, confirmed]) =>
+          upsertJournalEntryPsychologyCheck(entryId, checkId, confirmed)
+        ),
       ]);
 
       loadDailyTrades();
@@ -524,7 +565,11 @@ export default function Journal() {
         saveTimeoutRef.current = null;
       }
     };
-  }, [entryForm, confluenceStatus, ruleStatus]);
+    // psychStatus belongs here for the same reason the other two do: ticking
+    // a psychology check is an edit, and without it in the deps the debounce
+    // never restarts, so the answer sits in memory and is lost on navigation.
+    // The scales need no entry here - they live on entryForm.
+  }, [entryForm, confluenceStatus, ruleStatus, psychStatus]);
 
   /*
     Also reload on refreshTrigger. The trigger's other effect only reloads
@@ -618,14 +663,20 @@ export default function Journal() {
       after_screenshots: entry.after_screenshots || [],
       pre_market_notes: entry.pre_market_notes || '',
       post_market_notes: entry.post_market_notes || '',
+      // ?? not || - a rating of 0 is impossible here, but the habit matters:
+      // || would turn any falsy stored value into null silently.
+      pre_trade_emotional_state: entry.pre_trade_emotional_state ?? null,
+      pre_trade_focus: entry.pre_trade_focus ?? null,
+      pre_trade_confidence: entry.pre_trade_confidence ?? null,
       template_data: entry.template_data || {},
     });
 
     setShowPsychologyTemplate(false);
 
-    const [confluenceData, ruleData] = await Promise.all([
+    const [confluenceData, ruleData, psychData] = await Promise.all([
       getJournalEntryConfluences(entry.id),
-      getJournalEntryRules(entry.id)
+      getJournalEntryRules(entry.id),
+      getJournalEntryPsychologyChecks(entry.id)
     ]);
 
     setConfluenceStatus(new Map(
@@ -634,11 +685,16 @@ export default function Journal() {
     setRuleStatus(new Map(
       ruleData.map(r => [r.rule_id, r.followed])
     ));
+    setPsychStatus(new Map(
+      psychData.map(p => [p.check_id, p.confirmed])
+    ));
   };
 
   const resetEntryForm = (entries?: JournalEntry[]) => {
     setCurrentEntry(null);
     currentEntryRef.current = null;
+    // A fresh entry starts unanswered, not carrying the last trade's state.
+    setPsychStatus(new Map());
     setEditingEntryId(null);
 
     const entryNumber = (entries || dailyEntries).length + 1;
@@ -2054,7 +2110,110 @@ export default function Journal() {
                         </span>
                       )}
                     </button>
+                    <button
+                      onClick={() => setChecklistTab('psychology')}
+                      className={`px-4 py-2 text-sm font-medium transition-all border-b-2 -mb-px flex items-center gap-1.5 ${
+                        checklistTab === 'psychology'
+                          ? 'border-blue-400 text-blue-300'
+                          : 'border-transparent text-gray-400 hover:text-white'
+                      }`}
+                      style={
+                        checklistTab === 'psychology'
+                          ? { textShadow: '0 0 12px rgba(59,130,246,0.6)' }
+                          : undefined
+                      }
+                    >
+                      <Brain
+                        size={14}
+                        style={
+                          checklistTab === 'psychology'
+                            ? { filter: 'drop-shadow(0 0 5px rgba(59,130,246,0.9))' }
+                            : undefined
+                        }
+                      />
+                      Psychology
+                    </button>
                   </div>
+
+                  {checklistTab === 'psychology' && (
+                    <div
+                      className="rounded-xl border border-blue-400/40 bg-gradient-to-br from-blue-500/[0.12] via-blue-500/[0.03] to-transparent p-4"
+                      style={{ boxShadow: 'inset 0 0 60px rgba(59,130,246,0.10), 0 0 30px rgba(59,130,246,0.10)' }}
+                    >
+                      <p className="text-xs text-gray-400 mb-4">
+                        How are you before this trade? Nothing here is scored &mdash; it is only
+                        worth filling in honestly.
+                      </p>
+
+                      <PreTradeScales
+                        values={{
+                          emotional_state: entryForm.pre_trade_emotional_state,
+                          focus: entryForm.pre_trade_focus,
+                          confidence: entryForm.pre_trade_confidence,
+                        }}
+                        onChange={(key, value) =>
+                          setEntryForm((prev) => ({
+                            ...prev,
+                            pre_trade_emotional_state: key === 'emotional_state' ? value : prev.pre_trade_emotional_state,
+                            pre_trade_focus: key === 'focus' ? value : prev.pre_trade_focus,
+                            pre_trade_confidence: key === 'confidence' ? value : prev.pre_trade_confidence,
+                          }))
+                        }
+                      />
+
+                      {psychChecks.length > 0 && (
+                        <div className="mt-5 pt-4 border-t border-blue-400/15 space-y-1">
+                          {psychChecks.map((check) => {
+                            const confirmed = psychStatus.get(check.id) === true;
+                            return (
+                              <button
+                                key={check.id}
+                                type="button"
+                                onClick={() => {
+                                  /*
+                                    Functional update, not new Map(psychStatus).
+                                    Reading the map from the render closure means
+                                    two ticks in the same tick of the event loop
+                                    both start from the same snapshot, and the
+                                    second silently discards the first - ticking
+                                    two boxes quickly saved only one of them.
+                                  */
+                                  setPsychStatus((prev) => {
+                                    const next = new Map(prev);
+                                    next.set(check.id, confirmed ? null : true);
+                                    return next;
+                                  });
+                                }}
+                                className="w-full flex items-center gap-3 text-left py-2 px-2 -mx-2 rounded-lg hover:bg-white/[0.03] transition-colors"
+                              >
+                                <span
+                                  className={`flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-md border-2 transition-all ${
+                                    confirmed ? 'bg-blue-500 border-blue-400' : 'border-gray-600'
+                                  }`}
+                                  style={
+                                    confirmed
+                                      ? { boxShadow: '0 0 16px rgba(59,130,246,0.9), 0 0 4px rgba(59,130,246,1)' }
+                                      : undefined
+                                  }
+                                >
+                                  {confirmed && <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />}
+                                </span>
+                                <span className={`text-sm ${confirmed ? 'text-white' : 'text-gray-400'}`}>
+                                  {check.name}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {psychChecks.length === 0 && (
+                        <p className="mt-4 pt-4 border-t border-blue-400/15 text-xs text-gray-500">
+                          No checks set up yet &mdash; add them under Checklists &rarr; Pre-Trade Psychology.
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   {checklistTab === 'confluences' && (
                     <div>

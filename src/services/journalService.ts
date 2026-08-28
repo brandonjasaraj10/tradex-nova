@@ -32,6 +32,10 @@ export interface JournalEntry {
   // Text, with the unit intact - "0.5 lots", "1 contract", "2%".
   // Nullable because clearing the field writes null rather than dropping it.
   position_size?: string | null;
+  // 1-5 self-ratings taken before entry; null means unanswered.
+  pre_trade_emotional_state?: number | null;
+  pre_trade_focus?: number | null;
+  pre_trade_confidence?: number | null;
   manual_pnl?: number;
   tags: string[];
   attachments: any[];

@@ -339,14 +339,14 @@ export default function Checklists() {
 
               {activeTab === 'psychology' && (
                 <div
-                  className="mb-5 p-5 rounded-2xl border border-blue-400/25 bg-gradient-to-br from-blue-500/[0.09] via-blue-500/[0.02] to-transparent"
-                  style={{ boxShadow: 'inset 0 0 60px rgba(59,130,246,0.07), 0 0 30px rgba(59,130,246,0.06)' }}
+                  className="mb-5 p-5 rounded-xl border border-blue-400/40 bg-gradient-to-br from-blue-500/[0.14] via-blue-500/[0.04] to-transparent"
+                  style={{ boxShadow: 'inset 0 0 70px rgba(59,130,246,0.12), 0 0 40px rgba(59,130,246,0.14)' }}
                 >
                   <div className="flex items-start gap-4">
                     {/* Icon tile, lifted off the panel with its own glow. */}
                     <div
-                      className="flex-shrink-0 w-11 h-11 rounded-xl bg-blue-500/15 border border-blue-400/30 flex items-center justify-center"
-                      style={{ boxShadow: '0 0 18px rgba(59,130,246,0.25)' }}
+                      className="flex-shrink-0 w-11 h-11 rounded-lg bg-blue-500/25 border border-blue-400/50 flex items-center justify-center"
+                      style={{ boxShadow: '0 0 24px rgba(59,130,246,0.45), inset 0 0 14px rgba(59,130,246,0.2)' }}
                     >
                       <Brain
                         className="w-5 h-5 text-blue-300"
@@ -368,13 +368,21 @@ export default function Checklists() {
                       the checklist, it does not run it - so a percentage would
                       be a number with nothing behind it. This is the one real
                       figure the page has.
+
+                      Squared off rather than a circle: a soft round badge sat
+                      oddly against the sharp panels this app is built from.
                     */}
                     <div
-                      className="flex-shrink-0 flex flex-col items-center justify-center w-16 h-16 rounded-full border border-blue-400/35 bg-blue-500/10"
-                      style={{ boxShadow: '0 0 20px rgba(59,130,246,0.18)' }}
+                      className="flex-shrink-0 flex flex-col items-center justify-center px-4 py-2.5 rounded-lg border border-blue-400/50 bg-gradient-to-b from-blue-500/25 to-blue-500/[0.08]"
+                      style={{ boxShadow: '0 0 26px rgba(59,130,246,0.35), inset 0 0 20px rgba(59,130,246,0.15)' }}
                     >
-                      <span className="text-xl font-bold text-blue-300 leading-none">{enabledCount}</span>
-                      <span className="text-[9px] uppercase tracking-wider text-blue-400/70 mt-1">active</span>
+                      <span
+                        className="text-2xl font-bold text-blue-200 leading-none"
+                        style={{ textShadow: '0 0 14px rgba(59,130,246,0.9)' }}
+                      >
+                        {enabledCount}
+                      </span>
+                      <span className="text-[9px] uppercase tracking-[0.15em] text-blue-300/80 mt-1.5">active</span>
                     </div>
                   </div>
                 </div>
@@ -453,7 +461,7 @@ export default function Checklists() {
                     className={`rounded-xl border transition-all ${
                       activeTab === 'psychology'
                         ? item.enabled
-                          ? 'p-4 border-blue-400/25 bg-gradient-to-br from-blue-500/[0.06] via-transparent to-transparent hover:border-blue-400/45'
+                          ? 'p-4 border-blue-400/40 bg-gradient-to-r from-blue-500/[0.10] via-blue-500/[0.03] to-transparent hover:border-blue-400/70'
                           : 'p-4 border-white/5 bg-white/[0.02] opacity-45 hover:opacity-70'
                         : item.enabled
                           ? 'p-4 bg-white/5 border-white/10'
@@ -461,7 +469,7 @@ export default function Checklists() {
                     }`}
                     style={
                       activeTab === 'psychology' && item.enabled
-                        ? { boxShadow: 'inset 0 0 30px rgba(59,130,246,0.05)' }
+                        ? { boxShadow: 'inset 0 0 34px rgba(59,130,246,0.10), 0 0 16px rgba(59,130,246,0.10)' }
                         : undefined
                     }
                   >
@@ -536,7 +544,7 @@ export default function Checklists() {
                               }`}
                               style={
                                 item.enabled
-                                  ? { boxShadow: '0 0 10px rgba(59,130,246,0.55)' }
+                                  ? { boxShadow: '0 0 16px rgba(59,130,246,0.9), 0 0 4px rgba(59,130,246,1)' }
                                   : undefined
                               }
                             >
