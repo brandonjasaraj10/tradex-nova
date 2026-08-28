@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ExternalLink } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, ExternalLink } from 'lucide-react';
 import { isExternalUrl, resolveScreenshotUrl } from '../../lib/screenshots';
 import TradeOutcomeChart from './TradeOutcomeChart';
 
@@ -100,6 +100,19 @@ export default function TradeCardVisual({ screenshot, symbol, pnl }: Props) {
   return (
     <div className="relative w-full aspect-[16/10] overflow-hidden bg-gradient-to-br from-[#0A0A0A] to-[#0F0F0F]">
       <TradeOutcomeChart pnl={pnl} />
+
+      {/*
+        The same corner arrow the dashboard tile uses, in the matching
+        colour. It repeats what the curve already says, which is the point:
+        at a glance across a grid, direction registers before shape does.
+      */}
+      <div className="absolute top-2.5 left-3">
+        {pnl > 0 ? (
+          <ArrowUpRight size={14} className="text-blue-400" />
+        ) : (
+          <ArrowDownRight size={14} className="text-gray-500" />
+        )}
+      </div>
 
       {/*
         A TradingView link cannot be previewed, and neither can a chart whose
