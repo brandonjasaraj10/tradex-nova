@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Search, BookOpen, ArrowUpRight, ArrowDownRight, X } from 'lucide-react';
+import { Search, BookOpen, X, LayoutGrid, List } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { useAccount } from '../lib/accountContext';
 import { useDateRange } from '../lib/dateRangeContext';
@@ -11,6 +11,8 @@ import Card from '../components/shared/Card';
 import DateRangePicker from '../components/shared/DateRangePicker';
 import AccountSelector from '../components/shared/AccountSelector';
 import PageLoader from '../components/shared/PageLoader';
+import TradeTrendGlyph from '../components/trades/TradeTrendGlyph';
+import TradeCardVisual from '../components/trades/TradeCardVisual';
 
 /*
   Every position in one list, searchable.
@@ -40,6 +42,8 @@ function formatMoney(value: number): string {
   return `${sign}$${Math.abs(value).toFixed(2)}`;
 }
 
+const VIEW_STORAGE_KEY = 'tradex_trade_log_view';
+
 export default function TradeLogs() {
   const { user } = useAuth();
   const { accounts, selectedAccount, setSelectedAccount, refreshAccounts } = useAccount();
@@ -48,6 +52,24 @@ export default function TradeLogs() {
   const [rows, setRows] = useState<TradeLogRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+
+  /*
+    Remembered between visits, the same as the account and date range. A
+    layout choice that resets on every navigation is worse than not offering
+    one, because the user has to keep re-making it.
+  */
+  const [view, setView] = useState<'cards' | 'list'>(() => {
+    try {
+      return localStorage.getItem(VIEW_STORAGE_KEY) === 'cards' ? 'cards' : 'list';
+    } catch {
+      return 'list';
+    }
+  });
+
+  const chooseView = (next: 'cards' | 'list') => {
+    setView(next);
+    try { localStorage.setItem(VIEW_STORAGE_KEY, next); } catch { /* private mode */ }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -105,7 +127,8 @@ export default function TradeLogs() {
           </div>
         </div>
 
-        <div className="relative mb-5">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="relative flex-1">
           <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
           <input
             type="text"
@@ -123,6 +146,28 @@ export default function TradeLogs() {
               <X size={16} />
             </button>
           )}
+          </div>
+
+          {/* Layout switch, next to the thing it changes. */}
+          <div className="flex items-center gap-1 bg-[#111] border border-white/10 rounded-xl p-1 flex-shrink-0">
+            {([
+              { id: 'list' as const, icon: List, label: 'List view' },
+              { id: 'cards' as const, icon: LayoutGrid, label: 'Card view' },
+            ]).map(({ id, icon: Icon, label }) => (
+              <button
+                key={id}
+                onClick={() => chooseView(id)}
+                aria-label={label}
+                aria-pressed={view === id}
+                title={label}
+                className={`p-2 rounded-lg transition-colors ${
+                  view === id ? 'bg-blue-400/15 text-blue-400' : 'text-gray-500 hover:text-gray-300'
+                }`}
+              >
+                <Icon size={16} />
+              </button>
+            ))}
+          </div>
         </div>
 
         {loading ? (
@@ -158,62 +203,108 @@ export default function TradeLogs() {
             <p className="text-xs text-gray-500 mb-3">
               {filtered.length} of {rows.length} {rows.length === 1 ? 'trade' : 'trades'}
             </p>
-            <div className="space-y-2">
-              {filtered.map((row, i) => {
-                const isLong = row.direction.toUpperCase() === 'LONG';
-                return (
-                  <motion.div
-                    key={`${row.source}-${row.id}`}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.2, delay: Math.min(i, 12) * 0.02 }}
-                  >
-                    <Card variant="default" className="p-4">
-                      <div className="flex items-center gap-4">
-                        <div className={`p-2 rounded-lg flex-shrink-0 ${isLong ? 'bg-blue-500/10' : 'bg-gray-500/10'}`}>
-                          {isLong
-                            ? <ArrowUpRight size={16} className="text-blue-400" />
-                            : <ArrowDownRight size={16} className="text-gray-400" />}
-                        </div>
 
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-semibold text-white">{row.symbol || 'Unknown'}</span>
-                            {row.direction && (
-                              <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${isLong ? 'bg-blue-500/10 text-blue-400' : 'bg-gray-500/10 text-gray-400'}`}>
-                                {row.direction.toUpperCase()}
-                              </span>
-                            )}
-                            {/*
-                              Where the row came from. Blending an imported
-                              trade with a journal-written one without saying
-                              so makes the missing prices below look like a
-                              bug rather than a different kind of record.
-                            */}
-                            <span className="text-[10px] px-1.5 py-0.5 rounded border border-white/10 text-gray-500">
-                              {row.source === 'journal' ? 'Journal' : 'Imported'}
-                            </span>
+            {view === 'cards' ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filtered.map((row, i) => {
+                  const isLong = row.direction.toUpperCase() === 'LONG';
+                  return (
+                    <motion.div
+                      key={`${row.source}-${row.id}`}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.25, delay: Math.min(i, 12) * 0.03 }}
+                      className="rounded-xl overflow-hidden border border-white/10 bg-[#0A0A0A] hover:border-blue-400/30 transition-colors"
+                    >
+                      <TradeCardVisual screenshot={row.screenshot} symbol={row.symbol} pnl={row.pnl} />
+
+                      <div className="p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-semibold text-white truncate">{row.symbol || 'Unknown'}</span>
+                              {row.direction && (
+                                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${isLong ? 'bg-blue-500/10 text-blue-400' : 'bg-gray-500/10 text-gray-400'}`}>
+                                  {row.direction.toUpperCase()}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">{formatDate(row.entry_date)}</p>
                           </div>
-                          <p className="text-xs text-gray-500 mt-0.5 truncate">
-                            {formatDate(row.entry_date)}
-                            {row.setup && <span className="text-gray-600"> &middot; {row.setup}</span>}
+                          <p className={`font-bold whitespace-nowrap ${valueColorClass(row.pnl)}`}>
+                            {formatMoney(row.pnl)}
                           </p>
                         </div>
 
-                        <div className="text-right flex-shrink-0">
-                          <p className={`font-bold ${valueColorClass(row.pnl)}`}>{formatMoney(row.pnl)}</p>
-                          {row.entry_price != null && row.exit_price != null && (
-                            <p className="text-[10px] text-gray-500 mt-0.5">
+                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/5">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded border border-white/10 text-gray-500">
+                            {row.source === 'journal' ? 'Journal' : 'Imported'}
+                          </span>
+                          {row.entry_price != null && row.exit_price != null ? (
+                            <span className="text-[10px] text-gray-500">
                               {row.entry_price} &rarr; {row.exit_price}
-                            </p>
+                            </span>
+                          ) : (
+                            /* Journal trades have no fill prices; say so rather
+                               than leaving a gap that reads as a loading state. */
+                            <span className="text-[10px] text-gray-600">No fill prices</span>
                           )}
                         </div>
                       </div>
-                    </Card>
-                  </motion.div>
-                );
-              })}
-            </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {filtered.map((row, i) => {
+                  const isLong = row.direction.toUpperCase() === 'LONG';
+                  return (
+                    <motion.div
+                      key={`${row.source}-${row.id}`}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2, delay: Math.min(i, 12) * 0.02 }}
+                    >
+                      <Card variant="default" className="p-4">
+                        <div className="flex items-center gap-4">
+                          <div className="p-2 rounded-lg flex-shrink-0 bg-white/[0.03] flex items-center justify-center">
+                            <TradeTrendGlyph pnl={row.pnl} size={20} />
+                          </div>
+
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-semibold text-white">{row.symbol || 'Unknown'}</span>
+                              {row.direction && (
+                                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${isLong ? 'bg-blue-500/10 text-blue-400' : 'bg-gray-500/10 text-gray-400'}`}>
+                                  {row.direction.toUpperCase()}
+                                </span>
+                              )}
+                              <span className="text-[10px] px-1.5 py-0.5 rounded border border-white/10 text-gray-500">
+                                {row.source === 'journal' ? 'Journal' : 'Imported'}
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-0.5 truncate">
+                              {formatDate(row.entry_date)}
+                              {row.setup && <span className="text-gray-600"> &middot; {row.setup}</span>}
+                            </p>
+                          </div>
+
+                          <div className="text-right flex-shrink-0">
+                            <p className={`font-bold ${valueColorClass(row.pnl)}`}>{formatMoney(row.pnl)}</p>
+                            {row.entry_price != null && row.exit_price != null && (
+                              <p className="text-[10px] text-gray-500 mt-0.5">
+                                {row.entry_price} &rarr; {row.exit_price}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </Card>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
           </>
         )}
       </div>

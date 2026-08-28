@@ -334,6 +334,24 @@ export interface TradeLogRow {
   tags: string[];
   setup: string | null;
   source: 'trades' | 'journal';
+  /*
+    Whatever chart the trader attached, if anything.
+
+    Two different things end up here. An uploaded file is stored as a bare
+    object path in a private bucket and needs a signed URL before it can be
+    rendered. A pasted link - overwhelmingly TradingView - is stored
+    verbatim, and a tradingview.com/x/... address is a page, not an image, so
+    it cannot go in an <img> at all. The card layout has to tell these apart
+    rather than assuming every value is displayable.
+  */
+  screenshot: string | null;
+}
+
+function firstScreenshot(list: any): string | null {
+  if (!Array.isArray(list) || list.length === 0) return null;
+  const first = list[0];
+  const value = typeof first === 'string' ? first : first?.url;
+  return value || null;
 }
 
 export async function getTradeLog(
@@ -345,7 +363,7 @@ export async function getTradeLog(
 
   let tradesQuery = supabase
     .from('trades')
-    .select('id, symbol, direction, entry_price, exit_price, quantity, pnl, entry_date, exit_date, notes, tags, setup')
+    .select('id, symbol, direction, entry_price, exit_price, quantity, pnl, entry_date, exit_date, notes, tags, setup, screenshot_url')
     .eq('user_id', user.id);
 
   if (dateRange) {
@@ -359,7 +377,7 @@ export async function getTradeLog(
 
   let journalQuery = supabase
     .from('journal_entries')
-    .select('id, title, symbol, direction, manual_pnl, position_size, entry_date, content, tags')
+    .select('id, title, symbol, direction, manual_pnl, position_size, entry_date, content, tags, before_screenshots, after_screenshots')
     .eq('user_id', user.id)
     .not('manual_pnl', 'is', null);
 
@@ -392,6 +410,7 @@ export async function getTradeLog(
     notes: t.notes || '',
     tags: t.tags || [],
     setup: t.setup ?? null,
+    screenshot: t.screenshot_url || null,
     source: 'trades',
   }));
 
@@ -413,6 +432,9 @@ export async function getTradeLog(
     notes: (e.content || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim(),
     tags: e.tags || [],
     setup: e.position_size ?? null,
+    // The "before" chart is the one worth previewing: it is what the trader
+    // was looking at when they decided to take the trade.
+    screenshot: firstScreenshot(e.before_screenshots) ?? firstScreenshot(e.after_screenshots),
     source: 'journal',
   }));
 
