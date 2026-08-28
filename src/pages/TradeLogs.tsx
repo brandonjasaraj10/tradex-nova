@@ -121,12 +121,47 @@ export default function TradeLogs() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return rows;
+
+    /*
+      P&L is searchable, because "I made about 4000 on one of these, which
+      one?" is a real way people look for a trade they half-remember - and
+      the amount is often the only thing they do remember.
+
+      Matching needs a few spellings of the same number. The value is stored
+      as 4000 but shown as "+$4,000.00", so someone typing 4000, 4,000, $4000
+      or 4000.00 should all land on it. Comparing against several rendered
+      forms is simpler and more predictable than parsing what they typed.
+
+      The sign is deliberately included: typing "-" finds every loser, since
+      only losses carry a minus. Searching the absolute value as well means
+      "500" still finds a -$500 trade, because someone recalling the size of
+      a loss rarely types the sign.
+    */
+    const money = (r: TradeLogRow) => {
+      const abs = Math.abs(r.pnl);
+      return [
+        String(r.pnl),                                    // -500.5
+        r.pnl.toFixed(2),                                 // -500.50
+        String(abs),                                      // 500.5
+        abs.toFixed(2),                                   // 500.50
+        abs.toLocaleString('en-US'),                      // 4,000
+        abs.toLocaleString('en-US', { minimumFractionDigits: 2 }), // 4,000.00
+        `${r.pnl < 0 ? '-' : '+'}$${abs.toFixed(2)}`,     // +$4000.00
+      ].join(' ').toLowerCase();
+    };
+
+    // "$4,000" and "4000" should behave the same, so punctuation the user
+    // types is ignored on both sides of the comparison.
+    const stripped = q.replace(/[$,\s]/g, '');
+
     return rows.filter((r) =>
       r.symbol.toLowerCase().includes(q) ||
       r.direction.toLowerCase().includes(q) ||
       (r.setup || '').toLowerCase().includes(q) ||
       r.notes.toLowerCase().includes(q) ||
-      r.tags.some((t) => t.toLowerCase().includes(q))
+      (r.account_name || '').toLowerCase().includes(q) ||
+      r.tags.some((t) => t.toLowerCase().includes(q)) ||
+      (stripped.length > 0 && money(r).replace(/[$,\s]/g, '').includes(stripped))
     );
   }, [rows, search]);
 
@@ -156,7 +191,7 @@ export default function TradeLogs() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by symbol, setup, tag or note"
+            placeholder="Search by symbol, amount, setup, tag or note"
             className="w-full bg-[#111] border border-white/10 rounded-xl pl-11 pr-11 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-blue-400/60 transition-colors"
           />
           {search && (
