@@ -28,6 +28,7 @@ import {
 import { CheckCircle2, Circle, Plus, X, Edit2, Save, Trash2, GripVertical, Brain, Check } from 'lucide-react';
 import Card from '../components/shared/Card';
 import PageLoader from '../components/shared/PageLoader';
+import PreTradeScales from '../components/journal/PreTradeScales';
 
 type TabType = 'confluences' | 'rules' | 'psychology';
 
@@ -338,12 +339,17 @@ export default function Checklists() {
               </div>
 
               {activeTab === 'psychology' && (
+                /*
+                  Same panel the journal entry uses, so the place you build the
+                  checklist looks like the place you answer it. The difference
+                  is that here the checks can be edited, reordered by enabling
+                  and disabling, and removed.
+                */
                 <div
-                  className="mb-5 p-5 rounded-xl border border-blue-400/40 bg-gradient-to-br from-blue-500/[0.14] via-blue-500/[0.04] to-transparent"
-                  style={{ boxShadow: 'inset 0 0 70px rgba(59,130,246,0.12), 0 0 40px rgba(59,130,246,0.14)' }}
+                  className="mb-5 rounded-xl border border-blue-400/40 bg-gradient-to-br from-blue-500/[0.12] via-blue-500/[0.03] to-transparent p-5"
+                  style={{ boxShadow: 'inset 0 0 60px rgba(59,130,246,0.10), 0 0 30px rgba(59,130,246,0.10)' }}
                 >
-                  <div className="flex items-start gap-4">
-                    {/* Icon tile, lifted off the panel with its own glow. */}
+                  <div className="flex items-start gap-4 mb-5">
                     <div
                       className="flex-shrink-0 w-11 h-11 rounded-lg bg-blue-500/25 border border-blue-400/50 flex items-center justify-center"
                       style={{ boxShadow: '0 0 24px rgba(59,130,246,0.45), inset 0 0 14px rgba(59,130,246,0.2)' }}
@@ -353,25 +359,12 @@ export default function Checklists() {
                         style={{ filter: 'drop-shadow(0 0 6px rgba(59,130,246,0.8))' }}
                       />
                     </div>
-
                     <div className="flex-1 min-w-0">
                       <h3 className="text-base font-semibold text-white">Mental preparation checklist</h3>
                       <p className="text-xs text-gray-400 mt-1 leading-relaxed">
-                        Run these before you enter, not after. They ask about you rather than the
-                        chart &mdash; whether you&rsquo;re calm, rested, and not chasing a loss.
+                        This is what you&rsquo;ll see on every trade entry. Edit it here.
                       </p>
                     </div>
-
-                    {/*
-                      A count, not a score. The sales mock shows a percentage,
-                      but nothing here has been ticked yet - this tab defines
-                      the checklist, it does not run it - so a percentage would
-                      be a number with nothing behind it. This is the one real
-                      figure the page has.
-
-                      Squared off rather than a circle: a soft round badge sat
-                      oddly against the sharp panels this app is built from.
-                    */}
                     <div
                       className="flex-shrink-0 flex flex-col items-center justify-center px-4 py-2.5 rounded-lg border border-blue-400/50 bg-gradient-to-b from-blue-500/25 to-blue-500/[0.08]"
                       style={{ boxShadow: '0 0 26px rgba(59,130,246,0.35), inset 0 0 20px rgba(59,130,246,0.15)' }}
@@ -383,6 +376,25 @@ export default function Checklists() {
                         {enabledCount}
                       </span>
                       <span className="text-[9px] uppercase tracking-[0.15em] text-blue-300/80 mt-1.5">active</span>
+                    </div>
+                  </div>
+
+                  {/*
+                    The scales are shown but not settable here.
+
+                    They are an answer about how you feel right now, which
+                    belongs to a single trade - there is nothing on this page
+                    for a rating to attach to. Letting them be dragged here
+                    would produce a number saved against nothing, so they are
+                    rendered disabled as a preview of the entry form, and the
+                    caption says where they are actually filled in.
+                  */}
+                  <div className="rounded-lg border border-white/5 bg-black/20 p-4">
+                    <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-3">
+                      Rated on each entry
+                    </p>
+                    <div className="opacity-60 pointer-events-none">
+                      <PreTradeScales values={{}} onChange={() => {}} disabled />
                     </div>
                   </div>
                 </div>
