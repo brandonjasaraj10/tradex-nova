@@ -134,6 +134,43 @@ Deno.serve(async (req: Request) => {
         });
       }
 
+      /*
+        Trades block deletion, so say so before trying.
+
+        trades.broker_id references broker_connections with NO ACTION, so
+        Postgres refuses to delete an account that still has any - it does not
+        cascade and it does not null them out. The delete simply failed, the
+        client logged it to the console, and the account stayed in the list
+        with nothing on screen explaining why. Someone would press it again
+        and again.
+
+        Counting first lets the message name the actual obstacle and the
+        number, instead of surfacing a foreign key violation. Journal entries
+        need no such check: their reference is ON DELETE SET NULL, so they
+        survive the account and reappear under All Accounts.
+      */
+      const { count: tradeCount, error: countError } = await supabase
+        .from("trades")
+        .select("id", { count: "exact", head: true })
+        .eq("broker_id", connection_id)
+        .eq("user_id", user.id);
+
+      if (countError) {
+        return new Response(JSON.stringify({ error: clientSafeMessage(countError) }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if ((tradeCount ?? 0) > 0) {
+        return new Response(
+          JSON.stringify({
+            error: `This account still has ${tradeCount} ${tradeCount === 1 ? "trade" : "trades"}. Delete or move them before removing the account, so your trade history isn't left pointing at an account that no longer exists.`,
+          }),
+          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       const { error } = await supabase
         .from("user_broker_connections")
         .delete()

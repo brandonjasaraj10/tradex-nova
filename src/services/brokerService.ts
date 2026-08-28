@@ -87,8 +87,16 @@ export class BrokerService {
       if (!response.ok) throw new Error(data.error || 'Failed to disconnect');
       return data.success === true;
     } catch (error) {
+      /*
+        Rethrow rather than returning false.
+
+        Swallowing this into a boolean is what made a blocked delete look
+        like nothing happening: the server explains that the account still
+        has trades, that reason died here, and the caller only knew "false".
+        The message is the whole point of the response.
+      */
       console.error('Error disconnecting broker:', error);
-      return false;
+      throw error instanceof Error ? error : new Error('Could not remove that account.');
     }
   }
 

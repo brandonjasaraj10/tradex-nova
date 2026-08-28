@@ -172,9 +172,17 @@ export default function BrokerConnectionsList() {
         }
         await loadConnections();
         await refreshAccounts();
+        showToast('Account removed.', 'success');
       }
     } catch (error) {
+      // The server says exactly why - usually that the account still holds
+      // trades. Logging it to a console nobody has open is what made this
+      // read as a dead button.
       console.error('Delete error:', error);
+      showToast(
+        error instanceof Error ? error.message : 'Could not remove that account.',
+        'error'
+      );
     } finally {
       setDeletingIds(prev => {
         const newSet = new Set(prev);
