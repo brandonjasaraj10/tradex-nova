@@ -17,17 +17,26 @@ import {
   deleteTradingRule,
   type TradingRule
 } from '../services/tradingRules';
-import { CheckCircle2, Circle, Plus, X, Edit2, Save, Trash2, GripVertical } from 'lucide-react';
+import {
+  getPsychologyChecks,
+  createPsychologyCheck,
+  updatePsychologyCheck,
+  deletePsychologyCheck,
+  seedStarterChecks,
+  type PsychologyCheck
+} from '../services/psychologyChecks';
+import { CheckCircle2, Circle, Plus, X, Edit2, Save, Trash2, GripVertical, Brain } from 'lucide-react';
 import Card from '../components/shared/Card';
 import PageLoader from '../components/shared/PageLoader';
 
-type TabType = 'confluences' | 'rules';
+type TabType = 'confluences' | 'rules' | 'psychology';
 
 export default function Checklists() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('confluences');
   const [confluences, setConfluences] = useState<Confluence[]>([]);
   const [rules, setRules] = useState<TradingRule[]>([]);
+  const [psychChecks, setPsychChecks] = useState<PsychologyCheck[]>([]);
   const [minConfluences, setMinConfluences] = useState(3);
   const [isLoading, setIsLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -48,10 +57,11 @@ export default function Checklists() {
 
     try {
       setIsLoading(true);
-      const [confluencesData, settings, rulesData] = await Promise.all([
+      const [confluencesData, settings, rulesData, psychData] = await Promise.all([
         getUserConfluences(),
         getTradingPlanSettings(),
-        getTradingRules(user.id)
+        getTradingRules(user.id),
+        getPsychologyChecks(user.id)
       ]);
 
       if (confluencesData.length === 0) {
@@ -67,6 +77,18 @@ export default function Checklists() {
       }
 
       setRules(rulesData);
+
+      /*
+        Seed the starter list on first visit, the same way confluences are
+        seeded above. An empty checklist gives no clue what belongs on one,
+        and "what should I even ask myself?" is the hard part of building a
+        pre-trade routine - much harder than editing a list already there.
+      */
+      if (psychData.length === 0) {
+        setPsychChecks(await seedStarterChecks(user.id));
+      } else {
+        setPsychChecks(psychData);
+      }
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -98,7 +120,19 @@ export default function Checklists() {
     }
   }
 
-  async function handleEdit(item: Confluence | TradingRule) {
+  async function handleTogglePsychCheck(id: string) {
+    const check = psychChecks.find(c => c.id === id);
+    if (!check) return;
+
+    try {
+      const updated = await updatePsychologyCheck(id, { enabled: !check.enabled });
+      setPsychChecks(psychChecks.map(c => c.id === id ? updated : c));
+    } catch (error) {
+      console.error('Error toggling psychology check:', error);
+    }
+  }
+
+  async function handleEdit(item: Confluence | TradingRule | PsychologyCheck) {
     setEditingId(item.id);
     setEditName(item.name);
     setEditDescription(item.description || '');
@@ -117,6 +151,12 @@ export default function Checklists() {
           description: editDescription
         });
         setConfluences(confluences.map(c => c.id === editingId ? updated : c));
+      } else if (activeTab === 'psychology') {
+        const updated = await updatePsychologyCheck(editingId, {
+          name: editName,
+          description: editDescription
+        });
+        setPsychChecks(psychChecks.map(c => c.id === editingId ? updated : c));
       } else {
         const updated = await updateTradingRule(editingId, {
           name: editName,
@@ -143,6 +183,9 @@ export default function Checklists() {
       if (activeTab === 'confluences') {
         await deleteConfluence(id);
         setConfluences(confluences.filter(c => c.id !== id));
+      } else if (activeTab === 'psychology') {
+        await deletePsychologyCheck(id);
+        setPsychChecks(psychChecks.filter(c => c.id !== id));
       } else {
         await deleteTradingRule(id);
         setRules(rules.filter(r => r.id !== id));
@@ -164,6 +207,15 @@ export default function Checklists() {
           order_index: confluences.length
         });
         setConfluences([...confluences, newConfluence]);
+      } else if (activeTab === 'psychology') {
+        const newCheck = await createPsychologyCheck({
+          user_id: user.id,
+          name: newItemName,
+          description: newItemDescription,
+          enabled: true,
+          order_index: psychChecks.length
+        });
+        setPsychChecks([...psychChecks, newCheck]);
       } else {
         const newRule = await createTradingRule({
           user_id: user.id,
@@ -185,8 +237,9 @@ export default function Checklists() {
     }
   }
 
-  const enabledCount = activeTab === 'confluences'
-    ? confluences.filter(c => c.enabled).length
+  const enabledCount =
+    activeTab === 'confluences' ? confluences.filter(c => c.enabled).length
+    : activeTab === 'psychology' ? psychChecks.filter(c => c.enabled).length
     : rules.filter(r => r.enabled).length;
 
   if (isLoading) {
@@ -233,6 +286,37 @@ export default function Checklists() {
             Trading Rules
             <span className="ml-2 text-sm">({rules.filter(r => r.enabled).length})</span>
           </button>
+          {/*
+            The psychology tab carries the icon and the glow the other two do
+            not. It is the one asked before entry rather than about the setup,
+            and giving it a slightly different weight is what stops it being
+            read as a third list of the same kind.
+          */}
+          <button
+            onClick={() => setActiveTab('psychology')}
+            className={`px-6 py-3 font-medium transition-all flex items-center gap-2 ${
+              activeTab === 'psychology'
+                ? 'text-blue-300 border-b-2 border-blue-400'
+                : 'text-gray-400 hover:text-white'
+            }`}
+            style={
+              activeTab === 'psychology'
+                ? { textShadow: '0 0 12px rgba(59,130,246,0.55)' }
+                : undefined
+            }
+          >
+            <Brain
+              size={16}
+              className={activeTab === 'psychology' ? 'text-blue-300' : ''}
+              style={
+                activeTab === 'psychology'
+                  ? { filter: 'drop-shadow(0 0 5px rgba(59,130,246,0.8))' }
+                  : undefined
+              }
+            />
+            Pre-Trade Psychology
+            <span className="text-sm">({psychChecks.filter(c => c.enabled).length})</span>
+          </button>
         </div>
 
         <div className="mb-6">
@@ -240,7 +324,9 @@ export default function Checklists() {
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold">
-                  {activeTab === 'confluences' ? 'Your Trading Confluences' : 'Your Trading Rules'}
+                  {activeTab === 'confluences' ? 'Your Trading Confluences'
+                    : activeTab === 'psychology' ? 'Your Pre-Trade Psychology Checklist'
+                    : 'Your Trading Rules'}
                 </h2>
                 <button
                   onClick={() => setIsAddingNew(true)}
@@ -250,6 +336,22 @@ export default function Checklists() {
                   Add New
                 </button>
               </div>
+
+              {activeTab === 'psychology' && (
+                <div
+                  className="mb-4 p-4 rounded-lg border border-blue-400/25 bg-gradient-to-br from-blue-500/[0.07] to-transparent"
+                  style={{ boxShadow: 'inset 0 0 40px rgba(59,130,246,0.06)' }}
+                >
+                  <p className="text-sm text-gray-300 mb-2">
+                    Active checks: <span className="text-blue-300 font-semibold">{enabledCount}</span>
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Run these before you enter, not after. They ask about you rather than the
+                    chart &mdash; whether you&rsquo;re calm, rested and not chasing a loss. Answering
+                    honestly is the point; there is no score attached.
+                  </p>
+                </div>
+              )}
 
               {activeTab === 'confluences' && (
                 <div className="mb-4 p-4 bg-white/5 rounded-lg">
@@ -316,7 +418,9 @@ export default function Checklists() {
               )}
 
               <div className="space-y-2">
-                {(activeTab === 'confluences' ? confluences : rules).map((item) => (
+                {(activeTab === 'confluences' ? confluences
+                  : activeTab === 'psychology' ? psychChecks
+                  : rules).map((item) => (
                   <div
                     key={item.id}
                     className={`p-4 rounded-lg border transition-colors ${
@@ -374,8 +478,9 @@ export default function Checklists() {
                     ) : (
                       <div className="flex items-start gap-3">
                         <button
-                          onClick={() => activeTab === 'confluences'
-                            ? handleToggleConfluence(item.id)
+                          onClick={() =>
+                            activeTab === 'confluences' ? handleToggleConfluence(item.id)
+                            : activeTab === 'psychology' ? handleTogglePsychCheck(item.id)
                             : handleToggleRule(item.id)
                           }
                           className="mt-1 flex-shrink-0"
@@ -391,7 +496,10 @@ export default function Checklists() {
                           {item.description && (
                             <p className="text-sm text-gray-400">{item.description}</p>
                           )}
-                          {activeTab === 'rules' && 'category' in item && (
+                          {/* Only trading rules carry a category; the typeof
+                              check is what narrows it to a string now that the
+                              list can also hold psychology checks. */}
+                          {activeTab === 'rules' && 'category' in item && typeof item.category === 'string' && (
                             <span className="inline-block mt-2 px-2 py-1 text-xs bg-white/5 rounded">
                               {item.category.replace('_', ' ')}
                             </span>
@@ -420,6 +528,16 @@ export default function Checklists() {
               {activeTab === 'confluences' && confluences.length === 0 && (
                 <div className="text-center py-8 text-gray-500">
                   No confluences yet. Add your first one to get started.
+                </div>
+              )}
+
+              {activeTab === 'psychology' && psychChecks.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  <Brain className="w-10 h-10 mx-auto mb-3 text-blue-400/40" />
+                  <p className="text-sm">No checks yet.</p>
+                  <p className="text-xs mt-1">
+                    Add the questions worth asking yourself before you click buy or sell.
+                  </p>
                 </div>
               )}
 
