@@ -25,7 +25,7 @@ import {
   seedStarterChecks,
   type PsychologyCheck
 } from '../services/psychologyChecks';
-import { CheckCircle2, Circle, Plus, X, Edit2, Save, Trash2, GripVertical, Brain } from 'lucide-react';
+import { CheckCircle2, Circle, Plus, X, Edit2, Save, Trash2, GripVertical, Brain, Check } from 'lucide-react';
 import Card from '../components/shared/Card';
 import PageLoader from '../components/shared/PageLoader';
 
@@ -258,7 +258,7 @@ export default function Checklists() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Trading Checklists</h1>
           <p className="text-gray-400">
-            Manage your trading confluences and rules to maintain discipline and consistency
+            Your setup criteria, your rules, and the questions you ask yourself before entering
           </p>
         </div>
 
@@ -339,17 +339,44 @@ export default function Checklists() {
 
               {activeTab === 'psychology' && (
                 <div
-                  className="mb-4 p-4 rounded-lg border border-blue-400/25 bg-gradient-to-br from-blue-500/[0.07] to-transparent"
-                  style={{ boxShadow: 'inset 0 0 40px rgba(59,130,246,0.06)' }}
+                  className="mb-5 p-5 rounded-2xl border border-blue-400/25 bg-gradient-to-br from-blue-500/[0.09] via-blue-500/[0.02] to-transparent"
+                  style={{ boxShadow: 'inset 0 0 60px rgba(59,130,246,0.07), 0 0 30px rgba(59,130,246,0.06)' }}
                 >
-                  <p className="text-sm text-gray-300 mb-2">
-                    Active checks: <span className="text-blue-300 font-semibold">{enabledCount}</span>
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Run these before you enter, not after. They ask about you rather than the
-                    chart &mdash; whether you&rsquo;re calm, rested and not chasing a loss. Answering
-                    honestly is the point; there is no score attached.
-                  </p>
+                  <div className="flex items-start gap-4">
+                    {/* Icon tile, lifted off the panel with its own glow. */}
+                    <div
+                      className="flex-shrink-0 w-11 h-11 rounded-xl bg-blue-500/15 border border-blue-400/30 flex items-center justify-center"
+                      style={{ boxShadow: '0 0 18px rgba(59,130,246,0.25)' }}
+                    >
+                      <Brain
+                        className="w-5 h-5 text-blue-300"
+                        style={{ filter: 'drop-shadow(0 0 6px rgba(59,130,246,0.8))' }}
+                      />
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-base font-semibold text-white">Mental preparation checklist</h3>
+                      <p className="text-xs text-gray-400 mt-1 leading-relaxed">
+                        Run these before you enter, not after. They ask about you rather than the
+                        chart &mdash; whether you&rsquo;re calm, rested, and not chasing a loss.
+                      </p>
+                    </div>
+
+                    {/*
+                      A count, not a score. The sales mock shows a percentage,
+                      but nothing here has been ticked yet - this tab defines
+                      the checklist, it does not run it - so a percentage would
+                      be a number with nothing behind it. This is the one real
+                      figure the page has.
+                    */}
+                    <div
+                      className="flex-shrink-0 flex flex-col items-center justify-center w-16 h-16 rounded-full border border-blue-400/35 bg-blue-500/10"
+                      style={{ boxShadow: '0 0 20px rgba(59,130,246,0.18)' }}
+                    >
+                      <span className="text-xl font-bold text-blue-300 leading-none">{enabledCount}</span>
+                      <span className="text-[9px] uppercase tracking-wider text-blue-400/70 mt-1">active</span>
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -423,11 +450,20 @@ export default function Checklists() {
                   : rules).map((item) => (
                   <div
                     key={item.id}
-                    className={`p-4 rounded-lg border transition-colors ${
-                      item.enabled
-                        ? 'bg-white/5 border-white/10'
-                        : 'bg-white/[0.02] border-white/5 opacity-50'
+                    className={`rounded-xl border transition-all ${
+                      activeTab === 'psychology'
+                        ? item.enabled
+                          ? 'p-4 border-blue-400/25 bg-gradient-to-br from-blue-500/[0.06] via-transparent to-transparent hover:border-blue-400/45'
+                          : 'p-4 border-white/5 bg-white/[0.02] opacity-45 hover:opacity-70'
+                        : item.enabled
+                          ? 'p-4 bg-white/5 border-white/10'
+                          : 'p-4 bg-white/[0.02] border-white/5 opacity-50'
                     }`}
+                    style={
+                      activeTab === 'psychology' && item.enabled
+                        ? { boxShadow: 'inset 0 0 30px rgba(59,130,246,0.05)' }
+                        : undefined
+                    }
                   >
                     {editingId === item.id ? (
                       <div className="space-y-3">
@@ -485,7 +521,28 @@ export default function Checklists() {
                           }
                           className="mt-1 flex-shrink-0"
                         >
-                          {item.enabled ? (
+                          {activeTab === 'psychology' ? (
+                            /*
+                              A square, filled checkbox rather than the outline
+                              circle the other tabs use - it is the one control
+                              on this page that reads as something you tick
+                              before acting, and the glow marks it as active.
+                            */
+                            <span
+                              className={`flex items-center justify-center w-5 h-5 rounded-md border-2 transition-all ${
+                                item.enabled
+                                  ? 'bg-blue-500 border-blue-400'
+                                  : 'border-gray-600 bg-transparent'
+                              }`}
+                              style={
+                                item.enabled
+                                  ? { boxShadow: '0 0 10px rgba(59,130,246,0.55)' }
+                                  : undefined
+                              }
+                            >
+                              {item.enabled && <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />}
+                            </span>
+                          ) : item.enabled ? (
                             <CheckCircle2 className="w-5 h-5 text-blue-400" />
                           ) : (
                             <Circle className="w-5 h-5 text-gray-600" />
