@@ -345,6 +345,18 @@ export interface TradeLogRow {
     rather than assuming every value is displayable.
   */
   screenshot: string | null;
+  /*
+    Which account this trade sits on.
+
+    Needed for two things. Under "All Accounts" the rows come from several
+    accounts at once and nothing on them said which - two identical NAS100
+    shorts on different accounts were indistinguishable. And opening a trade
+    in the journal has to switch to its account first, because the journal is
+    account-scoped: navigating to the right date while the wrong account is
+    selected shows an empty day.
+  */
+  account_id: string | null;
+  account_name: string | null;
 }
 
 /*
@@ -371,7 +383,7 @@ export async function getTradeLog(
 
   let tradesQuery = supabase
     .from('trades')
-    .select('id, symbol, direction, entry_price, exit_price, quantity, pnl, entry_date, exit_date, notes, tags, setup, screenshot_url')
+    .select('id, symbol, direction, entry_price, exit_price, quantity, pnl, entry_date, exit_date, notes, tags, setup, screenshot_url, broker_id')
     .eq('user_id', user.id);
 
   if (dateRange) {
@@ -385,7 +397,7 @@ export async function getTradeLog(
 
   let journalQuery = supabase
     .from('journal_entries')
-    .select('id, title, symbol, direction, manual_pnl, position_size, entry_date, content, tags, before_screenshots, after_screenshots')
+    .select('id, title, symbol, direction, manual_pnl, position_size, entry_date, content, tags, before_screenshots, after_screenshots, account_id')
     .eq('user_id', user.id)
     .not('manual_pnl', 'is', null);
 
@@ -401,9 +413,28 @@ export async function getTradeLog(
     journalQuery = journalQuery.eq('account_id', accountId);
   }
 
-  const [tradesResult, journalResult] = await Promise.all([tradesQuery, journalQuery]);
+  /*
+    Account names come from one small lookup rather than a join on each
+    query, because the two sources reference the account under different
+    column names (trades.broker_id, journal_entries.account_id) and a user
+    has a handful of accounts, not thousands.
+  */
+  const accountsQuery = supabase
+    .from('broker_connections')
+    .select('id, account_name')
+    .eq('user_id', user.id);
+
+  const [tradesResult, journalResult, accountsResult] = await Promise.all([
+    tradesQuery,
+    journalQuery,
+    accountsQuery,
+  ]);
   if (tradesResult.error) throw tradesResult.error;
   if (journalResult.error) throw journalResult.error;
+
+  const accountNames = new Map<string, string>(
+    (accountsResult.data || []).map((a: any) => [a.id, a.account_name])
+  );
 
   const fromTrades: TradeLogRow[] = (tradesResult.data || []).map((t: any) => ({
     id: t.id,
@@ -419,6 +450,8 @@ export async function getTradeLog(
     tags: t.tags || [],
     setup: t.setup ?? null,
     screenshot: t.screenshot_url || null,
+    account_id: t.broker_id ?? null,
+    account_name: t.broker_id ? accountNames.get(t.broker_id) ?? null : null,
     source: 'trades',
   }));
 
@@ -447,6 +480,10 @@ export async function getTradeLog(
       when the trade was never followed up.
     */
     screenshot: latestScreenshot(e.after_screenshots) ?? latestScreenshot(e.before_screenshots),
+    account_id: e.account_id ?? null,
+    // Null when the account was deleted - journal_entries.account_id is
+    // ON DELETE SET NULL, so entries outlive their account on purpose.
+    account_name: e.account_id ? accountNames.get(e.account_id) ?? null : null,
     source: 'journal',
   }));
 

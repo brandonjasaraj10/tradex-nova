@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ExternalLink } from 'lucide-react';
 import { isExternalUrl, resolveScreenshotUrl } from '../../lib/screenshots';
-import TradeTrendGlyph from './TradeTrendGlyph';
+import TradeOutcomeChart from './TradeOutcomeChart';
 
 /*
   The top half of a trade card.
@@ -97,31 +97,13 @@ export default function TradeCardVisual({ screenshot, symbol, pnl }: Props) {
     );
   }
 
-  const isWin = pnl > 0;
-
   return (
-    <div
-      className="relative w-full aspect-[16/10] overflow-hidden flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-[#0A0A0A] to-[#0F0F0F]"
-      style={
-        isWin
-          ? { boxShadow: 'inset 0 0 60px rgba(59,130,246,0.08)' }
-          : { boxShadow: 'inset 0 0 60px rgba(156,163,175,0.05)' }
-      }
-    >
-      <TradeTrendGlyph pnl={pnl} size={52} emphasis />
-      <span className="text-xs font-medium text-gray-500 tracking-wide">
-        {symbol || 'No symbol'}
-      </span>
+    <div className="relative w-full aspect-[16/10] overflow-hidden bg-gradient-to-br from-[#0A0A0A] to-[#0F0F0F]">
+      <TradeOutcomeChart pnl={pnl} />
 
       {/*
-        A TradingView link cannot be previewed, but it can still be opened.
-        Saying so beats a broken image frame or pretending nothing is there.
-      */}
-      {/*
-        Shown whenever no image is on screen - including when a guessed
-        TradingView address stops resolving. Gating this on "no image URL"
-        alone left a failed load with the drawn fallback and no way through
-        to the chart at all.
+        A TradingView link cannot be previewed, and neither can a chart whose
+        guessed address stopped resolving. Saying so beats a broken frame.
       */}
       {isLink && (!linkImage || failed) && (
         <a
@@ -129,10 +111,10 @@ export default function TradeCardVisual({ screenshot, symbol, pnl }: Props) {
           target="_blank"
           rel="noopener noreferrer"
           onClick={(e) => e.stopPropagation()}
-          className="mt-1 inline-flex items-center gap-1.5 text-xs font-medium text-blue-400 hover:text-blue-300 border border-blue-400/30 hover:border-blue-400/60 bg-blue-400/5 rounded-lg px-3 py-1.5 transition-colors"
+          className="absolute bottom-2.5 right-2.5 inline-flex items-center gap-1.5 text-[11px] font-medium text-blue-400 hover:text-blue-300 border border-blue-400/30 hover:border-blue-400/60 bg-black/70 rounded-lg px-2.5 py-1 transition-colors"
         >
-          <ExternalLink size={12} />
-          View chart on TradingView
+          <ExternalLink size={11} />
+          View chart
         </a>
       )}
     </div>

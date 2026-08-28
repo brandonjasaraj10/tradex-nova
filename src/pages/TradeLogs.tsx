@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Search, BookOpen, X, LayoutGrid, List } from 'lucide-react';
 import { useAuth } from '../lib/auth';
+import { useNavigate } from 'react-router-dom';
 import { useAccount } from '../lib/accountContext';
 import { useDateRange } from '../lib/dateRangeContext';
 import { getTradeLog, type TradeLogRow } from '../services/trades';
@@ -47,6 +48,27 @@ const VIEW_STORAGE_KEY = 'tradex_trade_log_view';
 export default function TradeLogs() {
   const { user } = useAuth();
   const { accounts, selectedAccount, setSelectedAccount, refreshAccounts } = useAccount();
+  const navigate = useNavigate();
+
+  /*
+    Open a trade where it actually lives: that day in the journal.
+
+    The journal is account-scoped, so jumping straight to the date while a
+    different account is selected lands on an empty day - the trade would
+    look like it had vanished. Switch the account first when it differs, then
+    navigate. Rows whose account was deleted keep account_id null and are
+    left on whatever is selected, since there is nothing to switch to.
+  */
+  const openInJournal = async (row: TradeLogRow) => {
+    if (row.account_id && row.account_id !== selectedAccount?.id) {
+      const target = accounts.find((a) => a.id === row.account_id);
+      if (target) await setSelectedAccount(target);
+    }
+    navigate(`/journal?date=${row.entry_date.slice(0, 10)}`);
+  };
+
+  // Only worth labelling rows by account when they can actually differ.
+  const showAccountLabel = !selectedAccount;
   const { dateRange, setDateRange } = useDateRange();
 
   const [rows, setRows] = useState<TradeLogRow[]>([]);
@@ -214,7 +236,11 @@ export default function TradeLogs() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.25, delay: Math.min(i, 12) * 0.03 }}
-                      className="rounded-xl overflow-hidden border border-white/10 bg-[#0A0A0A] hover:border-blue-400/30 transition-colors"
+                      onClick={() => openInJournal(row)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openInJournal(row); } }}
+                      className="rounded-xl overflow-hidden border border-white/10 bg-[#0A0A0A] hover:border-blue-400/30 transition-colors cursor-pointer text-left focus:outline-none focus-visible:border-blue-400/60"
                     >
                       <TradeCardVisual screenshot={row.screenshot} symbol={row.symbol} pnl={row.pnl} />
 
@@ -222,7 +248,7 @@ export default function TradeLogs() {
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-semibold text-white truncate">{row.symbol || 'Unknown'}</span>
+                              <span className={`font-semibold truncate ${row.symbol ? 'text-white' : 'text-gray-500'}`}>{row.symbol || 'No symbol'}</span>
                               {row.direction && (
                                 <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${isLong ? 'bg-blue-500/10 text-blue-400' : 'bg-gray-500/10 text-gray-400'}`}>
                                   {row.direction.toUpperCase()}
@@ -230,6 +256,11 @@ export default function TradeLogs() {
                               )}
                             </div>
                             <p className="text-xs text-gray-500 mt-1">{formatDate(row.entry_date)}</p>
+                            {showAccountLabel && (
+                              <p className="text-[10px] text-gray-600 mt-0.5 truncate">
+                                {row.account_name ?? 'Account removed'}
+                              </p>
+                            )}
                           </div>
                           <p className={`font-bold whitespace-nowrap ${valueColorClass(row.pnl)}`}>
                             {formatMoney(row.pnl)}
@@ -265,8 +296,13 @@ export default function TradeLogs() {
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.2, delay: Math.min(i, 12) * 0.02 }}
+                      onClick={() => openInJournal(row)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openInJournal(row); } }}
+                      className="focus:outline-none focus-visible:rounded-xl focus-visible:ring-1 focus-visible:ring-blue-400/60"
                     >
-                      <Card variant="default" className="p-4">
+                      <Card variant="default" className="p-4 cursor-pointer hover:border-blue-400/30 transition-colors">
                         <div className="flex items-center gap-4">
                           <div className="p-2 rounded-lg flex-shrink-0 bg-white/[0.03] flex items-center justify-center">
                             <TradeTrendGlyph pnl={row.pnl} size={20} />
@@ -274,7 +310,7 @@ export default function TradeLogs() {
 
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-semibold text-white">{row.symbol || 'Unknown'}</span>
+                              <span className={`font-semibold ${row.symbol ? 'text-white' : 'text-gray-500'}`}>{row.symbol || 'No symbol'}</span>
                               {row.direction && (
                                 <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${isLong ? 'bg-blue-500/10 text-blue-400' : 'bg-gray-500/10 text-gray-400'}`}>
                                   {row.direction.toUpperCase()}
@@ -286,6 +322,9 @@ export default function TradeLogs() {
                             </div>
                             <p className="text-xs text-gray-500 mt-0.5 truncate">
                               {formatDate(row.entry_date)}
+                              {showAccountLabel && (
+                                <span className="text-gray-600"> &middot; {row.account_name ?? 'Account removed'}</span>
+                              )}
                               {row.setup && <span className="text-gray-600"> &middot; {row.setup}</span>}
                             </p>
                           </div>
