@@ -33,6 +33,7 @@ const Calendar = lazyWithReload('Calendar', () => import('./pages/Calendar'));
 const Settings = lazyWithReload('Settings', () => import('./pages/Settings'));
 const Profile = lazyWithReload('Profile', () => import('./pages/Profile'));
 const NovaAssistant = lazyWithReload('NovaAssistant', () => import('./pages/NovaAssistant'));
+const TradeLogs = lazyWithReload('TradeLogs', () => import('./pages/TradeLogs'));
 const Checklists = lazyWithReload('Checklists', () => import('./pages/Checklists'));
 const TermsOfService = lazyWithReload('TermsOfService', () => import('./pages/TermsOfService'));
 const PrivacyPolicy = lazyWithReload('PrivacyPolicy', () => import('./pages/PrivacyPolicy'));
@@ -190,6 +191,7 @@ function PrivateLayout() {
                 <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
                 <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
                 <Route path="/nova" element={<PrivateRoute><NovaAssistant /></PrivateRoute>} />
+                <Route path="/trade-logs" element={<PrivateRoute><TradeLogs /></PrivateRoute>} />
                 <Route path="/checklists" element={<PrivateRoute><Checklists /></PrivateRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>

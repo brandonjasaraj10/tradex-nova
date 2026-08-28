@@ -302,3 +302,121 @@ export function calculatePnL(data: TradeFormData): number {
     ? (exit_price - entry_price) * quantity
     : (entry_price - exit_price) * quantity;
 }
+
+/*
+  One row per position, from both places a trade can live.
+
+  A trade reaches TradeX two ways: imported or entered into the `trades`
+  table, or written into a journal entry with a manual P&L. Reading only
+  `trades` is the mistake this codebase has made three separate times -
+  Recent Activity, the NOVA Score and the weekly reports each shipped
+  showing one source and looking perfectly correct while omitting the other.
+  On the standing test data one account holds 14 rows in `trades` and 6
+  journal-logged trades, so a trades-only log would show 14 and read as
+  complete.
+
+  getAllUnifiedTrades above already merges the two for charts, but it drops
+  the row id and every field except P&L, symbol, direction and dates - fine
+  for summing, not enough to list. This selects what a log needs and keeps
+  the id, so a row can link back to whatever it came from.
+*/
+export interface TradeLogRow {
+  id: string;
+  symbol: string;
+  direction: string;
+  entry_price: number | null;
+  exit_price: number | null;
+  quantity: number | null;
+  pnl: number;
+  entry_date: string;
+  exit_date: string | null;
+  notes: string;
+  tags: string[];
+  setup: string | null;
+  source: 'trades' | 'journal';
+}
+
+export async function getTradeLog(
+  dateRange?: [Date, Date],
+  accountId?: string
+): Promise<TradeLogRow[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  let tradesQuery = supabase
+    .from('trades')
+    .select('id, symbol, direction, entry_price, exit_price, quantity, pnl, entry_date, exit_date, notes, tags, setup')
+    .eq('user_id', user.id);
+
+  if (dateRange) {
+    tradesQuery = tradesQuery
+      .gte('entry_date', dateRange[0].toISOString())
+      .lte('entry_date', dateRange[1].toISOString());
+  }
+  if (accountId) {
+    tradesQuery = tradesQuery.eq('broker_id', accountId);
+  }
+
+  let journalQuery = supabase
+    .from('journal_entries')
+    .select('id, title, symbol, direction, manual_pnl, position_size, entry_date, content, tags')
+    .eq('user_id', user.id)
+    .not('manual_pnl', 'is', null);
+
+  if (dateRange) {
+    // journal_entries.entry_date is a DATE, not a timestamp - comparing it
+    // against an ISO string is what put evening trades in the wrong day
+    // elsewhere in this file.
+    journalQuery = journalQuery
+      .gte('entry_date', toLocalDateStr(dateRange[0]))
+      .lte('entry_date', toLocalDateStr(dateRange[1]));
+  }
+  if (accountId) {
+    journalQuery = journalQuery.eq('account_id', accountId);
+  }
+
+  const [tradesResult, journalResult] = await Promise.all([tradesQuery, journalQuery]);
+  if (tradesResult.error) throw tradesResult.error;
+  if (journalResult.error) throw journalResult.error;
+
+  const fromTrades: TradeLogRow[] = (tradesResult.data || []).map((t: any) => ({
+    id: t.id,
+    symbol: t.symbol || '',
+    direction: t.direction || '',
+    entry_price: t.entry_price ?? null,
+    exit_price: t.exit_price ?? null,
+    quantity: t.quantity ?? null,
+    pnl: Number(t.pnl) || 0,
+    entry_date: t.entry_date,
+    exit_date: t.exit_date ?? null,
+    notes: t.notes || '',
+    tags: t.tags || [],
+    setup: t.setup ?? null,
+    source: 'trades',
+  }));
+
+  const fromJournal: TradeLogRow[] = (journalResult.data || []).map((e: any) => ({
+    id: e.id,
+    symbol: e.symbol || '',
+    direction: e.direction || '',
+    // A journal entry records what happened, not the ladder of prices, so
+    // these are genuinely unknown rather than zero. Showing 0.00 would be
+    // inventing a fill price the trader never gave us.
+    entry_price: null,
+    exit_price: null,
+    quantity: null,
+    pnl: Number(e.manual_pnl) || 0,
+    entry_date: e.entry_date,
+    exit_date: null,
+    // Strip tags from the stored HTML so search matches what the user wrote
+    // rather than the markup around it.
+    notes: (e.content || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim(),
+    tags: e.tags || [],
+    setup: e.position_size ?? null,
+    source: 'journal',
+  }));
+
+  return [...fromTrades, ...fromJournal].sort(
+    (a, b) => new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime()
+  );
+}

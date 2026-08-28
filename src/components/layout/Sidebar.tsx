@@ -11,13 +11,15 @@ import {
   ChevronLeft,
   LogOut,
   CheckSquare,
-  X
+  X,
+  ListOrdered,
 } from 'lucide-react';
 import Logo from '../shared/Logo';
 
 const navigation = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
   { name: 'Journal', path: '/journal', icon: BookOpen },
+  { name: 'Trade Logs', path: '/trade-logs', icon: ListOrdered },
   { name: 'Analytics', path: '/analytics', icon: BarChart2 },
   { name: 'Calendar', path: '/calendar', icon: CalendarIcon },
   { name: 'NOVA AI', path: '/nova', icon: Brain },
