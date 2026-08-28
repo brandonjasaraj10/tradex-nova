@@ -25,6 +25,36 @@ import TradeTrendGlyph from './TradeTrendGlyph';
 
 const IMAGE_EXTENSIONS = /\.(png|jpe?g|webp|gif|avif)(\?|$)/i;
 
+/*
+  A TradingView link is a page, not an image, so it renders nothing in an
+  <img>. But every snapshot page has the picture itself sitting at a
+  derivable address:
+
+    https://www.tradingview.com/x/2SmdvNZv/
+      -> https://s3.tradingview.com/snapshots/2/2SmdvNZv.png
+
+  The folder is the first character of the id, lowercased. Verified against
+  the real links in this database - all returned 200 image/png.
+
+  This is not a documented API and TradingView could change it, which is why
+  the <img> keeps its onError handler: if the guess ever stops resolving, the
+  card falls back to the drawn visual and the link out, rather than showing a
+  broken frame. Ten of the fourteen charts attached in this app are
+  TradingView links, so leaving them unrendered meant the feature mostly did
+  not work.
+*/
+const TRADINGVIEW_SNAPSHOT = /^https?:\/\/(?:www\.)?tradingview\.com\/x\/([A-Za-z0-9]+)\/?/i;
+
+function toDisplayableImage(url: string): string | null {
+  if (IMAGE_EXTENSIONS.test(url)) return url;
+  const match = url.match(TRADINGVIEW_SNAPSHOT);
+  if (match) {
+    const id = match[1];
+    return `https://s3.tradingview.com/snapshots/${id[0].toLowerCase()}/${id}.png`;
+  }
+  return null;
+}
+
 interface Props {
   screenshot: string | null;
   symbol: string;
@@ -36,7 +66,7 @@ export default function TradeCardVisual({ screenshot, symbol, pnl }: Props) {
   const [failed, setFailed] = useState(false);
 
   const isLink = !!screenshot && isExternalUrl(screenshot);
-  const linkIsImage = isLink && IMAGE_EXTENSIONS.test(screenshot!);
+  const linkImage = isLink ? toDisplayableImage(screenshot!) : null;
   const isStoredFile = !!screenshot && !isLink;
 
   useEffect(() => {
@@ -50,7 +80,7 @@ export default function TradeCardVisual({ screenshot, symbol, pnl }: Props) {
     return () => { cancelled = true; };
   }, [screenshot, isStoredFile]);
 
-  const imageSrc = linkIsImage ? screenshot : signedUrl;
+  const imageSrc = linkImage ?? signedUrl;
 
   if (imageSrc && !failed) {
     return (
@@ -87,16 +117,22 @@ export default function TradeCardVisual({ screenshot, symbol, pnl }: Props) {
         A TradingView link cannot be previewed, but it can still be opened.
         Saying so beats a broken image frame or pretending nothing is there.
       */}
-      {isLink && !linkIsImage && (
+      {/*
+        Shown whenever no image is on screen - including when a guessed
+        TradingView address stops resolving. Gating this on "no image URL"
+        alone left a failed load with the drawn fallback and no way through
+        to the chart at all.
+      */}
+      {isLink && (!linkImage || failed) && (
         <a
           href={screenshot!}
           target="_blank"
           rel="noopener noreferrer"
           onClick={(e) => e.stopPropagation()}
-          className="absolute bottom-2 right-2 inline-flex items-center gap-1 text-[10px] text-blue-400 hover:text-blue-300 bg-black/60 rounded-md px-2 py-1 transition-colors"
+          className="mt-1 inline-flex items-center gap-1.5 text-xs font-medium text-blue-400 hover:text-blue-300 border border-blue-400/30 hover:border-blue-400/60 bg-blue-400/5 rounded-lg px-3 py-1.5 transition-colors"
         >
-          <ExternalLink size={11} />
-          View chart
+          <ExternalLink size={12} />
+          View chart on TradingView
         </a>
       )}
     </div>

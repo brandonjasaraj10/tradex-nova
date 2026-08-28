@@ -347,10 +347,18 @@ export interface TradeLogRow {
   screenshot: string | null;
 }
 
-function firstScreenshot(list: any): string | null {
+/*
+  The most recently attached chart, not the first one.
+
+  handleAddScreenshot appends, so the last element of an array is the newest.
+  A trader who adds a sharper chart, or replaces one that did not show what
+  they meant, expects the newest to be the one that represents the trade -
+  showing them the oldest instead makes every later upload feel ignored.
+*/
+function latestScreenshot(list: any): string | null {
   if (!Array.isArray(list) || list.length === 0) return null;
-  const first = list[0];
-  const value = typeof first === 'string' ? first : first?.url;
+  const last = list[list.length - 1];
+  const value = typeof last === 'string' ? last : last?.url;
   return value || null;
 }
 
@@ -432,9 +440,13 @@ export async function getTradeLog(
     notes: (e.content || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim(),
     tags: e.tags || [],
     setup: e.position_size ?? null,
-    // The "before" chart is the one worth previewing: it is what the trader
-    // was looking at when they decided to take the trade.
-    screenshot: firstScreenshot(e.before_screenshots) ?? firstScreenshot(e.after_screenshots),
+    /*
+      "After" charts are attached once the trade is closed, so anything there
+      is newer than anything in "before" - which makes the last after-chart
+      the most recent attachment overall, and the before-chart the fallback
+      when the trade was never followed up.
+    */
+    screenshot: latestScreenshot(e.after_screenshots) ?? latestScreenshot(e.before_screenshots),
     source: 'journal',
   }));
 
