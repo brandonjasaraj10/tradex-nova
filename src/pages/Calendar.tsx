@@ -30,6 +30,23 @@ function toLocalDateStr(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
+/*
+  A day's P&L, short enough for a 42px calendar cell on a phone.
+
+  Thousands collapse to "4k", keeping one decimal only when it carries
+  information - 4500 becomes "4.5k" but 4000 stays "4k" rather than "4.0k".
+  Anything under a thousand is shown in full, since it already fits.
+*/
+function formatCompactPnl(pnl: number): string {
+  const sign = pnl >= 0 ? '+' : '-';
+  const abs = Math.abs(pnl);
+  if (abs >= 1000) {
+    const k = abs / 1000;
+    return `${sign}$${k % 1 === 0 ? k.toFixed(0) : k.toFixed(1)}k`;
+  }
+  return `${sign}$${abs.toFixed(0)}`;
+}
+
 export default function Calendar() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -446,7 +463,7 @@ export default function Calendar() {
                 ${isHovered ? 'scale-105 shadow-lg hover:border-white/30' : 'hover:border-white/20'}
                 ${viewMode === 'psychology' && dayData?.psychologyScore !== null ? 'hover:scale-105' : ''}`}
               >
-                <div className={`text-[11px] lg:text-xs xl:text-sm font-semibold ${getCellTextColor(dayData)}`}>
+                <div className={`text-[11px] lg:text-xs xl:text-sm font-semibold leading-tight ${getCellTextColor(dayData)}`}>
                   {currentDay}
                 </div>
 
@@ -460,12 +477,32 @@ export default function Calendar() {
 
                 {dayData && viewMode === 'pnl' && dayData.tradeCount > 0 && (
                   <div className="text-center">
-                    <div className={`text-[9px] lg:text-[10px] xl:text-xs ${getCellTextColor(dayData)}`}>
+                    {/*
+                      leading-none throughout: a day number, a trade count and
+                      a P&L at default line height need about 49px of stack in
+                      a 42px cell, so the figure hung 7px below the rounded
+                      background. Tightening the leading fits all three rather
+                      than dropping the trade count.
+                    */}
+                    <div className={`text-[9px] lg:text-[10px] xl:text-xs leading-none ${getCellTextColor(dayData)}`}>
                       {dayData.tradeCount} {dayData.tradeCount === 1 ? 't' : 't'}
                     </div>
                     {!privacyMode && (
-                      <div className={`text-[9px] lg:text-[10px] xl:text-xs font-bold ${getCellTextColor(dayData)}`}>
-                        {dayData.pnl >= 0 ? '+' : '-'}${Math.abs(dayData.pnl).toFixed(0)}
+                      /*
+                        Abbreviated on a phone, exact from sm upwards.
+
+                        A day cell is 42px square on a 375px screen, and
+                        "+$4000" at 9px very nearly fills that before padding,
+                        so the figure spilled past the rounded background and
+                        the whole grid looked broken. "+$4k" fits with room to
+                        spare; the exact number is one tap away in Day Results,
+                        and desktop still shows it in full.
+                      */
+                      <div className={`text-[9px] lg:text-[10px] xl:text-xs font-bold leading-none mt-0.5 ${getCellTextColor(dayData)}`}>
+                        <span className="sm:hidden">{formatCompactPnl(dayData.pnl)}</span>
+                        <span className="hidden sm:inline">
+                          {dayData.pnl >= 0 ? '+' : '-'}${Math.abs(dayData.pnl).toFixed(0)}
+                        </span>
                       </div>
                     )}
                     {privacyMode && dayData.pnl !== 0 && (
