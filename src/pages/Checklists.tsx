@@ -25,7 +25,7 @@ import {
   seedStarterChecks,
   type PsychologyCheck
 } from '../services/psychologyChecks';
-import { CheckCircle2, Circle, Plus, X, Edit2, Save, Trash2, GripVertical, Brain, Check } from 'lucide-react';
+import { CheckCircle2, Circle, Plus, X, Edit2, Save, Trash2, GripVertical, Brain, Check, ChevronDown } from 'lucide-react';
 import Card from '../components/shared/Card';
 import PageLoader from '../components/shared/PageLoader';
 import PreTradeScales from '../components/journal/PreTradeScales';
@@ -269,7 +269,38 @@ export default function Checklists() {
           to 526px on a 375px phone, and without this the document grew to
           match, letting the whole page be dragged sideways.
         */}
-        <div className="flex gap-2 mb-6 border-b border-white/10 overflow-x-auto">
+        {/*
+          A dropdown on a phone, the tab strip from sm up.
+
+          Three tabs never fit across 375px, and a horizontally scrolling strip
+          hides its own options - Rules and Psychology sat off-screen with
+          nothing indicating they were there, so the page read as having one
+          tab. A select shows the current choice, states how many there are,
+          and opens the platform's own picker, which is a better control on a
+          touch screen than a strip you have to discover you can swipe.
+        */}
+        <div className="sm:hidden mb-6">
+          <label htmlFor="checklist-tab" className="sr-only">Choose a checklist</label>
+          <div className="relative">
+            <select
+              id="checklist-tab"
+              value={activeTab}
+              onChange={(e) => setActiveTab(e.target.value as TabType)}
+              className="w-full appearance-none bg-[#0A0A0A] border border-white/10 rounded-lg pl-4 pr-10 py-3 text-sm font-medium text-white focus:outline-none focus:border-blue-400/50 transition-colors"
+            >
+              <option value="confluences">Confluences ({confluences.filter(c => c.enabled).length})</option>
+              <option value="rules">Trading Rules ({rules.filter(r => r.enabled).length})</option>
+              <option value="psychology">Pre-Trade Psychology ({psychChecks.filter(c => c.enabled).length})</option>
+            </select>
+            {/* appearance-none removes the native arrow, so it is drawn back in */}
+            <ChevronDown
+              size={18}
+              className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+            />
+          </div>
+        </div>
+
+        <div className="hidden sm:flex gap-2 mb-6 border-b border-white/10 overflow-x-auto">
           <button
             onClick={() => setActiveTab('confluences')}
             className={`px-6 py-3 font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
