@@ -409,7 +409,22 @@ Deno.serve(async (req: Request) => {
         .from("user_tips")
         .insert(tips);
 
-      if (insertError) {
+      /*
+        A duplicate here is an expected outcome, not a failure.
+
+        The page reads active tips and generates a set when it finds none, and
+        that read-then-write is not atomic - two overlapping loads both saw
+        zero and both generated, so every tip appeared twice, 16ms apart. A
+        unique index on (user_id, title, generation day) is what actually
+        settles the race, and 23505 is the loser of it: the tips this call
+        wanted to write are already in the table, put there by the winner
+        moments earlier. Reporting that as an error would show a failure to
+        someone whose tips are sitting right there.
+
+        onConflict is not usable here because the index is on an expression -
+        the generation day - and PostgREST can only target columns.
+      */
+      if (insertError && insertError.code !== "23505") {
         console.error("Error inserting tips:", insertError);
         throw insertError;
       }
