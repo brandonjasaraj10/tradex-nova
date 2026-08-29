@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import ConfirmModal from '../components/shared/ConfirmModal';
 import { useAuth } from '../lib/auth';
 import {
@@ -32,12 +32,22 @@ import PreTradeScales from '../components/journal/PreTradeScales';
 
 type TabType = 'confluences' | 'rules' | 'psychology';
 
+// One definition, used by the dropdown trigger and its options so the two
+// can never drift apart.
+const TAB_LABELS: Record<TabType, string> = {
+  confluences: 'Confluences',
+  rules: 'Trading Rules',
+  psychology: 'Pre-Trade Psychology',
+};
+
 export default function Checklists() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('confluences');
   const [confluences, setConfluences] = useState<Confluence[]>([]);
   const [rules, setRules] = useState<TradingRule[]>([]);
   const [psychChecks, setPsychChecks] = useState<PsychologyCheck[]>([]);
+  const [tabMenuOpen, setTabMenuOpen] = useState(false);
+  const tabMenuRef = useRef<HTMLDivElement>(null);
   const [minConfluences, setMinConfluences] = useState(3);
   const [isLoading, setIsLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -48,6 +58,35 @@ export default function Checklists() {
   const [newItemDescription, setNewItemDescription] = useState('');
   const [ruleCategory, setRuleCategory] = useState<TradingRule['category']>('strategy');
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; id: string }>({ isOpen: false, id: '' });
+
+  const tabCounts: Record<TabType, number> = {
+    confluences: confluences.filter(c => c.enabled).length,
+    rules: rules.filter(r => r.enabled).length,
+    psychology: psychChecks.filter(c => c.enabled).length,
+  };
+
+  /*
+    Close on a click anywhere else, or on Escape. A dropdown that only closes
+    by choosing something traps someone who opened it by accident - on a phone
+    there is no stray click to dismiss it with unless we listen for one.
+  */
+  useEffect(() => {
+    if (!tabMenuOpen) return;
+    const onPointerDown = (e: MouseEvent | TouchEvent) => {
+      if (tabMenuRef.current && !tabMenuRef.current.contains(e.target as Node)) {
+        setTabMenuOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setTabMenuOpen(false); };
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('touchstart', onPointerDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('touchstart', onPointerDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [tabMenuOpen]);
 
   useEffect(() => {
     loadData();
@@ -270,34 +309,62 @@ export default function Checklists() {
           match, letting the whole page be dragged sideways.
         */}
         {/*
-          A dropdown on a phone, the tab strip from sm up.
+          A real dropdown on a phone, the tab strip from sm up.
 
           Three tabs never fit across 375px, and a horizontally scrolling strip
           hides its own options - Rules and Psychology sat off-screen with
-          nothing indicating they were there, so the page read as having one
-          tab. A select shows the current choice, states how many there are,
-          and opens the platform's own picker, which is a better control on a
-          touch screen than a strip you have to discover you can swipe.
+          nothing to say they were there.
+
+          Built rather than using a native select: a select hands off to the
+          operating system's picker, which is a wheel or a detached list
+          rendered wherever the OS wants it, not beneath the control that
+          opened it. This opens directly under the button in the app's own
+          styling, which is what a dropdown should do.
         */}
-        <div className="sm:hidden mb-6">
-          <label htmlFor="checklist-tab" className="sr-only">Choose a checklist</label>
-          <div className="relative">
-            <select
-              id="checklist-tab"
-              value={activeTab}
-              onChange={(e) => setActiveTab(e.target.value as TabType)}
-              className="w-full appearance-none bg-[#0A0A0A] border border-white/10 rounded-lg pl-4 pr-10 py-3 text-sm font-medium text-white focus:outline-none focus:border-blue-400/50 transition-colors"
-            >
-              <option value="confluences">Confluences ({confluences.filter(c => c.enabled).length})</option>
-              <option value="rules">Trading Rules ({rules.filter(r => r.enabled).length})</option>
-              <option value="psychology">Pre-Trade Psychology ({psychChecks.filter(c => c.enabled).length})</option>
-            </select>
-            {/* appearance-none removes the native arrow, so it is drawn back in */}
+        <div className="sm:hidden mb-6 relative" ref={tabMenuRef}>
+          <button
+            type="button"
+            onClick={() => setTabMenuOpen(o => !o)}
+            aria-haspopup="listbox"
+            aria-expanded={tabMenuOpen}
+            className="w-full flex items-center justify-between bg-[#0A0A0A] border border-white/10 rounded-lg px-4 py-3 text-sm font-medium text-white hover:border-white/20 focus:outline-none focus:border-blue-400/50 transition-colors"
+          >
+            <span className="flex items-center gap-2">
+              {activeTab === 'psychology' && <Brain size={16} className="text-blue-400" />}
+              {TAB_LABELS[activeTab]}
+              <span className="text-gray-400">({tabCounts[activeTab]})</span>
+            </span>
             <ChevronDown
               size={18}
-              className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+              className={`text-gray-400 transition-transform ${tabMenuOpen ? 'rotate-180' : ''}`}
             />
-          </div>
+          </button>
+
+          {tabMenuOpen && (
+            <div
+              role="listbox"
+              className="absolute left-0 right-0 top-full mt-1 z-30 bg-[#0A0A0A] border border-white/10 rounded-lg overflow-hidden shadow-2xl"
+            >
+              {(['confluences', 'rules', 'psychology'] as TabType[]).map(tab => (
+                <button
+                  key={tab}
+                  type="button"
+                  role="option"
+                  aria-selected={activeTab === tab}
+                  onClick={() => { setActiveTab(tab); setTabMenuOpen(false); }}
+                  className={`w-full flex items-center gap-2 px-4 py-3 text-sm text-left transition-colors ${
+                    activeTab === tab
+                      ? 'bg-blue-500/15 text-blue-300'
+                      : 'text-gray-300 hover:bg-white/5'
+                  }`}
+                >
+                  {tab === 'psychology' && <Brain size={16} className="text-blue-400 flex-shrink-0" />}
+                  {TAB_LABELS[tab]}
+                  <span className="text-gray-500">({tabCounts[tab]})</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="hidden sm:flex gap-2 mb-6 border-b border-white/10 overflow-x-auto">
