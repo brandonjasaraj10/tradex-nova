@@ -709,7 +709,20 @@ Deno.serve(async (req: Request) => {
         .from("user_insights")
         .insert(insightsToInsert);
 
-      if (insertError) {
+      /*
+        23505 here is the expected outcome of a race, not a failure.
+
+        The page reads active insights and generates a set when it finds none,
+        and that read-then-write is not atomic - two overlapping loads both saw
+        zero and both generated, so every insight appeared twice, 35ms apart. A
+        unique index on (user_id, title, generation day) settles it, and this
+        call is simply the loser: the insights it wanted to write are already
+        in the table, put there by the winner moments earlier.
+
+        onConflict is not usable because the index is on an expression - the
+        generation day - and PostgREST can only target columns.
+      */
+      if (insertError && insertError.code !== "23505") {
         console.error("Error inserting insights:", insertError);
         throw insertError;
       }
