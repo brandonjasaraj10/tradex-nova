@@ -517,16 +517,25 @@ export function PsychologyTemplate({ data, onChange }: PsychologyTemplateProps) 
             <label className="block text-sm font-medium text-gray-300 mb-3">
               Overall Psychological State
             </label>
-            <div className="grid grid-cols-3 gap-3">
+            {/*
+              One per row on a phone, three across from sm up.
+
+              Three columns on a 375px screen left each card about 53px of
+              text width after its padding, so "Calm, disciplined, on-point"
+              broke over four lines and the labels were barely readable. On
+              mobile each option becomes a row - icon left, label and
+              description beside it - which is also an easier tap target.
+            */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
               <button
                 onClick={() => updateData(['end_of_day_summary', 'psychological_state'], 'excellent')}
-                className={`p-4 rounded-xl border-2 transition-all ${
+                className={`p-3 sm:p-4 rounded-xl border-2 transition-all flex items-center gap-3 text-left sm:block sm:text-center ${
                   data.end_of_day_summary?.psychological_state === 'excellent'
                     ? 'border-blue-500 bg-blue-500/20'
                     : 'border-white/10 hover:border-blue-400/40 bg-white/5'
                 }`}
               >
-                <Smile size={28} className={`mx-auto mb-2 ${
+                <Smile size={26} className={`flex-shrink-0 sm:mx-auto sm:mb-2 ${
                   data.end_of_day_summary?.psychological_state === 'excellent'
                     ? 'text-blue-500'
                     : 'text-gray-400'
@@ -542,13 +551,13 @@ export function PsychologyTemplate({ data, onChange }: PsychologyTemplateProps) 
 
               <button
                 onClick={() => updateData(['end_of_day_summary', 'psychological_state'], 'moderate')}
-                className={`p-4 rounded-xl border-2 transition-all ${
+                className={`p-3 sm:p-4 rounded-xl border-2 transition-all flex items-center gap-3 text-left sm:block sm:text-center ${
                   data.end_of_day_summary?.psychological_state === 'moderate'
                     ? 'border-blue-400 bg-blue-400/20'
                     : 'border-white/10 hover:border-blue-400/40 bg-white/5'
                 }`}
               >
-                <Meh size={28} className={`mx-auto mb-2 ${
+                <Meh size={26} className={`flex-shrink-0 sm:mx-auto sm:mb-2 ${
                   data.end_of_day_summary?.psychological_state === 'moderate'
                     ? 'text-blue-400'
                     : 'text-gray-400'
@@ -564,13 +573,13 @@ export function PsychologyTemplate({ data, onChange }: PsychologyTemplateProps) 
 
               <button
                 onClick={() => updateData(['end_of_day_summary', 'psychological_state'], 'challenging')}
-                className={`p-4 rounded-xl border-2 transition-all ${
+                className={`p-3 sm:p-4 rounded-xl border-2 transition-all flex items-center gap-3 text-left sm:block sm:text-center ${
                   data.end_of_day_summary?.psychological_state === 'challenging'
                     ? 'border-blue-300 bg-blue-300/20'
                     : 'border-white/10 hover:border-blue-400/40 bg-white/5'
                 }`}
               >
-                <Frown size={28} className={`mx-auto mb-2 ${
+                <Frown size={26} className={`flex-shrink-0 sm:mx-auto sm:mb-2 ${
                   data.end_of_day_summary?.psychological_state === 'challenging'
                     ? 'text-blue-300'
                     : 'text-gray-400'
@@ -1184,16 +1193,16 @@ export function PsychologyTemplate({ data, onChange }: PsychologyTemplateProps) 
             <label className="block text-sm font-medium text-gray-300 mb-3">
               Overall Psychological State
             </label>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
               <button
                 onClick={() => updateData(['end_of_day_summary', 'psychological_state'], 'excellent')}
-                className={`p-4 rounded-xl border-2 transition-all ${
+                className={`p-3 sm:p-4 rounded-xl border-2 transition-all flex items-center gap-3 text-left sm:block sm:text-center ${
                   data.end_of_day_summary?.psychological_state === 'excellent'
                     ? 'border-blue-500 bg-blue-500/20'
                     : 'border-white/10 hover:border-blue-400/40 bg-white/5'
                 }`}
               >
-                <Smile size={28} className={`mx-auto mb-2 ${
+                <Smile size={26} className={`flex-shrink-0 sm:mx-auto sm:mb-2 ${
                   data.end_of_day_summary?.psychological_state === 'excellent'
                     ? 'text-blue-500'
                     : 'text-gray-400'
@@ -1210,13 +1219,13 @@ export function PsychologyTemplate({ data, onChange }: PsychologyTemplateProps) 
 
               <button
                 onClick={() => updateData(['end_of_day_summary', 'psychological_state'], 'moderate')}
-                className={`p-4 rounded-xl border-2 transition-all ${
+                className={`p-3 sm:p-4 rounded-xl border-2 transition-all flex items-center gap-3 text-left sm:block sm:text-center ${
                   data.end_of_day_summary?.psychological_state === 'moderate'
                     ? 'border-blue-400 bg-blue-400/20'
                     : 'border-white/10 hover:border-blue-400/40 bg-white/5'
                 }`}
               >
-                <Meh size={28} className={`mx-auto mb-2 ${
+                <Meh size={26} className={`flex-shrink-0 sm:mx-auto sm:mb-2 ${
                   data.end_of_day_summary?.psychological_state === 'moderate'
                     ? 'text-blue-400'
                     : 'text-gray-400'
@@ -1233,13 +1242,13 @@ export function PsychologyTemplate({ data, onChange }: PsychologyTemplateProps) 
 
               <button
                 onClick={() => updateData(['end_of_day_summary', 'psychological_state'], 'challenging')}
-                className={`p-4 rounded-xl border-2 transition-all ${
+                className={`p-3 sm:p-4 rounded-xl border-2 transition-all flex items-center gap-3 text-left sm:block sm:text-center ${
                   data.end_of_day_summary?.psychological_state === 'challenging'
                     ? 'border-blue-300 bg-blue-300/20'
                     : 'border-white/10 hover:border-blue-400/40 bg-white/5'
                 }`}
               >
-                <Frown size={28} className={`mx-auto mb-2 ${
+                <Frown size={26} className={`flex-shrink-0 sm:mx-auto sm:mb-2 ${
                   data.end_of_day_summary?.psychological_state === 'challenging'
                     ? 'text-blue-300'
                     : 'text-gray-400'
