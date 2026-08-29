@@ -185,7 +185,20 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute top-12 right-0 z-30 bg-[#0A0A0A] border border-white/10 rounded-xl shadow-2xl overflow-hidden min-w-[200px]"
+            /*
+              Anchored left on a phone, right from sm up.
+
+              right-0 pins the panel's right edge to the trigger's, so it grows
+              leftward - and this trigger sits near the left of the screen, so
+              anything wider than the trigger ran off past x=0 and lost its
+              first 45px. Anchoring left means it grows into the empty space
+              instead, and the max-width stops it reaching the other edge.
+
+              Not fixed positioning like the notification panel: that trigger
+              lives in the fixed header, while this one scrolls with the page,
+              so a fixed panel would drift away from its button.
+            */
+            className="absolute top-12 left-0 right-auto sm:left-auto sm:right-0 z-30 bg-[#0A0A0A] border border-white/10 rounded-xl shadow-2xl overflow-hidden min-w-[200px] max-w-[calc(100vw-2rem)]"
           >
             <div className="p-2">
               <button

@@ -154,7 +154,18 @@ export default function NotificationPopup({ isOpen, onClose }: NotificationPopup
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -10, scale: 0.95 }}
           transition={{ duration: 0.15 }}
-          className="absolute top-14 right-0 w-96 bg-[#0A0A0A] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50"
+          /*
+            On a phone this is pinned to the screen, not to the bell.
+
+            right-0 anchors to the trigger's right edge, and the bell sits
+            about 58px in from the edge of the screen - so a panel wide
+            enough to be useful grew leftward past x=0 and lost its first
+            26px. Spanning the viewport with a margin each side is the only
+            arrangement that cannot depend on where the trigger happens to
+            sit. The header is fixed, so a fixed panel hanging off it
+            behaves consistently.
+          */
+          className="fixed left-4 right-4 top-16 sm:absolute sm:left-auto sm:right-0 sm:top-14 sm:w-96 bg-[#0A0A0A] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50"
         >
           <div className="p-4 border-b border-white/10 flex items-center justify-between">
             <div className="flex items-center gap-2">

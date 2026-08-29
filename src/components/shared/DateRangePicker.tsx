@@ -209,7 +209,15 @@ export default function DateRangePicker({ value, onChange }: DateRangePickerProp
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute top-12 right-0 z-30 bg-[#0A0A0A] border border-white/10 rounded-xl shadow-2xl overflow-hidden min-w-max"
+            /*
+              Anchored left on a phone so the panel grows into the screen
+              rather than off it - see AccountSelector for the reasoning.
+
+              min-w-max is also dropped below sm: it sizes the panel to its
+              widest content, which for a two-month calendar is 474px, and no
+              max-width can shrink something whose minimum is already larger.
+            */
+            className="absolute top-12 left-0 right-auto sm:left-auto sm:right-0 z-30 bg-[#0A0A0A] border border-white/10 rounded-xl shadow-2xl overflow-x-auto sm:overflow-hidden sm:min-w-max max-w-[calc(100vw-2rem)] sm:max-w-none"
           >
             <div className="flex">
               <div className="w-48 border-r border-white/10 p-4">
