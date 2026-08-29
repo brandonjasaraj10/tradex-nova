@@ -278,7 +278,8 @@ export default function Checklists() {
                 : 'text-gray-400 hover:text-white'
             }`}
           >
-            Trading Confluences
+            <span className="sm:hidden">Confluences</span>
+            <span className="hidden sm:inline">Trading Confluences</span>
             <span className="ml-2 text-sm">({confluences.filter(c => c.enabled).length})</span>
           </button>
           <button
@@ -289,7 +290,8 @@ export default function Checklists() {
                 : 'text-gray-400 hover:text-white'
             }`}
           >
-            Trading Rules
+            <span className="sm:hidden">Rules</span>
+            <span className="hidden sm:inline">Trading Rules</span>
             <span className="ml-2 text-sm">({rules.filter(r => r.enabled).length})</span>
           </button>
           {/*
@@ -320,25 +322,39 @@ export default function Checklists() {
                   : undefined
               }
             />
-            Pre-Trade Psychology
+            <span className="sm:hidden">Psychology</span>
+            <span className="hidden sm:inline">Pre-Trade Psychology</span>
             <span className="text-sm">({psychChecks.filter(c => c.enabled).length})</span>
           </button>
         </div>
 
         <div className="mb-6">
           <Card>
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold">
-                  {activeTab === 'confluences' ? 'Your Trading Confluences'
-                    : activeTab === 'psychology' ? 'Your Pre-Trade Psychology Checklist'
-                    : 'Your Trading Rules'}
+                {/*
+                  Shorter heading on a phone. The tab directly above already
+                  names the list, so repeating "Your Trading Confluences"
+                  wrapped the heading onto two lines and squeezed "Add New"
+                  into wrapping as well.
+                */}
+                <h2 className="text-lg sm:text-xl font-semibold min-w-0">
+                  <span className="sm:hidden">
+                    {activeTab === 'confluences' ? 'Confluences'
+                      : activeTab === 'psychology' ? 'Psychology'
+                      : 'Rules'}
+                  </span>
+                  <span className="hidden sm:inline">
+                    {activeTab === 'confluences' ? 'Your Trading Confluences'
+                      : activeTab === 'psychology' ? 'Your Pre-Trade Psychology Checklist'
+                      : 'Your Trading Rules'}
+                  </span>
                 </h2>
                 <button
                   onClick={() => setIsAddingNew(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors"
+                  className="flex-shrink-0 flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors text-sm whitespace-nowrap"
                 >
-                  <Plus className="w-4 h-4" />
+                  <Plus className="w-4 h-4 flex-shrink-0" />
                   Add New
                 </button>
               </div>
@@ -478,11 +494,11 @@ export default function Checklists() {
                     className={`rounded-xl border transition-all ${
                       activeTab === 'psychology'
                         ? item.enabled
-                          ? 'p-4 border-blue-400/40 bg-gradient-to-r from-blue-500/[0.10] via-blue-500/[0.03] to-transparent hover:border-blue-400/70'
+                          ? 'p-3 sm:p-4 border-blue-400/40 bg-gradient-to-r from-blue-500/[0.10] via-blue-500/[0.03] to-transparent hover:border-blue-400/70'
                           : 'p-4 border-white/5 bg-white/[0.02] opacity-45 hover:opacity-70'
                         : item.enabled
-                          ? 'p-4 bg-white/5 border-white/10'
-                          : 'p-4 bg-white/[0.02] border-white/5 opacity-50'
+                          ? 'p-3 sm:p-4 bg-white/5 border-white/10'
+                          : 'p-3 sm:p-4 bg-white/[0.02] border-white/5 opacity-50'
                     }`}
                     style={
                       activeTab === 'psychology' && item.enabled
@@ -537,7 +553,7 @@ export default function Checklists() {
                         </div>
                       </div>
                     ) : (
-                      <div className="flex items-start gap-3">
+                      <div className="flex items-start gap-2 sm:gap-3">
                         <button
                           onClick={() =>
                             activeTab === 'confluences' ? handleToggleConfluence(item.id)
@@ -573,7 +589,7 @@ export default function Checklists() {
                             <Circle className="w-5 h-5 text-gray-600" />
                           )}
                         </button>
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                           <h3 className="font-medium mb-1">{item.name}</h3>
                           {item.description && (
                             <p className="text-sm text-gray-400">{item.description}</p>
@@ -587,10 +603,17 @@ export default function Checklists() {
                             </span>
                           )}
                         </div>
-                        <div className="flex gap-1">
+                        {/*
+                          flex-shrink-0 with tighter padding on a phone. These
+                          two icons held a fixed slice of a 375px row, which
+                          left the name so little width that "Clear Supply or
+                          Demand Zone" stacked three lines and its description
+                          four.
+                        */}
+                        <div className="flex gap-0.5 sm:gap-1 flex-shrink-0">
                           <button
                             onClick={() => handleEdit(item)}
-                            className="p-2 hover:bg-white/5 rounded-lg transition-colors"
+                            className="p-1.5 sm:p-2 hover:bg-white/5 rounded-lg transition-colors"
                           >
                             <Edit2 className="w-4 h-4 text-gray-400" />
                           </button>
