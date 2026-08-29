@@ -192,6 +192,15 @@ ${userPsychChecks.length > 0
   ? `The user's own psychology checks (id: name):\n${userPsychChecks.map(c => `- ${c.id}: ${c.name}`).join('\n')}\n\nInclude a check in psychology_status ONLY when the transcript contains a statement about that specific thing. Use the exact id, and confirmed true or false - a statement can answer negatively: "I was definitely revenge trading" confirms FALSE on a check about chasing losses.\n\nThis is the trader's own account of their state of mind, so an unsupported tick is you putting words in their mouth. Leaving a check out is always correct when they did not speak to it - a blank is honest, a guess is not.\n\nWorked example. Transcript: "shorted GBPUSD, made 300, I was calm and had my plan written out". Checks: "Reviewed trading plan", "I can afford to lose this risk", "Checked market conditions".\n-> Only "Reviewed trading plan" belongs in psychology_status. Being calm and having a plan says NOTHING about position size or about having looked at market conditions, however sensible those sound for a winning trade. Do not include them.`
   : 'The user has no psychology checks defined.'}
 
+CORRECTIONS: the text may be taking something back - "actually I never
+reviewed my plan", "scratch that, I was tilted", "I said I was calm but I
+wasn't". A correction is the clearest statement a trader can make about a
+check, so return it with the corrected value (confirmed false where they are
+retracting) rather than leaving it out. The same for ratings: "I actually
+wasn't that focused" lowers pre_trade_focus. You will not be shown their
+previous answers - just report what this text says, and the app will replace
+the old value with it.
+
 Ratings, only when they actually describe how they felt:
 - pre_trade_emotional_state: 1-5, how steady they were. "rattled"/"tilted" is 1-2, "fine"/"normal" is 3, "calm"/"clear" is 4-5.
 - pre_trade_focus: 1-5, how sharp. "distracted"/"half watching" is 1-2, "locked in"/"dialled" is 4-5.
