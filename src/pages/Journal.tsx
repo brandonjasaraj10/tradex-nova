@@ -2164,7 +2164,7 @@ export default function Journal() {
                       {psychChecks.length > 0 && (
                         <div className="mt-5 pt-4 border-t border-blue-400/15 space-y-1">
                           {psychChecks.map((check) => {
-                            const confirmed = psychStatus.get(check.id) === true;
+                            const value = psychStatus.get(check.id) ?? null;
                             return (
                               <button
                                 key={check.id}
@@ -2178,9 +2178,21 @@ export default function Journal() {
                                     second silently discards the first - ticking
                                     two boxes quickly saved only one of them.
                                   */
+                                  /*
+                                    Three states, cycling the same way
+                                    confluences and rules do: unanswered -> yes
+                                    -> no -> unanswered. "I was not calm" is the
+                                    most useful thing on this list to be able to
+                                    record, and a two-state tick can only say yes
+                                    or stay silent, which quietly encourages
+                                    skipping the ones you would rather not admit.
+                                  */
                                   setPsychStatus((prev) => {
                                     const next = new Map(prev);
-                                    next.set(check.id, confirmed ? null : true);
+                                    const current = prev.get(check.id) ?? null;
+                                    if (current === null) next.set(check.id, true);
+                                    else if (current === true) next.set(check.id, false);
+                                    else next.set(check.id, null);
                                     return next;
                                   });
                                 }}
@@ -2188,17 +2200,26 @@ export default function Journal() {
                               >
                                 <span
                                   className={`flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-md border-2 transition-all ${
-                                    confirmed ? 'bg-blue-500 border-blue-400' : 'border-gray-600'
+                                    value === true
+                                      ? 'bg-blue-500 border-blue-400'
+                                      : value === false
+                                      ? 'border-gray-400 bg-gray-400/15'
+                                      : 'border-gray-600'
                                   }`}
                                   style={
-                                    confirmed
+                                    value === true
                                       ? { boxShadow: '0 0 16px rgba(59,130,246,0.9), 0 0 4px rgba(59,130,246,1)' }
                                       : undefined
                                   }
                                 >
-                                  {confirmed && <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />}
+                                  {value === true && <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />}
+                                  {value === false && <X className="w-3.5 h-3.5 text-gray-300" strokeWidth={3} />}
                                 </span>
-                                <span className={`text-sm ${confirmed ? 'text-white' : 'text-gray-400'}`}>
+                                <span className={`text-sm ${
+                                  value === true ? 'text-white'
+                                  : value === false ? 'text-gray-300'
+                                  : 'text-gray-400'
+                                }`}>
                                   {check.name}
                                 </span>
                               </button>
