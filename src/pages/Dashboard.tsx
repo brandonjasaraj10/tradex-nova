@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowUpRight, ArrowDownRight, TrendingUp, DollarSign, BarChart, ChevronLeft, ChevronRight, Plus, CreditCard as Edit2, Brain, TrendingDown, BookOpen, Settings, Trash2, X, Eye, EyeOff, BarChart3 } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, TrendingUp, DollarSign, BarChart, ChevronLeft, ChevronRight, Plus, CreditCard as Edit2, Brain, Check, TrendingDown, BookOpen, Settings, Trash2, X, Eye, EyeOff, BarChart3 } from 'lucide-react';
 import Card from '../components/shared/Card';
 import Button from '../components/shared/Button';
 import DateRangePicker from '../components/shared/DateRangePicker';
@@ -31,6 +31,7 @@ import type { TradeStats } from '../types/trade';
 import { getNotes, createNote, updateNote, deleteNote, toggleNoteReadStatus, type Note } from '../services/notes';
 import type { Trade } from '../types/trade';
 import { getTradingRules, createTradingRule, updateTradingRule, deleteTradingRule, type TradingRule } from '../services/tradingRules';
+import { getPsychologyChecks, type PsychologyCheck } from '../services/psychologyChecks';
 import { generateReport, getWeekBounds, getMonthBounds, getQuarterBounds, getYearBounds, type TradingReport } from '../services/reports';
 import TradingReportModal from '../components/reports/TradingReportModal';
 import { toLocalDateStr } from '../utils/dateHelpers';
@@ -116,7 +117,9 @@ export default function Dashboard() {
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [noteContent, setNoteContent] = useState('');
   const [tradingRules, setTradingRules] = useState<TradingRule[]>([]);
-  const [planSectionTab, setPlanSectionTab] = useState<'confluences' | 'rules'>('confluences');
+  const [planSectionTab, setPlanSectionTab] = useState<'confluences' | 'rules' | 'psychology'>('confluences');
+  const [psychChecks, setPsychChecks] = useState<PsychologyCheck[]>([]);
+  const [averagePsychAdherence, setAveragePsychAdherence] = useState<number | null>(null);
   const [showAddRule, setShowAddRule] = useState(false);
   const [newRule, setNewRule] = useState({ name: '', description: '', category: 'other' as const });
   const [calendarViewMode, setCalendarViewMode] = useState<'pnl' | 'psychology'>('pnl');
@@ -165,6 +168,7 @@ export default function Dashboard() {
     loadRecentTrades();
     loadNotes();
     loadTradingRules();
+    loadPsychologyChecks();
     loadPerformanceStats();
   }, [refreshTrigger, selectedAccount, dateRange]);
 
@@ -322,6 +326,52 @@ export default function Dashboard() {
   const formatTradeDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+  };
+
+  const loadPsychologyChecks = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const checks = await getPsychologyChecks(user.id);
+      setPsychChecks(checks);
+
+      const enabled = checks.filter(c => c.enabled);
+      if (enabled.length === 0) {
+        setAveragePsychAdherence(null);
+        return;
+      }
+
+      /*
+        Same shape as rule adherence, with one difference that matters: a
+        check the trader left unanswered is skipped, not counted as a
+        failure. confirmed is nullable precisely so silence and "no" stay
+        distinct, and folding blanks into the denominator would report a
+        collapsing score for someone who simply has not filled it in yet.
+      */
+      const rates = await Promise.all(
+        enabled.map(async (check) => {
+          const { data, error } = await supabase
+            .from('journal_entry_psychology_checks')
+            .select('confirmed')
+            .eq('check_id', check.id)
+            .not('confirmed', 'is', null);
+
+          if (error || !data || data.length === 0) return null;
+          const yes = data.filter(r => r.confirmed === true).length;
+          return Math.round((yes / data.length) * 100);
+        })
+      );
+
+      const answered = rates.filter((r): r is number => r !== null);
+      setAveragePsychAdherence(
+        answered.length === 0
+          ? null
+          : Math.round(answered.reduce((sum, r) => sum + r, 0) / answered.length)
+      );
+    } catch (error) {
+      console.error('Error loading psychology checks:', error);
+    }
   };
 
   const loadTradingRules = async () => {
@@ -1329,6 +1379,29 @@ export default function Dashboard() {
                   >
                     Trading Rules
                   </button>
+                  <button
+                    className={`text-sm font-medium pb-2 border-b-2 transition-all flex items-center gap-1.5 ${
+                      planSectionTab === 'psychology'
+                        ? 'text-blue-300 border-blue-400'
+                        : 'text-gray-400 border-transparent hover:text-gray-300'
+                    }`}
+                    style={
+                      planSectionTab === 'psychology'
+                        ? { textShadow: '0 0 12px rgba(59,130,246,0.55)' }
+                        : undefined
+                    }
+                    onClick={() => setPlanSectionTab('psychology')}
+                  >
+                    <Brain
+                      size={14}
+                      style={
+                        planSectionTab === 'psychology'
+                          ? { filter: 'drop-shadow(0 0 5px rgba(59,130,246,0.85))' }
+                          : undefined
+                      }
+                    />
+                    Psychology
+                  </button>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -1350,6 +1423,20 @@ export default function Dashboard() {
                       Add
                     </Button>
                   </>
+                )}
+                {planSectionTab === 'psychology' && (
+                  <div
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-400/10 border border-blue-400/30"
+                    style={{ boxShadow: '0 0 18px rgba(59,130,246,0.18)' }}
+                  >
+                    <TrendingUp className="w-4 h-4 text-blue-400" />
+                    <div className="text-right">
+                      <div className="text-xs text-gray-400">Avg. Adherence</div>
+                      <div className="text-lg font-bold text-blue-400">
+                        {averagePsychAdherence === null ? '--' : `${averagePsychAdherence}%`}
+                      </div>
+                    </div>
+                  </div>
                 )}
                 {planSectionTab === 'rules' && (
                   <>
@@ -1555,6 +1642,62 @@ export default function Dashboard() {
                       </div>
                     )}
                   </>
+                )}
+
+                {planSectionTab === 'psychology' && (
+                  <div className="space-y-3">
+                    {psychChecks.length === 0 && (
+                      <p className="text-sm text-gray-500 py-4 text-center">
+                        No checks yet &mdash; set them up under Checklists.
+                      </p>
+                    )}
+                    {psychChecks.map((check) => (
+                      <div
+                        key={check.id}
+                        className={`flex items-start gap-4 p-4 rounded-lg border transition-all ${
+                          check.enabled
+                            ? 'bg-gradient-to-r from-blue-500/[0.10] via-blue-500/[0.03] to-transparent border-blue-400/35'
+                            : 'bg-white/5 border-white/5 opacity-50'
+                        }`}
+                        style={
+                          check.enabled
+                            ? { boxShadow: 'inset 0 0 28px rgba(59,130,246,0.07)' }
+                            : undefined
+                        }
+                      >
+                        <span
+                          className={`flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-md border-2 ${
+                            check.enabled ? 'bg-blue-500 border-blue-400' : 'border-gray-600'
+                          }`}
+                          style={
+                            check.enabled
+                              ? { boxShadow: '0 0 12px rgba(59,130,246,0.75)' }
+                              : undefined
+                          }
+                        >
+                          {check.enabled && <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <h3 className={`text-sm font-medium ${check.enabled ? 'text-white' : 'text-gray-400'}`}>
+                            {check.name}
+                          </h3>
+                          {check.description && (
+                            <p className="text-xs text-gray-400 mt-0.5">{check.description}</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    {/*
+                      Read-only here, unlike confluences and rules which can be
+                      toggled and deleted from this panel. This is a summary of
+                      the plan; the checklist is built on the Checklists page and
+                      answered on the journal entry, and a third place to edit it
+                      would just be somewhere else for the three to disagree.
+                    */}
+                    <p className="text-[11px] text-gray-600 pt-1">
+                      Edit these under Checklists &rarr; Pre-Trade Psychology.
+                    </p>
+                  </div>
                 )}
 
                 {planSectionTab === 'rules' && (
