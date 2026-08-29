@@ -1887,7 +1887,13 @@ export default function Journal() {
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
-                    className="border border-blue-400/20 rounded-lg p-6 bg-blue-400/5"
+                    /*
+                      p-4 on a phone, p-6 from sm up. A flat p-6 costs 48px
+                      of width inside a card that is already padded, which on
+                      a 375px screen left the content 259px wide and stacked
+                      "Trading Psychology Journal" three lines deep.
+                    */
+                    className="border border-blue-400/20 rounded-lg p-4 sm:p-6 bg-blue-400/5"
                   >
                     <div className="flex items-center gap-2 mb-4">
                       <Brain className="text-blue-400" size={20} />

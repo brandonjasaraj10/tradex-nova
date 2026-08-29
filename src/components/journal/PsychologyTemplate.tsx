@@ -340,7 +340,7 @@ export function PsychologyTemplate({ data, onChange }: PsychologyTemplateProps) 
   }, [data, templateMode]);
 
   const headerSection = (
-    <div className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/20 rounded-xl p-6">
+    <div className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/20 rounded-xl p-4 sm:p-6">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
@@ -351,11 +351,16 @@ export function PsychologyTemplate({ data, onChange }: PsychologyTemplateProps) 
             <p className="text-sm text-gray-400">Track your mental and emotional journey</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        {/*
+          Wraps, and the two mode buttons narrow on a phone. Simple, Advanced
+          and the fullscreen control came to 8px more than the header could
+          hold, so the row hung over its own panel edge.
+        */}
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <div className="flex items-center bg-[#0A0A0A] border border-white/10 rounded-lg p-1">
             <button
               onClick={() => setTemplateMode('simple')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+              className={`px-3 sm:px-4 py-2 rounded-md text-sm font-medium transition-all ${
                 templateMode === 'simple'
                   ? 'bg-blue-500/20 text-blue-400'
                   : 'text-gray-400 hover:text-white'
@@ -365,7 +370,7 @@ export function PsychologyTemplate({ data, onChange }: PsychologyTemplateProps) 
             </button>
             <button
               onClick={() => setTemplateMode('advanced')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+              className={`px-3 sm:px-4 py-2 rounded-md text-sm font-medium transition-all ${
                 templateMode === 'advanced'
                   ? 'bg-blue-500/20 text-blue-400'
                   : 'text-gray-400 hover:text-white'
@@ -405,7 +410,7 @@ export function PsychologyTemplate({ data, onChange }: PsychologyTemplateProps) 
       {headerSection}
 
       {/* Simple Pre-Trade Mindset */}
-      <div className="bg-[#0A0A0A] border border-white/10 rounded-xl p-6">
+      <div className="bg-[#0A0A0A] border border-white/10 rounded-xl p-4 sm:p-6">
         <div className="flex items-center gap-2 mb-4">
           <Target className="text-blue-400" size={20} />
           <h3 className="text-lg font-semibold text-white">Pre-Trade Mindset</h3>
@@ -450,7 +455,7 @@ export function PsychologyTemplate({ data, onChange }: PsychologyTemplateProps) 
       </div>
 
       {/* Simple Emotional Check-in */}
-      <div className="bg-[#0A0A0A] border border-white/10 rounded-xl p-6">
+      <div className="bg-[#0A0A0A] border border-white/10 rounded-xl p-4 sm:p-6">
         <div className="flex items-center gap-2 mb-4">
           <Heart className="text-blue-400" size={20} />
           <h3 className="text-lg font-semibold text-white">Emotional Check-In</h3>
@@ -501,7 +506,7 @@ export function PsychologyTemplate({ data, onChange }: PsychologyTemplateProps) 
       </div>
 
       {/* End-of-Day Summary with Nova Score */}
-      <div className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/20 rounded-xl p-6">
+      <div className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/20 rounded-xl p-4 sm:p-6">
         <div className="flex items-center gap-2 mb-4">
           <Award className="text-blue-400" size={20} />
           <h3 className="text-lg font-semibold text-white">End-of-Day Summary</h3>
@@ -645,7 +650,7 @@ export function PsychologyTemplate({ data, onChange }: PsychologyTemplateProps) 
       {headerSection}
 
       {/* Advanced Pre-Trade Mindset */}
-      <div className="bg-[#0A0A0A] border border-white/10 rounded-xl p-6">
+      <div className="bg-[#0A0A0A] border border-white/10 rounded-xl p-4 sm:p-6">
         <div className="flex items-center gap-2 mb-4">
           <Target className="text-blue-400" size={20} />
           <h3 className="text-lg font-semibold text-white">Pre-Trade Mindset Preparation</h3>
@@ -706,7 +711,7 @@ export function PsychologyTemplate({ data, onChange }: PsychologyTemplateProps) 
       </div>
 
       {/* Stress Level Tracking */}
-      <div className="bg-[#0A0A0A] border border-white/10 rounded-xl p-6">
+      <div className="bg-[#0A0A0A] border border-white/10 rounded-xl p-4 sm:p-6">
         <div className="flex items-center gap-2 mb-4">
           <Zap className="text-blue-400" size={20} />
           <h3 className="text-lg font-semibold text-white">Stress Level Tracking</h3>
@@ -750,7 +755,7 @@ export function PsychologyTemplate({ data, onChange }: PsychologyTemplateProps) 
       </div>
 
       {/* Emotional Check-In */}
-      <div className="bg-[#0A0A0A] border border-white/10 rounded-xl p-6">
+      <div className="bg-[#0A0A0A] border border-white/10 rounded-xl p-4 sm:p-6">
         <div className="flex items-center gap-2 mb-4">
           <Heart className="text-blue-400" size={20} />
           <h3 className="text-lg font-semibold text-white">Emotional Check-In During Trading</h3>
@@ -797,11 +802,11 @@ export function PsychologyTemplate({ data, onChange }: PsychologyTemplateProps) 
                   }
                 }}
                 placeholder="Add custom emotion..."
-                className="flex-1 bg-[#0A0A0A] border border-white/10 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-blue-400/50"
+                className="flex-1 min-w-0 bg-[#0A0A0A] border border-white/10 rounded-lg px-3 sm:px-4 py-2 text-sm focus:outline-none focus:border-blue-400/50"
               />
               <button
                 onClick={() => newEmotion.trim() && addEmotion(newEmotion.trim())}
-                className="px-4 py-2 bg-blue-400/10 hover:bg-blue-400/20 text-blue-400 rounded-lg text-sm font-medium transition-colors"
+                className="flex-shrink-0 px-3 sm:px-4 py-2 bg-blue-400/10 hover:bg-blue-400/20 text-blue-400 rounded-lg text-sm font-medium transition-colors"
               >
                 Add
               </button>
@@ -824,7 +829,7 @@ export function PsychologyTemplate({ data, onChange }: PsychologyTemplateProps) 
       </div>
 
       {/* Cognitive Distortion Checker */}
-      <div className="bg-[#0A0A0A] border border-white/10 rounded-xl p-6">
+      <div className="bg-[#0A0A0A] border border-white/10 rounded-xl p-4 sm:p-6">
         <div className="flex items-center gap-2 mb-4">
           <AlertCircle className="text-blue-400" size={20} />
           <h3 className="text-lg font-semibold text-white">Cognitive Distortion Checker</h3>
@@ -860,7 +865,7 @@ export function PsychologyTemplate({ data, onChange }: PsychologyTemplateProps) 
       </div>
 
       {/* Post-Trade Reflection */}
-      <div className="bg-[#0A0A0A] border border-white/10 rounded-xl p-6">
+      <div className="bg-[#0A0A0A] border border-white/10 rounded-xl p-4 sm:p-6">
         <div className="flex items-center gap-2 mb-4">
           <TrendingUp className="text-blue-400" size={20} />
           <h3 className="text-lg font-semibold text-white">Post-Trade Reflection</h3>
@@ -925,7 +930,7 @@ export function PsychologyTemplate({ data, onChange }: PsychologyTemplateProps) 
       </div>
 
       {/* Decision Quality Score */}
-      <div className="bg-[#0A0A0A] border border-white/10 rounded-xl p-6">
+      <div className="bg-[#0A0A0A] border border-white/10 rounded-xl p-4 sm:p-6">
         <div className="flex items-center gap-2 mb-4">
           <Target className="text-blue-400" size={20} />
           <h3 className="text-lg font-semibold text-white">Decision Quality Self-Assessment</h3>
@@ -956,7 +961,7 @@ export function PsychologyTemplate({ data, onChange }: PsychologyTemplateProps) 
       </div>
 
       {/* Trigger Tracking */}
-      <div className="bg-[#0A0A0A] border border-white/10 rounded-xl p-6">
+      <div className="bg-[#0A0A0A] border border-white/10 rounded-xl p-4 sm:p-6">
         <div className="flex items-center gap-2 mb-4">
           <Zap className="text-blue-400" size={20} />
           <h3 className="text-lg font-semibold text-white">Emotional Trigger Tracking</h3>
@@ -1039,7 +1044,7 @@ export function PsychologyTemplate({ data, onChange }: PsychologyTemplateProps) 
       </div>
 
       {/* Psychological Wins */}
-      <div className="bg-[#0A0A0A] border border-white/10 rounded-xl p-6">
+      <div className="bg-[#0A0A0A] border border-white/10 rounded-xl p-4 sm:p-6">
         <div className="flex items-center gap-2 mb-4">
           <Award className="text-blue-400" size={20} />
           <h3 className="text-lg font-semibold text-white">Psychological Wins Today</h3>
@@ -1074,11 +1079,11 @@ export function PsychologyTemplate({ data, onChange }: PsychologyTemplateProps) 
                 }
               }}
               placeholder="Describe a psychological win..."
-              className="flex-1 bg-[#0A0A0A] border border-white/10 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-blue-400/50"
+              className="flex-1 min-w-0 bg-[#0A0A0A] border border-white/10 rounded-lg px-3 sm:px-4 py-2 text-sm focus:outline-none focus:border-blue-400/50"
             />
             <button
               onClick={addPsychWin}
-              className="px-4 py-2 bg-blue-400/10 hover:bg-blue-400/20 text-blue-400 rounded-lg text-sm font-medium transition-colors"
+              className="flex-shrink-0 px-3 sm:px-4 py-2 bg-blue-400/10 hover:bg-blue-400/20 text-blue-400 rounded-lg text-sm font-medium transition-colors"
             >
               Add
             </button>
@@ -1087,7 +1092,7 @@ export function PsychologyTemplate({ data, onChange }: PsychologyTemplateProps) 
       </div>
 
       {/* Affirmations */}
-      <div className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/20 rounded-xl p-6">
+      <div className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/20 rounded-xl p-4 sm:p-6">
         <div className="flex items-center gap-2 mb-4">
           <Zap className="text-blue-400" size={20} />
           <h3 className="text-lg font-semibold text-white">Daily Affirmations & Mental Strength</h3>
@@ -1152,11 +1157,11 @@ export function PsychologyTemplate({ data, onChange }: PsychologyTemplateProps) 
                 }
               }}
               placeholder="Write your own affirmation..."
-              className="flex-1 bg-[#0A0A0A] border border-white/10 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-blue-400/50"
+              className="flex-1 min-w-0 bg-[#0A0A0A] border border-white/10 rounded-lg px-3 sm:px-4 py-2 text-sm focus:outline-none focus:border-blue-400/50"
             />
             <button
               onClick={addAffirmation}
-              className="px-4 py-2 bg-blue-400/10 hover:bg-blue-400/20 text-blue-400 rounded-lg text-sm font-medium transition-colors"
+              className="flex-shrink-0 px-3 sm:px-4 py-2 bg-blue-400/10 hover:bg-blue-400/20 text-blue-400 rounded-lg text-sm font-medium transition-colors"
             >
               Add
             </button>
@@ -1165,7 +1170,7 @@ export function PsychologyTemplate({ data, onChange }: PsychologyTemplateProps) 
       </div>
 
       {/* End-of-Day Summary with Nova Score */}
-      <div className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/20 rounded-xl p-6">
+      <div className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/20 rounded-xl p-4 sm:p-6">
         <div className="flex items-center gap-2 mb-4">
           <Award className="text-blue-400" size={20} />
           <h3 className="text-lg font-semibold text-white">End-of-Day Summary & Psychological Score</h3>
@@ -1411,7 +1416,7 @@ export function PsychologyTemplate({ data, onChange }: PsychologyTemplateProps) 
                 }
               }}
             >
-              <div className="min-h-screen w-full p-4 sm:p-6 md:p-8">
+              <div className="min-h-screen w-full p-4 sm:p-4 sm:p-6 md:p-8">
                 <div className="max-w-7xl mx-auto space-y-6 pb-12">
                   {templateContent}
                 </div>
