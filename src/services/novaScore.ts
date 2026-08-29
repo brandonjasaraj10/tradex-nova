@@ -12,6 +12,13 @@ export interface NOVAScoreBreakdown {
   avg_win_loss_ratio: number;
   total_trades: number;
   /*
+    Null when the trader has never used the pre-trade checklist or rated
+    themselves, which is different from scoring zero on it. A zero would say
+    they prepared badly; null says there is nothing to judge, and the overall
+    score leaves psychology out of the weighting entirely in that case.
+  */
+  psychology_score: number | null;
+  /*
     Real figures for the Performance Metrics panel. It previously derived
     these from the summary numbers it already had, which produced values
     that were not what their labels claimed: "Best Trade" was
@@ -38,7 +45,60 @@ export interface TradeData {
   confluence_count?: number;
 }
 
-export async function calculateNOVAScore(trades: TradeData[]): Promise<NOVAScoreBreakdown> {
+/*
+  What the pre-trade psychology work contributes to the score.
+
+  Deliberately NOT the ratio of confirmed to denied checks.
+
+  Scoring the answers would mean that admitting "I was not calm" lowers your
+  score, and the fastest way to a better number becomes ticking yes without
+  reading. That destroys the only thing this checklist exists to collect. The
+  score therefore rewards two things a trader cannot fake into being useless:
+
+    - engagement: did you stop and answer the checklist before trading
+    - readiness: what you rated your own state, 1-5
+
+  A trader who honestly marks three checks "no" keeps their engagement credit
+  in full. Their readiness ratings will usually be lower, which does move the
+  number - but that is them reporting they were not ready, which is a real
+  signal rather than a punishment for candour.
+*/
+export interface PsychologyInput {
+  /** Entries where at least one check was answered either way. */
+  entriesWithAnswers: number;
+  /** Entries in the same window that could have been answered. */
+  entriesTotal: number;
+  /** Averages of the 1-5 self ratings; null when never rated. */
+  avgEmotionalState: number | null;
+  avgFocus: number | null;
+  avgConfidence: number | null;
+}
+
+function calculatePsychologyScore(psych: PsychologyInput): number | null {
+  const ratings = [psych.avgEmotionalState, psych.avgFocus, psych.avgConfidence]
+    .filter((v): v is number => typeof v === 'number');
+
+  // Nothing answered and nothing rated: there is no psychology score to give,
+  // and inventing a neutral 50 would be a number standing for no work at all.
+  if (psych.entriesWithAnswers === 0 && ratings.length === 0) return null;
+
+  const engagement = psych.entriesTotal > 0
+    ? Math.min(psych.entriesWithAnswers / psych.entriesTotal, 1) * 100
+    : 0;
+
+  // 1-5 mapped onto 0-100: a flat 3 is the middle, not a failure.
+  const readiness = ratings.length > 0
+    ? ((ratings.reduce((a, b) => a + b, 0) / ratings.length) - 1) / 4 * 100
+    : null;
+
+  if (readiness === null) return engagement;
+  return (engagement * 0.5) + (readiness * 0.5);
+}
+
+export async function calculateNOVAScore(
+  trades: TradeData[],
+  psychology?: PsychologyInput
+): Promise<NOVAScoreBreakdown> {
   if (trades.length === 0) {
     return {
       overall_score: 0,
@@ -51,6 +111,7 @@ export async function calculateNOVAScore(trades: TradeData[]): Promise<NOVAScore
       profit_factor: 0,
       avg_win_loss_ratio: 0,
       total_trades: 0,
+      psychology_score: null,
       best_trade: 0,
       worst_trade: 0,
       avg_hold_minutes: null,
@@ -83,15 +144,32 @@ export async function calculateNOVAScore(trades: TradeData[]): Promise<NOVAScore
 
   const executionScore = calculateExecutionScore(trades, winRate);
 
+  const psychologyScore = psychology ? calculatePsychologyScore(psychology) : null;
+
+  /*
+    Psychology takes a slice of the weight only when there is psychology work
+    to weigh, and the other five are scaled to make room rather than being
+    shifted around.
+
+    A trader who never opens the checklist keeps exactly the score they had
+    before this existed - no new component quietly dragging them down for not
+    using a feature. Someone who does use it has 15% of their score reflecting
+    it, with the remaining 85% split in the same proportions as before.
+  */
+  const PSYCH_WEIGHT = 0.15;
+  const rest = psychologyScore === null ? 1 : 1 - PSYCH_WEIGHT;
+
   const overallScore = Math.round(
-    (profitabilityScore * 0.30) +
-    (consistencyScore * 0.25) +
-    (riskManagementScore * 0.20) +
-    (disciplineScore * 0.15) +
-    (executionScore * 0.10)
+    (profitabilityScore * 0.30 * rest) +
+    (consistencyScore * 0.25 * rest) +
+    (riskManagementScore * 0.20 * rest) +
+    (disciplineScore * 0.15 * rest) +
+    (executionScore * 0.10 * rest) +
+    (psychologyScore === null ? 0 : psychologyScore * PSYCH_WEIGHT)
   );
 
   return {
+    psychology_score: psychologyScore === null ? null : Math.min(100, Math.max(0, Math.round(psychologyScore))),
     best_trade: Math.max(...trades.map(t => t.profit_loss)),
     worst_trade: Math.min(...trades.map(t => t.profit_loss)),
     avg_hold_minutes: calculateRealAverageHoldMinutes(trades),

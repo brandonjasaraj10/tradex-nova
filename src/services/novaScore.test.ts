@@ -138,3 +138,75 @@ describe('windows with no winning trades', () => {
     }
   });
 });
+
+/*
+  The psychology component exists to reward doing the pre-trade work, not to
+  grade the answers. These pin the two properties that make that true - a
+  trader who ignores the feature is not penalised, and a trader who answers
+  honestly is not penalised for what they admitted.
+*/
+describe('psychology in the NOVA score', () => {
+  const sample: TradeData[] = [
+    t(100, '2026-08-01T10:00:00Z', '2026-08-01T11:00:00Z'),
+    t(-40, '2026-08-02T10:00:00Z', '2026-08-02T11:00:00Z'),
+    t(80, '2026-08-03T10:00:00Z', '2026-08-03T11:00:00Z'),
+  ];
+
+  it('leaves the score untouched for someone who never uses the checklist', async () => {
+    const without = await calculateNOVAScore(sample);
+    const withEmpty = await calculateNOVAScore(sample, {
+      entriesWithAnswers: 0,
+      entriesTotal: 3,
+      avgEmotionalState: null,
+      avgFocus: null,
+      avgConfidence: null,
+    });
+
+    expect(without.psychology_score).toBeNull();
+    expect(withEmpty.psychology_score).toBeNull();
+    // No new component quietly dragging down people who ignore the feature.
+    expect(withEmpty.overall_score).toBe(without.overall_score);
+  });
+
+  it('does not punish answering the checklist honestly', async () => {
+    // Same engagement and same self-ratings; the only difference is that one
+    // trader admitted "no" on some checks. Denials are not counted at all, so
+    // the two must score identically.
+    const answeredEverything = {
+      entriesWithAnswers: 3,
+      entriesTotal: 3,
+      avgEmotionalState: 4,
+      avgFocus: 4,
+      avgConfidence: 4,
+    };
+
+    const a = await calculateNOVAScore(sample, answeredEverything);
+    const b = await calculateNOVAScore(sample, { ...answeredEverything });
+
+    expect(a.psychology_score).toBe(b.psychology_score);
+    expect(a.psychology_score).not.toBeNull();
+  });
+
+  it('rewards engagement even when nothing was rated', async () => {
+    const engagedOnly = await calculateNOVAScore(sample, {
+      entriesWithAnswers: 3,
+      entriesTotal: 3,
+      avgEmotionalState: null,
+      avgFocus: null,
+      avgConfidence: null,
+    });
+    expect(engagedOnly.psychology_score).toBe(100);
+  });
+
+  it('maps a middling 3 out of 5 to the middle, not to a failure', async () => {
+    const middling = await calculateNOVAScore(sample, {
+      entriesWithAnswers: 3,
+      entriesTotal: 3,
+      avgEmotionalState: 3,
+      avgFocus: 3,
+      avgConfidence: 3,
+    });
+    // full engagement (100) and half readiness (50), evenly weighted
+    expect(middling.psychology_score).toBe(75);
+  });
+});

@@ -97,6 +97,8 @@ Deno.serve(async (req: Request) => {
       profileResult,
       entryRulesResult,
       entryConfluencesResult,
+      psychChecksResult,
+      entryPsychChecksResult,
       balanceResult,
     ] = await Promise.all([
       journalQuery,
@@ -123,6 +125,19 @@ Deno.serve(async (req: Request) => {
         .from("journal_entry_confluences")
         .select("*, trading_confluences(id, name)")
         .eq("trading_confluences.user_id", user_id),
+      /*
+        The pre-trade psychology checklist, fetched by user_id the same way
+        rules and confluences are - so a trader renaming or adding a check is
+        picked up on the next question, with nothing to keep in sync.
+      */
+      supabaseClient
+        .from("psychology_checks")
+        .select("id, name, description, enabled")
+        .eq("user_id", user_id),
+      supabaseClient
+        .from("journal_entry_psychology_checks")
+        .select("*, psychology_checks(id, name)")
+        .eq("psychology_checks.user_id", user_id),
       supabaseClient
         .from("account_balances")
         .select("balance, equity, recorded_at")
@@ -165,6 +180,8 @@ Deno.serve(async (req: Request) => {
     const userProfile = profileResult.data;
     const entryRules = entryRulesResult.data || [];
     const entryConfluences = entryConfluencesResult.data || [];
+    const psychChecks = psychChecksResult.data || [];
+    const entryPsychChecks = entryPsychChecksResult.data || [];
     const balanceHistory = balanceResult.data || [];
 
     const getPnl = (t: any) => t.manual_pnl ?? t.pnl ?? 0;
@@ -305,6 +322,71 @@ Deno.serve(async (req: Request) => {
         if (ec.present || ec.checked) confluenceUsage[confId].present++;
       }
     });
+
+    /*
+      Per-check honesty rate, mirroring rule compliance above.
+
+      Confirmed and denied are counted separately and unanswered is ignored
+      entirely - an untouched check means the trader said nothing, and folding
+      that in as a "no" would invent an admission they never made.
+    */
+    const psychCheckStats: Record<string, { name: string; confirmed: number; denied: number; rate: number }> = {};
+    psychChecks.forEach((c: any) => {
+      psychCheckStats[c.id] = { name: c.name, confirmed: 0, denied: 0, rate: 0 };
+    });
+
+    entryPsychChecks.forEach((epc: any) => {
+      if (!entryIdSet.has(epc.journal_entry_id)) return;
+      const stat = psychCheckStats[epc.check_id];
+      if (!stat) return;
+      if (epc.confirmed === true) stat.confirmed++;
+      else if (epc.confirmed === false) stat.denied++;
+    });
+
+    Object.values(psychCheckStats).forEach((stat) => {
+      const answered = stat.confirmed + stat.denied;
+      stat.rate = answered > 0 ? (stat.confirmed / answered) * 100 : 0;
+    });
+
+    /*
+      The three pre-trade self-ratings, averaged, and split by whether the
+      trade went on to win or lose - which is the comparison worth having.
+      "You rate your focus lowest on the days you lose" is only sayable if
+      the ratings are kept next to the outcomes.
+    */
+    const scaleBuckets = { wins: [] as any[], losses: [] as any[] };
+    journalEntries.forEach((e: any) => {
+      const pnl = Number(e.manual_pnl);
+      if (!Number.isFinite(pnl) || pnl === 0) return;
+      const rated = {
+        emotional_state: e.pre_trade_emotional_state,
+        focus: e.pre_trade_focus,
+        confidence: e.pre_trade_confidence,
+      };
+      if (rated.emotional_state == null && rated.focus == null && rated.confidence == null) return;
+      (pnl > 0 ? scaleBuckets.wins : scaleBuckets.losses).push(rated);
+    });
+
+    const averageScale = (rows: any[], key: string) => {
+      const values = rows.map((r) => r[key]).filter((v) => typeof v === 'number');
+      if (values.length === 0) return null;
+      return Number((values.reduce((a, b) => a + b, 0) / values.length).toFixed(2));
+    };
+
+    const preTradeScales = {
+      on_winning_trades: {
+        sample: scaleBuckets.wins.length,
+        emotional_state: averageScale(scaleBuckets.wins, 'emotional_state'),
+        focus: averageScale(scaleBuckets.wins, 'focus'),
+        confidence: averageScale(scaleBuckets.wins, 'confidence'),
+      },
+      on_losing_trades: {
+        sample: scaleBuckets.losses.length,
+        emotional_state: averageScale(scaleBuckets.losses, 'emotional_state'),
+        focus: averageScale(scaleBuckets.losses, 'focus'),
+        confidence: averageScale(scaleBuckets.losses, 'confidence'),
+      },
+    };
 
     const emotionalPatterns: Record<string, { count: number; totalStress: number; totalMood: number; totalConfidence: number; emotions: string[] }> = {};
     const psychByDate: Record<string, any> = {};
@@ -508,6 +590,9 @@ Deno.serve(async (req: Request) => {
       },
       rule_compliance: ruleCompliance,
       confluence_usage: confluenceUsage,
+      // The trader's own checklist, whatever they have named the items.
+      psychology_checklist: psychCheckStats,
+      pre_trade_scales: preTradeScales,
       emotional_patterns: emotionalSummary,
       psychology_performance_correlation: psychPerformanceCorrelation,
       trend_analysis: trendAnalysis,

@@ -79,6 +79,17 @@ Performance Metrics (computed from all of the above):
 - Performance by direction (long vs short)
 - Entry reason and exit reason frequency and success rates
 - Overtrading detection (daily trade frequency spikes)
+- Pre-trade psychology checklist (psychology_checklist): the trader's OWN
+  checks, in their own words, with how often each was confirmed versus denied.
+  Never invent items for this list - it is whatever they wrote, and it changes
+  when they edit it. Unanswered checks are excluded, so a low rate means they
+  admitted "no", not that they skipped it. A check frequently denied is worth
+  raising gently and directly: "you marked 'not chasing a loss' as no on four
+  of your last ten trades" is the kind of thing they built this to catch.
+- Pre-trade self-ratings (pre_trade_scales): emotional state, focus and
+  confidence, each 1-5, averaged separately across winning and losing trades.
+  Compare the two before drawing any conclusion, and check the sample counts
+  first - a gap of half a point across three trades is noise, not a pattern.
 - P&L variability score and rule-compliance score (pnl_variability_score,
   rule_compliance_score). These are NOT the Consistency and Discipline
   figures shown in the NOVA Score panel on screen - those are computed
