@@ -512,8 +512,14 @@ export default function NovaAssistant() {
           className="mb-6"
           data-tour="nova-chat"
         >
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
+          {/*
+            Wraps on a phone. The NOVA mark and title sat on one unwrapping
+            row with the History and Personalize buttons, which came to 409px
+            inside a 375px viewport - so the page could be dragged sideways
+            and "Personalize Nova" hung off the right edge.
+          */}
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+            <div className="flex items-center gap-3 sm:gap-4">
               <motion.div
                 className="relative w-14 h-14 rounded-2xl bg-blue-400/20 flex items-center justify-center border border-blue-400/30"
                 whileHover={{ scale: 1.05, rotate: 5 }}
@@ -533,7 +539,7 @@ export default function NovaAssistant() {
             </div>
 
             {tourCompleted && (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <motion.button
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
