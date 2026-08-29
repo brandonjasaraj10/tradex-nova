@@ -1450,8 +1450,14 @@ export default function Journal() {
 
           <motion.div variants={fadeInUp} className="lg:col-span-8" data-tour="journal-editor">
             <Card variant="default" className="p-4 sm:p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-4">
+              {/*
+                Wraps on a narrow screen. The date navigator and the action
+                group sat on one unwrapping row, which came to 427px inside a
+                375px viewport - so the whole page could be dragged sideways
+                and the Delete button sat off-screen.
+              */}
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+                <div className="flex items-center gap-2 sm:gap-4">
                   <button
                     onClick={() => navigateDate('prev')}
                     className="p-2 hover:bg-white/5 rounded-lg transition-colors"
@@ -1498,7 +1504,7 @@ export default function Journal() {
                     <ChevronRight size={20} />
                   </button>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-4">
                   {isSaving && (
                     <span className="text-xs text-gray-400">Saving...</span>
                   )}
@@ -2122,7 +2128,14 @@ export default function Journal() {
                     <CheckSquare size={16} />
                     Trading Rules & Confluences
                   </h3>
-                  <div className="flex gap-2 mb-4 border-b border-white/10">
+                  {/*
+                    Scrolls sideways inside itself on a narrow screen rather
+                    than pushing the page wide. Adding the Psychology tab made
+                    three tabs, which come to 420px on a 375px phone - and
+                    without this the whole document grew to match and every
+                    page could be dragged sideways.
+                  */}
+                  <div className="flex gap-2 mb-4 border-b border-white/10 overflow-x-auto">
                     <button
                       onClick={() => setChecklistTab('confluences')}
                       className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${

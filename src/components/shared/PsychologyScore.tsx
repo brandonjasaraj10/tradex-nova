@@ -169,7 +169,12 @@ export default function PsychologyScore() {
   return (
     <Card variant="gradient" className="bg-gradient-to-br from-[#111]/80 to-[#111]/60 p-5 h-full flex flex-col">
       <div className="flex flex-col h-full">
-        <div className="flex items-center justify-between mb-5 flex-shrink-0">
+        {/*
+          Wraps on a phone. The title block and the Today/Week/Month/All Time
+          selector together exceeded 375px, so the selector hung off the right
+          edge and dragged the document width with it.
+        */}
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-5 flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-blue-400/10 flex items-center justify-center">
               <Brain className="w-5 h-5 text-blue-400" />

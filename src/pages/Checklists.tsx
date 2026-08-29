@@ -264,10 +264,15 @@ export default function Checklists() {
         </div>
 
         <div data-tour="checklists-page">
-        <div className="flex gap-2 mb-6 border-b border-white/10">
+        {/*
+          Scrolls sideways inside itself on a narrow screen. Three tabs come
+          to 526px on a 375px phone, and without this the document grew to
+          match, letting the whole page be dragged sideways.
+        */}
+        <div className="flex gap-2 mb-6 border-b border-white/10 overflow-x-auto">
           <button
             onClick={() => setActiveTab('confluences')}
-            className={`px-6 py-3 font-medium transition-colors ${
+            className={`px-6 py-3 font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
               activeTab === 'confluences'
                 ? 'text-blue-400 border-b-2 border-blue-400'
                 : 'text-gray-400 hover:text-white'
@@ -278,7 +283,7 @@ export default function Checklists() {
           </button>
           <button
             onClick={() => setActiveTab('rules')}
-            className={`px-6 py-3 font-medium transition-colors ${
+            className={`px-6 py-3 font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
               activeTab === 'rules'
                 ? 'text-blue-400 border-b-2 border-blue-400'
                 : 'text-gray-400 hover:text-white'
@@ -295,7 +300,7 @@ export default function Checklists() {
           */}
           <button
             onClick={() => setActiveTab('psychology')}
-            className={`px-6 py-3 font-medium transition-all flex items-center gap-2 ${
+            className={`px-6 py-3 font-medium transition-all flex items-center gap-2 whitespace-nowrap flex-shrink-0 ${
               activeTab === 'psychology'
                 ? 'text-blue-300 border-b-2 border-blue-400'
                 : 'text-gray-400 hover:text-white'

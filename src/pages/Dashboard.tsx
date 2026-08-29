@@ -747,7 +747,13 @@ export default function Dashboard() {
             <h1 className="text-2xl font-bold">Dashboard</h1>
           </div>
 
-          <div className="mt-4 md:mt-0 flex items-center gap-3">
+          {/*
+            Wraps on a narrow screen. View Reports, the date picker and the
+            account selector came to 489px on a 375px phone, which pushed the
+            whole document wide and left "All Accounts" hanging off the right
+            edge.
+          */}
+          <div className="mt-4 md:mt-0 flex flex-wrap items-center gap-2 sm:gap-3">
             <div className="relative group">
               <button
                 disabled={loadingReport}
@@ -1376,12 +1382,20 @@ export default function Dashboard() {
           {/* Trading Plan & Confluences */}
           <motion.div variants={fadeInUp} data-tour="trading-plan">
             <Card variant="default" className="bg-[#111]/80 p-5">
-            <div className="flex items-center justify-between mb-5">
-              <div className="flex-1">
+            {/*
+              Wraps, and the tab strip scrolls inside itself.
+
+              Adding the Psychology tab widened the left side enough that the
+              Avg. Adherence badge and Add button were pushed to 508px inside
+              a 301px row - off the edge on a phone, and wide enough to make
+              the whole document scroll sideways.
+            */}
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+              <div className="flex-1 min-w-0">
                 <h2 className="text-base font-medium">Trading Plan</h2>
-                <div className="flex gap-6 mt-3">
+                <div className="flex gap-4 sm:gap-6 mt-3 overflow-x-auto">
                   <button
-                    className={`text-sm font-medium pb-2 border-b-2 transition-colors ${
+                    className={`text-sm font-medium pb-2 border-b-2 transition-colors whitespace-nowrap flex-shrink-0 ${
                       planSectionTab === 'confluences'
                         ? 'text-white border-white'
                         : 'text-gray-400 border-transparent hover:text-gray-300'
@@ -1391,7 +1405,7 @@ export default function Dashboard() {
                     Confluences
                   </button>
                   <button
-                    className={`text-sm font-medium pb-2 border-b-2 transition-colors ${
+                    className={`text-sm font-medium pb-2 border-b-2 transition-colors whitespace-nowrap flex-shrink-0 ${
                       planSectionTab === 'rules'
                         ? 'text-white border-white'
                         : 'text-gray-400 border-transparent hover:text-gray-300'
@@ -1401,7 +1415,7 @@ export default function Dashboard() {
                     Trading Rules
                   </button>
                   <button
-                    className={`text-sm font-medium pb-2 border-b-2 transition-all flex items-center gap-1.5 ${
+                    className={`text-sm font-medium pb-2 border-b-2 transition-all flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
                       planSectionTab === 'psychology'
                         ? 'text-blue-300 border-blue-400'
                         : 'text-gray-400 border-transparent hover:text-gray-300'
