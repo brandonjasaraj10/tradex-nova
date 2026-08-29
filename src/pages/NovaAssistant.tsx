@@ -1093,6 +1093,15 @@ export default function NovaAssistant() {
                           note: 'Pre-trade checklist use and self-rated readiness'
                         }]
                       : []),
+                    /*
+                      Execution was simply missing from this list, while the
+                      Dashboard's copy of the same breakdown has always shown
+                      it - so the two screens disagreed on how many components
+                      the score even has, and 10% of the number had nothing
+                      explaining it here. Same wording as the shared component
+                      uses, so the two read identically.
+                    */
+                    { label: 'Execution', icon: Zap, value: scoreBreakdown.execution_score, note: 'Trade timing and trend momentum' },
                   ].map((row, i) => (
                     <div key={i} className="bg-white/5 rounded-xl p-3 border border-white/5">
                       <div className="flex items-center justify-between mb-2">
