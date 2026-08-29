@@ -1390,108 +1390,93 @@ export default function Dashboard() {
               a 301px row - off the edge on a phone, and wide enough to make
               the whole document scroll sideways.
             */}
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
-              <div className="flex-1 min-w-0">
-                <h2 className="text-base font-medium">Trading Plan</h2>
-                <div className="flex gap-4 sm:gap-6 mt-3 overflow-x-auto">
-                  <button
-                    className={`text-sm font-medium pb-2 border-b-2 transition-colors whitespace-nowrap flex-shrink-0 ${
-                      planSectionTab === 'confluences'
-                        ? 'text-white border-white'
-                        : 'text-gray-400 border-transparent hover:text-gray-300'
-                    }`}
-                    onClick={() => setPlanSectionTab('confluences')}
-                  >
-                    Confluences
-                  </button>
-                  <button
-                    className={`text-sm font-medium pb-2 border-b-2 transition-colors whitespace-nowrap flex-shrink-0 ${
-                      planSectionTab === 'rules'
-                        ? 'text-white border-white'
-                        : 'text-gray-400 border-transparent hover:text-gray-300'
-                    }`}
-                    onClick={() => setPlanSectionTab('rules')}
-                  >
-                    Trading Rules
-                  </button>
-                  <button
-                    className={`text-sm font-medium pb-2 border-b-2 transition-all flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
-                      planSectionTab === 'psychology'
-                        ? 'text-blue-300 border-blue-400'
-                        : 'text-gray-400 border-transparent hover:text-gray-300'
-                    }`}
-                    style={
-                      planSectionTab === 'psychology'
-                        ? { textShadow: '0 0 12px rgba(59,130,246,0.55)' }
-                        : undefined
-                    }
-                    onClick={() => setPlanSectionTab('psychology')}
-                  >
-                    <Brain
-                      size={14}
-                      style={
-                        planSectionTab === 'psychology'
-                          ? { filter: 'drop-shadow(0 0 5px rgba(59,130,246,0.85))' }
-                          : undefined
-                      }
-                    />
-                    Psychology
-                  </button>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {planSectionTab === 'confluences' && (
-                  <>
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-400/10 border border-blue-400/20">
-                      <TrendingUp className="w-4 h-4 text-blue-400" />
-                      <div className="text-right">
-                        <div className="text-xs text-gray-400">Avg. Adherence</div>
-                        <div className="text-lg font-bold text-blue-400">{averageConfluenceUsage === null ? '--' : `${averageConfluenceUsage}%`}</div>
+            {/*
+              Title and controls on one row; the tab strip gets its own row at
+              full width beneath.
+
+              The strip used to sit alongside the adherence badge, so on a
+              phone three tabs were squeezed into whatever was left over -
+              "Confluences" rendered as "Confluenc", the title wrapped onto two
+              lines, and the list below inherited so little width that a single
+              confluence name stacked five lines deep. The tabs are what you
+              navigate with, so they take the width and the badge gives it up.
+            */}
+            <div className="mb-5">
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <h2 className="text-base font-medium whitespace-nowrap">Trading Plan</h2>
+
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {/*
+                    One badge for all three tabs rather than three near-identical
+                    copies. Compact on a phone - just the number under a small
+                    label - with the trend icon and the full "Avg." wording
+                    returning at sm and above where there is room for them.
+                  */}
+                  <div className="flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-blue-400/10 border border-blue-400/20">
+                    <TrendingUp className="w-4 h-4 text-blue-400 hidden sm:block" />
+                    <div className="text-right leading-tight">
+                      <div className="text-[10px] sm:text-xs text-gray-400 whitespace-nowrap">
+                        <span className="hidden sm:inline">Avg. </span>Adherence
                       </div>
-                    </div>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      icon={<Plus size={16} />}
-                      onClick={() => setShowAddConfluence(true)}
-                    >
-                      Add
-                    </Button>
-                  </>
-                )}
-                {planSectionTab === 'psychology' && (
-                  <div
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-400/10 border border-blue-400/30"
-                    style={{ boxShadow: '0 0 18px rgba(59,130,246,0.18)' }}
-                  >
-                    <TrendingUp className="w-4 h-4 text-blue-400" />
-                    <div className="text-right">
-                      <div className="text-xs text-gray-400">Avg. Adherence</div>
-                      <div className="text-lg font-bold text-blue-400">
-                        {averagePsychAdherence === null ? '--' : `${averagePsychAdherence}%`}
+                      <div className="text-sm sm:text-lg font-bold text-blue-400">
+                        {planSectionTab === 'confluences'
+                          ? (averageConfluenceUsage === null ? '--' : `${averageConfluenceUsage}%`)
+                          : planSectionTab === 'rules'
+                          ? (averageRuleAdherence === null ? '--' : `${averageRuleAdherence}%`)
+                          : (averagePsychAdherence === null ? '--' : `${averagePsychAdherence}%`)}
                       </div>
                     </div>
                   </div>
-                )}
-                {planSectionTab === 'rules' && (
-                  <>
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-400/10 border border-blue-400/20">
-                      <TrendingUp className="w-4 h-4 text-blue-400" />
-                      <div className="text-right">
-                        <div className="text-xs text-gray-400">Avg. Adherence</div>
-                        <div className="text-lg font-bold text-blue-400">{averageRuleAdherence === null ? '--' : `${averageRuleAdherence}%`}</div>
-                      </div>
-                    </div>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      icon={<Plus size={16} />}
-                      onClick={() => setShowAddRule(true)}
-                    >
+
+                  {planSectionTab === 'confluences' && (
+                    <Button variant="secondary" size="sm" icon={<Plus size={16} />} onClick={() => setShowAddConfluence(true)}>
                       Add
                     </Button>
-                  </>
-                )}
+                  )}
+                  {planSectionTab === 'rules' && (
+                    <Button variant="secondary" size="sm" icon={<Plus size={16} />} onClick={() => setShowAddRule(true)}>
+                      Add
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex gap-4 sm:gap-6 overflow-x-auto">
+                <button
+                  className={`text-sm font-medium pb-2 border-b-2 transition-colors whitespace-nowrap flex-shrink-0 ${
+                    planSectionTab === 'confluences'
+                      ? 'text-white border-white'
+                      : 'text-gray-400 border-transparent hover:text-gray-300'
+                  }`}
+                  onClick={() => setPlanSectionTab('confluences')}
+                >
+                  Confluences
+                </button>
+                <button
+                  className={`text-sm font-medium pb-2 border-b-2 transition-colors whitespace-nowrap flex-shrink-0 ${
+                    planSectionTab === 'rules'
+                      ? 'text-white border-white'
+                      : 'text-gray-400 border-transparent hover:text-gray-300'
+                  }`}
+                  onClick={() => setPlanSectionTab('rules')}
+                >
+                  Trading Rules
+                </button>
+                <button
+                  className={`text-sm font-medium pb-2 border-b-2 transition-all flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
+                    planSectionTab === 'psychology'
+                      ? 'text-blue-300 border-blue-400'
+                      : 'text-gray-400 border-transparent hover:text-gray-300'
+                  }`}
+                  style={planSectionTab === 'psychology' ? { textShadow: '0 0 12px rgba(59,130,246,0.55)' } : undefined}
+                  onClick={() => setPlanSectionTab('psychology')}
+                >
+                  <Brain
+                    size={14}
+                    style={planSectionTab === 'psychology' ? { filter: 'drop-shadow(0 0 5px rgba(59,130,246,0.85))' } : undefined}
+                  />
+                  Psychology
+                </button>
               </div>
             </div>
 
@@ -1621,14 +1606,21 @@ export default function Dashboard() {
                         }`}>{confluence.name}</h3>
                         <p className="text-xs text-gray-400 mt-0.5">{confluence.description}</p>
                       </div>
-                      <div className="flex-shrink-0 flex items-center gap-3">
+                      {/*
+                        On a phone the usage figure sits inline beside the bar
+                        rather than stacked over it, and the bar narrows. The
+                        stacked version reserved enough width that a name like
+                        "Clear Supply or Demand Zone" was left wrapping onto
+                        five lines beside it.
+                      */}
+                      <div className="flex-shrink-0 flex items-center gap-1.5 sm:gap-3">
                         <div className="text-right">
-                          <div className="text-xs text-gray-400">Usage</div>
-                          <div className={`text-sm font-medium ${
+                          <div className="text-xs text-gray-400 hidden sm:block">Usage</div>
+                          <div className={`text-xs sm:text-sm font-medium ${
                             confluence.enabled ? 'text-blue-400' : 'text-gray-500'
                           }`}>{confluence.usage_rate === null ? '--' : `${confluence.usage_rate}%`}</div>
                         </div>
-                        <div className="w-16 h-2 bg-[#222] rounded-full overflow-hidden">
+                        <div className="w-10 sm:w-16 h-2 bg-[#222] rounded-full overflow-hidden">
                           <div
                             className={`h-full rounded-full transition-colors ${
                               confluence.enabled
