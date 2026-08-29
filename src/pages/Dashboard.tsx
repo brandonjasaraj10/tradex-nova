@@ -31,7 +31,7 @@ import type { TradeStats } from '../types/trade';
 import { getNotes, createNote, updateNote, deleteNote, toggleNoteReadStatus, type Note } from '../services/notes';
 import type { Trade } from '../types/trade';
 import { getTradingRules, createTradingRule, updateTradingRule, deleteTradingRule, type TradingRule } from '../services/tradingRules';
-import { getPsychologyChecks, type PsychologyCheck } from '../services/psychologyChecks';
+import { getPsychologyChecks, updatePsychologyCheck, type PsychologyCheck } from '../services/psychologyChecks';
 import { generateReport, getWeekBounds, getMonthBounds, getQuarterBounds, getYearBounds, type TradingReport } from '../services/reports';
 import TradingReportModal from '../components/reports/TradingReportModal';
 import { toLocalDateStr } from '../utils/dateHelpers';
@@ -440,6 +440,27 @@ export default function Dashboard() {
       setShowAddRule(false);
     } catch (error) {
       console.error('Error adding rule:', error);
+    }
+  };
+
+  const handleTogglePsychCheck = async (check: PsychologyCheck) => {
+    // Optimistic, same as rules: the tick responds immediately and reverts if
+    // the write fails, rather than the row sitting inert until the round trip
+    // finishes.
+    setPsychChecks(prev => prev.map(c =>
+      c.id === check.id ? { ...c, enabled: !c.enabled } : c
+    ));
+
+    try {
+      await updatePsychologyCheck(check.id, { enabled: !check.enabled });
+      // Adherence averages over the ENABLED checks, so turning one off or on
+      // changes the number - recompute rather than leaving a stale badge.
+      await loadPsychologyChecks();
+    } catch (error) {
+      console.error('Error toggling psychology check:', error);
+      setPsychChecks(prev => prev.map(c =>
+        c.id === check.id ? { ...c, enabled: check.enabled } : c
+      ));
     }
   };
 
@@ -1654,10 +1675,19 @@ export default function Dashboard() {
                     {psychChecks.map((check) => (
                       <div
                         key={check.id}
-                        className={`flex items-start gap-4 p-4 rounded-lg border transition-all ${
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => handleTogglePsychCheck(check)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleTogglePsychCheck(check);
+                          }
+                        }}
+                        className={`flex items-start gap-4 p-4 rounded-lg border transition-all cursor-pointer group ${
                           check.enabled
-                            ? 'bg-gradient-to-r from-blue-500/[0.10] via-blue-500/[0.03] to-transparent border-blue-400/35'
-                            : 'bg-white/5 border-white/5 opacity-50'
+                            ? 'bg-gradient-to-r from-blue-500/[0.10] via-blue-500/[0.03] to-transparent border-blue-400/35 hover:border-blue-400/60'
+                            : 'bg-white/5 border-white/5 opacity-50 hover:opacity-75'
                         }`}
                         style={
                           check.enabled
@@ -1688,14 +1718,15 @@ export default function Dashboard() {
                       </div>
                     ))}
                     {/*
-                      Read-only here, unlike confluences and rules which can be
-                      toggled and deleted from this panel. This is a summary of
-                      the plan; the checklist is built on the Checklists page and
-                      answered on the journal entry, and a third place to edit it
-                      would just be somewhere else for the three to disagree.
+                      Checks can be switched on and off here, the same as
+                      confluences and rules. Wording and deletion still live on
+                      the Checklists page - one editing surface is enough, and
+                      turning a check off is the thing you actually want to do
+                      from the dashboard while looking at your plan.
                     */}
                     <p className="text-[11px] text-gray-600 pt-1">
-                      Edit these under Checklists &rarr; Pre-Trade Psychology.
+                      Tap to switch a check on or off. Add or reword them under
+                      Checklists &rarr; Pre-Trade Psychology.
                     </p>
                   </div>
                 )}
