@@ -542,7 +542,18 @@ export default function Calendar() {
                 )}
 
                 {isToday && (
-                  <div className="absolute bottom-0.5 right-0.5">
+                  /*
+                    Top-right, not bottom-right. The cell stacks day number,
+                    trade count and P&L down the middle, so the bottom-right
+                    corner is exactly where the amount ends - the dot sat on
+                    top of "+$300" and read as part of the number. The top
+                    corner is empty at every cell size.
+
+                    The ring around the cell already marks today; this is the
+                    second, more legible cue, which is why it stays rather
+                    than being dropped.
+                  */
+                  <div className="absolute top-0.5 right-0.5">
                     <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
                   </div>
                 )}
