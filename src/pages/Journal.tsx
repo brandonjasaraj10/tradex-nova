@@ -805,6 +805,33 @@ export default function Journal() {
   const handleVoiceTranscript = async (text: string) => {
     setIsProcessingVoice(true);
     try {
+      /*
+        Dictating into the Notes folder goes through the notes prompt, the
+        same as the typed Organize button there.
+
+        Without this, speaking a reading list or a plan for the week was read
+        as a trade - Nova would look for a symbol and a P&L and rewrite it
+        under "Trade Overview". Only title and content are applied, because
+        the notes form has no other fields and writing a symbol into state
+        the user cannot see would leave it to surface later somewhere it does
+        not belong.
+      */
+      if (selectedFolder?.template_type === 'notes') {
+        const noteData = await processVoiceJournalEntry(
+          text, undefined, [], [], selectedAccount?.id ?? null, [], 'notes'
+        );
+        setEntryForm(prev => ({
+          ...prev,
+          title: noteData.title || prev.title,
+          content: noteData.content
+            ? (prev.content && prev.content.trim().length > 0
+                ? `${prev.content}\n\n${noteData.content}`
+                : noteData.content)
+            : prev.content,
+        }));
+        return;
+      }
+
       const voiceData: VoiceJournalData = await processVoiceJournalEntry(text, entryForm, namedConfluences(), namedRules(), selectedAccount?.id ?? null, namedPsychChecks());
       applyConfluenceRuleStatus(voiceData);
 
