@@ -41,7 +41,7 @@ import {
   type TradingRule
 } from '../services/tradingRules';
 import { useVoice } from '../hooks/useVoice';
-import PreTradeScales, { PRE_TRADE_SCALES, type ScaleValues } from '../components/journal/PreTradeScales';
+import PreTradeScales from '../components/journal/PreTradeScales';
 import {
   getPsychologyChecks,
   seedStarterChecks,
