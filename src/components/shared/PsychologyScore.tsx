@@ -442,7 +442,18 @@ export default function PsychologyScore() {
           </div>
 
           <motion.button
-            whileHover={{ scale: 1.01 }}
+            /*
+              No hover scale. This button is w-full, so growing it by even 1%
+              makes it wider than its container - and an ancestor is
+              overflow-y-auto, which forces overflow-x to auto as well, so the
+              extra width was clipped and the button appeared sheared off on
+              both edges mid-hover.
+
+              Nothing is lost: the gradient brightens, the border lightens,
+              the text lifts and a sheen sweeps across, which is already more
+              hover feedback than most controls here get. whileTap stays
+              because scaling DOWN cannot overflow anything.
+            */
             whileTap={{ scale: 0.99 }}
             onClick={() => navigate('/journal')}
             className="w-full px-4 py-3 bg-gradient-to-r from-blue-500/10 via-blue-400/10 to-blue-500/10 hover:from-blue-500/20 hover:via-blue-400/20 hover:to-blue-500/20 border border-blue-400/30 hover:border-blue-400/50 text-blue-400 hover:text-blue-300 rounded-xl text-sm font-medium transition-all relative overflow-hidden group"
