@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useClampedPanel } from '../../hooks/useClampedPanel';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -33,6 +34,8 @@ export default function DateRangePicker({ value, onChange }: DateRangePickerProp
   const [tempStartDate, setTempStartDate] = useState<Date | null>(null);
   const [showMonthYearPicker, setShowMonthYearPicker] = useState(false);
   const pickerRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const panelShift = useClampedPanel(isOpen, pickerRef, panelRef);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -187,8 +190,14 @@ export default function DateRangePicker({ value, onChange }: DateRangePickerProp
 
   const days = getDaysInMonth(currentMonth);
 
+  /*
+    The wrapper lifts while open. Every control in this row sits at z-30, so
+    whichever renders last paints on top - the All Accounts button was drawing
+    over this panel, which looks exactly like the panel being transparent.
+    Raising the whole wrapper while open keeps the panel above its neighbours.
+  */
   return (
-    <div className="relative z-30" ref={pickerRef}>
+    <div className={`relative ${isOpen ? 'z-50' : 'z-30'}`} ref={pickerRef}>
       <button
         type="button"
         onClick={(e) => {
@@ -206,7 +215,7 @@ export default function DateRangePicker({ value, onChange }: DateRangePickerProp
         {isOpen && (
           <motion.div
             initial={{ opacity: 0, y: -10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
+            animate={{ opacity: 1, y: 0, scale: 1, x: panelShift }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.15 }}
             /*
@@ -217,6 +226,7 @@ export default function DateRangePicker({ value, onChange }: DateRangePickerProp
               widest content, which for a two-month calendar is 474px, and no
               max-width can shrink something whose minimum is already larger.
             */
+            ref={panelRef}
             className="absolute top-12 left-0 right-auto sm:left-auto sm:right-0 z-30 bg-[#0A0A0A] border border-white/10 rounded-xl shadow-2xl overflow-x-auto sm:overflow-hidden sm:min-w-max max-w-[calc(100vw-2rem)] sm:max-w-none"
           >
             <div className="flex">

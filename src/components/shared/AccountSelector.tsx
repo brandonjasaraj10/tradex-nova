@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useClampedPanel } from '../../hooks/useClampedPanel';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Check, Plus, FileUp, X } from 'lucide-react';
 import Button from './Button';
@@ -35,6 +36,8 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
   const [currency, setCurrency] = useState('USD');
   const [ownershipType, setOwnershipType] = useState<'personal' | 'funded' | 'prop'>('personal');
   const selectorRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const panelShift = useClampedPanel(isOpen, selectorRef, panelRef);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -164,7 +167,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
   };
 
   return (
-    <div className="relative z-30" ref={selectorRef}>
+    <div className={`relative ${isOpen ? 'z-50' : 'z-30'}`} ref={selectorRef}>
       <button
         type="button"
         onClick={(e) => {
@@ -182,7 +185,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
         {isOpen && (
           <motion.div
             initial={{ opacity: 0, y: -10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
+            animate={{ opacity: 1, y: 0, scale: 1, x: panelShift }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.15 }}
             /*
@@ -198,6 +201,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
               lives in the fixed header, while this one scrolls with the page,
               so a fixed panel would drift away from its button.
             */
+            ref={panelRef}
             className="absolute top-12 left-0 right-auto sm:left-auto sm:right-0 z-30 bg-[#0A0A0A] border border-white/10 rounded-xl shadow-2xl overflow-hidden min-w-[200px] max-w-[calc(100vw-2rem)]"
           >
             <div className="p-2">
