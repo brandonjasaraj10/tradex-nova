@@ -148,3 +148,86 @@ export async function upsertJournalEntryPsychologyCheck(
 
   if (error) throw error;
 }
+
+/*
+  The psychology figures the NOVA Score needs, for one window and account.
+
+  Lives here as a single function rather than being rebuilt on the Dashboard,
+  Analytics and Nova pages, because this codebase has repeatedly ended up with
+  the same metric computed three slightly different ways - the score itself
+  read 73 on one page and "--" on another for exactly that reason.
+*/
+export interface PsychologyAggregate {
+  entriesWithAnswers: number;
+  entriesTotal: number;
+  avgEmotionalState: number | null;
+  avgFocus: number | null;
+  avgConfidence: number | null;
+}
+
+export async function getPsychologyAggregate(
+  userId: string,
+  dateRange?: [Date, Date],
+  accountId?: string | null
+): Promise<PsychologyAggregate> {
+  const empty: PsychologyAggregate = {
+    entriesWithAnswers: 0,
+    entriesTotal: 0,
+    avgEmotionalState: null,
+    avgFocus: null,
+    avgConfidence: null,
+  };
+
+  let query = supabase
+    .from('journal_entries')
+    .select('id, pre_trade_emotional_state, pre_trade_focus, pre_trade_confidence')
+    .eq('user_id', userId);
+
+  if (dateRange) {
+    // entry_date is a DATE column, so it is compared as a local day string -
+    // an ISO timestamp here is what put evening trades in the wrong day
+    // elsewhere in this codebase.
+    const toDay = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    query = query.gte('entry_date', toDay(dateRange[0])).lte('entry_date', toDay(dateRange[1]));
+  }
+  if (accountId) {
+    query = query.eq('account_id', accountId);
+  }
+
+  const { data: entries, error } = await query;
+  if (error || !entries || entries.length === 0) return empty;
+
+  const ids = entries.map((e: any) => e.id);
+  const { data: answers } = await supabase
+    .from('journal_entry_psychology_checks')
+    .select('journal_entry_id, confirmed')
+    .in('journal_entry_id', ids);
+
+  /*
+    An entry counts as answered if any check was given either a yes or a no.
+    A null is someone who opened the entry and left the checklist alone, which
+    is not engagement and must not be counted as it.
+  */
+  const answeredEntries = new Set(
+    (answers || [])
+      .filter((a: any) => a.confirmed === true || a.confirmed === false)
+      .map((a: any) => a.journal_entry_id)
+  );
+
+  const average = (key: string) => {
+    const values = entries
+      .map((e: any) => e[key])
+      .filter((v: any) => typeof v === 'number');
+    if (values.length === 0) return null;
+    return values.reduce((a: number, b: number) => a + b, 0) / values.length;
+  };
+
+  return {
+    entriesWithAnswers: answeredEntries.size,
+    entriesTotal: entries.length,
+    avgEmotionalState: average('pre_trade_emotional_state'),
+    avgFocus: average('pre_trade_focus'),
+    avgConfidence: average('pre_trade_confidence'),
+  };
+}

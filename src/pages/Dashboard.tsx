@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import NOVAScore from '../components/shared/NOVAScore';
 import { calculateNOVAScore, type NOVAScoreBreakdown } from '../services/novaScore';
+import { getPsychologyAggregate } from '../services/psychologyChecks';
 import { useDataSync } from '../lib/dataSync';
 import PsychologyScore from '../components/shared/PsychologyScore';
 import {
@@ -488,7 +489,13 @@ export default function Dashboard() {
         return;
       }
 
-      const score = await calculateNOVAScore(allTrades);
+      // Same window and account as the trades above.
+      const psych = await getPsychologyAggregate(
+        user.id,
+        [dateRange.startDate, dateRange.endDate],
+        selectedAccount?.id ?? null
+      );
+      const score = await calculateNOVAScore(allTrades, psych);
       setNovaScore(score);
     } catch (error) {
       console.error('Error calculating NOVA score:', error);

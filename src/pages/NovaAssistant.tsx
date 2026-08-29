@@ -17,6 +17,7 @@ import { generateInsights, getActiveInsights, dismissInsight, type Insight } fro
 import { generateTips, getActiveTips, dismissTip, type Tip } from '../services/tips';
 import { correctTradingTerms } from '../utils/tradingVocabulary';
 import { calculateNOVAScore, MIN_TRADES_FOR_CONSISTENCY, type NOVAScoreBreakdown } from '../services/novaScore';
+import { getPsychologyAggregate } from '../services/psychologyChecks';
 import { formatProfitFactor, formatWinLossRatio } from '../utils/formatMetrics';
 import { getTradingRules, type TradingRule } from '../services/tradingRules';
 import { supabase } from '../lib/supabase';
@@ -256,7 +257,14 @@ export default function NovaAssistant() {
         }));
 
         const allTrades = [...tradeItems, ...journalItems];
-        setScoreBreakdown(allTrades.length > 0 ? await calculateNOVAScore(allTrades) : null);
+        /*
+          No date range: this page has no picker, so its score is all-time and
+          the psychology figures have to cover the same span. Passing a range
+          here would make the psychology slice describe a different period from
+          the rest of the score.
+        */
+        const psych = await getPsychologyAggregate(user.id, undefined, selectedAccount?.id ?? null);
+        setScoreBreakdown(allTrades.length > 0 ? await calculateNOVAScore(allTrades, psych) : null);
 
         /*
           Activity means both journal entries and trades, scoped to the
@@ -1072,6 +1080,19 @@ export default function NovaAssistant() {
                         : `Based on ${scoreBreakdown.total_trades} trades`
                     },
                     { label: 'Discipline', icon: Award, value: scoreBreakdown.discipline_score, note: 'Confluence use and overtrading check' },
+                    /*
+                      Listed only when the checklist has actually been used. A
+                      row reading zero would say the trader prepared badly,
+                      when it really means they have not tried this yet.
+                    */
+                    ...(scoreBreakdown.psychology_score !== null
+                      ? [{
+                          label: 'Psychology',
+                          icon: Brain,
+                          value: scoreBreakdown.psychology_score,
+                          note: 'Pre-trade checklist use and self-rated readiness'
+                        }]
+                      : []),
                   ].map((row, i) => (
                     <div key={i} className="bg-white/5 rounded-xl p-3 border border-white/5">
                       <div className="flex items-center justify-between mb-2">

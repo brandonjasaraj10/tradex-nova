@@ -24,6 +24,36 @@ if (sentryDsn && import.meta.env.PROD) {
   Sentry.init({
     dsn: sentryDsn,
     environment: import.meta.env.MODE,
+
+    /*
+      Drop errors thrown by in-app browsers rather than by TradeX.
+
+      Opening a link inside Instagram, Facebook or TikTok loads the page in an
+      embedded WebView that injects its own instrumentation. That code throws
+      during ordinary page teardown - "Error invoking postMessage: Java object
+      is gone" is Android garbage-collecting the injected Java bridge while the
+      page unloads - and Sentry catches it because its browserapierrors
+      integration wraps addEventListener, so anything thrown inside a handler
+      is captured whether we wrote it or not.
+
+      Nothing is broken when this fires and the visitor sees nothing. Left
+      alone it pages us every time someone taps a link from Instagram, which
+      trains us to ignore Sentry mail - the opposite of why it is here.
+
+      Matched on the iabjs:// scheme and the message, so genuine postMessage
+      failures in our own code still come through.
+    */
+    ignoreErrors: [
+      'Error invoking postMessage',
+      'Java object is gone',
+    ],
+    beforeSend(event) {
+      const frames = event.exception?.values?.[0]?.stacktrace?.frames ?? [];
+      const fromInAppBrowser = frames.some((f) =>
+        typeof f.filename === 'string' && f.filename.startsWith('iabjs://')
+      );
+      return fromInAppBrowser ? null : event;
+    },
   });
 }
 

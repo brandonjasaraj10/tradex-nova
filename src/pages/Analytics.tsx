@@ -11,6 +11,7 @@ import { useDateRange } from '../lib/dateRangeContext';
 import { useDataSync } from '../lib/dataSync';
 import { getTradeStats, getTradesForCharts } from '../services/trades';
 import { calculateNOVAScore, type NOVAScoreBreakdown } from '../services/novaScore';
+import { getPsychologyAggregate } from '../services/psychologyChecks';
 import type { TradeStats } from '../types/trade';
 import { useAuth } from '../lib/auth';
 import { generateInsights, getActiveInsights, dismissInsight, type Insight } from '../services/insights';
@@ -209,7 +210,14 @@ export default function Analytics() {
         // score on screen - the old guard only ever set a score, so
         // switching to an account with no trades kept showing the previous
         // account's numbers.
-        setNovaScore(allTrades.length > 0 ? await calculateNOVAScore(allTrades) : null);
+        // Same window and account as the trades above, so the psychology
+        // slice of the score describes the same period as the rest of it.
+        const psych = await getPsychologyAggregate(
+          user.id,
+          [dateRange.startDate, dateRange.endDate],
+          selectedAccount?.id ?? null
+        );
+        setNovaScore(allTrades.length > 0 ? await calculateNOVAScore(allTrades, psych) : null);
       } catch (error) {
         console.error('Error loading NOVA score:', error);
       }

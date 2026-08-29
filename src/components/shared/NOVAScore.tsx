@@ -171,6 +171,20 @@ export default function NOVAScore({
       icon: Award,
       description: 'Confluence usage and trading plan adherence'
     },
+    /*
+      Only listed when there is something to list. A trader who has never used
+      the checklist gets no Psychology row at all, rather than a row reading
+      zero - which would say they prepared badly instead of saying they have
+      not used this yet.
+    */
+    ...(breakdown.psychology_score !== null
+      ? [{
+          label: 'Psychology',
+          score: breakdown.psychology_score,
+          icon: Brain,
+          description: 'Pre-trade checklist use and self-rated readiness'
+        }]
+      : []),
     {
       label: 'Execution',
       score: breakdown.execution_score,
