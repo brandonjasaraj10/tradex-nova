@@ -898,6 +898,45 @@ export default function Journal() {
     }
   };
 
+  /*
+    Organize for the Notes folder.
+
+    Separate from handleAutoFillFromText because that one runs the trade
+    prompt - it hunts for symbol, direction, size and P&L and rewrites the
+    entry as a trade. Pointed at a reading list or a plan for the week it
+    would invent a trade that was never taken, and the notes form has no
+    fields for any of it anyway.
+
+    This only ever touches the title and the content.
+  */
+  const handleOrganizeNotes = async () => {
+    const plain = entryForm.content.replace(/<[^>]*>/g, '').trim();
+    if (!plain || isAutoFilling) return;
+
+    setIsAutoFilling(true);
+    try {
+      const result = await processVoiceJournalEntry(
+        plain,
+        undefined,
+        [],
+        [],
+        selectedAccount?.id ?? null,
+        [],
+        'notes'
+      );
+      setEntryForm(prev => ({
+        ...prev,
+        title: result.title || prev.title,
+        content: result.content || prev.content,
+      }));
+    } catch (error) {
+      console.error('Error organizing notes:', error);
+      showToast('Nova could not organize that note. Please try again.', 'error');
+    } finally {
+      setIsAutoFilling(false);
+    }
+  };
+
   const handleAutoFillFromText = async () => {
     const currentContent = entryForm.content;
     const plainText = currentContent.replace(/<[^>]*>/g, '').trim();
@@ -1660,13 +1699,24 @@ export default function Journal() {
                     />
                   </div>
 
-                  <div>
+                  <div className="relative">
                     <RichTextEditor
                       label="Content"
                       content={entryForm.content}
                       onChange={(content) => setEntryForm({ ...entryForm, content })}
                       placeholder="Start writing your notes..."
                     />
+                    {entryForm.content.replace(/<[^>]*>/g, '').trim().length > 0 && (
+                      <button
+                        onClick={handleOrganizeNotes}
+                        disabled={isAutoFilling || isProcessingVoice}
+                        className="absolute bottom-3 right-3 flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-xs shadow-lg transition-all bg-blue-400/10 text-blue-400 border border-blue-400/20 backdrop-blur-sm hover:bg-blue-400/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Have Nova tidy these notes into headings and lists"
+                      >
+                        <Brain size={14} className={isAutoFilling ? 'animate-pulse' : ''} />
+                        {isAutoFilling ? 'Organizing...' : 'Organize with Nova'}
+                      </button>
+                    )}
                   </div>
                 </div>
               ) : (

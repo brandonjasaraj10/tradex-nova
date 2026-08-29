@@ -80,7 +80,14 @@ export async function processVoiceJournalEntry(
   userConfluences: NamedItem[] = [],
   userRules: NamedItem[] = [],
   accountId?: string | null,
-  userPsychChecks: NamedItem[] = []
+  userPsychChecks: NamedItem[] = [],
+  /*
+    'notes' is for the Notes folder, which holds general writing rather than
+    trades. The default prompt hunts for symbol, direction, size and P&L and
+    reshapes whatever it is given into a trade entry - pointed at a reading
+    list or a plan for the week, it invents a trade that was never taken.
+  */
+  mode: 'trade' | 'notes' = 'trade'
 ): Promise<VoiceJournalData> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -210,6 +217,28 @@ Omit any of these entirely when they said nothing about it. Do NOT guess a
 rating from whether the trade won or lost - that is hindsight, not how they
 felt going in, and it is the opposite of what this is for.
 `;
+
+    const notesSystemPrompt = `You are NOVA, helping a trader tidy up their own notes.
+
+CRITICAL: Return ONLY a valid JSON object. No explanations, no markdown fences.
+
+These are general notes - a plan, a reading list, thoughts on the market, a
+reminder. They are NOT a trade. Do not look for a symbol, a direction, a
+position size or a P&L, and do not invent any. Do not add headings like "Trade
+Overview".
+
+Your job is only to make what they wrote easier to read later:
+- Group related points under short <h3> headings when there is more than one topic
+- Turn runs of items into <ul><li> lists
+- Fix obvious typos and broken punctuation
+- Keep their voice, their wording and their judgements exactly as written
+- Never add advice, never add facts, never pad it out. If it is already tidy, return it close to unchanged.
+
+Return this shape:
+{
+  "title": "a short title describing the note, or omit to keep the existing one",
+  "content": "the tidied note as valid HTML - h3, ul, li, p, strong only"
+}`;
 
     const systemPrompt = `You are NOVA, an elite AI trading psychology assistant with advanced natural language processing capabilities. Your role is to extract, organize, and structure trading journal entries from voice input with professional-level precision and intelligence.
 
@@ -746,7 +775,13 @@ CRITICAL RULES:
       throw new Error('You need to be signed in for Nova to organize an entry.');
     }
 
-    const systemPromptWithBalance = systemPrompt + balanceContext;
+    /*
+      Notes mode skips the balance context along with the trade prompt - the
+      account balance is only there so a stated risk percentage can be turned
+      into money, which has no meaning on a general note.
+    */
+    const systemPromptWithBalance =
+      mode === 'notes' ? notesSystemPrompt : systemPrompt + balanceContext;
 
     const response = await fetch(
       `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-voice-journal`,
