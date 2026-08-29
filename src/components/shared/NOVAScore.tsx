@@ -355,9 +355,18 @@ export default function NOVAScore({
           <motion.button
             onClick={() => setExpanded(!expanded)}
             className="flex items-center justify-between p-4 rounded-lg bg-gradient-to-r from-white/5 to-white/10 hover:from-white/10 hover:to-white/15 transition-all border border-white/10 relative overflow-hidden group"
-            animate={{ width: expanded ? '100%' : '400px' }}
+            /*
+              Collapsed width is capped at the container rather than a flat
+              400px. On a 375px phone the hardcoded value made this button
+              wider than the screen, which widened the whole document and let
+              the dashboard be dragged sideways - the button itself only
+              looked slightly wrong, so the cause was easy to miss.
+
+              min() keeps the roomy 400px on a desktop and shrinks to fit
+              below that.
+            */
+            animate={{ width: expanded ? '100%' : 'min(400px, 100%)' }}
             transition={{ duration: 0.4, ease: 'easeInOut' }}
-            whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.99 }}
           >
             <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-blue-500/10 to-blue-500/0 opacity-0 group-hover:opacity-100 transition-opacity" />
