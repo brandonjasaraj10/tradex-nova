@@ -44,6 +44,7 @@ import { useVoice } from '../hooks/useVoice';
 import PreTradeScales, { PRE_TRADE_SCALES, type ScaleValues } from '../components/journal/PreTradeScales';
 import {
   getPsychologyChecks,
+  seedStarterChecks,
   getJournalEntryPsychologyChecks,
   upsertJournalEntryPsychologyCheck,
   type PsychologyCheck
@@ -240,7 +241,23 @@ export default function Journal() {
 
       setUserConfluences(confluences.filter(c => c.enabled));
       if (user) {
-        const checks = await getPsychologyChecks(user.id);
+        /*
+          Seeded here as well as on the Checklists page.
+
+          Seeding only there meant a new user who opened the journal first -
+          which is where the tour sends them - found "no checks set up yet"
+          and a pointer to another screen, for the one feature we most want
+          them to try on day one.
+
+          Safe to call from both: seedStarterChecks upserts against the
+          unique index on (user_id, name), so whichever screen runs first
+          wins and the other is a no-op. That index is what makes calling it
+          from two places a non-issue rather than a duplication bug.
+        */
+        let checks = await getPsychologyChecks(user.id);
+        if (checks.length === 0) {
+          checks = await seedStarterChecks(user.id);
+        }
         setPsychChecks(checks.filter(c => c.enabled));
       }
       setUserRules(rules.filter(r => r.enabled));
@@ -741,6 +758,7 @@ export default function Journal() {
   // confluence") to the right existing row - matched by id, never a guess.
   const namedConfluences = () => userConfluences.map(c => ({ id: c.id, name: c.name }));
   const namedRules = () => userRules.map(r => ({ id: r.id, name: r.name }));
+  const namedPsychChecks = () => psychChecks.map(c => ({ id: c.id, name: c.name }));
 
   const applyConfluenceRuleStatus = (voiceData: VoiceJournalData) => {
     if (voiceData.confluences_status && voiceData.confluences_status.length > 0) {
@@ -757,12 +775,37 @@ export default function Journal() {
         return next;
       });
     }
+    if (voiceData.psychology_status && voiceData.psychology_status.length > 0) {
+      setPsychStatus(prev => {
+        const next = new Map(prev);
+        voiceData.psychology_status!.forEach(c => next.set(c.id, c.confirmed));
+        return next;
+      });
+    }
+    /*
+      Ratings are only overwritten when Nova actually returned one. A field
+      the trader never spoke about must keep whatever they set by hand -
+      writing undefined over it would quietly wipe a rating they had already
+      given with the dots.
+    */
+    if (
+      voiceData.pre_trade_emotional_state != null ||
+      voiceData.pre_trade_focus != null ||
+      voiceData.pre_trade_confidence != null
+    ) {
+      setEntryForm(prev => ({
+        ...prev,
+        pre_trade_emotional_state: voiceData.pre_trade_emotional_state ?? prev.pre_trade_emotional_state,
+        pre_trade_focus: voiceData.pre_trade_focus ?? prev.pre_trade_focus,
+        pre_trade_confidence: voiceData.pre_trade_confidence ?? prev.pre_trade_confidence,
+      }));
+    }
   };
 
   const handleVoiceTranscript = async (text: string) => {
     setIsProcessingVoice(true);
     try {
-      const voiceData: VoiceJournalData = await processVoiceJournalEntry(text, entryForm, namedConfluences(), namedRules(), selectedAccount?.id ?? null);
+      const voiceData: VoiceJournalData = await processVoiceJournalEntry(text, entryForm, namedConfluences(), namedRules(), selectedAccount?.id ?? null, namedPsychChecks());
       applyConfluenceRuleStatus(voiceData);
 
       setEntryForm(prev => ({
@@ -907,7 +950,7 @@ export default function Journal() {
         // which is most of the reason it took 20+ seconds. The model now
         // makes that same-trade-or-not call inside the single request and
         // reports it as is_new_position.
-        voiceData = await processVoiceJournalEntry(newTextOnly, entryForm, namedConfluences(), namedRules(), selectedAccount?.id ?? null);
+        voiceData = await processVoiceJournalEntry(newTextOnly, entryForm, namedConfluences(), namedRules(), selectedAccount?.id ?? null, namedPsychChecks());
 
         const currentSymbol = (entryForm.symbol || '').trim().toUpperCase();
         const newSymbol = (voiceData.symbol || '').trim().toUpperCase();
@@ -927,7 +970,7 @@ export default function Journal() {
           }
         }
       } else {
-        voiceData = await processVoiceJournalEntry(newTextOnly, undefined, namedConfluences(), namedRules(), selectedAccount?.id ?? null);
+        voiceData = await processVoiceJournalEntry(newTextOnly, undefined, namedConfluences(), namedRules(), selectedAccount?.id ?? null, namedPsychChecks());
       }
 
       applyConfluenceRuleStatus(voiceData);

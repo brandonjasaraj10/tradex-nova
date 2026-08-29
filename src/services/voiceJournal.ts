@@ -61,6 +61,12 @@ export interface VoiceJournalData {
   // just because the trade matches the pattern.
   confluences_status?: { id: string; present: boolean }[];
   rules_status?: { id: string; followed: boolean }[];
+  psychology_status?: { id: string; confirmed: boolean }[];
+  // 1-5 self-ratings taken before entry. Omitted, not zeroed, when the
+  // trader did not say anything about how they felt.
+  pre_trade_emotional_state?: number | null;
+  pre_trade_focus?: number | null;
+  pre_trade_confidence?: number | null;
 }
 
 export interface NamedItem {
@@ -73,7 +79,8 @@ export async function processVoiceJournalEntry(
   existingEntry?: any,
   userConfluences: NamedItem[] = [],
   userRules: NamedItem[] = [],
-  accountId?: string | null
+  accountId?: string | null,
+  userPsychChecks: NamedItem[] = []
 ): Promise<VoiceJournalData> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -178,15 +185,39 @@ ${userRules.length > 0 ? `Rules (id: name):\n${userRules.map(r => `- ${r.id}: ${
 If the user explicitly says they followed, used, saw, or hit one of these by name (or a rule wasn't followed/was broken), include it in confluences_status / rules_status using its exact id from the list above - never invent a new one, and never include an item just because the trade generally matches that pattern. Only include ones the user actually spoke about.
 ` : '';
 
+    const psychologyPrompt = `
+**PRE-TRADE PSYCHOLOGY**
+
+${userPsychChecks.length > 0
+  ? `The user's own psychology checks (id: name):\n${userPsychChecks.map(c => `- ${c.id}: ${c.name}`).join('\n')}\n\nInclude a check in psychology_status ONLY when the transcript contains a statement about that specific thing. Use the exact id, and confirmed true or false - a statement can answer negatively: "I was definitely revenge trading" confirms FALSE on a check about chasing losses.\n\nThis is the trader's own account of their state of mind, so an unsupported tick is you putting words in their mouth. Leaving a check out is always correct when they did not speak to it - a blank is honest, a guess is not.\n\nWorked example. Transcript: "shorted GBPUSD, made 300, I was calm and had my plan written out". Checks: "Reviewed trading plan", "I can afford to lose this risk", "Checked market conditions".\n-> Only "Reviewed trading plan" belongs in psychology_status. Being calm and having a plan says NOTHING about position size or about having looked at market conditions, however sensible those sound for a winning trade. Do not include them.`
+  : 'The user has no psychology checks defined.'}
+
+Ratings, only when they actually describe how they felt:
+- pre_trade_emotional_state: 1-5, how steady they were. "rattled"/"tilted" is 1-2, "fine"/"normal" is 3, "calm"/"clear" is 4-5.
+- pre_trade_focus: 1-5, how sharp. "distracted"/"half watching" is 1-2, "locked in"/"dialled" is 4-5.
+- pre_trade_confidence: 1-5, how sure of the trade. "unsure"/"forcing it" is 1-2, "high conviction" is 4-5.
+
+Omit any of these entirely when they said nothing about it. Do NOT guess a
+rating from whether the trade won or lost - that is hindsight, not how they
+felt going in, and it is the opposite of what this is for.
+`;
+
     const systemPrompt = `You are NOVA, an elite AI trading psychology assistant with advanced natural language processing capabilities. Your role is to extract, organize, and structure trading journal entries from voice input with professional-level precision and intelligence.
 
 CRITICAL: You MUST return ONLY a valid JSON object. NO explanations, NO markdown, NO text outside the JSON.
 ${contextPrompt}
 ${confluencesRulesPrompt}
+${psychologyPrompt}
 
 CORE CAPABILITIES:
 1. Context-aware extraction: Understand trading terminology, slang, abbreviations
-2. Intelligent inference: Fill gaps using context clues and trading knowledge
+2. Intelligent inference: Fill gaps using context clues and trading knowledge -
+   but ONLY for facts about the trade itself (symbol, direction, size, prices).
+   NEVER infer the trader's state of mind. The psychology checks and the three
+   pre_trade_* ratings describe how a person felt, and that is knowable only
+   from what they actually said. Inferring "they had a plan" or "they could
+   afford the risk" because the trade sounds sensible is inventing their
+   answer, not filling a gap.
 3. Emotional intelligence: Detect subtle emotional cues and psychological states
 4. Pattern recognition: Identify and extract key metrics even when casually mentioned
 5. Natural language understanding: Handle incomplete sentences, stream of consciousness, casual speech
@@ -637,7 +668,11 @@ Return ONLY valid JSON (no markdown code blocks, no backticks, no explanations):
     }
   },
   "confluences_status": [{ "id": "the confluence's id from the list above", "present": true }],
-  "rules_status": [{ "id": "the rule's id from the list above", "followed": false }]
+  "rules_status": [{ "id": "the rule's id from the list above", "followed": false }],
+  "psychology_status": [{ "id": "the psychology check's id from the list above", "confirmed": true }],
+  "pre_trade_emotional_state": 4,
+  "pre_trade_focus": 3,
+  "pre_trade_confidence": 5
 }
 
 CRITICAL RULES:
@@ -647,6 +682,10 @@ CRITICAL RULES:
 4. If no psychology data is mentioned, omit template_data entirely
 5. Be generous with inference but conservative with assumptions
 6. Extract ALL relevant trading details from natural speech
+7b. **psychology_status and the three pre_trade_* ratings**: only from what the
+   user actually said about their own state. Never infer them from the trade's
+   outcome - a loss does not mean they were unfocused, and a win does not mean
+   they were calm. Omit anything they did not speak to.
 7. **confluences_status/rules_status**: only include an item if the user explicitly named it and said whether they followed/saw it or not - never infer from the trade description alone, and never include anything not in the provided id list. Omit both arrays entirely if nothing was explicitly mentioned.
 7. **CONVERT casual language to professional terminology**
 8. Generate smart tags based on content (e.g., "scalp", "swing", "win", "loss", "breakout", "reversal")
