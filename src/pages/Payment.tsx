@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
-import { Shield, CheckCircle2, Lock, AlertCircle, ArrowLeft, Zap, Crown, TrendingUp, Sparkles, Star, Gift } from 'lucide-react';
+import { Shield, CheckCircle2, Lock, AlertCircle, ArrowLeft, Zap, Crown, TrendingUp, Sparkles, Star, Gift, X } from 'lucide-react';
+import TrialTimeline from '../components/payment/TrialTimeline';
 import Button from '../components/shared/Button';
 import { supabase } from '../lib/supabase';
 
@@ -293,8 +294,19 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
     { name: 'Mike R.', role: 'Prop Trader', date: 'Apr 2026', text: 'NOVA called me out on revenge trading and honestly I needed to hear it lol. Worth it just for that.' },
   ];
 
+  /*
+    What the trial actually charges, for whichever plan is selected. Annual
+    is charged its full $249.90 rather than the $20.83/mo it advertises, so
+    the timeline has to quote billedAs and not the headline price - saying
+    "$20.83 will be charged" would be untrue.
+  */
+  const activePlan = plans.find((pl) => pl.id === selectedPlan) ?? plans[0];
+  const activeBilledAs = 'billedAs' in activePlan ? activePlan.billedAs : undefined;
+  const chargeAmount = activeBilledAs ? activeBilledAs.split(' ')[0] : activePlan.price;
+
+  // pb-44 below sm clears the CTA bar that is pinned to the bottom there.
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-4 py-12 overflow-hidden">
+    <div className="min-h-screen bg-black flex items-center justify-center p-4 py-12 pb-44 sm:pb-12 overflow-hidden">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gold-400/5 rounded-full blur-3xl animate-pulse" />
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gold-400/3 rounded-full blur-3xl" />
@@ -312,19 +324,42 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
         }}
         className="w-full max-w-5xl relative z-10"
       >
+        {/*
+          The way out is a corner X on a phone, as it is on every paywall
+          worth copying. "Back to Dashboard" is a wide, prominent control
+          pointing away from payment, and on mobile it sat above the fold
+          while the button that matters sat below it. Unchanged from sm up.
+        */}
         {!onSubscriptionComplete && (
-          <motion.div variants={fadeInUp} className="mb-6">
-            <Button
-              variant="ghost"
-              icon={<ArrowLeft className="w-4 h-4" />}
+          <>
+            <motion.div variants={fadeInUp} className="mb-6 hidden sm:block">
+              <Button
+                variant="ghost"
+                icon={<ArrowLeft className="w-4 h-4" />}
+                onClick={() => navigate('/dashboard')}
+              >
+                Back to Dashboard
+              </Button>
+            </motion.div>
+            <button
+              type="button"
               onClick={() => navigate('/dashboard')}
+              aria-label="Close and go back to the dashboard"
+              className="sm:hidden absolute right-0 top-0 w-11 h-11 flex items-center justify-center rounded-full text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
             >
-              Back to Dashboard
-            </Button>
-          </motion.div>
+              <X className="w-5 h-5" />
+            </button>
+          </>
         )}
 
-        <motion.div variants={fadeInUp} className="text-center mb-12">
+        {/*
+          pt-10 leaves the close button a row to itself. At 360px the centred
+          "Start your 7-day free trial today" pill is wide enough to reach the
+          corner the X sits in, and the two overlapped. It costs nothing now
+          the button is pinned to the bottom, so a taller header cannot push
+          it out of view.
+        */}
+        <motion.div variants={fadeInUp} className="text-center pt-14 sm:pt-0 mb-6 sm:mb-12">
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
@@ -344,7 +379,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
               className="w-2 h-2 bg-gold-400 rounded-full"
             />
           </motion.div>
-          <h1 className="text-4xl md:text-5xl font-bold mb-3 bg-gradient-to-r from-white via-white to-gray-400 bg-clip-text text-transparent">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 bg-gradient-to-r from-white via-white to-gray-400 bg-clip-text text-transparent">
             Elevate Your Trading
           </h1>
           <p className="text-gray-400 text-lg mb-6">
@@ -408,7 +443,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
           )}
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6 mb-6 sm:mb-8">
           {plans.map((plan, index) => (
             <motion.div
               key={plan.id}
@@ -428,7 +463,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
                 />
               )}
               <div
-                className={`relative rounded-2xl p-6 transition-all duration-300 ${
+                className={`relative rounded-2xl p-4 sm:p-6 transition-all duration-300 ${
                   selectedPlan === plan.id
                     ? 'bg-[#0A0A0A] border-2 border-gold-400'
                     : 'bg-[#0A0A0A] border border-white/10 hover:border-white/20'
@@ -438,12 +473,25 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
                   <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-gold-400/10 via-transparent to-gold-400/5 pointer-events-none" />
                 )}
 
-                <div className="flex items-start justify-between mb-4 mt-2">
-                  <div className="flex items-center gap-3">
-                    <plan.icon className="w-6 h-6 text-gold-400" />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-lg">{plan.name}</h3>
+                {/*
+                  One row on a phone: name on the left, price on the right.
+                  The tall stacked card is what pushed the button off the
+                  screen - both plans plus the CTA could not fit. From sm up
+                  this is exactly the layout it always was.
+                */}
+                <div className="flex items-center sm:items-start justify-between gap-3 mb-0 sm:mb-4 mt-0 sm:mt-2">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <plan.icon className="w-6 h-6 text-gold-400 flex-shrink-0" />
+                    <div className="min-w-0">
+                      {/*
+                        Name above badge on a phone. Side by side the pair
+                        needs more width than a 360px row has, and the badge
+                        ended up hard against the price; stacked, the column
+                        is only as wide as the wider of the two. Unchanged
+                        from sm up.
+                      */}
+                      <div className="flex flex-col items-start gap-0.5 sm:flex-row sm:items-center sm:gap-2">
+                        <h3 className="font-semibold text-base sm:text-lg whitespace-nowrap">{plan.name}</h3>
                         {/*
                           Was "Popular" with a people icon - a claim about
                           other customers, of which there are currently none.
@@ -457,17 +505,44 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
                           <motion.div
                             animate={{ scale: [1, 1.05, 1] }}
                             transition={{ duration: 2, repeat: Infinity }}
-                            className="flex items-center gap-1 px-2 py-0.5 bg-blue-500/20 rounded-md"
+                            className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 bg-blue-500/20 rounded-md whitespace-nowrap flex-shrink-0"
                           >
                             <Sparkles className="w-3 h-3 text-blue-400" />
                             <span className="text-xs font-medium text-blue-400">Best Value</span>
                           </motion.div>
                         )}
                       </div>
-                      <p className="text-sm text-gray-400">{plan.description}</p>
+                      <p className="hidden sm:block text-sm text-gray-400">{plan.description}</p>
                     </div>
                   </div>
-                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+                  {/*
+                    The phone's price display. The full block below carries
+                    the struck-through original and the same figures; this is
+                    the same information at a size that fits on one line.
+                  */}
+                  <div className="sm:hidden text-right ml-auto flex-shrink-0">
+                    <div className="flex items-baseline gap-1 justify-end">
+                      <span className={`text-xl font-bold ${plan.highlight ? 'text-gold-400' : 'text-white'}`}>
+                        {plan.price}
+                      </span>
+                      <span className="text-xs text-gray-400">{plan.period}</span>
+                    </div>
+                    {/*
+                      "$249.90/yr" rather than the full "billed annually"
+                      string: the long form needed 122px of a 358px row and
+                      shoved the Best Value badge into the price. The full
+                      wording is still on the desktop card, and the timeline
+                      directly below spells the charge out in a sentence.
+                    */}
+                    {plan.billedAs && (
+                      <p className="text-[11px] text-gray-500 mt-0.5">
+                        {plan.billedAs.split(' ')[0]}/yr
+                      </p>
+                    )}
+                    {plan.savings && <p className="text-[11px] text-blue-400 mt-0.5">{plan.savings}</p>}
+                  </div>
+
+                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
                     selectedPlan === plan.id
                       ? 'border-gold-400'
                       : 'border-gray-600'
@@ -482,7 +557,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
                   </div>
                 </div>
 
-                <div className="mb-4">
+                <div className="hidden sm:block mb-4">
                   <div className="flex items-baseline gap-2">
                     {plan.originalPrice && (
                       <span className="text-lg text-gray-500 line-through">{plan.originalPrice}</span>
@@ -511,14 +586,21 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
                     initial={{ x: -20, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
                     transition={{ delay: 0.3 }}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-lg mb-4"
+                    className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-lg mb-4"
                   >
                     <TrendingUp className="w-4 h-4 text-blue-400" />
                     <span className="text-sm font-medium text-blue-400">{plan.savings}</span>
                   </motion.div>
                 )}
 
-                <div className="space-y-2">
+                {/*
+                  Both cards repeat "7-day free trial", "All Pro features" and
+                  "Cancel anytime", which the row at the top of the page has
+                  already said. On a phone that repetition is what cost the
+                  height; the two lines that actually differ are on the annual
+                  card's own badge.
+                */}
+                <div className="hidden sm:block space-y-2">
                   {plan.features.map((feature, i) => (
                     <div key={i} className="flex items-center gap-2">
                       <CheckCircle2 className={`w-4 h-4 ${plan.highlight ? 'text-gold-400' : 'text-gray-500'}`} />
@@ -531,7 +613,29 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
           ))}
         </div>
 
-        <motion.div variants={fadeInUp} className="max-w-md mx-auto space-y-4">
+        {/*
+          Phone only. It reads off the selected plan, so switching to annual
+          changes the amount it says will be charged - a timeline quoting the
+          monthly figure next to a selected annual plan would be worse than
+          having none.
+        */}
+        <motion.div variants={fadeInUp} className="sm:hidden mb-6">
+          <TrialTimeline
+            amount={chargeAmount}
+            billedAs={activeBilledAs ? 'billed annually' : undefined}
+          />
+        </motion.div>
+
+        {/*
+          The button is pinned to the bottom of a phone screen. Measured
+          before this change: it sat 1079px down an 844px screen, so nobody
+          reached it without scrolling past both plans. Static from sm up,
+          where it has always been in view.
+        */}
+        <motion.div
+          variants={fadeInUp}
+          className="fixed inset-x-0 bottom-0 z-40 max-w-md mx-auto p-4 space-y-3 bg-black/95 backdrop-blur-sm border-t border-white/10 sm:static sm:z-auto sm:p-0 sm:space-y-4 sm:bg-transparent sm:backdrop-blur-none sm:border-0"
+        >
           {!stripeConfigured && (
             <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
@@ -691,11 +795,24 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
         <motion.div variants={fadeInUp} className="mt-8 text-center">
           <p className="text-sm text-gray-400">
             By subscribing, you agree to our{' '}
-            <button onClick={() => navigate('/terms')} className="text-gold-400 hover:underline">
+            {/*
+              inline-block with vertical padding gives these a 44px tap
+              height without moving the text - they were 20px, which is under
+              the minimum on any phone and is the wrong place to make someone
+              aim carefully, since this is the payment screen's only route to
+              what they are agreeing to.
+            */}
+            <button
+              onClick={() => navigate('/terms')}
+              className="text-gold-400 hover:underline inline-block py-3 sm:py-0 align-middle"
+            >
               Terms of Service
             </button>
             {' '}and{' '}
-            <button onClick={() => navigate('/privacy')} className="text-gold-400 hover:underline">
+            <button
+              onClick={() => navigate('/privacy')}
+              className="text-gold-400 hover:underline inline-block py-3 sm:py-0 align-middle"
+            >
               Privacy Policy
             </button>
           </p>
