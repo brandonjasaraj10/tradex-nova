@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAccount } from '../lib/accountContext';
 import { useDateRange } from '../lib/dateRangeContext';
 import { getTradeLog, type TradeLogRow } from '../services/trades';
-import { valueColorClass, tradeOutcome } from '../utils/formatMetrics';
+import { valueColorClass, tradeOutcome, parseOutcomeQuery } from '../utils/formatMetrics';
 import { parseLocalDate } from '../utils/dateHelpers';
 import TradeOutcomeBadge from '../components/trades/TradeOutcomeBadge';
 import Card from '../components/shared/Card';
@@ -139,16 +139,16 @@ export default function TradeLogs() {
       a loss rarely types the sign.
     */
     /*
-      The outcome is searchable too. Labelling every row Win or Loss is only
-      half the job if the search box cannot act on it - typing "loss" should
-      narrow the list to losers, which is what someone reviewing a bad run
-      actually wants.
+      "win" or "loss" on its own filters by outcome instead of searching text.
+
+      Substring matching cannot do this job: trading notes are full of the
+      word "loss" - "stop loss" most of all - so searching for it returned
+      nearly every winner as well, which is precisely backwards. Anything
+      longer than the bare word still searches the text, so "stop loss" keeps
+      finding the phrase.
     */
-    const outcome = (r: TradeLogRow) => {
-      const o = tradeOutcome(r.pnl);
-      // "even" as well, since that is what the badge prints for breakeven.
-      return o === 'breakeven' ? 'breakeven even' : o;
-    };
+    const outcomeFilter = parseOutcomeQuery(q);
+    if (outcomeFilter) return rows.filter((r) => tradeOutcome(r.pnl) === outcomeFilter);
 
     const money = (r: TradeLogRow) => {
       const abs = Math.abs(r.pnl);
@@ -174,7 +174,6 @@ export default function TradeLogs() {
       r.notes.toLowerCase().includes(q) ||
       (r.account_name || '').toLowerCase().includes(q) ||
       r.tags.some((t) => t.toLowerCase().includes(q)) ||
-      outcome(r).includes(q) ||
       (stripped.length > 0 && money(r).replace(/[$,\s]/g, '').includes(stripped))
     );
   }, [rows, search]);

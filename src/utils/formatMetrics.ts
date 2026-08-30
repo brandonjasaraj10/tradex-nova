@@ -116,3 +116,26 @@ export function tradeOutcome(pnl: number): TradeOutcome {
   if (!isFinite(pnl) || pnl === 0) return 'breakeven';
   return pnl > 0 ? 'win' : 'loss';
 }
+
+const OUTCOME_WORDS: Record<string, TradeOutcome> = {
+  win: 'win', wins: 'win', winner: 'win', winners: 'win', winning: 'win',
+  loss: 'loss', losses: 'loss', loser: 'loss', losers: 'loss', losing: 'loss',
+  breakeven: 'breakeven', 'break even': 'breakeven', even: 'breakeven', flat: 'breakeven',
+};
+
+/*
+  Reads a search box query as a win/loss filter, or returns null if it is not
+  one.
+
+  Needed because trading notes are full of the word "loss" - "stop loss" above
+  all - so a plain substring search for "loss" returned most of the winners
+  too, which is the opposite of what someone typing it wants.
+
+  Only an exact whole-query match counts. "loss" filters to losers; "stop
+  loss" is left alone and searches the text as before, because there the word
+  is part of a phrase the user is looking for rather than the thing they are
+  filtering by.
+*/
+export function parseOutcomeQuery(query: string): TradeOutcome | null {
+  return OUTCOME_WORDS[query.trim().toLowerCase()] ?? null;
+}
