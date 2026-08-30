@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowUpRight, ArrowDownRight, TrendingUp, DollarSign, BarChart, ChevronLeft, ChevronRight, Plus, CreditCard as Edit2, Brain, Check, TrendingDown, BookOpen, Settings, Trash2, X, Eye, EyeOff, BarChart3 } from 'lucide-react';
 import Card from '../components/shared/Card';
@@ -133,6 +133,15 @@ export default function Dashboard() {
   // This used to be local state with a per-page default, so switching pages
   // silently changed the window and coming back discarded the choice.
   const { dateRange, setDateRange } = useDateRange();
+  /*
+    The reports menu used to open on hover alone. A phone has no hover, so it
+    depended on the browser's tap-to-hover fallback: the menu opened on tap and
+    then stayed open, because that fallback only clears when you tap something
+    else. Tapping the button again did nothing. It is a real menu now, opened
+    and closed by tapping, like every other dropdown in this row.
+  */
+  const [reportMenuOpen, setReportMenuOpen] = useState(false);
+  const reportMenuRef = useRef<HTMLDivElement>(null);
 
   const handleGenerateReport = async (reportType: 'weekly' | 'monthly' | 'quarterly' | 'yearly') => {
     const user = (await supabase.auth.getUser()).data.user;
@@ -161,6 +170,25 @@ export default function Dashboard() {
       setLoadingReport(false);
     }
   };
+
+  useEffect(() => {
+    if (!reportMenuOpen) return;
+    const onPointerDown = (e: MouseEvent | TouchEvent) => {
+      // The trigger is inside this ref, so its own click does the toggling.
+      if (reportMenuRef.current && !reportMenuRef.current.contains(e.target as Node)) {
+        setReportMenuOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setReportMenuOpen(false); };
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('touchstart', onPointerDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('touchstart', onPointerDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [reportMenuOpen]);
 
   useEffect(() => {
     loadConfluences();
@@ -769,40 +797,45 @@ export default function Dashboard() {
               trapped inside it and paints at 40 - any page content at 40 or
               above punches straight through the notifications.
             */}
-            <div className="relative group z-20">
+            <div className="relative z-20" ref={reportMenuRef}>
               <button
+                onClick={() => setReportMenuOpen((o) => !o)}
+                aria-expanded={reportMenuOpen}
+                aria-haspopup="true"
                 disabled={loadingReport}
                 className="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 border border-blue-400/30 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <BarChart3 className="w-4 h-4" />
                 {loadingReport ? 'Generating...' : 'View Reports'}
               </button>
-              <div className="absolute right-0 top-full mt-2 w-40 bg-[#0A0A0A] border border-blue-400/30 rounded-lg overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-30" style={{
+              <div className={`absolute right-0 top-full mt-2 w-40 bg-[#0A0A0A] border border-blue-400/30 rounded-lg overflow-hidden transition-all duration-200 z-30 ${
+                reportMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'
+              }`} style={{
                 boxShadow: '0 0 20px rgba(59, 130, 246, 0.2)'
               }}>
                 <button
-                  onClick={() => handleGenerateReport('weekly')}
+                  onClick={() => { setReportMenuOpen(false); handleGenerateReport('weekly'); }}
                   disabled={loadingReport}
                   className="w-full px-3 py-1.5 text-left text-xs text-gray-300 hover:bg-white/5 hover:text-white transition-colors disabled:opacity-50"
                 >
                   This Week
                 </button>
                 <button
-                  onClick={() => handleGenerateReport('monthly')}
+                  onClick={() => { setReportMenuOpen(false); handleGenerateReport('monthly'); }}
                   disabled={loadingReport}
                   className="w-full px-3 py-1.5 text-left text-xs text-gray-300 hover:bg-white/5 hover:text-white transition-colors disabled:opacity-50"
                 >
                   This Month
                 </button>
                 <button
-                  onClick={() => handleGenerateReport('quarterly')}
+                  onClick={() => { setReportMenuOpen(false); handleGenerateReport('quarterly'); }}
                   disabled={loadingReport}
                   className="w-full px-3 py-1.5 text-left text-xs text-gray-300 hover:bg-white/5 hover:text-white transition-colors disabled:opacity-50"
                 >
                   This Quarter
                 </button>
                 <button
-                  onClick={() => handleGenerateReport('yearly')}
+                  onClick={() => { setReportMenuOpen(false); handleGenerateReport('yearly'); }}
                   disabled={loadingReport}
                   className="w-full px-3 py-1.5 text-left text-xs text-gray-300 hover:bg-white/5 hover:text-white transition-colors disabled:opacity-50"
                 >
