@@ -1049,7 +1049,15 @@ export default function Dashboard() {
             {/* Calendar - Full Width */}
             <motion.div variants={fadeInUp} className="h-full" data-tour="calendar">
               <Card variant="default" className="bg-[#111]/80 p-3 sm:p-4 lg:p-5 h-full flex flex-col">
-                <div className="flex items-center justify-between mb-4 sm:mb-5">
+                {/*
+                  Stacked on a phone. The month, the arrows, the P&L/Psych
+                  toggle, the eye and Today do not fit on one line at 390px,
+                  and because the month sits in a min-w-0 group with truncate
+                  it was the piece that gave way - "August 2026" rendered in
+                  38px of the 87px it needs, leaving "A...". Giving the month
+                  and its arrows their own line means nothing has to shrink.
+                */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-5">
                   <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                     <h2 className="text-sm sm:text-base font-medium truncate">{formatDate(selectedDate)}</h2>
                     <div className="flex gap-1">
