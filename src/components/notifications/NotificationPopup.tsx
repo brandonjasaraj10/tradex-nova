@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, RefObject } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, X, Info, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
@@ -16,9 +16,19 @@ interface Notification {
 interface NotificationPopupProps {
   isOpen: boolean;
   onClose: () => void;
+  /*
+    The button that opens this popup lives in the header, outside the popup's
+    own element, so the dismiss-on-outside-click handler below counted a tap on
+    it as "outside" and closed the popup - and then the button's own click
+    toggled it straight back open. The popup could only be dismissed by tapping
+    somewhere else entirely, which on a phone is the one gesture people do not
+    think to try. Passing the trigger in lets the handler leave it alone so the
+    button can do its own toggling.
+  */
+  triggerRef?: RefObject<HTMLElement | null>;
 }
 
-export default function NotificationPopup({ isOpen, onClose }: NotificationPopupProps) {
+export default function NotificationPopup({ isOpen, onClose, triggerRef }: NotificationPopupProps) {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,7 +42,10 @@ export default function NotificationPopup({ isOpen, onClose }: NotificationPopup
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (popupRef.current && !popupRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      // The trigger toggles by itself; closing here too would just undo it.
+      if (triggerRef?.current?.contains(target)) return;
+      if (popupRef.current && !popupRef.current.contains(target)) {
         onClose();
       }
     };
@@ -44,7 +57,7 @@ export default function NotificationPopup({ isOpen, onClose }: NotificationPopup
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, triggerRef]);
 
   const fetchNotifications = async () => {
     setLoading(true);

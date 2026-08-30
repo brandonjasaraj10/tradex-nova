@@ -1,5 +1,5 @@
 import { Bell, User, Menu } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import NotificationPopup from '../notifications/NotificationPopup';
 import { useAuth } from '../../lib/auth';
@@ -15,6 +15,7 @@ export default function Header({ sidebarCollapsed = false, sidebarOpen = false, 
   const { profile, user } = useAuth();
   const navigate = useNavigate();
   const [showNotifications, setShowNotifications] = useState(false);
+  const bellRef = useRef<HTMLButtonElement>(null);
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
@@ -85,6 +86,7 @@ export default function Header({ sidebarCollapsed = false, sidebarOpen = false, 
         <div className="flex items-center gap-2 sm:gap-4">
           <div className="relative">
             <button
+              ref={bellRef}
               className="p-2 rounded-lg hover:bg-white/5 relative"
               onClick={() => setShowNotifications(!showNotifications)}
             >
@@ -96,6 +98,7 @@ export default function Header({ sidebarCollapsed = false, sidebarOpen = false, 
             <NotificationPopup
               isOpen={showNotifications}
               onClose={() => setShowNotifications(false)}
+              triggerRef={bellRef}
             />
           </div>
           <button
