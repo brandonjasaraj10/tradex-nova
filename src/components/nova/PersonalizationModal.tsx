@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronRight, ChevronLeft, Check, TrendingUp, Target, Brain, Zap, Clock, Globe } from 'lucide-react';
 import { userProfileService, ProfileCreationData } from '../../services/userProfileService';
@@ -109,6 +109,21 @@ export default function PersonalizationModal({ isOpen, onClose, onComplete, user
     }
   };
 
+  /*
+    Hold the page still while this is open.
+
+    Without it a drag inside the dialog scrolls the page behind it instead -
+    on a phone that reads as the dialog being stuck while the background
+    slides around underneath. Restores whatever overflow the body had rather
+    than assuming it was the default, so nothing else that sets it is trampled.
+  */
+  useEffect(() => {
+    if (!isOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = previous; };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
@@ -117,9 +132,18 @@ export default function PersonalizationModal({ isOpen, onClose, onComplete, user
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-[#0A0A0A] border border-white/10 rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden"
+        /*
+          The card had no height limit, so on a short screen its content ran
+          past the bottom of the display and overflow-hidden simply cut it off
+          - there was no way to reach the buttons. It is now capped to the
+          viewport and laid out as a column so the middle section scrolls
+          while the header and footer stay put. dvh rather than vh because
+          mobile browsers count their own toolbars in vh, which leaves the
+          footer just under the edge of the screen.
+        */
+        className="bg-[#0A0A0A] border border-white/10 rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[calc(100dvh-2rem)]"
       >
-        <div className="p-6 border-b border-white/10">
+        <div className="p-6 border-b border-white/10 flex-shrink-0">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-blue-400/10 flex items-center justify-center">
@@ -183,7 +207,7 @@ export default function PersonalizationModal({ isOpen, onClose, onComplete, user
           </div>
         </div>
 
-        <div className="p-6 min-h-[400px]">
+        <div className="p-6 flex-1 min-h-0 overflow-y-auto sm:min-h-[400px]">
           <AnimatePresence mode="wait">
             {currentStep === 1 && (
               <motion.div
@@ -448,17 +472,17 @@ export default function PersonalizationModal({ isOpen, onClose, onComplete, user
           </AnimatePresence>
         </div>
 
-        <div className="p-6 border-t border-white/10 flex items-center justify-between">
+        <div className="p-4 sm:p-6 border-t border-white/10 flex items-center justify-between gap-2 flex-shrink-0">
           <button
             onClick={handleBack}
             disabled={currentStep === 1}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 whitespace-nowrap"
           >
             <ChevronLeft className="w-4 h-4" />
             Back
           </button>
 
-          <div className="flex items-center gap-2">
+          <div className="hidden sm:flex items-center gap-2">
             {steps.map(step => (
               <div
                 key={step.id}
@@ -473,7 +497,7 @@ export default function PersonalizationModal({ isOpen, onClose, onComplete, user
             <button
               onClick={handleNext}
               disabled={!canProceed()}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-blue-400/10 text-blue-400 hover:bg-blue-400/20 border border-blue-400/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-blue-400/10 text-blue-400 hover:bg-blue-400/20 border border-blue-400/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 whitespace-nowrap"
             >
               Next
               <ChevronRight className="w-4 h-4" />
@@ -482,7 +506,7 @@ export default function PersonalizationModal({ isOpen, onClose, onComplete, user
             <button
               onClick={handleSubmit}
               disabled={!canProceed() || isSubmitting}
-              className="flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-medium bg-blue-400 text-black hover:bg-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-4 sm:px-6 py-2 rounded-xl text-sm font-medium bg-blue-400 text-black hover:bg-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 whitespace-nowrap"
             >
               {isSubmitting ? 'Saving...' : 'Complete Setup'}
               <Check className="w-4 h-4" />
