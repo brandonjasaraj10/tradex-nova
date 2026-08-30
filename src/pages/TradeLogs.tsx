@@ -6,8 +6,9 @@ import { useNavigate } from 'react-router-dom';
 import { useAccount } from '../lib/accountContext';
 import { useDateRange } from '../lib/dateRangeContext';
 import { getTradeLog, type TradeLogRow } from '../services/trades';
-import { valueColorClass } from '../utils/formatMetrics';
+import { valueColorClass, tradeOutcome } from '../utils/formatMetrics';
 import { parseLocalDate } from '../utils/dateHelpers';
+import TradeOutcomeBadge from '../components/trades/TradeOutcomeBadge';
 import Card from '../components/shared/Card';
 import DateRangePicker from '../components/shared/DateRangePicker';
 import AccountSelector from '../components/shared/AccountSelector';
@@ -137,6 +138,18 @@ export default function TradeLogs() {
       "500" still finds a -$500 trade, because someone recalling the size of
       a loss rarely types the sign.
     */
+    /*
+      The outcome is searchable too. Labelling every row Win or Loss is only
+      half the job if the search box cannot act on it - typing "loss" should
+      narrow the list to losers, which is what someone reviewing a bad run
+      actually wants.
+    */
+    const outcome = (r: TradeLogRow) => {
+      const o = tradeOutcome(r.pnl);
+      // "even" as well, since that is what the badge prints for breakeven.
+      return o === 'breakeven' ? 'breakeven even' : o;
+    };
+
     const money = (r: TradeLogRow) => {
       const abs = Math.abs(r.pnl);
       return [
@@ -161,6 +174,7 @@ export default function TradeLogs() {
       r.notes.toLowerCase().includes(q) ||
       (r.account_name || '').toLowerCase().includes(q) ||
       r.tags.some((t) => t.toLowerCase().includes(q)) ||
+      outcome(r).includes(q) ||
       (stripped.length > 0 && money(r).replace(/[$,\s]/g, '').includes(stripped))
     );
   }, [rows, search]);
@@ -289,6 +303,7 @@ export default function TradeLogs() {
                                   {row.direction.toUpperCase()}
                                 </span>
                               )}
+                              <TradeOutcomeBadge pnl={row.pnl} />
                             </div>
                             <p className="text-xs text-gray-500 mt-1">{formatDate(row.entry_date)}</p>
                             {showAccountLabel && (
@@ -351,6 +366,7 @@ export default function TradeLogs() {
                                   {row.direction.toUpperCase()}
                                 </span>
                               )}
+                              <TradeOutcomeBadge pnl={row.pnl} />
                               <span className="text-[10px] px-1.5 py-0.5 rounded border border-white/10 text-gray-500">
                                 {row.source === 'journal' ? 'Journal' : 'Imported'}
                               </span>

@@ -96,3 +96,23 @@ export function valueColorClass(value: number | null | undefined): string {
   }
   return value > 0 ? 'text-blue-400' : 'text-gray-400';
 }
+
+export type TradeOutcome = 'win' | 'loss' | 'breakeven';
+
+/*
+  Whether a position won, lost, or closed flat.
+
+  Extracted rather than inlined because the interesting case is the boundary,
+  and a boundary that lives inside a component cannot be tested without
+  rendering it. Zero is breakeven, not a loss: a trade closed at exactly the
+  entry price has not lost anything, and on a page someone uses to judge their
+  own record, calling it a loss would misstate that record.
+
+  Note this is a stricter reading than TradeTrendGlyph's, which draws anything
+  not above zero with the falling grey line. That is a drawing of one trade;
+  this is a label that gets counted and searched, so it is worth being exact.
+*/
+export function tradeOutcome(pnl: number): TradeOutcome {
+  if (!isFinite(pnl) || pnl === 0) return 'breakeven';
+  return pnl > 0 ? 'win' : 'loss';
+}
