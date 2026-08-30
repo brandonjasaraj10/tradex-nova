@@ -1384,8 +1384,8 @@ export default function Sales() {
                 poster="/founder-video-poster.jpg"
               >
                 <source src="/founder-video.mp4" type="video/mp4" />
-                Your browser doesn't support embedded video. You can still join the
-                waitlist below.
+                Your browser doesn't support embedded video. You can still sign up
+                below.
               </video>
             </div>
           </motion.div>
@@ -1398,7 +1398,18 @@ export default function Sales() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <div className="text-center mb-10 sm:mb-16">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4 px-4">Simple, Transparent Pricing</h2>
-            <p className="text-base sm:text-lg md:text-xl text-gray-400 px-4">Join the waitlist before launch and lock in founding member pricing.</p>
+            {/*
+              The card below already switches on `launched`; this line was
+              missed, so it went on inviting people to join the waitlist and
+              lock in founding member pricing well after both had ended -
+              offering a price checkout would not honour, right above the card
+              charging the real one.
+            */}
+            <p className="text-base sm:text-lg md:text-xl text-gray-400 px-4">
+              {launched
+                ? 'Everything included in one plan \u2014 no tiers, no add-ons.'
+                : 'Join the waitlist before launch and lock in founding member pricing.'}
+            </p>
           </div>
 
           <motion.div
