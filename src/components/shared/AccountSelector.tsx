@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { useClampedPanel } from '../../hooks/useClampedPanel';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -272,7 +273,18 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
         )}
       </AnimatePresence>
 
-      {showAddAccount && (
+      {/*
+        Both dialogs render into document.body rather than here.
+
+        They are full-screen overlays, but sitting inside this component's
+        positioned wrapper trapped them in its stacking context - so their
+        z-50 counted for nothing beyond it. Opening one sets isOpen false,
+        which drops that wrapper to z-10, and the View Reports menu at z-20
+        then painted straight over the dialog. A portal puts them at the top
+        level where a full-screen dialog belongs, out of reach of whatever
+        the controls row does with its own layering.
+      */}
+      {showAddAccount && createPortal(
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -431,10 +443,11 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
               </Button>
             </div>
           </motion.div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {showCSVUpload && (
+      {showCSVUpload && createPortal(
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <CSVUpload
             onClose={() => setShowCSVUpload(false)}
@@ -443,7 +456,8 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
               onAccountsUpdate?.();
             }}
           />
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
