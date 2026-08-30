@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Lock } from 'lucide-react';
 import Button from './Button';
@@ -10,6 +11,7 @@ interface EarlyAccessModalProps {
 }
 
 export default function EarlyAccessModal({ isOpen, onClose, onSuccess }: EarlyAccessModalProps) {
+  useBodyScrollLock(isOpen);
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -64,7 +66,7 @@ export default function EarlyAccessModal({ isOpen, onClose, onSuccess }: EarlyAc
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-dark-700 border border-white/10 rounded-2xl p-6 max-w-md w-full relative"
+              className="bg-dark-700 border border-white/10 rounded-2xl p-6 max-w-md w-full relative max-h-[calc(100dvh-2rem)] overflow-y-auto"
             >
               <button
                 onClick={onClose}

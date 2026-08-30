@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { motion } from 'framer-motion';
 import { supabase } from '../../lib/supabase';
 import { User } from '@supabase/supabase-js';
@@ -9,6 +10,8 @@ interface ProfileSetupProps {
 }
 
 export default function ProfileSetup({ user, onComplete }: ProfileSetupProps) {
+  // Mounted only while showing.
+  useBodyScrollLock(true);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -79,7 +82,7 @@ export default function ProfileSetup({ user, onComplete }: ProfileSetupProps) {
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.6 }}
-        className="max-w-md w-full mx-4"
+        className="max-w-md w-full mx-4 max-h-[calc(100dvh-2rem)] overflow-y-auto"
       >
         <div className="text-center mb-8">
           <motion.h2

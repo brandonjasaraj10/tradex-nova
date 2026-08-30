@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { X, TrendingUp, TrendingDown, Target, Award, AlertCircle, Calendar, Clock, BarChart3, Activity, CheckCircle2, Sparkles } from 'lucide-react';
 import { TradingReport } from '../../services/reports';
 
@@ -9,6 +10,7 @@ interface TradingReportModalProps {
 }
 
 export default function TradingReportModal({ report, isOpen, onClose }: TradingReportModalProps) {
+  useBodyScrollLock(isOpen);
   if (!report) return null;
 
   const formatCurrency = (value: number) => {
@@ -82,7 +84,7 @@ export default function TradingReportModal({ report, isOpen, onClose }: TradingR
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="bg-gradient-to-br from-[#0A0A0A] to-[#0F0F0F] border border-[#3B82F6]/30 rounded-2xl w-full max-w-[95vw] sm:max-w-6xl max-h-[90vh] overflow-hidden flex flex-col"
+            className="bg-gradient-to-br from-[#0A0A0A] to-[#0F0F0F] border border-[#3B82F6]/30 rounded-2xl w-full max-w-[95vw] sm:max-w-6xl max-h-[90dvh] overflow-hidden flex flex-col"
             style={{
               boxShadow: '0 0 40px rgba(59, 130, 246, 0.2), inset 0 0 60px rgba(59, 130, 246, 0.05)',
             }}

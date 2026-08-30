@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, MessageSquare, Trash2, Calendar, X, Plus } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
@@ -30,6 +31,9 @@ export default function ConversationArchive({
   onNewConversation,
   onDeleteSession
 }: ConversationArchiveProps) {
+  // Full-height drawer with its own scrolling list, so only the page behind
+  // it needed holding still.
+  useBodyScrollLock(isOpen);
   const [sessions, setSessions] = useState<ConversationSession[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);

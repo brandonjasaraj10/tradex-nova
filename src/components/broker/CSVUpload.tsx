@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { motion } from 'framer-motion';
 import { Upload, FileText, CheckCircle2, AlertCircle, X, Download } from 'lucide-react';
 import Button from '../shared/Button';
@@ -10,6 +11,8 @@ interface CSVUploadProps {
 }
 
 export default function CSVUpload({ onClose, onSuccess }: CSVUploadProps) {
+  // Mounted only while showing, by both of its parents.
+  useBodyScrollLock(true);
   const [file, setFile] = useState<File | null>(null);
   const [trades, setTrades] = useState<CSVTrade[]>([]);
   const [format, setFormat] = useState<string>('');
@@ -78,7 +81,7 @@ export default function CSVUpload({ onClose, onSuccess }: CSVUploadProps) {
   };
 
   return (
-    <div className="bg-black/95 backdrop-blur-xl rounded-xl border border-white/10 shadow-2xl max-w-4xl w-full">
+    <div className="bg-black/95 backdrop-blur-xl rounded-xl border border-white/10 shadow-2xl max-w-4xl w-full max-h-[calc(100dvh-2rem)] overflow-y-auto">
       <div className="p-6 border-b border-white/10 bg-black/40">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">

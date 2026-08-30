@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { useClampedPanel } from '../../hooks/useClampedPanel';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Check, Plus, FileUp, X } from 'lucide-react';
@@ -27,6 +28,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
   const [isOpen, setIsOpen] = useState(false);
   const [showAddAccount, setShowAddAccount] = useState(false);
   const [showCSVUpload, setShowCSVUpload] = useState(false);
+  useBodyScrollLock(showAddAccount || showCSVUpload);
   const [brokers, setBrokers] = useState<BrokerFromAPI[]>([]);
   const [isCreating, setIsCreating] = useState(false);
   const [newAccountName, setNewAccountName] = useState('');
@@ -275,7 +277,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-[#111] border border-white/10 rounded-2xl p-6 w-full max-w-md"
+            className="bg-[#111] border border-white/10 rounded-2xl p-6 w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto"
           >
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold">Add Trading Account</h2>

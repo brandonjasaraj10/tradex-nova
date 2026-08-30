@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, DollarSign, AlertCircle } from 'lucide-react';
 import Button from '../shared/Button';
@@ -12,6 +13,8 @@ interface EditBalanceModalProps {
 }
 
 export default function EditBalanceModal({ connection, onClose, onSuccess }: EditBalanceModalProps) {
+  // No isOpen prop - the parent mounts this only while it is showing.
+  useBodyScrollLock(true);
   const [startingBalance, setStartingBalance] = useState('');
   const [currency, setCurrency] = useState('USD');
   const [ownershipType, setOwnershipType] = useState<'personal' | 'funded' | 'prop'>('personal');
@@ -109,7 +112,7 @@ export default function EditBalanceModal({ connection, onClose, onSuccess }: Edi
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
           onClick={(e) => e.stopPropagation()}
-          className="bg-gray-900 rounded-xl p-6 max-w-md w-full border border-white/10"
+          className="bg-gray-900 rounded-xl p-6 max-w-md w-full border border-white/10 max-h-[calc(100dvh-2rem)] overflow-y-auto"
         >
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold text-white">Edit Balance Information</h2>

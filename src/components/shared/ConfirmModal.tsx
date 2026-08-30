@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, Trash2, X } from 'lucide-react';
 
@@ -23,6 +24,7 @@ export default function ConfirmModal({
   onConfirm,
   onCancel,
 }: ConfirmModalProps) {
+  useBodyScrollLock(isOpen);
   const confirmRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -77,7 +79,7 @@ export default function ConfirmModal({
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
             transition={{ duration: 0.15 }}
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-sm bg-[#111111] border border-white/10 rounded-xl shadow-2xl overflow-hidden"
+            className="relative w-full max-w-sm bg-[#111111] border border-white/10 rounded-xl shadow-2xl overflow-hidden max-h-[calc(100dvh-2rem)] overflow-y-auto"
           >
             <div className="p-6">
               <div className="flex items-start gap-4">
