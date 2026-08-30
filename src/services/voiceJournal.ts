@@ -208,6 +208,18 @@ wasn't that focused" lowers pre_trade_focus. You will not be shown their
 previous answers - just report what this text says, and the app will replace
 the old value with it.
 
+These checks and ratings are NOT a replacement for template_data, and filling
+them does not mean psychology is done. They capture how steady, focused and
+confident the trader was, and nothing else. Everything else they say about
+their head - how they slept, what is going on outside trading, what they
+intended today, which emotions they named, what they learned afterwards -
+belongs in template_data as well, in the same response.
+
+Both get filled from the same sentence where it speaks to both. "Slept badly
+but I was calm" is pre_trade_emotional_state 4 AND
+template_data.pre_trade_mindset.external_factors "slept badly". Recording only
+the rating throws the rest away.
+
 Ratings, only when they actually describe how they felt:
 - pre_trade_emotional_state: 1-5, how steady they were. "rattled"/"tilted" is 1-2, "fine"/"normal" is 3, "calm"/"clear" is 4-5.
 - pre_trade_focus: 1-5, how sharp. "distracted"/"half watching" is 1-2, "locked in"/"dialled" is 4-5.
@@ -875,6 +887,33 @@ CRITICAL RULES:
         const amount = pnlMatch[1] || pnlMatch[2];
         parsedData.manual_pnl = transcript.match(/lost|loss|down|negative|-/i) ? `-${amount}` : amount;
       }
+    }
+
+    /*
+      The mood rating, when Nova gave the 1-5 rating but skipped the journal.
+
+      These two ask the same question in different scales, and the prompt asks
+      for both - so the model can consider psychology handled once it has
+      filled the newer rating and never reach template_data, which is exactly
+      what happened: an entry with pre_trade_emotional_state 4, two psychology
+      checks answered, and template_data left empty.
+
+      mood_rating feeds the entry's own mood field, so losing it loses that
+      too. Deriving it here cannot regress the way an instruction can - x2
+      converts the 1-5 rating to the 1-10 scale the journal uses. Only ever
+      fills a gap: a rating Nova did return is left exactly as it came.
+    */
+    if (
+      parsedData.pre_trade_emotional_state != null &&
+      parsedData.template_data?.pre_trade_mindset?.mood_rating == null
+    ) {
+      parsedData.template_data = {
+        ...parsedData.template_data,
+        pre_trade_mindset: {
+          ...parsedData.template_data?.pre_trade_mindset,
+          mood_rating: parsedData.pre_trade_emotional_state * 2,
+        },
+      };
     }
 
     return parsedData;
