@@ -755,16 +755,21 @@ export default function Dashboard() {
           */}
           <div className="mt-4 md:mt-0 flex flex-wrap items-center gap-2 sm:gap-3">
             {/*
-              z-40 so this menu paints over the controls to its right rather
-              than sliding underneath them - it used to share z-30 with them,
-              and since it comes first in the row, everything after it drew on
-              top. It sits above them at all times rather than only on hover:
-              a hover-conditional z-index never applies on a touch screen,
-              which is exactly where the overlap was visible. The date and
-              account panels take z-50 while open, so they still win when it
-              matters.
+              Three controls share this row, and the layering between them has
+              to be stated rather than left to DOM order - they all used to sit
+              at z-30, so whichever came last simply painted over the others.
+
+              The order is: an open date/account panel (z-30) > this menu
+              (z-20) > the closed triggers (z-10). This one is static rather
+              than hover-conditional because a hover-only z-index never applies
+              on a touch screen, which is the one place the overlap showed.
+
+              Nothing here may reach z-40. The header is fixed at z-40, which
+              makes it a stacking context, so the notification panel's z-50 is
+              trapped inside it and paints at 40 - any page content at 40 or
+              above punches straight through the notifications.
             */}
-            <div className="relative group z-40">
+            <div className="relative group z-20">
               <button
                 disabled={loadingReport}
                 className="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 border border-blue-400/30 disabled:opacity-50 disabled:cursor-not-allowed"

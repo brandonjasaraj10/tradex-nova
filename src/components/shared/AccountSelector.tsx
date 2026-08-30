@@ -167,7 +167,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
   };
 
   return (
-    <div className={`relative ${isOpen ? 'z-50' : 'z-30'}`} ref={selectorRef}>
+    <div className={`relative ${isOpen ? 'z-30' : 'z-10'}`} ref={selectorRef}>
       <button
         type="button"
         onClick={(e) => {

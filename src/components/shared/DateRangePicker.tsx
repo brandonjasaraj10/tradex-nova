@@ -191,13 +191,17 @@ export default function DateRangePicker({ value, onChange }: DateRangePickerProp
   const days = getDaysInMonth(currentMonth);
 
   /*
-    The wrapper lifts while open. Every control in this row sits at z-30, so
-    whichever renders last paints on top - the All Accounts button was drawing
-    over this panel, which looks exactly like the panel being transparent.
-    Raising the whole wrapper while open keeps the panel above its neighbours.
+    The wrapper lifts while open. Every control in this row used to sit at
+    z-30, so whichever rendered last painted on top - the All Accounts button
+    drew over this panel, which looks exactly like the panel being transparent.
+
+    Deliberately z-30 and not higher: the header is fixed at z-40 and so forms
+    a stacking context, which means the notification panel nested inside it
+    paints at 40 no matter what z-index it carries. Page content at 40 or above
+    punches through the notifications. See the row in Dashboard.tsx.
   */
   return (
-    <div className={`relative ${isOpen ? 'z-50' : 'z-30'}`} ref={pickerRef}>
+    <div className={`relative ${isOpen ? 'z-30' : 'z-10'}`} ref={pickerRef}>
       <button
         type="button"
         onClick={(e) => {
