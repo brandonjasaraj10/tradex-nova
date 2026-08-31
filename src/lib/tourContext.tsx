@@ -124,6 +124,19 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
   const [currentStep, setCurrentStep] = useState(0);
   const [tourCompleted, setTourCompleted] = useState(false);
   const [hasCheckedTourStatus, setHasCheckedTourStatus] = useState(false);
+  /*
+    Whether the answer is actually known, as opposed to merely asked for.
+
+    tourCompleted starts false - the assumption "not done yet" - and was only
+    corrected when the lookup succeeded, while hasCheckedTourStatus was set in
+    a finally and so became true even when the lookup failed. A single flaky
+    request therefore left "not completed" standing as though it were fact,
+    and the tour restarted on an account that had finished it long ago,
+    seeding six demo trades into real trading history. That happened.
+
+    So the tour now needs a positive answer, not the absence of one.
+  */
+  const [tourStatusKnown, setTourStatusKnown] = useState(false);
   const hasEndedRef = useRef(false);
   const hasStartedRef = useRef(false);
   const hasSeededDemoDataRef = useRef(false);
@@ -180,6 +193,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     // still false - this is what happened for real.
     if (
       !tourCompleted &&
+      tourStatusKnown &&
       hasCheckedTourStatus &&
       !isActive &&
       !hasEndedRef.current &&
@@ -193,7 +207,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
       }, 1500);
       return () => clearTimeout(timer);
     }
-  }, [tourCompleted, hasCheckedTourStatus, isActive, seedThenStart]);
+  }, [tourCompleted, tourStatusKnown, hasCheckedTourStatus, isActive, seedThenStart]);
 
   const checkTourStatus = async () => {
     if (!user) return;
@@ -208,10 +222,17 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
       if (!error && data) {
         const completed = data.tour_completed === true;
         setTourCompleted(completed);
+        setTourStatusKnown(true);
         if (completed) {
           hasEndedRef.current = true;
         }
       }
+      /*
+        An error, or no profile row yet, leaves tourStatusKnown false and the
+        tour does not start. Skipping a tour on one load is recoverable - the
+        next load asks again. Seeding fake trades into someone's real history
+        is not.
+      */
     } catch (err) {
       console.error('Error checking tour status:', err);
     } finally {
