@@ -209,6 +209,24 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     }
   }, [tourCompleted, tourStatusKnown, hasCheckedTourStatus, isActive, seedThenStart]);
 
+  /*
+    Sweep demo rows left behind by a tour nobody ended.
+
+    Every in-app exit - finishing, Skip, the X - runs cleanup. Closing the
+    tab or navigating away runs nothing, and the fake trades then sit in the
+    account indefinitely, counted as real in the win rate, P&L and NOVA
+    Score. That is how six of them survived here.
+
+    Seeding sweeps first, so a tour that runs again cleans up on its own. The
+    account this cannot help is the one whose tour will never run again -
+    already completed, so nothing else will ever remove them. That is exactly
+    the case this covers: status known, tour done, nothing running.
+  */
+  useEffect(() => {
+    if (!user || !tourStatusKnown || !tourCompleted || isActive) return;
+    void cleanupTourDemoData(user.id);
+  }, [user, tourStatusKnown, tourCompleted, isActive]);
+
   const checkTourStatus = async () => {
     if (!user) return;
 

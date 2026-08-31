@@ -198,6 +198,23 @@ export async function seedTourDemoData(userId: string): Promise<TourDemoDataIds>
 // tabs, and even a tour abandoned in a previous session.
 export async function cleanupTourDemoData(userId: string) {
   try {
+    /*
+      When the demo rows were written, captured before they are deleted.
+
+      Reports, tips and insights carry no demo flag of their own, so the only
+      way to tell a tour-generated one from a real one is when it was made.
+      Everything from the seed onwards is derived from the fake trades;
+      everything before it is the user's own.
+    */
+    const { data: demoTrades } = await supabase
+      .from('trades')
+      .select('created_at')
+      .eq('user_id', userId)
+      .eq('is_tour_demo', true)
+      .order('created_at', { ascending: true })
+      .limit(1);
+    const seededAt = demoTrades?.[0]?.created_at as string | undefined;
+
     const { data: removedTrades } = await supabase
       .from('trades')
       .delete()
@@ -216,8 +233,12 @@ export async function cleanupTourDemoData(userId: string) {
     // the demo trades. Only clear them when demo trades actually existed
     // - otherwise this would wipe the real reports of an account that
     // has genuine trading history and simply replayed the tour.
-    if (removedTrades && removedTrades.length > 0) {
-      await supabase.from('trading_reports').delete().eq('user_id', userId);
+    if (removedTrades && removedTrades.length > 0 && seededAt) {
+      await supabase
+        .from('trading_reports')
+        .delete()
+        .eq('user_id', userId)
+        .gte('created_at', seededAt);
 
       /*
         Tips and insights are derived from the demo trades too, and outlive
@@ -230,12 +251,14 @@ export async function cleanupTourDemoData(userId: string) {
         that on their first screen - a confident, specific, entirely
         invented claim about their own trading.
 
-        Same condition as the reports above: only clear when demo trades
-        actually existed, so replaying the tour on a real account does not
-        wipe insights genuinely earned.
+        Scoped to what the tour itself produced. Deleting every tip and
+        insight the account owns, which is what this used to do, destroys
+        real ones: the account this was found on had four insights and two
+        tips generated two days before the tour ever ran, from its own
+        trading. Only rows written from the seed onwards are the tour's.
       */
-      await supabase.from('user_tips').delete().eq('user_id', userId);
-      await supabase.from('user_insights').delete().eq('user_id', userId);
+      await supabase.from('user_tips').delete().eq('user_id', userId).gte('created_at', seededAt);
+      await supabase.from('user_insights').delete().eq('user_id', userId).gte('created_at', seededAt);
     }
   } catch (err) {
     console.error('Error cleaning up tour demo data:', err);
