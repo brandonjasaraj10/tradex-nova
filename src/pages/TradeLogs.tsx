@@ -7,7 +7,7 @@ import { useAccount } from '../lib/accountContext';
 import { useDateRange } from '../lib/dateRangeContext';
 import { getTradeLog, type TradeLogRow } from '../services/trades';
 import { valueColorClass, tradeOutcome, parseOutcomeQuery } from '../utils/formatMetrics';
-import { parseLocalDate } from '../utils/dateHelpers';
+import { parseLocalDate, toLocalDateStr } from '../utils/dateHelpers';
 import TradeOutcomeBadge from '../components/trades/TradeOutcomeBadge';
 import Card from '../components/shared/Card';
 import DateRangePicker from '../components/shared/DateRangePicker';
@@ -65,7 +65,19 @@ export default function TradeLogs() {
       const target = accounts.find((a) => a.id === row.account_id);
       if (target) await setSelectedAccount(target);
     }
-    navigate(`/journal?date=${row.entry_date.slice(0, 10)}`);
+    /*
+      The same day the card shows.
+
+      slice(0, 10) takes the date out of the stored timestamp, which is UTC,
+      while the card renders that timestamp in local time. For anyone behind
+      UTC an evening trade shows as the 27th and opened the 28th - a day the
+      trade is not on, so the journal looked empty. Journal rows are already
+      plain YYYY-MM-DD and are passed through unchanged.
+    */
+    const dateParam = /^\d{4}-\d{2}-\d{2}$/.test(row.entry_date)
+      ? row.entry_date
+      : toLocalDateStr(new Date(row.entry_date));
+    navigate(`/journal?date=${dateParam}`);
   };
 
   // Only worth labelling rows by account when they can actually differ.
