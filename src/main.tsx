@@ -49,10 +49,37 @@ if (sentryDsn && import.meta.env.PROD) {
     ],
     beforeSend(event) {
       const frames = event.exception?.values?.[0]?.stacktrace?.frames ?? [];
+
       const fromInAppBrowser = frames.some((f) =>
         typeof f.filename === 'string' && f.filename.startsWith('iabjs://')
       );
-      return fromInAppBrowser ? null : event;
+      if (fromInAppBrowser) return null;
+
+      /*
+        Drop errors whose stack names no real script.
+
+        Browser extensions - content blockers, password managers - run their
+        own code on the page, and Sentry's window.onerror handler catches
+        whatever they throw because it happened on our page. The report that
+        prompted this was "ReferenceError: Can't find variable: EmptyRanges"
+        at undefined:1705:541 from Safari on a Mac: an identifier that appears
+        nowhere in this codebase, its bundle, or its dependencies.
+
+        The giveaway is the filename. Our own code is served from real, named
+        files, so any frame in a genuine TradeX error carries a URL. A stack
+        whose frames name no file at all cannot be ours, whereas an extension
+        executing an injected string has nothing to report.
+
+        Deliberately requires frames to exist and all of them to be nameless.
+        An error with no stack whatsoever is left alone - that can happen to
+        real errors, and silence is worse than noise when it is our bug.
+      */
+      const namesNoScript =
+        frames.length > 0 &&
+        frames.every((f) => !f.filename || f.filename === '<anonymous>');
+      if (namesNoScript) return null;
+
+      return event;
     },
   });
 }
