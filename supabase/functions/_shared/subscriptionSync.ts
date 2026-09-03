@@ -36,7 +36,50 @@ export async function resolveUserIdFromCustomer(
   reconciliation job, so both stay behaviorally identical by construction
   rather than by two hand-kept-in-sync implementations.
 */
+const GRACE_PERIOD_DAYS = 7;
+
+/*
+  The grace-period rule, kept separate so it can be reasoned about and tested
+  without a Stripe fixture or a database.
+
+  Three cases:
+  - past_due and no window open yet -> start one, GRACE_PERIOD_DAYS out.
+  - past_due with a window already open -> leave it exactly as it is. Stripe
+    fires an event per retry attempt, so recomputing here would push the
+    deadline out on every failure and the grace period would never end.
+  - anything else -> clear it. A recovered card, a cancellation and a fresh
+    subscription all need the column empty, or a stale deadline would keep
+    granting access to somebody who is no longer past_due.
+*/
+export function resolveGracePeriodEnd(
+  status: string,
+  existing: { status: string; grace_period_end: string | null } | null,
+  now: Date = new Date()
+): string | null {
+  if (status !== 'past_due') return null;
+  if (existing?.status === 'past_due' && existing.grace_period_end) {
+    return existing.grace_period_end;
+  }
+  return new Date(now.getTime() + GRACE_PERIOD_DAYS * 24 * 60 * 60 * 1000).toISOString();
+}
+
 export async function syncSubscription(supabase: SupabaseClient, userId: string, subscription: Stripe.Subscription) {
+  const { data: current, error: lookupError } = await supabase
+    .from('subscriptions')
+    .select('status, grace_period_end')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  /*
+    Thrown, not swallowed. A failed lookup is indistinguishable from "no row
+    yet", which would make this insert over a subscription that already
+    exists and restart a grace period that was already running.
+  */
+  if (lookupError) throw lookupError;
+
+  const existingRow = current as { status: string; grace_period_end: string | null } | null;
+  const gracePeriodEnd = resolveGracePeriodEnd(subscription.status, existingRow);
+
   const record = {
     stripe_customer_id:
       typeof subscription.customer === 'string' ? subscription.customer : subscription.customer.id,
@@ -55,18 +98,29 @@ export async function syncSubscription(supabase: SupabaseClient, userId: string,
     stripe_price_id: subscription.items.data[0]?.price?.id ?? null,
     unit_amount: subscription.items.data[0]?.price?.unit_amount ?? null,
     billing_interval: subscription.items.data[0]?.price?.recurring?.interval ?? null,
+    /*
+      How long a failed payment keeps access before it is cut off.
+
+      has_active_subscription() has always honoured this column, auth.tsx
+      reads it, and subscriptionService has passing tests for it - but nothing
+      ever wrote it, so it was null on every row and past_due meant instant
+      lockout. One real subscriber went active at 06:41 and lost access at
+      07:41 when the card failed an hour later, with no window to fix it.
+
+      Written here rather than in the webhook because reconciliation shares
+      this function, so a status Stripe reports late gets the same window as
+      one reported in real time.
+
+      Preserved, not extended, while already past_due: Stripe sends an event
+      per retry, and recomputing the deadline each time would push it further
+      out with every failure and never actually expire.
+    */
+    grace_period_end: gracePeriodEnd,
     updated_at: new Date().toISOString(),
   };
 
-  const { data: existing, error: lookupError } = await supabase
-    .from('subscriptions')
-    .select('id, status')
-    .eq('user_id', userId)
-    .maybeSingle();
-
-  if (lookupError) throw lookupError;
-
-  const previousStatus = (existing as { status: string } | null)?.status ?? null;
+  const existing = existingRow;
+  const previousStatus = existing?.status ?? null;
 
   if (existing) {
     const { error } = await supabase.from('subscriptions').update(record).eq('user_id', userId);
