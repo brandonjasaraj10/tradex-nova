@@ -1,12 +1,51 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { sentryVitePlugin } from '@sentry/vite-plugin';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
 import fs from 'fs';
 import path from 'path';
 
+/*
+  Source maps exist only to make Sentry readable.
+
+  Without them a production stack trace is `index-DbmNTstH.js:325:6922`, which
+  names no file, component or line - a real crash reported by a real user came
+  in like that and could not be traced to the code that caused it.
+
+  Gated on the auth token, and for a security reason rather than convenience:
+  maps are uploaded to Sentry and then deleted from dist, so they never ship to
+  the browser. A build with no token produces no maps at all rather than
+  leaving them sitting in dist/ where anyone could fetch them and read the
+  entire frontend source.
+*/
+const sentryAuthToken = process.env.SENTRY_AUTH_TOKEN;
+const uploadSourceMaps = !!sentryAuthToken;
+
 export default defineConfig({
+  build: {
+    sourcemap: uploadSourceMaps,
+  },
   plugins: [
     react(),
+    ...(uploadSourceMaps
+      ? [
+          sentryVitePlugin({
+            org: process.env.SENTRY_ORG,
+            project: process.env.SENTRY_PROJECT ?? 'tradex-nova-frontend',
+            authToken: sentryAuthToken,
+            sourcemaps: {
+              // Uploaded, then removed - dist must not carry them to the CDN.
+              filesToDeleteAfterUpload: ['./dist/**/*.map'],
+            },
+            // A failed upload must not fail the deploy. Losing readable stack
+            // traces for one release is a nuisance; a site that will not build
+            // because Sentry had a bad day is an outage.
+            errorHandler: (err) => {
+              console.warn('Sentry source map upload failed:', err.message);
+            },
+          }),
+        ]
+      : []),
     nodePolyfills({
       include: ['path', 'util', 'buffer', 'process'],
       globals: {
