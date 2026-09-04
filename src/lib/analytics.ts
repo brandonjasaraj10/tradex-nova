@@ -82,8 +82,25 @@ export function initAnalytics(): void {
   document.head.appendChild(script);
 
   window.dataLayer = window.dataLayer || [];
-  const gtag: (...args: unknown[]) => void = (...args) => {
-    window.dataLayer.push(args);
+  /*
+    Written with `arguments` rather than a rest parameter, and it has to stay
+    that way. gtag.js executes a dataLayer entry only when that entry is an
+    `arguments` object; a real array - which is exactly what a rest parameter
+    hands you - is pushed, stored, and then silently ignored.
+
+    That failure is invisible from the outside: the tag downloads, window.gtag
+    is defined, dataLayer fills with correct-looking commands, and not one hit
+    is ever sent. This tag went live on 2026-08-21 and had sent GA nothing at
+    all by 2026-09-04 - through a week that included the site's first traffic
+    spike. Verified in production: re-pushing the identical commands as an
+    arguments object produced a request to google-analytics.com immediately.
+
+    This is the only reason Google's published snippet is written the odd way
+    it is. Don't tidy it into a rest parameter.
+  */
+  const gtag: (...args: unknown[]) => void = function () {
+    // eslint-disable-next-line prefer-rest-params -- rest parameters are the bug described above
+    window.dataLayer.push(arguments);
   };
   window.gtag = gtag;
 
