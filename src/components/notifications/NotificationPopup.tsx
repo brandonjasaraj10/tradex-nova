@@ -162,6 +162,7 @@ export default function NotificationPopup({ isOpen, onClose, triggerRef }: Notif
     <AnimatePresence>
       {isOpen && (
         <motion.div
+          key="notifications-panel"
           ref={popupRef}
           initial={{ opacity: 0, y: -10, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
