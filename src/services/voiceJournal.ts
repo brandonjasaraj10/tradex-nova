@@ -122,13 +122,28 @@ When the trader states risk as a percentage ("risking 2%", "half a percent"),
 calculate the money it represents from the CURRENT balance and state both.
 2% of ${balance.current_balance} is ${(balance.current_balance * 0.02).toFixed(2)}.
 
-When they give a reward-to-risk ratio ("1:2", "two to one", "3R") AND say the
-target was reached, calculate the resulting profit as risk amount x the reward
-side, and put that number in manual_pnl. Risking 2% at 1:2 on this balance is
-a profit of ${(balance.current_balance * 0.02 * 2).toFixed(2)}.
+BEFORE any profit or loss figure, decide one thing: is the trade CLOSED?
+A trade is closed only if they say it finished - target hit, stopped out,
+closed early, "took profit", "got stopped", "cut it", a stated result.
 
-If they say the stop was hit instead, manual_pnl is the risk amount as a
-NEGATIVE number.
+If the trade is still OPEN - "I'm in", "just entered", "risking 2% at 1:2",
+"my target is 3R", "let's see where it goes" - then OMIT manual_pnl entirely.
+Do not compute it, do not estimate it, do not put a 0.
+
+A reward-to-risk ratio on an open trade is a PLAN, not a result. "Risking $200
+at 1:2" means they stand to make $400 IF the target is hit. It has not been
+hit. Writing $400 into manual_pnl records a win that never happened, on the
+page the trader uses to judge their own performance.
+
+WORKED EXAMPLE - transcript: "just got into EURUSD long, risking 2% at 1 to 2".
+-> manual_pnl: OMITTED. The plan belongs in the notes ("risking
+${(balance.current_balance * 0.02).toFixed(2)} to make
+${(balance.current_balance * 0.02 * 2).toFixed(2)} at 1:2"), never in the P&L.
+
+ONLY when the trade is closed:
+- Target reached: manual_pnl = risk amount x reward side. Risking 2% at 1:2 on
+  this balance is a profit of ${(balance.current_balance * 0.02 * 2).toFixed(2)}.
+- Stop hit: manual_pnl = the risk amount as a NEGATIVE number.
 
 Never guess at a balance. Everything above is the real figure for this
 account; use it and no other.`;
