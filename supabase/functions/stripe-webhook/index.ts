@@ -3,14 +3,44 @@ import Stripe from 'npm:stripe@17.7.0';
 import { createClient } from 'npm:@supabase/supabase-js@2.49.1';
 import { resolveUserIdFromCustomer, syncSubscription } from '../_shared/subscriptionSync.ts';
 
-const stripeSecret = Deno.env.get('STRIPE_SECRET_KEY')!;
-const stripeWebhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')!;
-const stripe = new Stripe(stripeSecret, {
-  appInfo: {
-    name: 'TradeX',
-    version: '1.0.0',
-  },
-});
+const appInfo = { name: 'TradeX', version: '1.0.0' } as const;
+
+const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, { appInfo });
+
+/*
+  Optional test-mode counterparts, so a failed payment can be rehearsed
+  without touching live billing.
+
+  Stripe's sandboxes are a separate environment: different signing secret,
+  different API key, different object ids. Testing previously meant swapping
+  the live secret for the sandbox one, which stops real renewals being
+  processed for as long as the test runs - not a trade anyone should make.
+
+  Both are optional and everything below falls back to live when they are
+  absent, so an environment without them behaves exactly as it did before.
+*/
+const testWebhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET_TEST');
+const testSecretKey = Deno.env.get('STRIPE_SECRET_KEY_TEST');
+const stripeTest = testSecretKey ? new Stripe(testSecretKey, { appInfo }) : null;
+
+/*
+  Live secret first, so the overwhelmingly common case is one attempt and the
+  live path is never affected by a misconfigured test secret. A signature only
+  validates against the environment that produced it, so trying both cannot
+  make a forged request pass - it just checks the two environments we accept.
+*/
+async function verifyEvent(body: string, signature: string): Promise<Stripe.Event> {
+  const secrets = [Deno.env.get('STRIPE_WEBHOOK_SECRET'), testWebhookSecret].filter(Boolean) as string[];
+  let lastError: unknown;
+  for (const secret of secrets) {
+    try {
+      return await stripe.webhooks.constructEventAsync(body, signature, secret);
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  throw lastError;
+}
 
 const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
@@ -35,7 +65,7 @@ Deno.serve(async (req) => {
     let event: Stripe.Event;
 
     try {
-      event = await stripe.webhooks.constructEventAsync(body, signature, stripeWebhookSecret);
+      event = await verifyEvent(body, signature);
     } catch (error: any) {
       console.error(`Webhook signature verification failed: ${error.message}`);
       return new Response(`Webhook signature verification failed: ${error.message}`, { status: 400 });
@@ -70,6 +100,22 @@ async function handleEvent(event: Stripe.Event) {
     return;
   }
 
+  /*
+    The client has to match the environment the event came from. A test object
+    id does not exist to a live key, so looking one up with the wrong client
+    fails - and the failure looks like a missing customer rather than a
+    configuration mistake, which is a genuinely confusing thing to debug.
+
+    A test event with no test key configured is skipped rather than attempted:
+    it can only fail, and trying would write a misleading error into the logs
+    of a system that handles real money.
+  */
+  const client = event.livemode ? stripe : stripeTest;
+  if (!client) {
+    console.warn(`Ignoring ${event.type}: test-mode event received but STRIPE_SECRET_KEY_TEST is not set`);
+    return;
+  }
+
   try {
     let subscription: Stripe.Subscription;
     let userId: string | null = null;
@@ -83,7 +129,7 @@ async function handleEvent(event: Stripe.Event) {
 
       const subscriptionId =
         typeof session.subscription === 'string' ? session.subscription : session.subscription.id;
-      subscription = await stripe.subscriptions.retrieve(subscriptionId);
+      subscription = await client.subscriptions.retrieve(subscriptionId);
       userId = session.metadata?.supabase_user_id ?? subscription.metadata?.supabase_user_id ?? null;
     } else {
       subscription = event.data.object as Stripe.Subscription;
@@ -91,7 +137,7 @@ async function handleEvent(event: Stripe.Event) {
     }
 
     if (!userId) {
-      userId = await resolveUserIdFromCustomer(stripe, supabase, subscription.customer);
+      userId = await resolveUserIdFromCustomer(client, supabase, subscription.customer);
     }
 
     if (!userId) {
