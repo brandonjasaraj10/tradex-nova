@@ -161,6 +161,15 @@ export default function Journal() {
   const [psychChecks, setPsychChecks] = useState<PsychologyCheck[]>([]);
   const [psychStatus, setPsychStatus] = useState<Map<string, boolean | null>>(new Map());
   /*
+    The manual P&L the trades panel was last loaded against.
+
+    Autosave used to reload the day's trades every time anything changed,
+    including a psychology rating - two queries and a re-render for a field
+    that cannot affect a trade. Changing 5/5 to 3/5 visibly jolted the page
+    a moment later, which is what it looked like: the panel rebuilding.
+  */
+  const loadedForPnlRef = React.useRef<string | null>(null);
+  /*
     The checklist's contribution to today's psychology score.
 
     Derived once here because two places need the same number: the small
@@ -588,7 +597,19 @@ export default function Journal() {
         and the dashboard's score card reloads when it mounts - which is the
         only moment it can be looked at anyway.
       */
-      loadDailyTrades();
+
+      /*
+        Reload the trades panel only when the day's money actually changed.
+
+        Everything this panel shows derives from trades and from manual P&L,
+        so a psychology rating, a confluence tick or a note cannot alter it -
+        yet every autosave refetched it anyway, and the re-render arrived a
+        beat after the keystroke as a visible jolt.
+      */
+      if (loadedForPnlRef.current !== entryForm.manual_pnl) {
+        loadedForPnlRef.current = entryForm.manual_pnl;
+        loadDailyTrades();
+      }
     } catch (error) {
       console.error('Error auto-saving entry:', error);
     } finally {
