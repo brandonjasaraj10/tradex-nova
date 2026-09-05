@@ -21,6 +21,61 @@ export interface PsychologyScoreAggregates {
 
 export type TimeFrame = 'daily' | 'weekly' | 'monthly' | 'all';
 
+/*
+  What the pre-trade checklist contributes to a day's psychology score.
+
+  Same philosophy as the NOVA score's psychology slice, deliberately: score
+  ENGAGEMENT (did you stop and answer before trading) and READINESS (what you
+  rated your own state), never the answers themselves. Scoring the answers
+  would mean admitting "I was not calm" lowers your number, and the quickest
+  route to a better score becomes ticking yes without reading - which destroys
+  the only thing the checklist exists to collect.
+
+  Returns null when there is nothing to go on, so a day with no psychology
+  work of any kind stays absent rather than being handed an invented 50.
+*/
+export function calculateChecklistScore(
+  answeredChecks: number,
+  ratings: Array<number | null | undefined>
+): number | null {
+  const given = ratings.filter((v): v is number => typeof v === 'number');
+
+  // Answering at all is the whole of engagement for a single day: you either
+  // stopped and went through the checklist or you did not.
+  const engagement = answeredChecks > 0 ? 100 : null;
+
+  // 1-5 mapped onto 0-100, so a flat 3 is the middle rather than a failure.
+  const readiness = given.length > 0
+    ? ((given.reduce((a, b) => a + b, 0) / given.length) - 1) / 4 * 100
+    : null;
+
+  if (engagement === null && readiness === null) return null;
+  if (engagement === null) return readiness;
+  if (readiness === null) return engagement;
+  return engagement * 0.5 + readiness * 0.5;
+}
+
+/*
+  The day's score, from whichever halves of the psychology work exist.
+
+  The journal and the checklist weigh equally when both are filled. They ask
+  different things - one is a written reflection, the other a pre-trade gate -
+  and neither is a lesser form of the work.
+
+  Either one alone still produces a score. Before this, a day where somebody
+  worked through the checklist but skipped the journal scored nothing at all,
+  which read as "you did no psychology work today" when they plainly had.
+*/
+export function combinePsychologyScores(
+  templateScore: number | null,
+  checklistScore: number | null
+): number | null {
+  if (templateScore === null && checklistScore === null) return null;
+  if (templateScore === null) return Math.round(checklistScore as number);
+  if (checklistScore === null) return Math.round(templateScore);
+  return Math.round((templateScore + checklistScore) / 2);
+}
+
 export async function getPsychologyScores(
   timeFrame: TimeFrame = 'weekly'
 ): Promise<PsychologyScoreAggregates> {
@@ -32,11 +87,15 @@ export async function getPsychologyScores(
 
     const dateFilter = getDateFilter(timeFrame);
 
+    /*
+      The template_data filter is gone on purpose. It excluded every entry
+      where the journal was left empty - including days somebody worked
+      through the checklist, which is exactly the case this now scores.
+    */
     const { data: entries, error } = await supabase
       .from('journal_entries')
-      .select('entry_date, template_data')
+      .select('id, entry_date, template_data, pre_trade_emotional_state, pre_trade_focus, pre_trade_confidence')
       .eq('user_id', user.id)
-      .not('template_data', 'is', null)
       .gte('entry_date', dateFilter)
       .order('entry_date', { ascending: false });
 
@@ -45,18 +104,47 @@ export async function getPsychologyScores(
       return getEmptyAggregates();
     }
 
+    /*
+      One query for every answered check across the window, rather than one
+      per entry - these pages load a month at a time and per-entry lookups
+      would be dozens of round trips for data this small.
+    */
+    const entryIds = entries.map(e => e.id as string);
+    const answeredByEntry = new Map<string, number>();
+    if (entryIds.length > 0) {
+      const { data: checks } = await supabase
+        .from('journal_entry_psychology_checks')
+        .select('journal_entry_id, confirmed')
+        .in('journal_entry_id', entryIds)
+        // `confirmed` is the tri-state: true, false, or null for unanswered.
+        // Both true and false count as answered - that is the whole point.
+        .not('confirmed', 'is', null);
+
+      for (const row of checks ?? []) {
+        const id = (row as { journal_entry_id: string }).journal_entry_id;
+        answeredByEntry.set(id, (answeredByEntry.get(id) ?? 0) + 1);
+      }
+    }
+
     const scores: PsychologyScoreData[] = entries
       .map(entry => {
         const templateData = entry.template_data as any;
-        const novaScore = templateData?.end_of_day_summary?.nova_score;
+        const rawTemplateScore = templateData?.end_of_day_summary?.nova_score;
+        const templateScore = typeof rawTemplateScore === 'number' ? rawTemplateScore : null;
 
-        if (novaScore === undefined || novaScore === null) {
+        const checklistScore = calculateChecklistScore(
+          answeredByEntry.get(entry.id as string) ?? 0,
+          [entry.pre_trade_emotional_state, entry.pre_trade_focus, entry.pre_trade_confidence]
+        );
+
+        const score = combinePsychologyScores(templateScore, checklistScore);
+        if (score === null) {
           return null;
         }
 
         return {
           date: entry.entry_date,
-          score: novaScore,
+          score,
           mood_rating: templateData?.pre_trade_mindset?.mood_rating,
           psychological_state: templateData?.end_of_day_summary?.psychological_state,
           stress_avg: calculateStressAverage(templateData?.stress_levels),
