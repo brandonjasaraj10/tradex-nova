@@ -93,12 +93,151 @@ function toNumber(raw: any): number | undefined {
   return negative ? -Math.abs(n) : n;
 }
 
+/*
+  TradingView exports orders, not trades.
+
+  Its paper trading account offers one download - "Order history" - and every
+  row in it is a single order: a buy or a sell, never a round trip. There is
+  no exit price and no P&L column anywhere in the file, which is why importing
+  one wrote null into exit_price and the database rejected all 100 rows.
+
+  Both TradeZella and Journalit document the same thing: order history is the
+  only export TradingView offers, and the journal is expected to pair the
+  orders itself. So that is what this does - match each closing order against
+  the open orders it closes, oldest first, and emit the completed round trips.
+
+  Columns, per TradingView's own export dialog: Symbol, Side, Type, Qty,
+  Limit price, Stop price, Fill price, Status, Commission, Placing time,
+  Closing time, Order ID, Level ID, Leverage, Margin.
+*/
+
+interface PendingLeg {
+  qty: number;
+  price: number;
+  time: string;
+  commission: number;
+}
+
+/** One order row, already normalised out of the CSV. */
+export interface OrderRow {
+  symbol: string;
+  side: 'buy' | 'sell';
+  qty: number;
+  fillPrice: number;
+  time: string;
+  status: string;
+  commission: number;
+}
+
+/*
+  Only filled orders represent something that happened.
+
+  A cancelled or rejected order has no fill price - it shows as 0.00000 in the
+  export, which is exactly what appeared in the failing import. Treating those
+  as trades at a price of zero would invent enormous fake losses.
+*/
+export function isFilledOrder(status: string): boolean {
+  return status.trim().toLowerCase() === 'filled';
+}
+
+export function pairOrdersIntoTrades(orders: OrderRow[]): {
+  trades: CSVTrade[];
+  stillOpen: number;
+  skippedUnfilled: number;
+} {
+  const filled = orders.filter((o) => isFilledOrder(o.status) && o.fillPrice > 0);
+  const skippedUnfilled = orders.length - filled.length;
+
+  // Oldest first, so a closing order is matched against the position that was
+  // opened earliest - the FIFO convention brokers and tax rules both use.
+  const chronological = [...filled].sort((a, b) => a.time.localeCompare(b.time));
+
+  const openLongs = new Map<string, PendingLeg[]>();
+  const openShorts = new Map<string, PendingLeg[]>();
+  const trades: CSVTrade[] = [];
+
+  const queue = (m: Map<string, PendingLeg[]>, sym: string) => {
+    if (!m.has(sym)) m.set(sym, []);
+    return m.get(sym)!;
+  };
+
+  for (const order of chronological) {
+    // A buy closes a short if one is open, otherwise it opens a long. This is
+    // what makes the pairing direction-aware rather than assuming every trade
+    // starts with a buy - shorts are opened with a sell.
+    const closing = order.side === 'buy' ? queue(openShorts, order.symbol) : queue(openLongs, order.symbol);
+    const opening = order.side === 'buy' ? queue(openLongs, order.symbol) : queue(openShorts, order.symbol);
+
+    let remaining = order.qty;
+
+    while (remaining > 0 && closing.length > 0) {
+      const leg = closing[0];
+      // Partial fills are normal: one order can close part of a position, and
+      // one position can be closed by several orders. Match the overlap and
+      // leave the remainder of whichever side is larger still open.
+      const matched = Math.min(remaining, leg.qty);
+
+      const isLong = order.side === 'sell';
+      const entryPrice = leg.price;
+      const exitPrice = order.fillPrice;
+      const pnl = (isLong ? exitPrice - entryPrice : entryPrice - exitPrice) * matched;
+
+      trades.push({
+        symbol: order.symbol,
+        type: isLong ? 'buy' : 'sell',
+        volume: matched,
+        open_price: entryPrice,
+        close_price: exitPrice,
+        open_time: leg.time,
+        close_time: order.time,
+        profit: pnl,
+        // Split proportionally, so a partial close carries its share rather
+        // than the whole order's cost.
+        commission: leg.commission * (matched / leg.qty) + order.commission * (matched / order.qty),
+      });
+
+      leg.qty -= matched;
+      remaining -= matched;
+      if (leg.qty <= 0) closing.shift();
+    }
+
+    if (remaining > 0) {
+      opening.push({ qty: remaining, price: order.fillPrice, time: order.time, commission: order.commission });
+    }
+  }
+
+  let stillOpen = 0;
+  for (const m of [openLongs, openShorts]) {
+    for (const legs of m.values()) stillOpen += legs.length;
+  }
+
+  return { trades, stillOpen, skippedUnfilled };
+}
+
 export class CSVParser {
-  static detectFormat(headers: string[]): 'mt4' | 'mt5' | 'generic' | null {
+  static detectFormat(headers: string[]): 'mt4' | 'mt5' | 'generic' | 'orders' | null {
     const headerStr = headers.join(',').toLowerCase();
 
     if (headerStr.includes('ticket') && headerStr.includes('open time') && headerStr.includes('type')) {
       return headerStr.includes('magic') ? 'mt5' : 'mt4';
+    }
+
+    /*
+      An order history rather than a trade history.
+
+      TradingView's only paper trading export is one row per order, with a
+      fill price and a status but no exit and no P&L anywhere. Read as a
+      generic trade list it produced 100 rows with a null exit price, which
+      the trades table rejects outright - the import failed completely.
+      Recognised here so the orders can be paired into round trips instead.
+    */
+    const probeAll = Object.fromEntries(headers.map(h => [h, '']));
+    const hasStatus = !!findKey(probeAll, ['status']);
+    const hasFillPrice = !!findKey(probeAll, ['fill price']);
+    const hasClose = !!findKey(probeAll, HEADER_ALIASES.closePrice);
+    const hasPnlCol = !!findKey(probeAll, HEADER_ALIASES.pnl);
+    if (hasStatus && hasFillPrice && !hasClose && !hasPnlCol) {
+      return 'orders';
     }
 
     /*
@@ -287,6 +426,7 @@ export class CSVParser {
 
           const trades: CSVTrade[] = [];
           const errors: string[] = [];
+          const orderRows: OrderRow[] = [];
 
           for (let i = 1; i < lines.length; i++) {
             const values = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/^"|"$/g, ''));
@@ -295,6 +435,21 @@ export class CSVParser {
             headers.forEach((header, index) => {
               row[header] = values[index] || '';
             });
+
+            if (format === 'orders') {
+              orderRows.push({
+                symbol: String(row[findKey(row, HEADER_ALIASES.symbol) ?? ''] ?? '').trim(),
+                side: normalizeSide(row[findKey(row, HEADER_ALIASES.side) ?? '']) ?? 'buy',
+                qty: toNumber(row[findKey(row, HEADER_ALIASES.quantity) ?? '']) ?? 0,
+                fillPrice: toNumber(row[findKey(row, ['fill price']) ?? '']) ?? 0,
+                // Closing time is when it actually filled; placing time is
+                // when it was submitted, which can be much earlier.
+                time: String(row[findKey(row, ['closing time', 'placing time']) ?? ''] ?? '').trim(),
+                status: String(row[findKey(row, ['status']) ?? ''] ?? '').trim(),
+                commission: toNumber(row[findKey(row, HEADER_ALIASES.commission) ?? '']) ?? 0,
+              });
+              continue;
+            }
 
             let trade: CSVTrade | null = null;
 
@@ -315,6 +470,23 @@ export class CSVParser {
             } else {
               errors.push(`Row ${i + 1}: Could not parse trade data`);
             }
+          }
+
+          if (format === 'orders') {
+            const { trades: paired, stillOpen, skippedUnfilled } = pairOrdersIntoTrades(orderRows);
+            /*
+              Said plainly, because the counts will not match the file and a
+              trader would otherwise assume data was lost. Both numbers are
+              expected, not faults.
+            */
+            if (skippedUnfilled > 0) {
+              errors.push(`${skippedUnfilled} order${skippedUnfilled === 1 ? ' was' : 's were'} cancelled or never filled, so ${skippedUnfilled === 1 ? 'it was' : 'they were'} skipped.`);
+            }
+            if (stillOpen > 0) {
+              errors.push(`${stillOpen} position${stillOpen === 1 ? ' is' : 's are'} still open, so ${stillOpen === 1 ? 'it has' : 'they have'} no exit price yet and cannot be imported.`);
+            }
+            resolve({ trades: paired, format, errors });
+            return;
           }
 
           resolve({ trades, format, errors });
@@ -338,6 +510,21 @@ export class CSVParser {
 
     for (const trade of trades) {
       try {
+        /*
+          The trades table requires an exit price, an exit date and a P&L -
+          it stores completed trades only. Sending null produced a raw
+          Postgres constraint error for every row, shown to the user as
+          "null value in column exit_price of relation trades violates
+          not-null constraint", which tells a trader nothing.
+
+          A row without an exit is a position that has not closed yet. It is
+          reported as skipped rather than written with invented values.
+        */
+        if (trade.close_price == null || trade.profit == null) {
+          errors.push(`${trade.symbol}: still open, so it has no exit price or profit yet and was skipped.`);
+          continue;
+        }
+
         const tradeData: any = {
           user_id: user.id,
           broker_id: connectionId || null,
@@ -345,10 +532,10 @@ export class CSVParser {
           direction: trade.type === 'buy' ? 'LONG' : 'SHORT',
           quantity: trade.volume,
           entry_price: trade.open_price,
-          exit_price: trade.close_price ?? null,
+          exit_price: trade.close_price,
           entry_date: trade.open_time,
           exit_date: trade.close_time || trade.open_time,
-          pnl: trade.profit ?? null,
+          pnl: trade.profit,
           fees: (trade.commission || 0) + (trade.swap || 0),
           notes: trade.comment || null,
         };

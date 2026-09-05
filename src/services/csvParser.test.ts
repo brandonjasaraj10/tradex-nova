@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { pairOrdersIntoTrades, type OrderRow } from './csvParser';
 import { CSVParser, normalizeSide } from './csvParser';
 
 describe('CSVParser.detectFormat', () => {
@@ -202,5 +203,117 @@ describe('parsing rows from each market', () => {
   it('skips a row with no symbol, and one with neither side nor P&L', () => {
     expect(CSVParser.parseGenericRow({ Symbol: '', Side: 'Buy', 'P/L': '100' })).toBeNull();
     expect(CSVParser.parseGenericRow({ Symbol: 'AAPL', Notes: 'watchlist idea' })).toBeNull();
+  });
+});
+
+describe('TradingView order pairing', () => {
+  const order = (o: Partial<OrderRow>): OrderRow => ({
+    symbol: 'FX:EURUSD', side: 'buy', qty: 1000, fillPrice: 1.1, time: '2026-09-02 10:00:00',
+    status: 'Filled', commission: 0, ...o,
+  });
+
+  it('pairs a buy and a later sell into one completed trade', () => {
+    const { trades } = pairOrdersIntoTrades([
+      order({ side: 'buy', fillPrice: 1.16156, time: '2026-09-02 10:00:00' }),
+      order({ side: 'sell', fillPrice: 1.16246, time: '2026-09-02 11:00:00' }),
+    ]);
+    expect(trades).toHaveLength(1);
+    expect(trades[0].open_price).toBe(1.16156);
+    expect(trades[0].close_price).toBe(1.16246);
+    expect(trades[0].type).toBe('buy');
+    expect(trades[0].profit).toBeCloseTo(0.9, 6);
+  });
+
+  /*
+    A short opens with a sell. Assuming every trade starts with a buy would
+    report the entry and exit the wrong way round and invert the P&L.
+  */
+  it('treats a sell-first sequence as a short, and profits when price falls', () => {
+    const { trades } = pairOrdersIntoTrades([
+      order({ side: 'sell', fillPrice: 1.2, time: '2026-09-02 10:00:00' }),
+      order({ side: 'buy', fillPrice: 1.1, time: '2026-09-02 11:00:00' }),
+    ]);
+    expect(trades).toHaveLength(1);
+    expect(trades[0].type).toBe('sell');
+    expect(trades[0].open_price).toBe(1.2);
+    expect(trades[0].profit).toBeCloseTo(100, 6);
+  });
+
+  /*
+    The exact failure the user hit: unfilled orders export with a fill price
+    of 0.00000. Importing those as trades would invent vast fake losses.
+  */
+  it('ignores cancelled and rejected orders', () => {
+    const { trades, skippedUnfilled } = pairOrdersIntoTrades([
+      order({ side: 'buy', status: 'Cancelled', fillPrice: 0 }),
+      order({ side: 'sell', status: 'Rejected', fillPrice: 0 }),
+      order({ side: 'buy', fillPrice: 1.1, time: '2026-09-02 10:00:00' }),
+      order({ side: 'sell', fillPrice: 1.2, time: '2026-09-02 11:00:00' }),
+    ]);
+    expect(skippedUnfilled).toBe(2);
+    expect(trades).toHaveLength(1);
+  });
+
+  it('matches oldest position first when several are open', () => {
+    const { trades } = pairOrdersIntoTrades([
+      order({ side: 'buy', fillPrice: 1.0, time: '2026-09-02 10:00:00' }),
+      order({ side: 'buy', fillPrice: 1.5, time: '2026-09-02 10:30:00' }),
+      order({ side: 'sell', fillPrice: 2.0, time: '2026-09-02 11:00:00' }),
+    ]);
+    expect(trades).toHaveLength(1);
+    expect(trades[0].open_price).toBe(1.0);
+  });
+
+  it('splits a close that covers only part of a position', () => {
+    const { trades, stillOpen } = pairOrdersIntoTrades([
+      order({ side: 'buy', qty: 1000, fillPrice: 1.0, time: '2026-09-02 10:00:00' }),
+      order({ side: 'sell', qty: 400, fillPrice: 1.1, time: '2026-09-02 11:00:00' }),
+    ]);
+    expect(trades).toHaveLength(1);
+    expect(trades[0].volume).toBe(400);
+    expect(stillOpen).toBe(1);
+  });
+
+  /*
+    An order still open at export time has no exit, and the trades table
+    requires one. It must be reported, never invented.
+  */
+  it('counts positions left open rather than inventing an exit', () => {
+    const { trades, stillOpen } = pairOrdersIntoTrades([
+      order({ side: 'buy', fillPrice: 1.1, time: '2026-09-02 10:00:00' }),
+    ]);
+    expect(trades).toHaveLength(0);
+    expect(stillOpen).toBe(1);
+  });
+
+  it('keeps different symbols separate', () => {
+    const { trades, stillOpen } = pairOrdersIntoTrades([
+      order({ symbol: 'FX:EURUSD', side: 'buy', time: '2026-09-02 10:00:00' }),
+      order({ symbol: 'FX:GBPUSD', side: 'sell', time: '2026-09-02 11:00:00' }),
+    ]);
+    expect(trades).toHaveLength(0);
+    expect(stillOpen).toBe(2);
+  });
+});
+
+describe('detecting an order history export', () => {
+  // TradingView's own export dialog, verified against TradeZella's and
+  // Journalit's import guides.
+  const TRADINGVIEW = ['Symbol', 'Side', 'Type', 'Qty', 'Limit price', 'Stop price',
+    'Fill price', 'Status', 'Commission', 'Placing time', 'Closing time',
+    'Order ID', 'Level ID', 'Leverage', 'Margin'];
+
+  it('routes a TradingView order history to the pairing path', () => {
+    expect(CSVParser.detectFormat(TRADINGVIEW)).toBe('orders');
+  });
+
+  /*
+    A real trade export has an exit and a P&L, so it must keep going down the
+    generic path even though it also carries a status column.
+  */
+  it('leaves a genuine closed-trade export on the generic path', () => {
+    expect(CSVParser.detectFormat(
+      ['Symbol', 'Side', 'Qty', 'Fill price', 'Status', 'Close price', 'Realized P&L']
+    )).toBe('generic');
   });
 });
