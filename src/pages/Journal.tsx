@@ -1626,9 +1626,24 @@ export default function Journal() {
                   </button>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 sm:gap-4">
-                  {isSaving && (
-                    <span className="text-xs text-gray-400">Saving...</span>
-                  )}
+                  {/*
+                    Always in the layout, faded rather than removed.
+
+                    Mounting and unmounting this shoved every control after it
+                    sideways in a flex-wrap row, twice per autosave - and on a
+                    narrow window it could re-wrap the whole line. Changing a
+                    psychology rating jolted the header a beat later, which is
+                    this appearing and going again. Reserving the space costs
+                    a few pixels and nothing moves.
+                  */}
+                  <span
+                    aria-hidden={!isSaving}
+                    className={`text-xs text-gray-400 transition-opacity duration-200 ${
+                      isSaving ? 'opacity-100' : 'opacity-0'
+                    }`}
+                  >
+                    Saving...
+                  </span>
                   {isProcessingVoice && (
                     <span className="text-xs text-blue-400 animate-pulse">Processing voice...</span>
                   )}
@@ -2359,7 +2374,13 @@ export default function Journal() {
                             </p>
                             {score !== null && (
                               <span
-                                className="flex-shrink-0 text-[11px] font-medium text-blue-300/80 tabular-nums"
+                                /*
+                                  Fixed width and right aligned: without it the
+                                  row reflowed every time the number changed
+                                  digits, so 100 -> 75 nudged the sentence
+                                  beside it.
+                                */
+                                className="flex-shrink-0 w-7 text-right text-[11px] font-medium text-blue-300/80 tabular-nums"
                                 title="Today's psychology score from this checklist"
                               >
                                 {Math.round(score)}
