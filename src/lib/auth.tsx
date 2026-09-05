@@ -26,6 +26,13 @@ type AuthContextType = {
   showWelcome: boolean;
   needsProfile: boolean;
   needsSubscription: boolean;
+  /*
+    When a failed payment's grace period runs out, or null when there isn't
+    one. checkSubscription already reads this column to decide access; it was
+    collapsing it to a yes/no and throwing the date away, so nothing could
+    tell the user their access is running out.
+  */
+  gracePeriodEnd: Date | null;
   isFirstTimeUser: boolean;
   setShowWelcome: (show: boolean) => void;
   setNeedsProfile: (needs: boolean) => void;
@@ -55,6 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [showWelcome, setShowWelcome] = useState(false);
   const [needsProfile, setNeedsProfile] = useState(false);
   const [needsSubscription, setNeedsSubscription] = useState(false);
+  const [gracePeriodEnd, setGracePeriodEnd] = useState<Date | null>(null);
   const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
 
   const handleSignOut = async () => {
@@ -118,12 +126,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) throw error;
 
       if (!data) {
+        setGracePeriodEnd(null);
         return false;
       }
 
       const now = new Date();
       const currentPeriodEnd = data.current_period_end ? new Date(data.current_period_end) : null;
       const gracePeriodEnd = data.grace_period_end ? new Date(data.grace_period_end) : null;
+
+      /*
+        Cleared before the branches below, not inside them. Several of them
+        return early, and a stale date left behind would keep warning somebody
+        whose card has since gone through.
+      */
+      setGracePeriodEnd(null);
 
       if (data.status === 'active' || data.status === 'trialing') {
         return true;
@@ -134,6 +150,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (data.status === 'past_due' && gracePeriodEnd && now < gracePeriodEnd) {
+        // Access continues, but on borrowed time - the banner needs the date
+        // to say how much is left.
+        setGracePeriodEnd(gracePeriodEnd);
         return true;
       }
 
@@ -306,7 +325,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, showWelcome, needsProfile, needsSubscription, isFirstTimeUser, setShowWelcome, setNeedsProfile, setNeedsSubscription, setIsFirstTimeUser, refreshProfile, refreshSubscription, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, profile, loading, showWelcome, needsProfile, needsSubscription, gracePeriodEnd, isFirstTimeUser, setShowWelcome, setNeedsProfile, setNeedsSubscription, setIsFirstTimeUser, refreshProfile, refreshSubscription, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );

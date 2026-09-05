@@ -1,4 +1,5 @@
 import { Suspense, useState, useEffect } from 'react';
+import PastDueBanner from './components/billing/PastDueBanner';
 import { lazyWithReload } from './lib/lazyWithReload';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './lib/auth';
@@ -181,7 +182,15 @@ function PrivateLayout() {
             sidebarOpen={mobileMenuOpen}
             onMenuClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           />
+          {/*
+            Inside main's top padding rather than above the header, because
+            the header is fixed - a banner placed above it would sit behind
+            it. Here it pushes the page content down instead, and scrolls
+            away as the user reads, which is right for a warning that is
+            informative rather than blocking.
+          */}
           <main className="pt-16">
+            <PastDueBanner />
             <Suspense fallback={<PageLoader className="min-h-[calc(100vh-4rem)]" />}>
               <Routes>
                 <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
