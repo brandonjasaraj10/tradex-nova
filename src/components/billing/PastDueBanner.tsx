@@ -53,12 +53,23 @@ export default function PastDueBanner() {
   }
 
   return (
+    /*
+      Brand blue, not the amber a warning banner usually reaches for.
+
+      This app deliberately does not use the colour conventions other trading
+      apps do - losses are grey rather than red, gains blue rather than green
+      - and an amber bar would be the only piece of that palette anywhere in
+      the product. The glow is the same one used on the NOVA score and the
+      psychology panel, so the banner reads as part of TradeX rather than as
+      a browser warning that leaked in.
+    */
     <div
       role="status"
-      className="border-b border-amber-400/25 bg-amber-500/10"
+      className="border-b border-brand-blue-light/30 bg-brand-blue/10"
+      style={{ boxShadow: '0 0 20px rgba(59, 130, 246, 0.15)' }}
     >
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col sm:flex-row sm:items-center gap-3">
-        <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0" aria-hidden="true" />
+        <AlertCircle className="w-5 h-5 text-brand-blue-light flex-shrink-0" aria-hidden="true" />
 
         <div className="min-w-0 flex-1">
           <p className="text-sm text-white">
@@ -78,7 +89,7 @@ export default function PastDueBanner() {
           type="button"
           onClick={openBillingPortal}
           disabled={opening}
-          className="flex-shrink-0 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-amber-400/15 text-amber-200 border border-amber-400/30 hover:bg-amber-400/25 transition-colors disabled:opacity-60"
+          className="flex-shrink-0 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-brand-blue/20 text-brand-blue-light border border-brand-blue-light/30 hover:bg-brand-blue/30 transition-colors disabled:opacity-60"
         >
           {opening ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
           {opening ? 'Opening…' : 'Update payment method'}
