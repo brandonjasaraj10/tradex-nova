@@ -62,3 +62,40 @@ describe('resolveGracePeriodEnd', () => {
     }
   );
 });
+
+/*
+  The "days left" wording in the payment-failure email, mirrored from
+  sendPaymentFailedEmail in supabase/functions/_shared/subscriptionSync.ts for
+  the same Deno/Node reason as above. If the rule changes there, change it here.
+*/
+function daysLeftFromGraceEnd(gracePeriodEnd: string | null, now: Date): number {
+  return gracePeriodEnd
+    ? Math.max(1, Math.ceil((new Date(gracePeriodEnd).getTime() - now.getTime()) / 86400000))
+    : 7;
+}
+
+describe('days left in the payment failure email', () => {
+  const now = new Date('2026-09-04T12:00:00.000Z');
+
+  it('counts a full window as seven days', () => {
+    expect(daysLeftFromGraceEnd('2026-09-11T12:00:00.000Z', now)).toBe(7);
+  });
+
+  it('rounds a part day up, so half a day left still reads as one day', () => {
+    expect(daysLeftFromGraceEnd('2026-09-05T00:00:00.000Z', now)).toBe(1);
+  });
+
+  /*
+    Never zero or negative. Telling somebody they have 0 days while they still
+    have access reads as though it is already too late, and a negative number
+    is nonsense in a subject line.
+  */
+  it('never drops below one day, even past the deadline', () => {
+    expect(daysLeftFromGraceEnd('2026-09-04T11:00:00.000Z', now)).toBe(1);
+    expect(daysLeftFromGraceEnd('2026-09-01T12:00:00.000Z', now)).toBe(1);
+  });
+
+  it('falls back to the full window when no deadline was recorded', () => {
+    expect(daysLeftFromGraceEnd(null, now)).toBe(7);
+  });
+});
