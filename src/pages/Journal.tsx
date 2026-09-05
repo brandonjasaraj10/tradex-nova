@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { calculateChecklistScore } from '../services/psychologyScore';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, CreditCard as Edit, Trash, Folder, Calendar, Save, X, ChevronLeft, ChevronRight, Settings, BookOpen, LineChart, Image, Tag as TagIcon, DollarSign, TrendingUp, TrendingDown, Maximize2, CheckSquare, Square, Upload, Brain, Check, FileText, Mic, MicOff } from 'lucide-react';
@@ -553,6 +554,26 @@ export default function Journal() {
           upsertJournalEntryPsychologyCheck(entryId, checkId, confirmed)
         ),
       ]);
+
+      /*
+        Tell the rest of the app the answers have landed.
+
+        The psychology score now counts the checklist, but the live-refresh
+        only watches tables carrying a user_id, and the answers table links
+        through journal_entry_id instead - so nothing announced them. Saving
+        the entry itself does fire a refresh, and it fires while these writes
+        are still in flight, so the score card reloaded a moment too early
+        and found no answers. Filling in the checklist appeared to score
+        nothing until the page was reloaded by hand.
+
+        Refreshing here, after the writes have resolved, is deterministic
+        where a subscription would be a race - and needs no unfiltered
+        realtime subscription, which on a table without a user_id would mean
+        receiving other people's row changes.
+      */
+      if (psychUpdates.length > 0) {
+        forceRefresh();
+      }
 
       loadDailyTrades();
     } catch (error) {
@@ -2279,10 +2300,44 @@ export default function Journal() {
                       className="rounded-xl border border-blue-400/40 bg-gradient-to-br from-blue-500/[0.12] via-blue-500/[0.03] to-transparent p-4"
                       style={{ boxShadow: 'inset 0 0 60px rgba(59,130,246,0.10), 0 0 30px rgba(59,130,246,0.10)' }}
                     >
-                      <p className="text-xs text-gray-400 mb-4">
-                        How are you before this trade? Nothing here is scored &mdash; it is only
-                        worth filling in honestly.
-                      </p>
+                      {/*
+                        The score is computed with the same function the
+                        Psychology Score card uses, never a second copy of the
+                        rule - a panel that disagreed with the card it feeds
+                        would be worse than showing nothing.
+                      */}
+                      {(() => {
+                        const answered = Array.from(psychStatus.values()).filter((v) => v !== null).length;
+                        const score = calculateChecklistScore(answered, [
+                          entryForm.pre_trade_emotional_state,
+                          entryForm.pre_trade_focus,
+                          entryForm.pre_trade_confidence,
+                        ]);
+                        return (
+                          <div className="flex items-start justify-between gap-3 mb-4">
+                            {/*
+                              This used to read "Nothing here is scored", which
+                              stopped being true the moment the checklist began
+                              feeding the psychology score. The honesty framing
+                              stays because it is still accurate: answering "no"
+                              costs nothing, since the score counts turning up
+                              and your own ratings, never the answers.
+                            */}
+                            <p className="text-xs text-gray-400">
+                              How are you before this trade? Answer honestly &mdash; a &ldquo;no&rdquo;
+                              never costs you anything.
+                            </p>
+                            {score !== null && (
+                              <span
+                                className="flex-shrink-0 text-[11px] font-medium text-blue-300/80 tabular-nums"
+                                title="Today's psychology score from this checklist"
+                              >
+                                {Math.round(score)}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })()}
 
                       <PreTradeScales
                         values={{
