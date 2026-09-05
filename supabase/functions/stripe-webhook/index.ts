@@ -31,6 +31,12 @@ const stripeTest = testSecretKey ? new Stripe(testSecretKey, { appInfo }) : null
 */
 async function verifyEvent(body: string, signature: string): Promise<Stripe.Event> {
   const secrets = [Deno.env.get('STRIPE_WEBHOOK_SECRET'), testWebhookSecret].filter(Boolean) as string[];
+  // Named explicitly rather than throwing whatever the loop last saw, which
+  // with no secrets at all would be undefined - an error with no message is
+  // the worst thing to meet while payments are failing.
+  if (secrets.length === 0) {
+    throw new Error('No Stripe webhook signing secret is configured');
+  }
   let lastError: unknown;
   for (const secret of secrets) {
     try {
