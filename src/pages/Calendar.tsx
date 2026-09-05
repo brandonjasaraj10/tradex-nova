@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getChecklistScores, combinePsychologyScores } from '../services/psychologyScore';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Eye, EyeOff, DollarSign, Brain, TrendingUp, TrendingDown } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -96,7 +97,9 @@ export default function Calendar() {
 
       let journalQuery = supabase
         .from('journal_entries')
-        .select('entry_date, template_data, manual_pnl')
+        // id and the pre-trade ratings are needed to score the checklist,
+        // which now counts towards the day the same as the journal does.
+        .select('id, entry_date, template_data, manual_pnl, pre_trade_emotional_state, pre_trade_focus, pre_trade_confidence')
         .eq('user_id', user.id)
         .gte('entry_date', toLocalDateStr(startOfMonth))
         .lte('entry_date', toLocalDateStr(endOfMonth));
@@ -136,18 +139,33 @@ export default function Calendar() {
         });
       }
 
+      /*
+        The calendar used to read only the journal template's own score, so a
+        day where somebody worked through the checklist but skipped the
+        journal showed no psychology score at all - while the dashboard card,
+        which does count the checklist, showed one for the same day.
+      */
+      const journalChecklistScores = journals && journals.length > 0
+        ? await getChecklistScores(journals as any)
+        : new Map<string, number | null>();
+
       if (journals && journals.length > 0) {
         journals.forEach(journal => {
           const dateKey = journal.entry_date;
           const existing = dataMap.get(dateKey);
 
-          let psychScore = null;
+          let templateScore: number | null = null;
           if (journal.template_data) {
             const template = typeof journal.template_data === 'string'
               ? JSON.parse(journal.template_data)
               : journal.template_data;
-            psychScore = template?.end_of_day_summary?.nova_score || null;
+            const raw = template?.end_of_day_summary?.nova_score;
+            templateScore = typeof raw === 'number' ? raw : null;
           }
+          const psychScore = combinePsychologyScores(
+            templateScore,
+            journalChecklistScores.get(journal.id as string) ?? null
+          );
 
           // A journal entry with a manual_pnl is a real logged trade, not
           // just a note - the Dashboard's calendar already counts these,

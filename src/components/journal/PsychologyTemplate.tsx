@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { combinePsychologyScores } from '../../services/psychologyScore';
 import { createPortal } from 'react-dom';
 import { Brain, Heart, Target, TrendingUp, Zap, AlertCircle, Award, Smile, Frown, Meh, X, Maximize2, Minimize2, Sparkles } from 'lucide-react';
 import { RichTextEditor } from './RichTextEditor';
@@ -47,6 +48,16 @@ interface PsychologyTemplateData {
 interface PsychologyTemplateProps {
   data: PsychologyTemplateData;
   onChange: (data: PsychologyTemplateData) => void;
+  /*
+    The pre-trade checklist's score for this same day, when there is one.
+
+    Passed in rather than fetched: this component only ever knew about the
+    template's own sections, so it told people to "fill out at least half"
+    even on days they had completed the checklist and already earned a score
+    elsewhere. The checklist lives outside this template, so the page that
+    owns both hands the number down.
+  */
+  checklistScore?: number | null;
 }
 
 const EMOTION_OPTIONS = [
@@ -76,7 +87,7 @@ const DEFAULT_AFFIRMATIONS = [
   "I follow my rules and protect my capital above all else.",
 ];
 
-export function PsychologyTemplate({ data, onChange }: PsychologyTemplateProps) {
+export function PsychologyTemplate({ data, onChange, checklistScore = null }: PsychologyTemplateProps) {
   const [newEmotion, setNewEmotion] = useState('');
   const [newAffirmation, setNewAffirmation] = useState('');
   const [newPsychWin, setNewPsychWin] = useState('');
@@ -330,6 +341,16 @@ export function PsychologyTemplate({ data, onChange }: PsychologyTemplateProps) 
     }
     return null;
   };
+
+  /*
+    What the day actually scores, template and checklist together - the same
+    number the dashboard card and the calendar show. Displaying the template's
+    own figure here made this panel disagree with both of them.
+  */
+  const displayScore = combinePsychologyScores(
+    typeof data.end_of_day_summary?.nova_score === 'number' ? data.end_of_day_summary.nova_score : null,
+    checklistScore
+  );
 
   // Auto-calculate score whenever data changes
   useEffect(() => {
@@ -618,34 +639,35 @@ export function PsychologyTemplate({ data, onChange }: PsychologyTemplateProps) 
               <span className="text-xs text-gray-400 italic">Auto-calculated</span>
             </div>
 
-            {data.end_of_day_summary?.nova_score !== undefined ? (
+            {displayScore !== null ? (
               <div className="flex items-center gap-4">
                 <div className={`text-5xl font-bold ${
-                  data.end_of_day_summary.nova_score >= 70 ? 'text-blue-500' :
-                  data.end_of_day_summary.nova_score >= 50 ? 'text-blue-400' : 'text-blue-300'
+                  displayScore >= 70 ? 'text-blue-500' :
+                  displayScore >= 50 ? 'text-blue-400' : 'text-blue-300'
                 }`}>
-                  {data.end_of_day_summary.nova_score}
+                  {displayScore}
                 </div>
                 <div className="flex-1">
                   <p className="text-sm text-gray-300 mb-1">
-                    {data.end_of_day_summary.nova_score >= 70 ? 'Excellent psychological performance!' :
-                     data.end_of_day_summary.nova_score >= 50 ? 'Good effort, room for improvement.' :
+                    {displayScore >= 70 ? 'Excellent psychological performance!' :
+                     displayScore >= 50 ? 'Good effort, room for improvement.' :
                      'Focus on emotional regulation tomorrow.'}
                   </p>
                   <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
                     <div
                       className={`h-full transition-all duration-500 ${
-                        data.end_of_day_summary.nova_score >= 70 ? 'bg-blue-500' :
-                        data.end_of_day_summary.nova_score >= 50 ? 'bg-blue-400' : 'bg-blue-300'
+                        displayScore >= 70 ? 'bg-blue-500' :
+                        displayScore >= 50 ? 'bg-blue-400' : 'bg-blue-300'
                       }`}
-                      style={{ width: `${data.end_of_day_summary.nova_score}%` }}
+                      style={{ width: `${displayScore}%` }}
                     />
                   </div>
                 </div>
               </div>
             ) : (
               <p className="text-sm text-gray-400 text-center py-4">
-                Fill out at least half of the sections above to see your score
+                Fill out at least half of the sections above, or complete the
+                pre-trade checklist, to see your score
               </p>
             )}
           </div>
@@ -1316,34 +1338,35 @@ export function PsychologyTemplate({ data, onChange }: PsychologyTemplateProps) 
               <span className="text-xs text-gray-400 italic">Auto-calculated</span>
             </div>
 
-            {data.end_of_day_summary?.nova_score !== undefined ? (
+            {displayScore !== null ? (
               <div className="flex items-center gap-4">
                 <div className={`text-5xl font-bold ${
-                  data.end_of_day_summary.nova_score >= 70 ? 'text-blue-500' :
-                  data.end_of_day_summary.nova_score >= 50 ? 'text-blue-400' : 'text-blue-300'
+                  displayScore >= 70 ? 'text-blue-500' :
+                  displayScore >= 50 ? 'text-blue-400' : 'text-blue-300'
                 }`}>
-                  {data.end_of_day_summary.nova_score}
+                  {displayScore}
                 </div>
                 <div className="flex-1">
                   <p className="text-sm text-gray-300 mb-1">
-                    {data.end_of_day_summary.nova_score >= 70 ? 'Excellent psychological performance! Nova has stored this data for continuous reflection.' :
-                     data.end_of_day_summary.nova_score >= 50 ? 'Good effort, room for improvement. Nova will help you identify patterns.' :
+                    {displayScore >= 70 ? 'Excellent psychological performance! Nova has stored this data for continuous reflection.' :
+                     displayScore >= 50 ? 'Good effort, room for improvement. Nova will help you identify patterns.' :
                      'Focus on emotional regulation tomorrow. Nova is tracking your progress.'}
                   </p>
                   <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
                     <div
                       className={`h-full transition-all duration-500 ${
-                        data.end_of_day_summary.nova_score >= 70 ? 'bg-blue-500' :
-                        data.end_of_day_summary.nova_score >= 50 ? 'bg-blue-400' : 'bg-blue-300'
+                        displayScore >= 70 ? 'bg-blue-500' :
+                        displayScore >= 50 ? 'bg-blue-400' : 'bg-blue-300'
                       }`}
-                      style={{ width: `${data.end_of_day_summary.nova_score}%` }}
+                      style={{ width: `${displayScore}%` }}
                     />
                   </div>
                 </div>
               </div>
             ) : (
               <p className="text-sm text-gray-400 text-center py-4">
-                Fill out at least half of the sections above to see your score
+                Fill out at least half of the sections above, or complete the
+                pre-trade checklist, to see your score
               </p>
             )}
           </div>

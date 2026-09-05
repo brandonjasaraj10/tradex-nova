@@ -76,6 +76,55 @@ export function combinePsychologyScores(
   return Math.round((templateScore + checklistScore) / 2);
 }
 
+/*
+  Checklist scores for a batch of entries, keyed by entry id.
+
+  Shared rather than reimplemented per surface. The day's psychology score
+  appears on the dashboard card, the calendar and inside the journal, and when
+  each worked it out for itself they disagreed: the card counted the checklist
+  while the calendar and the journal still read only the old template field,
+  so a day scored 100 in one place and "no score" in the other two.
+
+  One query for the whole batch - these callers load a month at a time.
+*/
+export async function getChecklistScores(
+  entries: Array<{
+    id: string;
+    pre_trade_emotional_state?: number | null;
+    pre_trade_focus?: number | null;
+    pre_trade_confidence?: number | null;
+  }>
+): Promise<Map<string, number | null>> {
+  const result = new Map<string, number | null>();
+  if (entries.length === 0) return result;
+
+  const { data: checks } = await supabase
+    .from('journal_entry_psychology_checks')
+    .select('journal_entry_id, confirmed')
+    .in('journal_entry_id', entries.map((e) => e.id))
+    // `confirmed` is tri-state; true and false both count as answered, null
+    // means the question was never reached.
+    .not('confirmed', 'is', null);
+
+  const answeredByEntry = new Map<string, number>();
+  for (const row of checks ?? []) {
+    const id = (row as { journal_entry_id: string }).journal_entry_id;
+    answeredByEntry.set(id, (answeredByEntry.get(id) ?? 0) + 1);
+  }
+
+  for (const entry of entries) {
+    result.set(
+      entry.id,
+      calculateChecklistScore(answeredByEntry.get(entry.id) ?? 0, [
+        entry.pre_trade_emotional_state,
+        entry.pre_trade_focus,
+        entry.pre_trade_confidence,
+      ])
+    );
+  }
+  return result;
+}
+
 export async function getPsychologyScores(
   timeFrame: TimeFrame = 'weekly'
 ): Promise<PsychologyScoreAggregates> {
@@ -109,22 +158,7 @@ export async function getPsychologyScores(
       per entry - these pages load a month at a time and per-entry lookups
       would be dozens of round trips for data this small.
     */
-    const entryIds = entries.map(e => e.id as string);
-    const answeredByEntry = new Map<string, number>();
-    if (entryIds.length > 0) {
-      const { data: checks } = await supabase
-        .from('journal_entry_psychology_checks')
-        .select('journal_entry_id, confirmed')
-        .in('journal_entry_id', entryIds)
-        // `confirmed` is the tri-state: true, false, or null for unanswered.
-        // Both true and false count as answered - that is the whole point.
-        .not('confirmed', 'is', null);
-
-      for (const row of checks ?? []) {
-        const id = (row as { journal_entry_id: string }).journal_entry_id;
-        answeredByEntry.set(id, (answeredByEntry.get(id) ?? 0) + 1);
-      }
-    }
+    const checklistScores = await getChecklistScores(entries as any);
 
     const scores: PsychologyScoreData[] = entries
       .map(entry => {
@@ -132,10 +166,7 @@ export async function getPsychologyScores(
         const rawTemplateScore = templateData?.end_of_day_summary?.nova_score;
         const templateScore = typeof rawTemplateScore === 'number' ? rawTemplateScore : null;
 
-        const checklistScore = calculateChecklistScore(
-          answeredByEntry.get(entry.id as string) ?? 0,
-          [entry.pre_trade_emotional_state, entry.pre_trade_focus, entry.pre_trade_confidence]
-        );
+        const checklistScore = checklistScores.get(entry.id as string) ?? null;
 
         const score = combinePsychologyScores(templateScore, checklistScore);
         if (score === null) {

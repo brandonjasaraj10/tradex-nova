@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { calculateChecklistScore } from '../services/psychologyScore';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -85,6 +85,7 @@ export default function Journal() {
   const { showToast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const { refreshTrigger } = useDataSync();
+
   const { accounts, selectedAccount, setSelectedAccount, refreshAccounts } = useAccount();
   const [folders, setFolders] = useState<JournalFolder[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<JournalFolder | null>(null);
@@ -159,6 +160,25 @@ export default function Journal() {
   const [checklistTab, setChecklistTab] = useState<'confluences' | 'rules' | 'psychology'>('confluences');
   const [psychChecks, setPsychChecks] = useState<PsychologyCheck[]>([]);
   const [psychStatus, setPsychStatus] = useState<Map<string, boolean | null>>(new Map());
+  /*
+    The checklist's contribution to today's psychology score.
+
+    Derived once here because two places need the same number: the small
+    figure beside the checklist, and the End of Day panel inside the
+    psychology template - which otherwise reported "fill out at least half"
+    on a day the checklist had already scored.
+  */
+  const currentChecklistScore = useMemo(
+    () => calculateChecklistScore(
+      Array.from(psychStatus.values()).filter((v) => v !== null).length,
+      [
+        entryForm.pre_trade_emotional_state,
+        entryForm.pre_trade_focus,
+        entryForm.pre_trade_confidence,
+      ]
+    ),
+    [psychStatus, entryForm.pre_trade_emotional_state, entryForm.pre_trade_focus, entryForm.pre_trade_confidence]
+  );
   const [showPsychologyTemplate, setShowPsychologyTemplate] = useState(false);
   const [isProcessingVoice, setIsProcessingVoice] = useState(false);
   const [isAutoFilling, setIsAutoFilling] = useState(false);
@@ -1916,6 +1936,7 @@ export default function Journal() {
                     <PsychologyTemplate
                       data={entryForm.template_data}
                       onChange={(data) => setEntryForm({ ...entryForm, template_data: data })}
+                      checklistScore={currentChecklistScore}
                     />
                   </motion.div>
                 )}
@@ -2300,12 +2321,7 @@ export default function Journal() {
                         would be worse than showing nothing.
                       */}
                       {(() => {
-                        const answered = Array.from(psychStatus.values()).filter((v) => v !== null).length;
-                        const score = calculateChecklistScore(answered, [
-                          entryForm.pre_trade_emotional_state,
-                          entryForm.pre_trade_focus,
-                          entryForm.pre_trade_confidence,
-                        ]);
+                        const score = currentChecklistScore;
                         return (
                           <div className="flex items-start justify-between gap-3 mb-4">
                             {/*
