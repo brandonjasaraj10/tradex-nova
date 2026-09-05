@@ -84,7 +84,7 @@ const formatLocalDate = (date: Date) => {
 export default function Journal() {
   const { showToast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { refreshTrigger, forceRefresh } = useDataSync();
+  const { refreshTrigger } = useDataSync();
   const { accounts, selectedAccount, setSelectedAccount, refreshAccounts } = useAccount();
   const [folders, setFolders] = useState<JournalFolder[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<JournalFolder | null>(null);
@@ -556,25 +556,18 @@ export default function Journal() {
       ]);
 
       /*
-        Tell the rest of the app the answers have landed.
+        Deliberately no forceRefresh() here.
 
-        The psychology score now counts the checklist, but the live-refresh
-        only watches tables carrying a user_id, and the answers table links
-        through journal_entry_id instead - so nothing announced them. Saving
-        the entry itself does fire a refresh, and it fires while these writes
-        are still in flight, so the score card reloaded a moment too early
-        and found no answers. Filling in the checklist appeared to score
-        nothing until the page was reloaded by hand.
+        Announcing the saved answers looks right and is not: this page listens
+        to the same trigger to reload its own folders and entry list, so every
+        autosave tore the page down and rebuilt it underneath whoever was
+        typing. Changing a rating from 5 to 3 flashed the whole journal.
 
-        Refreshing here, after the writes have resolved, is deterministic
-        where a subscription would be a race - and needs no unfiltered
-        realtime subscription, which on a table without a user_id would mean
-        receiving other people's row changes.
+        Nothing needs it. The score beside the checklist is computed from the
+        form as you fill it in, so it updates instantly without a round trip,
+        and the dashboard's score card reloads when it mounts - which is the
+        only moment it can be looked at anyway.
       */
-      if (psychUpdates.length > 0) {
-        forceRefresh();
-      }
-
       loadDailyTrades();
     } catch (error) {
       console.error('Error auto-saving entry:', error);
