@@ -27,6 +27,7 @@ import { captureAppPageView, identifyUser, resetUser } from './lib/productAnalyt
 const Sales = lazyWithReload('Sales', () => import('./pages/Sales'));
 const Auth = lazyWithReload('Auth', () => import('./pages/Auth'));
 const Payment = lazyWithReload('Payment', () => import('./pages/Payment'));
+const Affiliates = lazyWithReload('Affiliates', () => import('./pages/Affiliates'));
 const Dashboard = lazyWithReload('Dashboard', () => import('./pages/Dashboard'));
 const Journal = lazyWithReload('Journal', () => import('./pages/Journal'));
 const Analytics = lazyWithReload('Analytics', () => import('./pages/Analytics'));
@@ -41,7 +42,7 @@ const PrivacyPolicy = lazyWithReload('PrivacyPolicy', () => import('./pages/Priv
 const RiskDisclaimer = lazyWithReload('RiskDisclaimer', () => import('./pages/RiskDisclaimer'));
 const NotFound = lazyWithReload('NotFound', () => import('./pages/NotFound'));
 
-const PUBLIC_PATHS = ['/', '/auth', '/sales', '/terms', '/privacy', '/risk-disclaimer', '/payment'];
+const PUBLIC_PATHS = ['/', '/auth', '/sales', '/terms', '/privacy', '/risk-disclaimer', '/payment', '/affiliates'];
 
 function PublicLayout() {
   return (
@@ -53,6 +54,7 @@ function PublicLayout() {
             <Route path="/sales" element={<Sales />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/payment" element={<Payment />} />
+            <Route path="/affiliates" element={<Affiliates />} />
             <Route path="/terms" element={<TermsOfService />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/risk-disclaimer" element={<RiskDisclaimer />} />
