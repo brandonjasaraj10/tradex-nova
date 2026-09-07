@@ -35,6 +35,18 @@ function esc(value: unknown): string {
     .replace(/"/g, "&quot;");
 }
 
+/*
+  The logo, served from www rather than the bare domain.
+
+  tradexnova.com 308-redirects to www, and plenty of mail clients will not
+  follow a redirect for an image - they just show nothing. The www URL is the
+  one that returns the PNG directly.
+
+  It is a white mark on transparency, which is precisely why this email is
+  dark: on the old light background the logo would have been invisible.
+*/
+const LOGO_URL = "https://www.tradexnova.com/tradex_logo.png";
+
 function buildHtml(app: {
   name: string;
   email: string;
@@ -44,11 +56,11 @@ function buildHtml(app: {
 }): string {
   const row = (label: string, value: string) => `
     <tr>
-      <td style="padding:10px 0;border-bottom:1px solid #eeeeee;vertical-align:top;width:130px;">
-        <span style="font-size:13px;color:#777777;">${esc(label)}</span>
+      <td style="padding:12px 0;border-bottom:1px solid #1f1f1f;vertical-align:top;width:130px;">
+        <span style="font-size:13px;color:#8b8b8b;">${esc(label)}</span>
       </td>
-      <td style="padding:10px 0;border-bottom:1px solid #eeeeee;vertical-align:top;">
-        <span style="font-size:14px;color:#111111;">${value}</span>
+      <td style="padding:12px 0;border-bottom:1px solid #1f1f1f;vertical-align:top;">
+        <span style="font-size:14px;color:#ffffff;">${value}</span>
       </td>
     </tr>`;
 
@@ -58,43 +70,57 @@ function buildHtml(app: {
       // Only http(s) becomes a clickable link. Anything else is shown as text,
       // so a javascript: or data: URL cannot become a live link in the inbox.
       return /^https?:\/\//i.test(u)
-        ? `<a href="${safe}" style="color:#3B82F6;">${safe}</a>`
+        ? `<a href="${safe}" style="color:#60A5FA;text-decoration:none;">${safe}</a>`
         : safe;
     })
     .join("<br>");
 
+  /*
+    Dark, and built to survive a mail client that has its own opinions.
+
+    Every background is set with BOTH a bgcolor attribute and an inline style:
+    plenty of clients strip styles from <body>, and one that keeps the dark
+    text while dropping the dark background produces black-on-black. The
+    attribute is the belt to the style's braces.
+
+    Colours are the app's own tokens - #0A0A0A surface, #3B82F6 and #60A5FA
+    for accents - so the email reads as the same product as the dashboard.
+  */
   return `
 <!DOCTYPE html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="margin:0;padding:0;background-color:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
+  <meta name="supported-color-schemes" content="dark">
+</head>
+<body bgcolor="#000000" style="margin:0;padding:0;background-color:#000000;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#000000" style="background-color:#000000;">
     <tr><td align="center" style="padding:40px 16px;">
       <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:560px;">
 
         <tr><td align="center" style="padding-bottom:28px;">
-          <table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr>
-            <td valign="middle" style="padding-right:4px;"><div style="width:4px;height:22px;background-color:#3B82F6;border-radius:2px;font-size:0;line-height:22px;">&nbsp;</div></td>
-            <td valign="middle" style="padding-right:4px;"><div style="width:4px;height:30px;background-color:#3B82F6;border-radius:2px;font-size:0;line-height:30px;">&nbsp;</div></td>
-            <td valign="middle" style="padding-right:12px;"><div style="width:4px;height:14px;background-color:#3B82F6;border-radius:2px;font-size:0;line-height:14px;">&nbsp;</div></td>
-            <td valign="middle"><span style="font-size:24px;font-weight:700;letter-spacing:-0.5px;color:#111111;">TradeX</span></td>
-          </tr></table>
+          <!-- alt text is white, so a client that blocks images still shows
+               the brand rather than a broken-image icon on black. -->
+          <img src="${LOGO_URL}" width="72" height="72" alt="TradeX"
+               style="display:block;border:0;outline:none;text-decoration:none;color:#ffffff;font-size:22px;font-weight:700;">
         </td></tr>
 
         <tr><td>
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#ffffff;border:1px solid #e2e2e2;border-radius:14px;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#0A0A0A" style="background-color:#0A0A0A;border:1px solid #1f1f1f;border-radius:14px;">
             <tr><td style="padding:32px;">
-              <p style="margin:0 0 4px 0;font-size:13px;font-weight:700;color:#3B82F6;letter-spacing:0.4px;text-transform:uppercase;">New affiliate application</p>
-              <h1 style="margin:0 0 24px 0;font-size:21px;font-weight:700;color:#111111;letter-spacing:-0.3px;">${esc(app.name)}</h1>
+              <p style="margin:0 0 4px 0;font-size:13px;font-weight:700;color:#60A5FA;letter-spacing:0.4px;text-transform:uppercase;">New affiliate application</p>
+              <h1 style="margin:0 0 24px 0;font-size:21px;font-weight:700;color:#ffffff;letter-spacing:-0.3px;">${esc(app.name)}</h1>
 
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-                ${row("Email", `<a href="mailto:${esc(app.email)}" style="color:#3B82F6;">${esc(app.email)}</a>`)}
+                ${row("Email", `<a href="mailto:${esc(app.email)}" style="color:#60A5FA;text-decoration:none;">${esc(app.email)}</a>`)}
                 ${row("Promoting on", links || "&mdash;")}
                 ${row("Audience", esc(app.audience_size) || "&mdash;")}
                 ${app.why ? row("Why TradeX", esc(app.why).replace(/\n/g, "<br>")) : ""}
               </table>
 
-              <p style="margin:24px 0 0 0;font-size:14px;line-height:1.6;color:#555555;">
+              <p style="margin:24px 0 0 0;font-size:14px;line-height:1.6;color:#8b8b8b;">
                 Reply to this email to answer them directly &mdash; it goes straight to their inbox.
               </p>
             </td></tr>
