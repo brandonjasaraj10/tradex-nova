@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { motion } from 'framer-motion';
-import { Link2, CheckCircle2, AlertCircle, Trash2, Clock, Upload, Plus, X, RefreshCw, FileUp, DollarSign } from 'lucide-react';
+import { Link2, CheckCircle2, AlertCircle, Trash2, Clock, Upload, Plus, X, RefreshCw, FileUp, DollarSign, Pencil } from 'lucide-react';
 import Button from '../shared/Button';
 import ConfirmModal from '../shared/ConfirmModal';
 import { brokerService, type BrokerConnection, type BrokerFromAPI } from '../../services/brokerService';
@@ -28,6 +28,17 @@ export default function BrokerConnectionsList() {
   const [selectedBrokerId, setSelectedBrokerId] = useState('');
   const [otherBrokerName, setOtherBrokerName] = useState('');
   const [editingBalance, setEditingBalance] = useState<BrokerConnection | null>(null);
+  /*
+    Renaming an account, inline.
+
+    An account could be named once when it was created and never again -
+    so a typo, or a name that stopped fitting after a prop firm change,
+    was permanent unless you deleted the account and lost its trades with
+    it.
+  */
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [savingRename, setSavingRename] = useState(false);
   const [startingBalance, setStartingBalance] = useState('');
   const [currency, setCurrency] = useState('USD');
   const [ownershipType, setOwnershipType] = useState<'personal' | 'funded' | 'prop'>('personal');
@@ -154,6 +165,37 @@ export default function BrokerConnectionsList() {
       showToast('Could not create that account. Please try again.', 'error');
     } finally {
       setIsCreating(false);
+    }
+  };
+
+  const saveRename = async (connection: BrokerConnection) => {
+    const nextName = renameValue.trim();
+    setRenamingId(null);
+
+    // Unchanged, or emptied entirely: leave the account exactly as it was
+    // rather than writing a blank name nothing can be identified by.
+    if (!nextName || nextName === connection.account_name) return;
+
+    setSavingRename(true);
+    try {
+      const { error } = await supabase
+        .from('user_broker_connections')
+        .update({ account_name: nextName })
+        .eq('id', connection.id);
+
+      if (error) throw error;
+
+      await loadConnections();
+      await refreshAccounts();
+      showToast('Account renamed.', 'success');
+    } catch (error) {
+      console.error('Rename error:', error);
+      showToast(
+        error instanceof Error ? error.message : 'Could not rename that account.',
+        'error'
+      );
+    } finally {
+      setSavingRename(false);
     }
   };
 
@@ -308,7 +350,32 @@ export default function BrokerConnectionsList() {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <h3 className="font-medium text-lg">{connection.account_name}</h3>
+                  {renamingId === connection.id ? (
+                    <input
+                      autoFocus
+                      value={renameValue}
+                      disabled={savingRename}
+                      onChange={(e) => setRenameValue(e.target.value)}
+                      onBlur={() => saveRename(connection)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          saveRename(connection);
+                        }
+                        // Escape abandons the edit. Clearing the value first
+                        // means the blur that follows sees nothing to save.
+                        if (e.key === 'Escape') {
+                          setRenameValue('');
+                          setRenamingId(null);
+                        }
+                      }}
+                      maxLength={60}
+                      aria-label="Account name"
+                      className="font-medium text-lg bg-black/40 border border-blue-400/40 rounded-md px-2 py-0.5 min-w-0 w-48 focus:outline-none focus:border-blue-400"
+                    />
+                  ) : (
+                    <h3 className="font-medium text-lg">{connection.account_name}</h3>
+                  )}
                   {getStatusBadge(connection.status)}
                   <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs bg-white/5 text-gray-400 border border-white/10">
                     <Upload className="w-3 h-3" />
@@ -395,6 +462,16 @@ export default function BrokerConnectionsList() {
               >
                 <Upload className="w-4 h-4" />
                 {uploadingIds.has(connection.id) ? 'Uploading...' : 'Import'}
+              </button>
+              <button
+                onClick={() => {
+                  setRenameValue(connection.account_name);
+                  setRenamingId(connection.id);
+                }}
+                className="p-2 hover:bg-blue-500/10 rounded-lg transition-colors group"
+                title="Rename account"
+              >
+                <Pencil className="w-4 h-4 text-gray-400 group-hover:text-blue-400 transition-colors" />
               </button>
               <button
                 onClick={() => setEditingBalance(connection)}

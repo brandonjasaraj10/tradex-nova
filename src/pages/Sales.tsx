@@ -425,14 +425,23 @@ export default function Sales() {
                                 {hasTrades && (
                                   <div className="text-center">
                                     <div className="text-[9px]">{data.trades}t</div>
-                                    <div className="text-[9px] font-bold">${Math.abs(data.pnl)}</div>
+                                    {/*
+                                      Math.abs() alone dropped the minus, so a
+                                      losing day read as "$180" - the same as a
+                                      winning one, with only the grey to tell
+                                      them apart. The sign goes before the
+                                      currency, not inside the number.
+                                    */}
+                                    <div className="text-[9px] font-bold">
+                                      {data.pnl < 0 ? '-' : ''}${Math.abs(data.pnl)}
+                                    </div>
                                   </div>
                                 )}
                                 {hasTrades && (
                                   <div className="absolute inset-0 opacity-0 group-hover/day:opacity-100 transition-opacity bg-black/90 backdrop-blur-sm rounded-md flex items-center justify-center border border-white/20">
                                     <div className="text-center px-1">
                                       <div className={`font-bold text-sm ${isWin ? 'text-blue-400' : 'text-gray-400'}`}>
-                                        {isWin ? '+' : ''}${data.pnl}
+                                        {isWin ? '+' : '-'}${Math.abs(data.pnl)}
                                       </div>
                                       <div className="text-gray-500 text-[10px]">{data.trades} trades</div>
                                     </div>
