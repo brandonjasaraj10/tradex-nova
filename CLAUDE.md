@@ -431,6 +431,47 @@ with.
   scoping would need a schema change plus a decision about what "All
   Accounts" means — worth doing later, not wrong in the meantime.
 
+## Branching & parallel work
+
+**[Added 2026-09-07]** Everything up to this point was built directly on
+`main`. That stops here: several features are now being built in parallel
+(affiliate page, leaderboard/gamification, mentor mode, MT4/MT5 sync, an
+iOS app), and a half-finished feature sitting on `main` blocks the one
+thing that must never be blocked — shipping an urgent fix for a paying
+user.
+
+**The rule: `main` is always deployable.** Feature work lives on a branch
+named `feature/<thing>`. A production bug gets fixed from `main` and
+pushed on its own, with no half-built work dragged along.
+
+**Vercel gives every branch its own preview URL automatically**, so a
+feature can be clicked through on a real URL — on a phone, shared with
+someone — while tradexnova.com carries on untouched. The `VITE_*`
+environment variables are already scoped to Preview as well as
+Production, so previews get real data.
+
+**The trap, and it is specific to this project: branches do NOT isolate
+the database.** There is one Supabase project. A migration applies to
+production the moment it runs, whatever branch the code is on. Edge
+functions deploy the same way. So:
+
+- **Additive is safe while on a branch** — a new table nothing reads yet,
+  or a new nullable column, is harmless in production.
+- **Altering or removing an existing table/column is NOT** — that hits
+  live users while the code depending on it is still unmerged. Those
+  migrations wait until the feature is ready to merge, and get called out
+  explicitly before being applied.
+
+**Merging to `main` is what deploys.** Pushing a feature branch is safe
+and deploys nothing to production, so branch pushes do not need the usual
+"ask before deploying" treatment. Merging to `main` does — that is the
+moment real users see it, and the Saturday cadence and explicit go-ahead
+apply to the merge, not to branch commits.
+
+**Two branches in flight at most, ideally one.** Solo development with
+five long-lived branches means five things drifting away from `main` and
+from each other, and the merges become their own project.
+
 ## How to work with me
 
 - I'm not a developer. Explain things in plain English, no jargon.
