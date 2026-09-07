@@ -63,6 +63,15 @@ export default defineConfig({
 
         const filesToCopy = [
           'tradex_logo.png',
+          /*
+            The share preview image, referenced by og:image and
+            twitter:image in index.html. It was missing from this list, so
+            the file never reached dist and the URL returned the SPA's HTML
+            instead of a PNG - every share of tradexnova.com on Instagram,
+            iMessage or Discord showed an empty grey box where the preview
+            should be. Seen happening on a real shared link.
+          */
+          'trade_x_logo.png',
           'tradex-icon.svg',
           'tradex-logo.svg',
           'tradex-tab-icon.svg',
