@@ -1,6 +1,7 @@
 import { useState, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, TrendingUp, Users, Wallet } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ArrowLeft, CheckCircle2, TrendingUp, Users, Wallet, Plus, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 /*
@@ -23,10 +24,23 @@ const AUDIENCE_SIZES = [
   '50,000+',
 ] as const;
 
+const COMMISSION_RATE = 0.2;
+const MONTHLY_PRICE = 24.99;
+const COMMISSION_MONTHS = 12;
+
+// The glow used on the NOVA score and the weekly summary card. Reused rather
+// than invented so this page reads as the same product.
+const BRAND_GLOW = '0 0 20px rgba(59, 130, 246, 0.15), inset 0 0 40px rgba(59, 130, 246, 0.05)';
+
 export default function Affiliates() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [promoUrl, setPromoUrl] = useState('');
+  /*
+    Several links, not one. Someone with a channel, a Discord and a newsletter
+    should not have to pick their favourite - and which platforms they reach
+    people on is most of what makes an application worth accepting.
+  */
+  const [promoUrls, setPromoUrls] = useState<string[]>(['']);
   const [audienceSize, setAudienceSize] = useState<string>(AUDIENCE_SIZES[0]);
   const [why, setWhy] = useState('');
   /*
@@ -41,6 +55,12 @@ export default function Affiliates() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const updateUrl = (index: number, value: string) =>
+    setPromoUrls((prev) => prev.map((u, i) => (i === index ? value : u)));
+  const addUrl = () => setPromoUrls((prev) => [...prev, '']);
+  const removeUrl = (index: number) =>
+    setPromoUrls((prev) => prev.filter((_, i) => i !== index));
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (submitting) return;
@@ -49,6 +69,12 @@ export default function Affiliates() {
     // whoever wrote it to try again without the trap.
     if (website.trim()) {
       setSubmitted(true);
+      return;
+    }
+
+    const links = promoUrls.map((u) => u.trim()).filter(Boolean);
+    if (links.length === 0) {
+      setError('Please add at least one link to where you would promote TradeX.');
       return;
     }
 
@@ -61,7 +87,7 @@ export default function Affiliates() {
         .insert({
           name: name.trim(),
           email: email.trim(),
-          promo_url: promoUrl.trim(),
+          promo_urls: links,
           audience_size: audienceSize,
           why: why.trim() || null,
         });
@@ -69,8 +95,18 @@ export default function Affiliates() {
       if (insertError) throw insertError;
       setSubmitted(true);
     } catch (err) {
+      /*
+        The daily cap raises a message written for a person to read, so show
+        it rather than burying it under a generic failure - being told "you
+        have already applied today" is useful, "something went wrong" is not.
+      */
+      const raw = (err as { message?: string })?.message ?? '';
       console.error('Affiliate application failed:', err);
-      setError('Something went wrong sending that. Please try again, or email tradenovaai@gmail.com.');
+      setError(
+        raw.includes('already applied')
+          ? raw
+          : 'Something went wrong sending that. Please try again, or email tradenovaai@gmail.com.'
+      );
     } finally {
       setSubmitting(false);
     }
@@ -79,9 +115,16 @@ export default function Affiliates() {
   if (submitted) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center px-4 py-16">
-        <div className="max-w-md w-full text-center">
-          <div className="w-14 h-14 rounded-full bg-brand-blue/10 border border-brand-blue-light/30 flex items-center justify-center mx-auto mb-6">
-            <CheckCircle2 className="w-7 h-7 text-brand-blue-light" />
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="max-w-md w-full text-center"
+        >
+          <div
+            className="w-16 h-16 rounded-full bg-brand-blue/10 border border-brand-blue-light/30 flex items-center justify-center mx-auto mb-6"
+            style={{ boxShadow: BRAND_GLOW }}
+          >
+            <CheckCircle2 className="w-8 h-8 text-brand-blue-light" />
           </div>
           <h1 className="text-2xl font-bold mb-3">Application received</h1>
           <p className="text-gray-400 mb-8">
@@ -95,7 +138,7 @@ export default function Affiliates() {
             <ArrowLeft className="w-4 h-4" />
             Back to TradeX
           </Link>
-        </div>
+        </motion.div>
       </div>
     );
   }
@@ -105,8 +148,14 @@ export default function Affiliates() {
     'focus:outline-none focus:border-brand-blue-light/50 focus:ring-1 focus:ring-brand-blue-light/30 transition-colors';
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+    <div className="min-h-screen bg-black text-white relative overflow-hidden">
+      {/* Same soft blue wash the paywall and dashboard use, so the page does
+          not read as a different product. */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-brand-blue/[0.07] rounded-full blur-3xl" />
+      </div>
+
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-12 sm:py-16 relative z-10">
         <Link
           to="/"
           className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-10"
@@ -115,23 +164,69 @@ export default function Affiliates() {
           Back to TradeX
         </Link>
 
-        <h1 className="text-3xl sm:text-4xl font-bold mb-4">Become a TradeX affiliate</h1>
-        <p className="text-lg text-gray-300 mb-10">
-          Earn <span className="text-brand-blue-light font-semibold">20% recurring commission
-          for 12 months</span> on every trader you refer.
-        </p>
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-brand-blue/10 text-brand-blue-light border border-brand-blue-light/30 mb-5">
+            Affiliate programme
+          </span>
+
+          {/* leading-normal, not leading-tight: a clipped descender on a
+              gradient heading is the exact bug fixed on the landing page. */}
+          <h1 className="text-3xl sm:text-5xl font-bold mb-4 leading-normal bg-gradient-to-r from-white via-white to-gray-400 bg-clip-text text-transparent">
+            Get paid to share TradeX
+          </h1>
+          <p className="text-lg text-gray-300 mb-10">
+            Earn{' '}
+            <span className="text-brand-blue-light font-semibold">
+              20% recurring commission for 12 months
+            </span>{' '}
+            on every trader you refer.
+          </p>
+        </motion.div>
+
+        {/* What the rate actually means in money. A percentage is abstract;
+            "ten referrals is $600 over the year" is not. */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+          className="rounded-2xl border border-brand-blue-light/30 bg-brand-surface p-5 sm:p-6 mb-6"
+          style={{ boxShadow: BRAND_GLOW }}
+        >
+          <p className="text-xs uppercase tracking-wider text-gray-500 mb-4">What that looks like</p>
+          <div className="grid grid-cols-3 gap-3 text-center">
+            {[10, 25, 50].map((referrals) => (
+              <div key={referrals}>
+                <p className="text-xl sm:text-2xl font-bold text-brand-blue-light tabular-nums">
+                  ${Math.round(referrals * MONTHLY_PRICE * COMMISSION_RATE * COMMISSION_MONTHS).toLocaleString()}
+                </p>
+                <p className="text-[11px] text-gray-500 mt-1">
+                  {referrals} referrals
+                </p>
+              </div>
+            ))}
+          </div>
+          <p className="text-[11px] text-gray-500 mt-4 leading-relaxed">
+            Over 12 months, if they stay subscribed. Based on the $24.99/month plan.
+          </p>
+        </motion.div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-12">
           {[
             { Icon: Wallet, title: '20% recurring', body: 'On every payment they make, for their first 12 months.' },
             { Icon: TrendingUp, title: 'Paid monthly', body: 'Commission arrives as long as your referral stays subscribed.' },
             { Icon: Users, title: 'Any audience', body: 'YouTube, Discord, newsletter, a trading community - all welcome.' },
-          ].map(({ Icon, title, body }) => (
-            <div key={title} className="p-4 rounded-xl bg-brand-surface border border-white/10">
+          ].map(({ Icon, title, body }, i) => (
+            <motion.div
+              key={title}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, delay: 0.15 + i * 0.05 }}
+              className="p-4 rounded-xl bg-brand-surface border border-white/10 hover:border-brand-blue-light/30 transition-colors"
+            >
               <Icon className="w-5 h-5 text-brand-blue-light mb-3" />
               <p className="font-semibold text-sm mb-1">{title}</p>
               <p className="text-xs text-gray-400 leading-relaxed">{body}</p>
-            </div>
+            </motion.div>
           ))}
         </div>
 
@@ -149,13 +244,42 @@ export default function Affiliates() {
           </div>
 
           <div>
-            <label htmlFor="aff-url" className="block text-sm font-medium mb-2">
+            <label htmlFor="aff-url-0" className="block text-sm font-medium mb-2">
               Where would you promote TradeX?
             </label>
-            <input id="aff-url" required value={promoUrl} onChange={(e) => setPromoUrl(e.target.value)}
-              className={inputClass} placeholder="youtube.com/@yourchannel" />
-            <p className="text-xs text-gray-500 mt-1.5">
-              A channel, profile, community or site &mdash; wherever your audience is.
+            <div className="space-y-2">
+              {promoUrls.map((url, i) => (
+                <div key={i} className="flex gap-2">
+                  <input
+                    id={`aff-url-${i}`}
+                    value={url}
+                    onChange={(e) => updateUrl(i, e.target.value)}
+                    className={inputClass}
+                    placeholder={i === 0 ? 'youtube.com/@yourchannel' : 'another link'}
+                  />
+                  {promoUrls.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeUrl(i)}
+                      aria-label={`Remove link ${i + 1}`}
+                      className="flex-shrink-0 px-3 rounded-lg border border-white/10 text-gray-500 hover:text-white hover:border-white/20 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={addUrl}
+              className="mt-2 inline-flex items-center gap-1.5 text-xs text-brand-blue-light hover:text-white transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Add another link
+            </button>
+            <p className="text-xs text-gray-500 mt-2">
+              A channel, profile, community or site &mdash; add as many as you have.
             </p>
           </div>
 
@@ -179,9 +303,9 @@ export default function Affiliates() {
           </div>
 
           {/*
-            The honeypot. Hidden from people and from screen readers, left in
-            the tab order's blind spot - a bot filling every field will fill
-            this one, which is the entire signal.
+            The honeypot. Hidden from people and from screen readers, left out
+            of the tab order - a bot filling every field will fill this one,
+            which is the entire signal.
           */}
           <div aria-hidden="true" className="absolute left-[-9999px] w-px h-px overflow-hidden">
             <label htmlFor="aff-website">Website</label>
