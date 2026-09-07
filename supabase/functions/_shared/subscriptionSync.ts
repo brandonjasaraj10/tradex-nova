@@ -75,55 +75,60 @@ const SUPPORT_EMAIL = 'tradenovaai@gmail.com';
   back, and it is still unread. Email is the only channel that reaches a
   person who has stopped visiting.
 
-  Built like the welcome email deliberately - mid-tone colours that survive
-  Gmail's dark-mode inversion, a table-drawn logo because most clients block
-  remote images, and a real reply-to so a confused customer reaches a human.
+  Dark, matching the app and the other TradeX emails. Every background carries
+  a bgcolor attribute as well as an inline style, because some clients strip
+  styles and would otherwise render light text on white; the logo has white
+  alt text so a client blocking remote images shows the word rather than a
+  broken icon.
 */
+const LOGO_URL = 'https://www.tradexnova.com/tradex_logo.png';
+
 function buildPaymentFailedHtml(daysLeft: number, amountLabel: string): string {
   return `
 <!DOCTYPE html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="margin:0;padding:0;background-color:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
+  <meta name="supported-color-schemes" content="dark">
+</head>
+<body bgcolor="#000000" style="margin:0;padding:0;background-color:#000000;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#000000" style="background-color:#000000;">
     <tr><td align="center" style="padding:40px 16px;">
       <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:560px;">
 
         <tr><td align="center" style="padding-bottom:32px;">
-          <table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr>
-            <td valign="middle" style="padding-right:4px;"><div style="width:4px;height:22px;background-color:#3B82F6;border-radius:2px;font-size:0;line-height:22px;">&nbsp;</div></td>
-            <td valign="middle" style="padding-right:4px;"><div style="width:4px;height:30px;background-color:#3B82F6;border-radius:2px;font-size:0;line-height:30px;">&nbsp;</div></td>
-            <td valign="middle" style="padding-right:12px;"><div style="width:4px;height:14px;background-color:#3B82F6;border-radius:2px;font-size:0;line-height:14px;">&nbsp;</div></td>
-            <td valign="middle"><span style="font-size:26px;font-weight:700;letter-spacing:-0.5px;color:#111111;">TradeX</span></td>
-          </tr></table>
+          <img src="${LOGO_URL}" width="72" height="72" alt="TradeX"
+               style="display:block;border:0;outline:none;text-decoration:none;color:#ffffff;font-size:22px;font-weight:700;">
         </td></tr>
 
         <tr><td>
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#ffffff;border:1px solid #e2e2e2;border-radius:14px;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#0A0A0A" style="background-color:#0A0A0A;border:1px solid #1f1f1f;border-radius:14px;">
             <tr><td style="padding:36px 32px;">
-              <h1 style="margin:0 0 12px 0;font-size:21px;font-weight:700;color:#111111;letter-spacing:-0.3px;">Your last payment didn&rsquo;t go through</h1>
-              <p style="margin:0 0 24px 0;font-size:15px;line-height:1.6;color:#555555;">We tried to charge ${amountLabel} and your bank declined it. This happens most often with an expired card or a new card number &mdash; it usually is not a problem with your account.</p>
+              <h1 style="margin:0 0 12px 0;font-size:21px;font-weight:700;color:#ffffff;letter-spacing:-0.3px;">Your last payment didn&rsquo;t go through</h1>
+              <p style="margin:0 0 24px 0;font-size:15px;line-height:1.6;color:#8b8b8b;">We tried to charge ${amountLabel} and your bank declined it. This happens most often with an expired card or a new card number &mdash; it usually is not a problem with your account.</p>
 
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#F5F8FF;border:1px solid #D6E4FF;border-radius:10px;margin-bottom:24px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#0d1a2f" style="background-color:#0d1a2f;border:1px solid #1e3a5f;border-radius:10px;margin-bottom:24px;">
                 <tr><td style="padding:16px 18px;">
-                  <p style="margin:0;font-size:15px;line-height:1.6;color:#111111;"><strong>Your account stays open for ${daysLeft} more ${daysLeft === 1 ? 'day' : 'days'}.</strong></p>
-                  <p style="margin:6px 0 0 0;font-size:14px;line-height:1.6;color:#555555;">Nothing is deleted. Update your card before then and everything carries on as normal.</p>
+                  <p style="margin:0;font-size:15px;line-height:1.6;color:#ffffff;"><strong>Your account stays open for ${daysLeft} more ${daysLeft === 1 ? 'day' : 'days'}.</strong></p>
+                  <p style="margin:6px 0 0 0;font-size:14px;line-height:1.6;color:#8b8b8b;">Nothing is deleted. Update your card before then and everything carries on as normal.</p>
                 </td></tr>
               </table>
 
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-                <tr><td align="center" style="background-color:#3B82F6;border-radius:10px;">
+                <tr><td align="center" bgcolor="#3B82F6" style="background-color:#3B82F6;border-radius:10px;">
                   <a href="${APP_URL}/settings" style="display:block;padding:15px 24px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;">Update your payment method</a>
                 </td></tr>
               </table>
 
-              <p style="margin:24px 0 0 0;font-size:14px;line-height:1.6;color:#555555;">Already fixed it, or think this is a mistake? Reply to this email and a human will look.</p>
+              <p style="margin:24px 0 0 0;font-size:14px;line-height:1.6;color:#8b8b8b;">Already fixed it, or think this is a mistake? Reply to this email and a human will look.</p>
             </td></tr>
           </table>
         </td></tr>
 
         <tr><td align="center" style="padding:28px 0 0 0;">
-          <p style="margin:0;font-size:12px;color:#777777;">You&rsquo;re getting this because your TradeX subscription payment failed.</p>
+          <p style="margin:0;font-size:12px;color:#6b6b6b;">You&rsquo;re getting this because your TradeX subscription payment failed.</p>
         </td></tr>
 
       </table>
