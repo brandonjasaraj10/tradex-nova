@@ -10,6 +10,29 @@ import { supabase } from '../../lib/supabase';
 import { brokerService, type BrokerFromAPI } from '../../services/brokerService';
 import { useToast } from '../../lib/toastContext';
 
+/*
+  Which platform the account actually runs on, asked separately from which
+  broker or prop firm it is with. A firm like FTMO or Alpha Capital lets the
+  trader pick between MetaTrader, cTrader, DXtrade and TradeLocker, and each
+  of those would need its own sync integration - so the broker name on its
+  own tells us nothing about whether we could ever sync the account.
+
+  Optional: leaving it blank stores nothing rather than a wrong guess.
+*/
+const TRADING_PLATFORMS = [
+  { value: 'mt5', label: 'MetaTrader 5' },
+  { value: 'mt4', label: 'MetaTrader 4' },
+  { value: 'ctrader', label: 'cTrader' },
+  { value: 'dxtrade', label: 'DXtrade' },
+  { value: 'match_trader', label: 'Match-Trader' },
+  { value: 'tradelocker', label: 'TradeLocker' },
+  { value: 'tradovate', label: 'Tradovate' },
+  { value: 'rithmic', label: 'Rithmic' },
+  { value: 'ninjatrader', label: 'NinjaTrader' },
+  { value: 'tradingview', label: 'TradingView' },
+  { value: 'other', label: 'Other / not sure' },
+];
+
 interface Account {
   id: string;
   account_name: string | null;
@@ -38,6 +61,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
   const [startingBalance, setStartingBalance] = useState('');
   const [currency, setCurrency] = useState('USD');
   const [ownershipType, setOwnershipType] = useState<'personal' | 'funded' | 'prop'>('personal');
+  const [platform, setPlatform] = useState('');
   const selectorRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const panelShift = useClampedPanel(isOpen, selectorRef, panelRef);
@@ -101,6 +125,10 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
         connectionData.broker_id = selectedBrokerId;
       }
 
+      if (platform) {
+        connectionData.platform = platform;
+      }
+
       const { data: created, error } = await supabase
         .from('user_broker_connections')
         .insert(connectionData)
@@ -125,6 +153,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
       setStartingBalance('');
       setCurrency('USD');
       setOwnershipType('personal');
+      setPlatform('');
       setIsOpen(false);
 
       /*
@@ -303,6 +332,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
                   setStartingBalance('');
                   setCurrency('USD');
                   setOwnershipType('personal');
+                  setPlatform('');
                 }}
                 className="p-2 hover:bg-white/5 rounded-lg transition-colors"
               >
@@ -326,7 +356,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Broker / Platform
+                  Broker / Prop Firm
                 </label>
                 <select
                   value={selectedBrokerId}
@@ -350,6 +380,28 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
                     className="w-full mt-2 px-4 py-2.5 rounded-lg bg-black/30 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
                   />
                 )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Trading Platform
+                </label>
+                <select
+                  value={platform}
+                  onChange={(e) => setPlatform(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-lg bg-black/30 border border-white/10 text-white focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                >
+                  <option value="">Select a platform...</option>
+                  {TRADING_PLATFORMS.map((p) => (
+                    <option key={p.value} value={p.value}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Optional. The software you place trades in - helps us build
+                  automatic syncing for the platforms people actually use.
+                </p>
               </div>
 
               <div>
@@ -430,6 +482,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
                   setStartingBalance('');
                   setCurrency('USD');
                   setOwnershipType('personal');
+                  setPlatform('');
                 }}
               >
                 Cancel
