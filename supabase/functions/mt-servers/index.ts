@@ -79,7 +79,17 @@ Deno.serve(async (req: Request) => {
 
     const version = platform === "mt4" ? 4 : 5;
     const url =
-      `https://mt-provisioning-api-v1.new-york.agiliumtrade.ai/known-mt-servers/${version}/search` +
+      /*
+        Not a typo, and not regional. The provisioning API is one global
+        endpoint at "agiliumtrade.agiliumtrade.ai" - the doubled label is
+        genuinely what MetaApi serves, confirmed against the API URLs page
+        in our own dashboard. The regional pattern used by the client and
+        MetaStats APIs (mt-client-api-v1.<region>...) does NOT apply here:
+        that hostname isn't routed at all, and answers with a placeholder
+        Kubernetes certificate and a 404, which looks exactly like an
+        outage if you assume the URL is right.
+      */
+      `https://mt-provisioning-api-v1.agiliumtrade.agiliumtrade.ai/known-mt-servers/${version}/search` +
       `?query=${encodeURIComponent(query)}`;
 
     const res = await fetch(url, { headers: { "auth-token": token } });
