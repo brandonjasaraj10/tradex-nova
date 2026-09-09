@@ -10,6 +10,7 @@ import { supabase } from '../../lib/supabase';
 import { brokerService, type BrokerFromAPI } from '../../services/brokerService';
 import { useToast } from '../../lib/toastContext';
 import { BROKER_SYNC_ENABLED } from '../../lib/featureFlags';
+import { connectMetaTraderAccount } from '../../services/metaTraderConnect';
 import { searchMtServers, type MtServerSuggestion } from '../../services/mtServers';
 
 /*
@@ -73,6 +74,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
   const [mtLogin, setMtLogin] = useState('');
   const [mtServer, setMtServer] = useState('');
   const [mtInvestorPassword, setMtInvestorPassword] = useState('');
+  const [connectStatus, setConnectStatus] = useState('');
   const [serverSuggestions, setServerSuggestions] = useState<MtServerSuggestion[]>([]);
   const selectorRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -196,6 +198,36 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
         });
       }
 
+      /*
+        The account row exists either way. Syncing is an extra step on top
+        of it, so a failed connection leaves the user with a working manual
+        account and a message explaining what to fix - never a lost account
+        or a half-made one.
+      */
+      if (canAutoSync && autoSync && created?.id) {
+        setConnectStatus('Connecting to your broker...');
+        const result = await connectMetaTraderAccount({
+          connectionId: created.id,
+          login: mtLogin.trim(),
+          server: mtServer.trim(),
+          password: mtInvestorPassword,
+          platform: platform === 'mt4' ? 'mt4' : 'mt5',
+        });
+        setConnectStatus('');
+
+        if (!result.ok) {
+          showToast(`Account created, but syncing didn't connect: ${result.error}`, 'error');
+        } else if (result.connected) {
+          showToast('Account connected. Your trades will sync from now on.', 'success');
+        } else {
+          /*
+            Registered but not live yet. This is normal and resolves on its
+            own, so it shouldn't read as a failure.
+          */
+          showToast('Account connected. It may take a minute to finish syncing.', 'success');
+        }
+      }
+
       setShowAddAccount(false);
       setNewAccountName('');
       setSelectedBrokerId('');
@@ -208,6 +240,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
       setMtLogin('');
       setMtServer('');
       setMtInvestorPassword('');
+      setConnectStatus('');
       setIsOpen(false);
 
       /*
@@ -391,6 +424,8 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
                   setMtLogin('');
                   setMtServer('');
                   setMtInvestorPassword('');
+      setConnectStatus('');
+                  setConnectStatus('');
                 }}
                 className="p-2 hover:bg-white/5 rounded-lg transition-colors"
               >
@@ -641,6 +676,10 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
               </div>
             </div>
 
+            {connectStatus && (
+              <p className="text-xs text-blue-400 mt-4 text-right">{connectStatus}</p>
+            )}
+
             <div className="flex justify-end gap-3 mt-6">
               <Button
                 variant="ghost"
@@ -657,6 +696,8 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
                   setMtLogin('');
                   setMtServer('');
                   setMtInvestorPassword('');
+      setConnectStatus('');
+                  setConnectStatus('');
                 }}
               >
                 Cancel
