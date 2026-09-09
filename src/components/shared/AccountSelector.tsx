@@ -3,13 +3,14 @@ import { createPortal } from 'react-dom';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { useClampedPanel } from '../../hooks/useClampedPanel';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Check, Plus, FileUp, X } from 'lucide-react';
+import { ChevronDown, Check, Plus, FileUp, X, Info, ShieldCheck } from 'lucide-react';
 import Button from './Button';
 import CSVUpload from '../broker/CSVUpload';
 import { supabase } from '../../lib/supabase';
 import { brokerService, type BrokerFromAPI } from '../../services/brokerService';
 import { useToast } from '../../lib/toastContext';
 import { BROKER_SYNC_ENABLED } from '../../lib/featureFlags';
+import { searchMtServers, type MtServerSuggestion } from '../../services/mtServers';
 
 /*
   Which platform the account actually runs on, asked separately from which
@@ -72,6 +73,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
   const [mtLogin, setMtLogin] = useState('');
   const [mtServer, setMtServer] = useState('');
   const [mtInvestorPassword, setMtInvestorPassword] = useState('');
+  const [serverSuggestions, setServerSuggestions] = useState<MtServerSuggestion[]>([]);
   const selectorRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const panelShift = useClampedPanel(isOpen, selectorRef, panelRef);
@@ -101,6 +103,28 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
     setBrokers(data.filter(b => b.supported));
   };
 
+
+  /*
+    Look up matching servers as the user types. Debounced because this
+    leaves our servers and reaches MetaApi, and `cancelled` guards the
+    common case of a reply landing after the user has typed on.
+  */
+  useEffect(() => {
+    if (!BROKER_SYNC_ENABLED || (platform !== 'mt4' && platform !== 'mt5') || !autoSync) {
+      setServerSuggestions([]);
+      return;
+    }
+    if (mtServer.trim().length < 2) {
+      setServerSuggestions([]);
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      const results = await searchMtServers(platform, mtServer);
+      if (!cancelled) setServerSuggestions(results);
+    }, 300);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [platform, mtServer, autoSync]);
 
   /*
     The connect fields only make sense for a platform we can actually reach.
@@ -481,19 +505,47 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
                         </label>
                         <input
                           type="text"
+                          list="mt-server-suggestions"
+                          autoComplete="off"
                           value={mtServer}
                           onChange={(e) => setMtServer(e.target.value)}
-                          placeholder="e.g., FTMO-Server2"
+                          placeholder="Start typing your broker, e.g. FTMO"
                           className="w-full px-4 py-2.5 rounded-lg bg-black/30 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
                         />
+                        {/*
+                          A datalist rather than a select: it suggests without
+                          restricting, so a server missing from MetaApi's
+                          catalogue can still be typed in full.
+                        */}
+                        <datalist id="mt-server-suggestions">
+                          {serverSuggestions.map((s) => (
+                            <option key={`${s.broker}-${s.server}`} value={s.server}>
+                              {s.broker}
+                            </option>
+                          ))}
+                        </datalist>
                         <p className="text-xs text-gray-500 mt-1">
-                          Exactly as it appears in your terminal, under Tools &rarr; Options &rarr; Server.
+                          Type your broker's name to see matching servers, or enter it
+                          yourself - exactly as it appears in your terminal under
+                          Tools &rarr; Options &rarr; Server.
                         </p>
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                        <label className="flex items-center gap-1.5 text-sm font-medium text-gray-300 mb-2">
                           Investor Password *
+                          {/*
+                            The read-only nature of an investor password is the
+                            entire reason it is safe to hand over, so it gets an
+                            icon and a badge rather than only a line of small
+                            grey text underneath that nobody reads.
+                          */}
+                          <span
+                            className="text-gray-500"
+                            title="An investor password is MetaTrader's read-only login. It can view your account but cannot place, change or close a trade, and cannot withdraw."
+                          >
+                            <Info size={14} />
+                          </span>
                         </label>
                         <input
                           type="password"
@@ -503,10 +555,18 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
                           placeholder="Read-only password"
                           className="w-full px-4 py-2.5 rounded-lg bg-black/30 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
                         />
-                        <p className="text-xs text-gray-500 mt-1">
-                          Your <strong className="text-gray-400">investor</strong> password, not your main one. It can
-                          only read - nobody can place or close a trade with it. We use it once
-                          to set the connection up and never store it.
+                        <div className="flex items-start gap-1.5 mt-2 text-xs text-[#3B82F6]">
+                          <ShieldCheck size={14} className="mt-px shrink-0" />
+                          <span>
+                            Read-only access. An investor password can look at your
+                            account but can't place, close or change a trade, and can't
+                            withdraw.
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1.5">
+                          This is your <strong className="text-gray-400">investor</strong> password, not the
+                          one you log in with. We pass it to our data provider once to set the
+                          connection up and never store it.
                         </p>
                       </div>
                     </div>
