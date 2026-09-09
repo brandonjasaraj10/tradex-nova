@@ -9,8 +9,11 @@
   different integration. Without this we can only guess how much of the user
   base any given broker-sync build would actually reach.
 
-  Nullable on purpose - the dropdown is optional and every account that
-  already exists predates it, so NULL means "we don't know", not "none".
+  Nullable on purpose - the dropdown is required for new accounts, but every
+  account that already exists predates the question, so NULL means "created
+  before we asked", not "none". No constraint enforces the value list; the
+  dropdown is the only thing that writes here and a stray value is worth
+  seeing rather than rejecting.
 
   Additive only: a new nullable column plus the view re-created to expose it.
   Nothing reads it yet, so this is safe to have in production ahead of the
@@ -21,7 +24,9 @@ ALTER TABLE public.broker_connections
   ADD COLUMN IF NOT EXISTS platform text;
 
 COMMENT ON COLUMN public.broker_connections.platform IS
-  'Trading platform the account runs on (mt5, mt4, ctrader, dxtrade, match_trader, tradelocker, tradovate, rithmic, ninjatrader, tradingview, other). NULL = not answered.';
+  'Trading platform the account runs on (mt5, mt4, ctrader, dxtrade, match_trader, tradelocker, tradovate, rithmic, ninjatrader, tradingview, other, unsure). "other" means the
+   trader''s platform is missing from our list; "unsure" means they did not know.
+   NULL = an account created before we started asking.';
 
 -- Re-created rather than altered: a view's column list can only be extended
 -- by replacing it. Same columns in the same order, platform appended.

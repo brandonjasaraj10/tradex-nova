@@ -17,7 +17,11 @@ import { useToast } from '../../lib/toastContext';
   of those would need its own sync integration - so the broker name on its
   own tells us nothing about whether we could ever sync the account.
 
-  Optional: leaving it blank stores nothing rather than a wrong guess.
+  Required, because an optional version of this question can't be read: a
+  blank could mean "didn't know" or "couldn't be bothered", and those need
+  different responses from us. "Not sure" is a valid answer so nobody is
+  blocked, and it is kept separate from "Other" - one means we asked someone
+  who can't tell us, the other means a platform is missing from this list.
 */
 const TRADING_PLATFORMS = [
   { value: 'mt5', label: 'MetaTrader 5' },
@@ -30,7 +34,8 @@ const TRADING_PLATFORMS = [
   { value: 'rithmic', label: 'Rithmic' },
   { value: 'ninjatrader', label: 'NinjaTrader' },
   { value: 'tradingview', label: 'TradingView' },
-  { value: 'other', label: 'Other / not sure' },
+  { value: 'other', label: 'Other - not listed' },
+  { value: 'unsure', label: "Not sure" },
 ];
 
 interface Account {
@@ -101,6 +106,10 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
       showToast('Enter the name of your broker or prop firm.', 'error');
       return;
     }
+    if (!platform) {
+      showToast('Choose the platform you trade on.', 'error');
+      return;
+    }
 
     setIsCreating(true);
     try {
@@ -125,9 +134,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
         connectionData.broker_id = selectedBrokerId;
       }
 
-      if (platform) {
-        connectionData.platform = platform;
-      }
+      connectionData.platform = platform;
 
       const { data: created, error } = await supabase
         .from('user_broker_connections')
@@ -384,7 +391,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Trading Platform
+                  Trading Platform *
                 </label>
                 <select
                   value={platform}
@@ -399,8 +406,9 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
                   ))}
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
-                  Optional. The software you place trades in - helps us build
-                  automatic syncing for the platforms people actually use.
+                  The software you actually place trades in. Pick "Not sure" if
+                  you don't know - it helps us build automatic syncing for the
+                  platforms people really use.
                 </p>
               </div>
 
@@ -491,7 +499,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
                 variant="primary"
                 onClick={handleCreateAccount}
                 isLoading={isCreating}
-                disabled={!newAccountName.trim() || !startingBalance || parseFloat(startingBalance) <= 0 || (selectedBrokerId === '__other__' && !otherBrokerName.trim())}
+                disabled={!newAccountName.trim() || !startingBalance || parseFloat(startingBalance) <= 0 || !platform || (selectedBrokerId === '__other__' && !otherBrokerName.trim())}
               >
                 Create Account
               </Button>
