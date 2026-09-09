@@ -67,7 +67,7 @@ Deno.serve(async (req: Request) => {
     if (!connectionId) {
       return json({ error: "Which account?" }, 400);
     }
-    if (!["status", "deploy", "disconnect"].includes(action)) {
+    if (!["status", "deploy", "disconnect", "enable-metastats"].includes(action)) {
       return json({ error: "Unknown action" }, 400);
     }
 
@@ -88,6 +88,31 @@ Deno.serve(async (req: Request) => {
 
     const base = `${PROVISIONING_URL}/users/current/accounts/${accountId}`;
     const auth = { "auth-token": token };
+
+    if (action === "enable-metastats") {
+      /*
+        MetaStats is billed separately (~$1.15 per account per month) and is
+        off by default, so this is a deliberate, explicit switch rather than
+        something provisioning does quietly. It's what gives us drawdown and
+        the other computed metrics, and it's also what serves trade history
+        already paired into round turns.
+
+        Only metastatsApiEnabled is sent. The same endpoint can turn on
+        CopyFactory, risk management, a dedicated IP and increased
+        reliability, every one of which costs more - so they are left
+        untouched rather than defaulted.
+      */
+      const res = await fetch(`${base}/enable-account-features`, {
+        method: "POST",
+        headers: { ...auth, "Content-Type": "application/json" },
+        body: JSON.stringify({ metastatsApiEnabled: true }),
+      });
+      if (!res.ok && res.status !== 204) {
+        const detail = await res.text().catch(() => "");
+        return json({ error: `Couldn't enable metrics. ${detail}`.trim() }, 400);
+      }
+      return json({ metastatsEnabled: true });
+    }
 
     if (action === "deploy") {
       const res = await fetch(`${base}/deploy`, { method: "POST", headers: auth });
