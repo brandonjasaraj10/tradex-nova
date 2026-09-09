@@ -9,6 +9,7 @@ import CSVUpload from '../broker/CSVUpload';
 import { supabase } from '../../lib/supabase';
 import { brokerService, type BrokerFromAPI } from '../../services/brokerService';
 import { useToast } from '../../lib/toastContext';
+import { BROKER_SYNC_ENABLED } from '../../lib/featureFlags';
 
 /*
   Which platform the account actually runs on, asked separately from which
@@ -67,6 +68,10 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
   const [currency, setCurrency] = useState('USD');
   const [ownershipType, setOwnershipType] = useState<'personal' | 'funded' | 'prop'>('personal');
   const [platform, setPlatform] = useState('');
+  const [autoSync, setAutoSync] = useState(false);
+  const [mtLogin, setMtLogin] = useState('');
+  const [mtServer, setMtServer] = useState('');
+  const [mtInvestorPassword, setMtInvestorPassword] = useState('');
   const selectorRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const panelShift = useClampedPanel(isOpen, selectorRef, panelRef);
@@ -96,6 +101,14 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
     setBrokers(data.filter(b => b.supported));
   };
 
+
+  /*
+    The connect fields only make sense for a platform we can actually reach.
+    Everything else - cTrader, Tradovate, TradingView - has no integration
+    yet, so offering the form there would promise something we can't do.
+  */
+  const canAutoSync = BROKER_SYNC_ENABLED && (platform === 'mt4' || platform === 'mt5');
+
   const handleCreateAccount = async () => {
     if (!newAccountName.trim()) return;
     if (!startingBalance || parseFloat(startingBalance) <= 0) {
@@ -109,6 +122,12 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
     if (!platform) {
       showToast('Choose the platform you trade on.', 'error');
       return;
+    }
+    if (canAutoSync && autoSync) {
+      if (!mtLogin.trim() || !mtServer.trim() || !mtInvestorPassword) {
+        showToast('Account number, server and investor password are all needed to connect.', 'error');
+        return;
+      }
     }
 
     setIsCreating(true);
@@ -161,6 +180,10 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
       setCurrency('USD');
       setOwnershipType('personal');
       setPlatform('');
+      setAutoSync(false);
+      setMtLogin('');
+      setMtServer('');
+      setMtInvestorPassword('');
       setIsOpen(false);
 
       /*
@@ -340,6 +363,10 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
                   setCurrency('USD');
                   setOwnershipType('personal');
                   setPlatform('');
+                  setAutoSync(false);
+                  setMtLogin('');
+                  setMtServer('');
+                  setMtInvestorPassword('');
                 }}
                 className="p-2 hover:bg-white/5 rounded-lg transition-colors"
               >
@@ -411,6 +438,81 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
                   platforms people really use.
                 </p>
               </div>
+
+              {canAutoSync && (
+                <div className="rounded-lg border border-[#3B82F6]/30 p-4"
+                     style={{ boxShadow: '0 0 20px rgba(59,130,246,0.15), inset 0 0 40px rgba(59,130,246,0.05)' }}>
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={autoSync}
+                      onChange={(e) => setAutoSync(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 rounded border-white/20 bg-black/30 text-blue-500 focus:ring-2 focus:ring-blue-500/30"
+                    />
+                    <span>
+                      <span className="block text-sm font-medium text-white">
+                        Sync this account automatically
+                      </span>
+                      <span className="block text-xs text-gray-400 mt-0.5">
+                        Pulls your closed trades in from {platform === 'mt5' ? 'MetaTrader 5' : 'MetaTrader 4'} so you don't have to log them by hand.
+                      </span>
+                    </span>
+                  </label>
+
+                  {autoSync && (
+                    <div className="mt-4 space-y-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          Account Number *
+                        </label>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={mtLogin}
+                          onChange={(e) => setMtLogin(e.target.value)}
+                          placeholder="e.g., 5012345"
+                          className="w-full px-4 py-2.5 rounded-lg bg-black/30 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          Server *
+                        </label>
+                        <input
+                          type="text"
+                          value={mtServer}
+                          onChange={(e) => setMtServer(e.target.value)}
+                          placeholder="e.g., FTMO-Server2"
+                          className="w-full px-4 py-2.5 rounded-lg bg-black/30 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Exactly as it appears in your terminal, under Tools &rarr; Options &rarr; Server.
+                        </p>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          Investor Password *
+                        </label>
+                        <input
+                          type="password"
+                          autoComplete="off"
+                          value={mtInvestorPassword}
+                          onChange={(e) => setMtInvestorPassword(e.target.value)}
+                          placeholder="Read-only password"
+                          className="w-full px-4 py-2.5 rounded-lg bg-black/30 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Your <strong className="text-gray-400">investor</strong> password, not your main one. It can
+                          only read - nobody can place or close a trade with it. We use it once
+                          to set the connection up and never store it.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -491,6 +593,10 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
                   setCurrency('USD');
                   setOwnershipType('personal');
                   setPlatform('');
+                  setAutoSync(false);
+                  setMtLogin('');
+                  setMtServer('');
+                  setMtInvestorPassword('');
                 }}
               >
                 Cancel
