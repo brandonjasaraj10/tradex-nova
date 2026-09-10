@@ -1,101 +1,85 @@
 import { describe, it, expect } from 'vitest';
 
 /*
-  The grace-period rule from supabase/functions/_shared/subscriptionSync.ts.
+  There is no grace period any more: a failed card ends access at the decline.
 
-  Mirrored here rather than imported: the edge functions are Deno and this
-  suite is Node, so they cannot share a module. The logic is small and the
-  cases below are the ones that actually cost a subscriber their access, so
-  the duplication is worth catching a regression in. If the rule changes in
-  one place it must change in both.
+  These tests are what is left of the rule, kept rather than deleted because
+  the column still exists and the danger now runs the other way. A deadline
+  left behind in grace_period_end, or a resolver that returns one again,
+  would quietly hand paid access to somebody whose payment is failing.
+
+  A note on this file's history, because it is the useful part: when grace
+  periods were withdrawn, every test in here passed. It mirrors the rule from
+  supabase/functions/_shared/subscriptionSync.ts rather than importing it -
+  the edge functions are Deno and this suite is Node - so it went on testing
+  its own untouched copy while the real rule inverted underneath. If this file
+  ever disagrees with that one, this file is wrong.
 */
-const GRACE_PERIOD_DAYS = 7;
-
-function resolveGracePeriodEnd(
-  status: string,
-  existing: { status: string; grace_period_end: string | null } | null,
-  now: Date = new Date()
-): string | null {
-  if (status !== 'past_due') return null;
-  if (existing?.status === 'past_due' && existing.grace_period_end) {
-    return existing.grace_period_end;
-  }
-  return new Date(now.getTime() + GRACE_PERIOD_DAYS * 24 * 60 * 60 * 1000).toISOString();
+function resolveGracePeriodEnd(): string | null {
+  return null;
 }
 
-const NOW = new Date('2026-09-03T12:00:00.000Z');
-const SEVEN_DAYS_ON = '2026-09-10T12:00:00.000Z';
-
 describe('resolveGracePeriodEnd', () => {
-  it('opens a 7-day window when a payment first fails', () => {
-    expect(resolveGracePeriodEnd('past_due', { status: 'active', grace_period_end: null }, NOW))
-      .toBe(SEVEN_DAYS_ON);
+  it('never grants a window, whatever the status', () => {
+    expect(resolveGracePeriodEnd()).toBeNull();
   });
-
-  it('opens a window when there is no subscription row yet', () => {
-    expect(resolveGracePeriodEnd('past_due', null, NOW)).toBe(SEVEN_DAYS_ON);
-  });
-
-  /*
-    The one that matters. Stripe fires an event per retry, so recomputing the
-    deadline on each would push it further out every time and the grace period
-    would never expire - the subscriber would keep full access indefinitely on
-    a card that never charges.
-  */
-  it('does not extend a window that is already open', () => {
-    const alreadyOpen = { status: 'past_due', grace_period_end: '2026-09-08T00:00:00.000Z' };
-    const later = new Date('2026-09-06T12:00:00.000Z');
-    expect(resolveGracePeriodEnd('past_due', alreadyOpen, later))
-      .toBe('2026-09-08T00:00:00.000Z');
-  });
-
-  it('opens a fresh window if past_due recurs with no deadline recorded', () => {
-    expect(resolveGracePeriodEnd('past_due', { status: 'past_due', grace_period_end: null }, NOW))
-      .toBe(SEVEN_DAYS_ON);
-  });
-
-  it.each(['active', 'trialing', 'canceled', 'incomplete', 'unpaid'])(
-    'clears the window when status becomes %s',
-    (status) => {
-      const wasPastDue = { status: 'past_due', grace_period_end: '2026-09-08T00:00:00.000Z' };
-      expect(resolveGracePeriodEnd(status, wasPastDue, NOW)).toBeNull();
-    }
-  );
 });
 
 /*
-  The "days left" wording in the payment-failure email, mirrored from
-  sendPaymentFailedEmail in supabase/functions/_shared/subscriptionSync.ts for
-  the same Deno/Node reason as above. If the rule changes there, change it here.
+  The database rule that actually enforces the paywall, mirrored from
+  has_active_subscription(). Every RLS policy on every paid table consults it,
+  so this is the one that decides - the frontend check is a convenience.
 */
-function daysLeftFromGraceEnd(gracePeriodEnd: string | null, now: Date): number {
-  return gracePeriodEnd
-    ? Math.max(1, Math.ceil((new Date(gracePeriodEnd).getTime() - now.getTime()) / 86400000))
-    : 7;
+function hasActiveSubscription(
+  row: { status: string; current_period_end?: string | null; grace_period_end?: string | null },
+  now: Date,
+): boolean {
+  if (row.status === 'active' || row.status === 'trialing') return true;
+  if (row.status === 'canceled' && row.current_period_end) {
+    return new Date(row.current_period_end).getTime() > now.getTime();
+  }
+  return false;
 }
 
-describe('days left in the payment failure email', () => {
-  const now = new Date('2026-09-04T12:00:00.000Z');
+describe('who still has access', () => {
+  const now = new Date('2026-09-10T18:00:00.000Z');
 
-  it('counts a full window as seven days', () => {
-    expect(daysLeftFromGraceEnd('2026-09-11T12:00:00.000Z', now)).toBe(7);
-  });
-
-  it('rounds a part day up, so half a day left still reads as one day', () => {
-    expect(daysLeftFromGraceEnd('2026-09-05T00:00:00.000Z', now)).toBe(1);
+  it('lets an active subscriber in', () => {
+    expect(hasActiveSubscription({ status: 'active' }, now)).toBe(true);
   });
 
   /*
-    Never zero or negative. Telling somebody they have 0 days while they still
-    have access reads as though it is already too late, and a negative number
-    is nonsense in a subject line.
+    Trials are no longer offered, but 25 people were inside one when the offer
+    was withdrawn and none of them should be thrown out for it.
   */
-  it('never drops below one day, even past the deadline', () => {
-    expect(daysLeftFromGraceEnd('2026-09-04T11:00:00.000Z', now)).toBe(1);
-    expect(daysLeftFromGraceEnd('2026-09-01T12:00:00.000Z', now)).toBe(1);
+  it('lets someone still inside an existing trial in', () => {
+    expect(hasActiveSubscription({ status: 'trialing' }, now)).toBe(true);
   });
 
-  it('falls back to the full window when no deadline was recorded', () => {
-    expect(daysLeftFromGraceEnd(null, now)).toBe(7);
+  it('keeps a cancelled subscriber in until the period they paid for ends', () => {
+    expect(
+      hasActiveSubscription({ status: 'canceled', current_period_end: '2026-09-20T00:00:00.000Z' }, now),
+    ).toBe(true);
+  });
+
+  it('locks out a cancelled subscriber once that period has passed', () => {
+    expect(
+      hasActiveSubscription({ status: 'canceled', current_period_end: '2026-09-01T00:00:00.000Z' }, now),
+    ).toBe(false);
+  });
+
+  it('locks out a failed payment immediately', () => {
+    expect(hasActiveSubscription({ status: 'past_due' }, now)).toBe(false);
+  });
+
+  /*
+    The regression that matters most. A deadline surviving from the old policy
+    must not let anyone back in - which is why the clause was removed from the
+    SQL function rather than merely left unused.
+  */
+  it('ignores a grace period left over from the old policy', () => {
+    expect(
+      hasActiveSubscription({ status: 'past_due', grace_period_end: '2026-09-17T00:00:00.000Z' }, now),
+    ).toBe(false);
   });
 });

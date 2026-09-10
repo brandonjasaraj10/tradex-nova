@@ -32,7 +32,14 @@ type AuthContextType = {
     collapsing it to a yes/no and throwing the date away, so nothing could
     tell the user their access is running out.
   */
-  gracePeriodEnd: Date | null;
+  /*
+    True when the subscription exists but its last payment failed. Distinct
+    from "never subscribed": without a grace period a failed card now blocks
+    access immediately, and these people must be offered a card update rather
+    than a fresh plan - buying again would leave two subscriptions in Stripe
+    and charge them twice.
+  */
+  pastDue: boolean;
   isFirstTimeUser: boolean;
   setShowWelcome: (show: boolean) => void;
   setNeedsProfile: (needs: boolean) => void;
@@ -62,7 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [showWelcome, setShowWelcome] = useState(false);
   const [needsProfile, setNeedsProfile] = useState(false);
   const [needsSubscription, setNeedsSubscription] = useState(false);
-  const [gracePeriodEnd, setGracePeriodEnd] = useState<Date | null>(null);
+  const [pastDue, setPastDue] = useState(false);
   const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
 
   const handleSignOut = async () => {
@@ -119,40 +126,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const { data, error } = await supabase
         .from('subscriptions')
-        .select('status, current_period_end, grace_period_end')
+        .select('status, current_period_end')
         .eq('user_id', userId)
         .maybeSingle();
 
       if (error) throw error;
 
       if (!data) {
-        setGracePeriodEnd(null);
+        setPastDue(false);
         return false;
       }
 
       const now = new Date();
       const currentPeriodEnd = data.current_period_end ? new Date(data.current_period_end) : null;
-      const gracePeriodEnd = data.grace_period_end ? new Date(data.grace_period_end) : null;
 
-      /*
-        Cleared before the branches below, not inside them. Several of them
-        return early, and a stale date left behind would keep warning somebody
-        whose card has since gone through.
-      */
-      setGracePeriodEnd(null);
+      setPastDue(data.status === 'past_due');
 
       if (data.status === 'active' || data.status === 'trialing') {
         return true;
       }
 
       if (data.status === 'canceled' && currentPeriodEnd && now < currentPeriodEnd) {
-        return true;
-      }
-
-      if (data.status === 'past_due' && gracePeriodEnd && now < gracePeriodEnd) {
-        // Access continues, but on borrowed time - the banner needs the date
-        // to say how much is left.
-        setGracePeriodEnd(gracePeriodEnd);
         return true;
       }
 
@@ -325,7 +319,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, showWelcome, needsProfile, needsSubscription, gracePeriodEnd, isFirstTimeUser, setShowWelcome, setNeedsProfile, setNeedsSubscription, setIsFirstTimeUser, refreshProfile, refreshSubscription, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, profile, loading, showWelcome, needsProfile, needsSubscription, pastDue, isFirstTimeUser, setShowWelcome, setNeedsProfile, setNeedsSubscription, setIsFirstTimeUser, refreshProfile, refreshSubscription, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );

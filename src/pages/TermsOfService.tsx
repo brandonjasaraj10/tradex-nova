@@ -79,7 +79,6 @@ export default function TermsOfService() {
             </p>
             <ul className="list-disc pl-6 space-y-2">
               <li>Subscriptions are billed on a monthly basis</li>
-              <li>A 7-day free trial is offered to new users</li>
               <li>Payment is processed through Stripe, a third-party payment processor</li>
               <li>Subscriptions automatically renew unless cancelled before the renewal date</li>
               <li>You can cancel your subscription at any time from your account settings</li>

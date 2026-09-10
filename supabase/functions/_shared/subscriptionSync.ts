@@ -36,31 +36,18 @@ export async function resolveUserIdFromCustomer(
   reconciliation job, so both stay behaviorally identical by construction
   rather than by two hand-kept-in-sync implementations.
 */
-const GRACE_PERIOD_DAYS = 7;
 
 /*
-  The grace-period rule, kept separate so it can be reasoned about and tested
-  without a Stripe fixture or a database.
+  There is no grace period. A failed card stops access at the decline, and it
+  comes back when the card is fixed.
 
-  Three cases:
-  - past_due and no window open yet -> start one, GRACE_PERIOD_DAYS out.
-  - past_due with a window already open -> leave it exactly as it is. Stripe
-    fires an event per retry attempt, so recomputing here would push the
-    deadline out on every failure and the grace period would never end.
-  - anything else -> clear it. A recovered card, a cancellation and a fresh
-    subscription all need the column empty, or a stale deadline would keep
-    granting access to somebody who is no longer past_due.
+  This function is kept, rather than the column simply being dropped, because
+  grace_period_end still exists on the table and must be actively cleared:
+  a stale deadline left behind would go on granting access to somebody whose
+  payment is failing. Returning null unconditionally is what does that.
 */
-export function resolveGracePeriodEnd(
-  status: string,
-  existing: { status: string; grace_period_end: string | null } | null,
-  now: Date = new Date()
-): string | null {
-  if (status !== 'past_due') return null;
-  if (existing?.status === 'past_due' && existing.grace_period_end) {
-    return existing.grace_period_end;
-  }
-  return new Date(now.getTime() + GRACE_PERIOD_DAYS * 24 * 60 * 60 * 1000).toISOString();
+export function resolveGracePeriodEnd(): string | null {
+  return null;
 }
 
 const APP_URL = 'https://tradexnova.com';
@@ -79,7 +66,7 @@ const SUPPORT_EMAIL = 'tradenovaai@gmail.com';
   Gmail's dark-mode inversion, a table-drawn logo because most clients block
   remote images, and a real reply-to so a confused customer reaches a human.
 */
-function buildPaymentFailedHtml(daysLeft: number, amountLabel: string): string {
+function buildPaymentFailedHtml(amountLabel: string): string {
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -106,8 +93,8 @@ function buildPaymentFailedHtml(daysLeft: number, amountLabel: string): string {
 
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#F5F8FF;border:1px solid #D6E4FF;border-radius:10px;margin-bottom:24px;">
                 <tr><td style="padding:16px 18px;">
-                  <p style="margin:0;font-size:15px;line-height:1.6;color:#111111;"><strong>Your account stays open for ${daysLeft} more ${daysLeft === 1 ? 'day' : 'days'}.</strong></p>
-                  <p style="margin:6px 0 0 0;font-size:14px;line-height:1.6;color:#555555;">Nothing is deleted. Update your card before then and everything carries on as normal.</p>
+                  <p style="margin:0;font-size:15px;line-height:1.6;color:#111111;"><strong>Your access is paused until your card is updated.</strong></p>
+                  <p style="margin:6px 0 0 0;font-size:14px;line-height:1.6;color:#555555;">Nothing is deleted. Update your card and everything comes straight back.</p>
                 </td></tr>
               </table>
 
@@ -144,7 +131,6 @@ function buildPaymentFailedHtml(daysLeft: number, amountLabel: string): string {
 async function sendPaymentFailedEmail(
   supabase: SupabaseClient,
   userId: string,
-  gracePeriodEnd: string | null,
   subscription: Stripe.Subscription,
 ) {
   try {
@@ -161,12 +147,6 @@ async function sendPaymentFailedEmail(
       return;
     }
 
-    // Rounded up, and never below one: telling somebody they have 0 days left
-    // while they still have access reads as though it is already too late.
-    const daysLeft = gracePeriodEnd
-      ? Math.max(1, Math.ceil((new Date(gracePeriodEnd).getTime() - Date.now()) / 86400000))
-      : 7;
-
     const amount = subscription.items.data[0]?.price?.unit_amount;
     const currency = (subscription.items.data[0]?.price?.currency ?? 'usd').toUpperCase();
     // Falls back to wording that is true whatever the plan, rather than
@@ -180,8 +160,8 @@ async function sendPaymentFailedEmail(
         from: 'TradeX <noreply@tradexnova.com>',
         to: [email],
         reply_to: [SUPPORT_EMAIL],
-        subject: `Your TradeX payment failed - ${daysLeft} ${daysLeft === 1 ? 'day' : 'days'} to update your card`,
-        html: buildPaymentFailedHtml(daysLeft, amountLabel),
+        subject: 'Your TradeX payment failed - update your card to restore access',
+        html: buildPaymentFailedHtml(amountLabel),
       }),
     });
 
@@ -190,7 +170,7 @@ async function sendPaymentFailedEmail(
       return;
     }
 
-    console.info('Payment failure email sent to', email, `(${daysLeft} days left)`);
+    console.info('Payment failure email sent to', email);
   } catch (err) {
     console.error('Payment failure email failed for', userId, err);
   }
@@ -206,12 +186,17 @@ export async function syncSubscription(supabase: SupabaseClient, userId: string,
   /*
     Thrown, not swallowed. A failed lookup is indistinguishable from "no row
     yet", which would make this insert over a subscription that already
-    exists and restart a grace period that was already running.
+    exists and lose the status it was in.
   */
   if (lookupError) throw lookupError;
 
   const existingRow = current as { status: string; grace_period_end: string | null } | null;
-  const gracePeriodEnd = resolveGracePeriodEnd(subscription.status, existingRow);
+  /*
+    Always null now. Written on every sync rather than left alone, so any
+    deadline surviving from the old policy is cleared the next time Stripe
+    tells us anything about that subscription.
+  */
+  const gracePeriodEnd = resolveGracePeriodEnd();
 
   const record = {
     stripe_customer_id:
@@ -232,21 +217,14 @@ export async function syncSubscription(supabase: SupabaseClient, userId: string,
     unit_amount: subscription.items.data[0]?.price?.unit_amount ?? null,
     billing_interval: subscription.items.data[0]?.price?.recurring?.interval ?? null,
     /*
-      How long a failed payment keeps access before it is cut off.
+      Always null. Kept as a column, and written on every sync, purely so a
+      deadline from the old policy is cleared rather than left sitting there.
 
-      has_active_subscription() has always honoured this column, auth.tsx
-      reads it, and subscriptionService has passing tests for it - but nothing
-      ever wrote it, so it was null on every row and past_due meant instant
-      lockout. One real subscriber went active at 06:41 and lost access at
-      07:41 when the card failed an hour later, with no window to fix it.
-
-      Written here rather than in the webhook because reconciliation shares
-      this function, so a status Stripe reports late gets the same window as
-      one reported in real time.
-
-      Preserved, not extended, while already past_due: Stripe sends an event
-      per retry, and recomputing the deadline each time would push it further
-      out with every failure and never actually expire.
+      It used to hold a seven-day window. That was withdrawn on 10 September
+      after the first trial cohort reached a charge: a failed card now ends
+      access at the decline. The enforcement lives in
+      has_active_subscription(), which no longer looks at this column at all -
+      writing null here is belt and braces, not the rule itself.
     */
     grace_period_end: gracePeriodEnd,
     updated_at: new Date().toISOString(),
@@ -276,7 +254,7 @@ export async function syncSubscription(supabase: SupabaseClient, userId: string,
       the same decline is how a useful warning becomes spam.
     */
     if (subscription.status === 'past_due') {
-      await sendPaymentFailedEmail(supabase, userId, gracePeriodEnd, subscription);
+      await sendPaymentFailedEmail(supabase, userId, subscription);
     }
   }
 
