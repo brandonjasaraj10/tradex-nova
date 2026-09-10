@@ -23,6 +23,27 @@ export interface DateRange {
   endDate: Date;
 }
 
+/*
+  "All time" is still a real date range rather than a null, because every
+  query in the app takes a start and an end. Picking a date far enough back
+  to predate any plausible trade history keeps that contract intact while
+  behaving like no filter at all.
+*/
+export const ALL_TIME_START = new Date(2000, 0, 1);
+
+export function allTimeRange(): DateRange {
+  return { startDate: new Date(ALL_TIME_START), endDate: new Date() };
+}
+
+/*
+  Recognised by its start date, so the picker can show "All Time" instead of
+  "Jan 1, 2000 - Sep 9, 2026", which is technically the same thing and
+  useless to read.
+*/
+export function isAllTime(range: DateRange): boolean {
+  return range.startDate.getTime() <= ALL_TIME_START.getTime();
+}
+
 function defaultRange(): DateRange {
   const endDate = new Date();
   const startDate = new Date();

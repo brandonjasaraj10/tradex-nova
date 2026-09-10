@@ -9,6 +9,7 @@ import CSVUpload from '../broker/CSVUpload';
 import { supabase } from '../../lib/supabase';
 import { brokerService, type BrokerFromAPI } from '../../services/brokerService';
 import { useToast } from '../../lib/toastContext';
+import { useDateRange, allTimeRange } from '../../lib/dateRangeContext';
 import { BROKER_SYNC_ENABLED } from '../../lib/featureFlags';
 import { connectMetaTraderAccount, syncMetaTraderAccount } from '../../services/metaTraderConnect';
 import { searchMtServers, type MtServerSuggestion } from '../../services/mtServers';
@@ -70,6 +71,7 @@ interface AccountSelectorProps {
 
 export default function AccountSelector({ accounts, selectedAccount, onAccountChange, onAccountsUpdate }: AccountSelectorProps) {
   const { showToast } = useToast();
+  const { setDateRange } = useDateRange();
   const [isOpen, setIsOpen] = useState(false);
   const [showAddAccount, setShowAddAccount] = useState(false);
   const [showCSVUpload, setShowCSVUpload] = useState(false);
@@ -273,6 +275,14 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
           showToast('Account connected. It may take a minute to finish syncing.', 'success');
         }
       }
+
+      /*
+        Widen to all time for a newly added account. A brand new account's
+        history is almost always older than the default last-30-days window,
+        so the first thing a user saw after connecting was an empty
+        dashboard - the trades were there, just outside the range.
+      */
+      setDateRange(allTimeRange());
 
       setShowAddAccount(false);
       setNewAccountName('');

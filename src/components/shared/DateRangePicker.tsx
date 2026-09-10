@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useClampedPanel } from '../../hooks/useClampedPanel';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { allTimeRange, isAllTime } from '../../lib/dateRangeContext';
 
 interface DateRange {
   startDate: Date;
@@ -13,7 +14,7 @@ interface DateRangePickerProps {
   onChange: (range: DateRange) => void;
 }
 
-type PresetType = 'today' | 'yesterday' | 'last7days' | 'last30days' | 'thisMonth' | 'lastMonth' | 'thisYear' | 'custom';
+type PresetType = 'today' | 'yesterday' | 'last7days' | 'last30days' | 'thisMonth' | 'lastMonth' | 'thisYear' | 'allTime' | 'custom';
 
 const presets: { label: string; value: PresetType }[] = [
   { label: 'Today', value: 'today' },
@@ -23,6 +24,7 @@ const presets: { label: string; value: PresetType }[] = [
   { label: 'This Month', value: 'thisMonth' },
   { label: 'Last Month', value: 'lastMonth' },
   { label: 'This Year', value: 'thisYear' },
+  { label: 'All Time', value: 'allTime' },
   { label: 'Custom', value: 'custom' },
 ];
 
@@ -88,6 +90,8 @@ export default function DateRangePicker({ value, onChange }: DateRangePickerProp
         const start = new Date(now.getFullYear(), 0, 1);
         return { startDate: start, endDate: today };
       }
+      case 'allTime':
+        return allTimeRange();
       default:
         return value;
     }
@@ -159,6 +163,11 @@ export default function DateRangePicker({ value, onChange }: DateRangePickerProp
   };
 
   const formatDateRange = (range: DateRange) => {
+    /*
+      "Jan 1, 2000 - Sep 9, 2026" is accurate and unreadable. The whole
+      point of the option is that the user stops thinking about dates.
+    */
+    if (isAllTime(range)) return 'All Time';
     const start = range.startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     const end = range.endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     return `${start} - ${end}`;
