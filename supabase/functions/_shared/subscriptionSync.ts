@@ -147,7 +147,6 @@ async function sendPaymentFailedEmail(
       return;
     }
 
-
     const amount = subscription.items.data[0]?.price?.unit_amount;
     const currency = (subscription.items.data[0]?.price?.currency ?? 'usd').toUpperCase();
     // Falls back to wording that is true whatever the plan, rather than
@@ -218,21 +217,14 @@ export async function syncSubscription(supabase: SupabaseClient, userId: string,
     unit_amount: subscription.items.data[0]?.price?.unit_amount ?? null,
     billing_interval: subscription.items.data[0]?.price?.recurring?.interval ?? null,
     /*
-      How long a failed payment keeps access before it is cut off.
+      Always null. Kept as a column, and written on every sync, purely so a
+      deadline from the old policy is cleared rather than left sitting there.
 
-      has_active_subscription() has always honoured this column, auth.tsx
-      reads it, and subscriptionService has passing tests for it - but nothing
-      ever wrote it, so it was null on every row and past_due meant instant
-      lockout. One real subscriber went active at 06:41 and lost access at
-      07:41 when the card failed an hour later, with no window to fix it.
-
-      Written here rather than in the webhook because reconciliation shares
-      this function, so a status Stripe reports late gets the same window as
-      one reported in real time.
-
-      Preserved, not extended, while already past_due: Stripe sends an event
-      per retry, and recomputing the deadline each time would push it further
-      out with every failure and never actually expire.
+      It used to hold a seven-day window. That was withdrawn on 10 September
+      after the first trial cohort reached a charge: a failed card now ends
+      access at the decline. The enforcement lives in
+      has_active_subscription(), which no longer looks at this column at all -
+      writing null here is belt and braces, not the rule itself.
     */
     grace_period_end: gracePeriodEnd,
     updated_at: new Date().toISOString(),
