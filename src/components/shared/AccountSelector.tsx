@@ -3,14 +3,14 @@ import { createPortal } from 'react-dom';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { useClampedPanel } from '../../hooks/useClampedPanel';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Check, Plus, FileUp, X, Info, ShieldCheck } from 'lucide-react';
+import { ChevronDown, Check, Plus, FileUp, X, Info, ShieldCheck, RefreshCw } from 'lucide-react';
 import Button from './Button';
 import CSVUpload from '../broker/CSVUpload';
 import { supabase } from '../../lib/supabase';
 import { brokerService, type BrokerFromAPI } from '../../services/brokerService';
 import { useToast } from '../../lib/toastContext';
 import { BROKER_SYNC_ENABLED } from '../../lib/featureFlags';
-import { connectMetaTraderAccount } from '../../services/metaTraderConnect';
+import { connectMetaTraderAccount, syncMetaTraderAccount } from '../../services/metaTraderConnect';
 import { searchMtServers, type MtServerSuggestion } from '../../services/mtServers';
 
 /*
@@ -46,6 +46,19 @@ interface Account {
   account_name: string | null;
   broker_type: string;
   is_active: boolean;
+  is_synced?: boolean;
+  last_sync?: string | null;
+}
+
+/* "Synced 5m ago" reads better than a timestamp nobody wants to decode. */
+function formatLastSync(iso?: string | null): string {
+  if (!iso) return 'Never synced';
+  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (mins < 1) return 'Synced just now';
+  if (mins < 60) return `Synced ${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `Synced ${hours}h ago`;
+  return `Synced ${Math.floor(hours / 24)}d ago`;
 }
 
 interface AccountSelectorProps {
@@ -70,12 +83,13 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
   const [currency, setCurrency] = useState('USD');
   const [ownershipType, setOwnershipType] = useState<'personal' | 'funded' | 'prop'>('personal');
   const [platform, setPlatform] = useState('');
-  const [autoSync, setAutoSync] = useState(false);
   const [mtLogin, setMtLogin] = useState('');
   const [mtServer, setMtServer] = useState('');
   const [mtInvestorPassword, setMtInvestorPassword] = useState('');
   const [connectStatus, setConnectStatus] = useState('');
   const [serverSuggestions, setServerSuggestions] = useState<MtServerSuggestion[]>([]);
+  const [showServerList, setShowServerList] = useState(false);
+  const [syncingId, setSyncingId] = useState<string | null>(null);
   const selectorRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const panelShift = useClampedPanel(isOpen, selectorRef, panelRef);
@@ -112,7 +126,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
     common case of a reply landing after the user has typed on.
   */
   useEffect(() => {
-    if (!BROKER_SYNC_ENABLED || (platform !== 'mt4' && platform !== 'mt5') || !autoSync) {
+    if (!BROKER_SYNC_ENABLED || (platform !== 'mt4' && platform !== 'mt5')) {
       setServerSuggestions([]);
       return;
     }
@@ -126,7 +140,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
       if (!cancelled) setServerSuggestions(results);
     }, 300);
     return () => { cancelled = true; clearTimeout(timer); };
-  }, [platform, mtServer, autoSync]);
+  }, [platform, mtServer]);
 
   /*
     The connect fields only make sense for a platform we can actually reach.
@@ -134,6 +148,38 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
     yet, so offering the form there would promise something we can't do.
   */
   const canAutoSync = BROKER_SYNC_ENABLED && (platform === 'mt4' || platform === 'mt5');
+
+  /*
+    Syncing is opt-in by simply filling the fields in, rather than by a
+    checkbox that hides them. Any one of the three counts as intent, so a
+    half-filled form is caught as a mistake instead of silently creating a
+    manual account the user thought was connected.
+  */
+  const autoSync = canAutoSync &&
+    Boolean(mtLogin.trim() || mtServer.trim() || mtInvestorPassword);
+
+  /*
+    Manual sync. The backend upserts on the broker's own trade id, so this
+    is safe to press repeatedly - it re-reads the same trades rather than
+    duplicating them.
+  */
+  const handleSyncNow = async (account: Account) => {
+    setSyncingId(account.id);
+    const result = await syncMetaTraderAccount(account.id);
+    setSyncingId(null);
+
+    if (!result.ok) {
+      showToast(result.error || 'Could not sync that account.', 'error');
+      return;
+    }
+    showToast(
+      result.imported
+        ? `Synced ${result.imported} trade${result.imported === 1 ? '' : 's'}.`
+        : 'Already up to date.',
+      'success',
+    );
+    onAccountsUpdate?.();
+  };
 
   const handleCreateAccount = async () => {
     if (!newAccountName.trim()) return;
@@ -236,7 +282,6 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
       setCurrency('USD');
       setOwnershipType('personal');
       setPlatform('');
-      setAutoSync(false);
       setMtLogin('');
       setMtServer('');
       setMtInvestorPassword('');
@@ -340,23 +385,52 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
               {accounts.length > 0 && (
                 <div className="mt-2 pt-2 border-t border-white/10">
                   {accounts.map((account) => (
-                    <button
+                    /*
+                      A row rather than a single button now: a connected
+                      account carries its own "sync now" control, which can't
+                      be nested inside the button that selects the account.
+                    */
+                    <div
                       key={account.id}
-                      onClick={() => handleAccountSelect(account)}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center justify-between ${
+                      className={`w-full rounded-lg text-sm transition-colors flex items-center ${
                         selectedAccount?.id === account.id
                           ? 'bg-blue-400/10 text-blue-400'
                           : 'hover:bg-white/5 text-gray-300'
                       }`}
                     >
-                      <div>
-                        <div>{account.account_name || account.broker_type}</div>
-                        {account.account_name && (
-                          <div className="text-xs text-gray-500">{account.broker_type}</div>
-                        )}
-                      </div>
-                      {selectedAccount?.id === account.id && <Check size={16} />}
-                    </button>
+                      <button
+                        onClick={() => handleAccountSelect(account)}
+                        className="flex-1 text-left px-3 py-2 flex items-center justify-between min-w-0"
+                      >
+                        <div className="min-w-0">
+                          <div className="truncate">{account.account_name || account.broker_type}</div>
+                          {account.account_name && (
+                            <div className="text-xs text-gray-500 truncate">
+                              {account.broker_type}
+                              {account.is_synced && (
+                                <> &middot; {formatLastSync(account.last_sync)}</>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        {selectedAccount?.id === account.id && <Check size={16} className="ml-2 shrink-0" />}
+                      </button>
+
+                      {BROKER_SYNC_ENABLED && account.is_synced && (
+                        <button
+                          type="button"
+                          onClick={() => handleSyncNow(account)}
+                          disabled={syncingId === account.id}
+                          title="Sync now"
+                          className="px-3 py-2 text-gray-400 hover:text-[#3B82F6] disabled:text-gray-600 transition-colors"
+                        >
+                          <RefreshCw
+                            size={14}
+                            className={syncingId === account.id ? 'animate-spin' : ''}
+                          />
+                        </button>
+                      )}
+                    </div>
                   ))}
                 </div>
               )}
@@ -420,11 +494,9 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
                   setCurrency('USD');
                   setOwnershipType('personal');
                   setPlatform('');
-                  setAutoSync(false);
                   setMtLogin('');
                   setMtServer('');
                   setMtInvestorPassword('');
-      setConnectStatus('');
                   setConnectStatus('');
                 }}
                 className="p-2 hover:bg-white/5 rounded-lg transition-colors"
@@ -501,28 +573,25 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
               {canAutoSync && (
                 <div className="rounded-lg border border-[#3B82F6]/30 p-4"
                      style={{ boxShadow: '0 0 20px rgba(59,130,246,0.15), inset 0 0 40px rgba(59,130,246,0.05)' }}>
-                  <label className="flex items-start gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={autoSync}
-                      onChange={(e) => setAutoSync(e.target.checked)}
-                      className="mt-0.5 h-4 w-4 rounded border-white/20 bg-black/30 text-blue-500 focus:ring-2 focus:ring-blue-500/30"
-                    />
-                    <span>
-                      <span className="block text-sm font-medium text-white">
+                  <div className="flex items-start gap-2">
+                    <RefreshCw size={16} className="text-[#3B82F6] mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium text-white">
                         Sync this account automatically
-                      </span>
-                      <span className="block text-xs text-gray-400 mt-0.5">
-                        Pulls your closed trades in from {platform === 'mt5' ? 'MetaTrader 5' : 'MetaTrader 4'} so you don't have to log them by hand.
-                      </span>
-                    </span>
-                  </label>
+                      </p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        Pulls your closed trades in from {platform === 'mt5' ? 'MetaTrader 5' : 'MetaTrader 4'} so you
+                        don't have to log them by hand. Leave these blank to track this
+                        account by hand instead.
+                      </p>
+                    </div>
+                  </div>
 
-                  {autoSync && (
+                  {true && (
                     <div className="mt-4 space-y-3">
                       <div>
                         <label className="block text-sm font-medium text-gray-300 mb-2">
-                          Account Number *
+                          Account Number
                         </label>
                         <input
                           type="text"
@@ -536,29 +605,53 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
 
                       <div>
                         <label className="block text-sm font-medium text-gray-300 mb-2">
-                          Server *
+                          Server
                         </label>
-                        <input
-                          type="text"
-                          list="mt-server-suggestions"
-                          autoComplete="off"
-                          value={mtServer}
-                          onChange={(e) => setMtServer(e.target.value)}
-                          placeholder="Start typing your broker, e.g. FTMO"
-                          className="w-full px-4 py-2.5 rounded-lg bg-black/30 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                        />
                         {/*
-                          A datalist rather than a select: it suggests without
-                          restricting, so a server missing from MetaApi's
-                          catalogue can still be typed in full.
+                          Hand-rolled rather than a <datalist>. The native one
+                          renders in the operating system's own styling - light
+                          grey, its own font, anchored off to the side - which
+                          looks like a browser artifact rather than part of the
+                          app. This is still a plain text input underneath, so a
+                          server missing from MetaApi's catalogue can be typed in
+                          full: it suggests without ever restricting.
                         */}
-                        <datalist id="mt-server-suggestions">
-                          {serverSuggestions.map((s) => (
-                            <option key={`${s.broker}-${s.server}`} value={s.server}>
-                              {s.broker}
-                            </option>
-                          ))}
-                        </datalist>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            autoComplete="off"
+                            value={mtServer}
+                            onChange={(e) => { setMtServer(e.target.value); setShowServerList(true); }}
+                            onFocus={() => setShowServerList(true)}
+                            onBlur={() => window.setTimeout(() => setShowServerList(false), 150)}
+                            placeholder="Start typing your broker, e.g. FTMO"
+                            className="w-full px-4 py-2.5 rounded-lg bg-black/30 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                          />
+                          {showServerList && serverSuggestions.length > 0 && (
+                            <div className="absolute z-10 left-0 right-0 mt-1 max-h-56 overflow-y-auto rounded-lg border border-[#3B82F6]/30 bg-[#0B0B0B] shadow-xl">
+                              {serverSuggestions.map((sug) => (
+                                <button
+                                  key={`${sug.broker}-${sug.server}`}
+                                  type="button"
+                                  /*
+                                    onMouseDown, not onClick: the input's blur
+                                    fires first and would close this list before
+                                    a click ever landed.
+                                  */
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    setMtServer(sug.server);
+                                    setShowServerList(false);
+                                  }}
+                                  className="w-full text-left px-3 py-2 hover:bg-[#3B82F6]/10 transition-colors border-b border-white/5 last:border-b-0"
+                                >
+                                  <span className="block text-sm text-white">{sug.server}</span>
+                                  <span className="block text-xs text-gray-500">{sug.broker}</span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                         <p className="text-xs text-gray-500 mt-1">
                           Type your broker's name to see matching servers, or enter it
                           yourself - exactly as it appears in your terminal under
@@ -568,7 +661,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
 
                       <div>
                         <label className="flex items-center gap-1.5 text-sm font-medium text-gray-300 mb-2">
-                          Investor Password *
+                          Investor Password
                           {/*
                             The read-only nature of an investor password is the
                             entire reason it is safe to hand over, so it gets an
@@ -692,11 +785,9 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
                   setCurrency('USD');
                   setOwnershipType('personal');
                   setPlatform('');
-                  setAutoSync(false);
                   setMtLogin('');
                   setMtServer('');
                   setMtInvestorPassword('');
-      setConnectStatus('');
                   setConnectStatus('');
                 }}
               >

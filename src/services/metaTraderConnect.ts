@@ -75,3 +75,46 @@ export async function connectMetaTraderAccount(params: {
     };
   }
 }
+
+export interface SyncResult {
+  ok: boolean;
+  imported?: number;
+  error?: string;
+}
+
+/*
+  Pull the latest closed trades for an already-connected account.
+
+  Safe to call repeatedly - the backend upserts on the broker's own trade
+  id, so pressing the button twice imports the same trades rather than
+  duplicating them.
+*/
+export async function syncMetaTraderAccount(connectionId: string): Promise<SyncResult> {
+  try {
+    const { data, error } = await supabase.functions.invoke('metaapi-sync', {
+      body: { connectionId },
+    });
+
+    if (error) {
+      let message = 'Could not sync that account.';
+      const context = (error as { context?: Response }).context;
+      if (context && typeof context.json === 'function') {
+        try {
+          const body = await context.json();
+          if (typeof body?.error === 'string') message = body.error;
+        } catch {
+          /* keep the generic message */
+        }
+      }
+      return { ok: false, error: message };
+    }
+
+    if (data?.error) return { ok: false, error: String(data.error) };
+    return { ok: true, imported: Number(data?.imported ?? 0) };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : 'Could not sync that account.',
+    };
+  }
+}

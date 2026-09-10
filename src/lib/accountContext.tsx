@@ -14,6 +14,12 @@ interface Account {
   account_name: string | null;
   broker_type: string;
   is_active: boolean;
+  /*
+    Carried so the account selector can offer "Sync now" on the accounts
+    that actually have a broker connection, and say when it last ran.
+  */
+  is_synced?: boolean;
+  last_sync?: string | null;
 }
 
 interface AccountContextType {
@@ -36,7 +42,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
 
     const { data, error } = await supabase
       .from('user_broker_connections')
-      .select('id, account_name, broker_id')
+      .select('id, account_name, broker_id, metaapi_account_id, last_sync')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
@@ -56,6 +62,8 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       account_name: item.account_name,
       broker_type: (item.broker_id && brokerNameById.get(item.broker_id)) || 'Manual',
       is_active: false,
+      is_synced: Boolean(item.metaapi_account_id),
+      last_sync: item.last_sync ?? null,
     }));
 
     setAccounts(transformedAccounts);
