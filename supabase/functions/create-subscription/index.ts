@@ -117,7 +117,18 @@ Deno.serve(async (req: Request) => {
       // the address it just collected.
       customer_update: { address: 'auto' },
       subscription_data: {
-        trial_period_days: 7,
+        /*
+          No trial. Checkout charges on the spot.
+
+          Removed after the first trial cohort converted: of 11 who started
+          a trial on 3 September, 1 paid, 6 failed at the first charge, and
+          5 of those 6 had never logged a single trade or journal entry. The
+          trial was mostly collecting people who never intended to use it,
+          and one card started three separate trials under three addresses.
+
+          Existing trials are deliberately left alone - this stops the offer
+          being made, it does not revoke anyone already inside one.
+        */
         metadata: {
           supabase_user_id: user.id,
         },

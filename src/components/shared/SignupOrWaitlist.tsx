@@ -57,7 +57,7 @@ export default function SignupOrWaitlist({
   return (
     <div className={className}>
       {/*
-        "Start My Free Trial", not "Get Started": across SaaS pricing pages
+        "Get Started", not "Get Started": across SaaS pricing pages
         "Get Started" reads as freemium, while "Start Free Trial" is used
         almost exclusively by time-limited trials - which is what this is.
         First person ("My" over "Your") tests 15-20% better.
@@ -86,11 +86,11 @@ export default function SignupOrWaitlist({
                    hover:from-white hover:via-white hover:to-neutral-200
                    hover:shadow-[inset_0_1px_0_rgba(255,255,255,1),0_16px_44px_-12px_rgba(255,255,255,0.7)]"
       >
-        Start My Free Trial
+        Get Started
         <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5" />
       </Link>
       <p className="mt-3 text-sm text-gray-400 text-center">
-        7 days free · No charge today · Cancel anytime
+        Full access straight away · Cancel anytime
       </p>
       {postLaunchFootnote}
     </div>

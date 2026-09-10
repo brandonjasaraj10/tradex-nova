@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import { Shield, CheckCircle2, Lock, AlertCircle, ArrowLeft, Zap, Crown, TrendingUp, Sparkles, Star, Gift, X } from 'lucide-react';
-import TrialTimeline from '../components/payment/TrialTimeline';
 import Button from '../components/shared/Button';
 import { supabase } from '../lib/supabase';
 
@@ -234,7 +233,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
           // glance rather than a different list. Annual previously omitted
           // "All Pro features" entirely, which made the pricier plan look
           // like it included less.
-          features: ['7-day free trial', 'All Pro features', 'Your price never rises', 'Cancel anytime'],
+          features: ['All Pro features', 'Your price never rises', 'Cancel anytime'],
           highlight: false,
           savings: '40% off, forever',
           popular: false,
@@ -250,7 +249,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
           originalPrice: '$20.83',
           description: 'Founding member rate, best value',
           icon: Crown,
-          features: ['7-day free trial', 'All Pro features', 'Your price never rises', '2 months free vs monthly', 'Priority support'],
+          features: ['All Pro features', 'Your price never rises', '2 months free vs monthly', 'Priority support'],
           highlight: true,
           savings: '40% off, forever',
           billedAs: '$149.90 billed annually',
@@ -265,7 +264,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
           period: '/month',
           description: 'Perfect for getting started',
           icon: Zap,
-          features: ['7-day free trial', 'All Pro features', 'Cancel anytime'],
+          features: ['All Pro features', 'Cancel anytime'],
           highlight: false,
           savings: null,
           popular: false,
@@ -280,7 +279,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
           originalPrice: '$24.99',
           description: 'Best value for serious traders',
           icon: Crown,
-          features: ['7-day free trial', 'All Pro features', '2 months free vs monthly', 'Priority support'],
+          features: ['All Pro features', '2 months free vs monthly', 'Priority support'],
           highlight: true,
           savings: '2 months free',
           billedAs: '$249.90 billed annually',
@@ -354,7 +353,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
 
         {/*
           pt-10 leaves the close button a row to itself. At 360px the centred
-          "Start your 7-day free trial today" pill is wide enough to reach the
+          headline pill is wide enough to reach the
           corner the X sits in, and the two overlapped. It costs nothing now
           the button is pinned to the bottom, so a taller header cannot push
           it out of view.
@@ -372,7 +371,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
             >
               <Gift className="w-4 h-4 text-gold-400" />
             </motion.div>
-            <span className="text-sm text-gold-400 font-medium">Start your 7-day free trial today</span>
+            <span className="text-sm text-gold-400 font-medium">Full access from the moment you join</span>
             <motion.div
               animate={{ scale: [1, 1.2, 1] }}
               transition={{ duration: 1.5, repeat: Infinity }}
@@ -418,7 +417,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
           >
             <span className="inline-flex items-center gap-1.5">
               <Gift className="w-4 h-4 text-blue-400" />
-              7 days free
+              Cancel anytime
             </span>
             <span className="inline-flex items-center gap-1.5">
               <Lock className="w-4 h-4 text-blue-400" />
@@ -594,8 +593,8 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
                 )}
 
                 {/*
-                  Both cards repeat "7-day free trial", "All Pro features" and
-                  "Cancel anytime", which the row at the top of the page has
+                  Both cards repeat "All Pro features" and "Cancel anytime",
+                  which the row at the top of the page has
                   already said. On a phone that repetition is what cost the
                   height; the two lines that actually differ are on the annual
                   card's own badge.
@@ -612,19 +611,6 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
             </motion.div>
           ))}
         </div>
-
-        {/*
-          Phone only. It reads off the selected plan, so switching to annual
-          changes the amount it says will be charged - a timeline quoting the
-          monthly figure next to a selected annual plan would be worse than
-          having none.
-        */}
-        <motion.div variants={fadeInUp} className="sm:hidden mb-6">
-          <TrialTimeline
-            amount={chargeAmount}
-            billedAs={activeBilledAs ? 'billed annually' : undefined}
-          />
-        </motion.div>
 
         {/*
           The button is pinned to the bottom of a phone screen. Measured
@@ -675,7 +661,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
                 onClick={handleSubscribe}
                 isLoading={loading}
               >
-                {loading ? 'Processing...' : `Start Free Trial - ${selectedPlan === 'annual' ? 'Annual Plan' : 'Monthly Plan'}`}
+                {loading ? 'Processing...' : `Get ${selectedPlan === 'annual' ? 'Annual' : 'Monthly'} Access - ${chargeAmount}`}
               </Button>
             </motion.div>
           ) : (

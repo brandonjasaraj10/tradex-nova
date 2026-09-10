@@ -900,7 +900,7 @@ export default function Settings() {
                           View plans
                         </Button>
                         <p className="text-xs text-gray-500 mt-3">
-                          7-day free trial &middot; cancel anytime
+                          Cancel anytime
                         </p>
                       </div>
                     </div>
