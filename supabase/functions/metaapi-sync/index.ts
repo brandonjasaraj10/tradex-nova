@@ -94,7 +94,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: connection, error: readError } = await supabase
       .from("user_broker_connections")
-      .select("id, user_id, metaapi_account_id, last_sync")
+      .select("id, user_id, metaapi_account_id, last_sync, starting_balance")
       .eq("id", connectionId)
       .maybeSingle();
 
@@ -151,6 +151,15 @@ Deno.serve(async (req: Request) => {
     const rows = [];
     let stillOpen = 0;
     let notTrades = 0;
+    /*
+      Deposits and withdrawals are what the account actually started with
+      and what has been paid in or out since. Summed, they are a far better
+      "starting balance" than a number typed into a form - the user who
+      prompted this typed 200000.1 for an account that opened at exactly
+      200000, and that dime would have skewed their return forever.
+    */
+    let netDeposits = 0;
+    let sawDeposit = false;
 
     for (const t of raw) {
       const externalId = t._id ?? t.positionId;
@@ -165,6 +174,10 @@ Deno.serve(async (req: Request) => {
       const dealType = String(t.type ?? "").toUpperCase();
       if (!t.symbol || dealType.includes("BALANCE") || dealType.includes("CREDIT")) {
         notTrades++;
+        if (Number.isFinite(t.profit)) {
+          netDeposits += Number(t.profit);
+          sawDeposit = true;
+        }
         continue;
       }
 
@@ -212,9 +225,47 @@ Deno.serve(async (req: Request) => {
       imported = count ?? rows.length;
     }
 
+    /*
+      Balances come from the broker rather than from whatever was typed
+      when the account was added. Starting balance is the net of deposits
+      and withdrawals; current balance is that plus realised P&L.
+
+      Only written when a deposit was actually seen. An account whose
+      opening deposit predates the sync window would otherwise have its
+      starting balance silently rewritten to zero.
+    */
+    const balanceUpdate: Record<string, unknown> = { last_sync: now.toISOString() };
+
+    const startingBalance = sawDeposit
+      ? netDeposits
+      : Number(connection.starting_balance ?? 0);
+
+    /*
+      Realised P&L is summed from every trade we hold for this account, not
+      just the ones this run happened to fetch. An incremental sync only
+      looks at the last day or so, and adding that day's profit to the
+      opening balance would report a wildly wrong number.
+    */
+    const { data: allTrades } = await supabase
+      .from("trades")
+      .select("pnl")
+      .eq("broker_id", connectionId)
+      .not("external_id", "is", null);
+
+    const realised = (allTrades ?? []).reduce(
+      (sum: number, t: { pnl: number | null }) => sum + Number(t.pnl ?? 0),
+      0,
+    );
+
+    if (sawDeposit) balanceUpdate.starting_balance = netDeposits;
+    if (sawDeposit || Number(connection.starting_balance ?? 0) > 0) {
+      balanceUpdate.current_balance = startingBalance + realised;
+      balanceUpdate.last_balance_update = now.toISOString();
+    }
+
     await supabase
       .from("user_broker_connections")
-      .update({ last_sync: now.toISOString() })
+      .update(balanceUpdate)
       .eq("id", connectionId);
 
     return json({
@@ -223,6 +274,7 @@ Deno.serve(async (req: Request) => {
       imported,
       skippedStillOpen: stillOpen,
       skippedNotTrades: notTrades,
+      startingBalance: sawDeposit ? netDeposits : null,
     });
   } catch (error) {
     return json(

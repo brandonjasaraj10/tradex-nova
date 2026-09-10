@@ -185,7 +185,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
 
   const handleCreateAccount = async () => {
     if (!newAccountName.trim()) return;
-    if (!startingBalance || parseFloat(startingBalance) <= 0) {
+    if (!autoSync && (!startingBalance || parseFloat(startingBalance) <= 0)) {
       showToast('Enter a starting balance for the account.', 'error');
       return;
     }
@@ -217,8 +217,12 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
         account_name: newAccountName.trim(),
         status: 'connected',
         broker_type: isOther ? otherBrokerName.trim() : (selectedBroker?.name || 'manual'),
-        starting_balance: parseFloat(startingBalance),
-        current_balance: parseFloat(startingBalance),
+        /*
+          A placeholder for a syncing account - the first sync overwrites
+          both from the broker's own deposit history.
+        */
+        starting_balance: parseFloat(startingBalance) || 0,
+        current_balance: parseFloat(startingBalance) || 0,
         currency,
         ownership_type: ownershipType,
       };
@@ -266,7 +270,20 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
         if (!result.ok) {
           showToast(`Account created, but syncing didn't connect: ${result.error}`, 'error');
         } else if (result.connected) {
-          showToast('Account connected. Your trades will sync from now on.', 'success');
+          /*
+            Sync immediately rather than waiting for the schedule. Without
+            this the account appears with no trades and a zero balance,
+            which reads as a failed connection.
+          */
+          setConnectStatus('Importing your trades...');
+          const first = await syncMetaTraderAccount(created.id);
+          setConnectStatus('');
+          showToast(
+            first.ok && first.imported
+              ? `Account connected. Imported ${first.imported} trades.`
+              : 'Account connected. Your trades will sync from now on.',
+            'success',
+          );
         } else {
           /*
             Registered but not live yet. This is normal and resolves on its
@@ -712,7 +729,14 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
                 </div>
               )}
 
-              <div>
+              {/*
+                Hidden once the account is going to sync: the broker knows
+                the real opening balance, and asking is an invitation to get
+                it wrong. The first tester typed 200000.1 for an account
+                that opened at exactly 200000, and that dime would have
+                skewed their return percentage permanently.
+              */}
+              <div className={autoSync ? 'hidden' : ''}>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   Starting Balance *
                 </label>
@@ -807,7 +831,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
                 variant="primary"
                 onClick={handleCreateAccount}
                 isLoading={isCreating}
-                disabled={!newAccountName.trim() || !startingBalance || parseFloat(startingBalance) <= 0 || !platform || (selectedBrokerId === '__other__' && !otherBrokerName.trim())}
+                disabled={!newAccountName.trim() || (!autoSync && (!startingBalance || parseFloat(startingBalance) <= 0)) || !platform || (selectedBrokerId === '__other__' && !otherBrokerName.trim())}
               >
                 Create Account
               </Button>
