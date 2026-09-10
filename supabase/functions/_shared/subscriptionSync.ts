@@ -38,32 +38,15 @@ export async function resolveUserIdFromCustomer(
 */
 
 /*
-  The grace-period rule, kept separate so it can be reasoned about and tested
-  without a Stripe fixture or a database.
+  There is no grace period. A failed card stops access at the decline, and it
+  comes back when the card is fixed.
 
-  New grace periods are no longer granted. A failed card now pauses access at
-  once, and the subscriber restores it by updating their payment method.
-
-  Windows already open are still honoured, and that is the whole reason this
-  function did not simply become `() => null`. Seven people are inside a
-  grace period right now and every one of them has had an email naming the
-  date it ends. Cutting them off early would make that email a lie, which is
-  a worse thing to be than generous.
-
-  So:
-  - past_due with a window already open -> leave it exactly as it is, until
-    it expires on its own and never renews.
-  - anything else, past_due included -> null. No access on a failed card.
+  This function is kept, rather than the column simply being dropped, because
+  grace_period_end still exists on the table and must be actively cleared:
+  a stale deadline left behind would go on granting access to somebody whose
+  payment is failing. Returning null unconditionally is what does that.
 */
-export function resolveGracePeriodEnd(
-  status: string,
-  existing: { status: string; grace_period_end: string | null } | null,
-  _now: Date = new Date()
-): string | null {
-  if (status !== 'past_due') return null;
-  if (existing?.status === 'past_due' && existing.grace_period_end) {
-    return existing.grace_period_end;
-  }
+export function resolveGracePeriodEnd(): string | null {
   return null;
 }
 
@@ -83,24 +66,7 @@ const SUPPORT_EMAIL = 'tradenovaai@gmail.com';
   Gmail's dark-mode inversion, a table-drawn logo because most clients block
   remote images, and a real reply-to so a confused customer reaches a human.
 */
-function buildPaymentFailedHtml(gracePeriodEnd: string | null, amountLabel: string): string {
-  /*
-    Two truths to tell, depending on whether this account is inside one of
-    the grace periods granted before they were withdrawn. Saying "access is
-    paused" to somebody who can still get in would send them to support for
-    no reason; saying "you have days left" to somebody locked out would be
-    worse.
-  */
-  const stillOpen = gracePeriodEnd ? new Date(gracePeriodEnd).getTime() > Date.now() : false;
-  const daysLeft = stillOpen
-    ? Math.max(1, Math.ceil((new Date(gracePeriodEnd!).getTime() - Date.now()) / 86400000))
-    : 0;
-  const noticeHeading = stillOpen
-    ? `Your account stays open for ${daysLeft} more ${daysLeft === 1 ? 'day' : 'days'}.`
-    : 'Your access is paused until your card is updated.';
-  const noticeBody = stillOpen
-    ? 'Nothing is deleted. Update your card before then and everything carries on as normal.'
-    : 'Nothing is deleted. Update your card and everything comes straight back.';
+function buildPaymentFailedHtml(amountLabel: string): string {
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -127,8 +93,8 @@ function buildPaymentFailedHtml(gracePeriodEnd: string | null, amountLabel: stri
 
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#F5F8FF;border:1px solid #D6E4FF;border-radius:10px;margin-bottom:24px;">
                 <tr><td style="padding:16px 18px;">
-                  <p style="margin:0;font-size:15px;line-height:1.6;color:#111111;"><strong>${noticeHeading}</strong></p>
-                  <p style="margin:6px 0 0 0;font-size:14px;line-height:1.6;color:#555555;">${noticeBody}</p>
+                  <p style="margin:0;font-size:15px;line-height:1.6;color:#111111;"><strong>Your access is paused until your card is updated.</strong></p>
+                  <p style="margin:6px 0 0 0;font-size:14px;line-height:1.6;color:#555555;">Nothing is deleted. Update your card and everything comes straight back.</p>
                 </td></tr>
               </table>
 
@@ -165,7 +131,6 @@ function buildPaymentFailedHtml(gracePeriodEnd: string | null, amountLabel: stri
 async function sendPaymentFailedEmail(
   supabase: SupabaseClient,
   userId: string,
-  gracePeriodEnd: string | null,
   subscription: Stripe.Subscription,
 ) {
   try {
@@ -197,7 +162,7 @@ async function sendPaymentFailedEmail(
         to: [email],
         reply_to: [SUPPORT_EMAIL],
         subject: 'Your TradeX payment failed - update your card to restore access',
-        html: buildPaymentFailedHtml(gracePeriodEnd, amountLabel),
+        html: buildPaymentFailedHtml(amountLabel),
       }),
     });
 
@@ -222,12 +187,17 @@ export async function syncSubscription(supabase: SupabaseClient, userId: string,
   /*
     Thrown, not swallowed. A failed lookup is indistinguishable from "no row
     yet", which would make this insert over a subscription that already
-    exists and restart a grace period that was already running.
+    exists and lose the status it was in.
   */
   if (lookupError) throw lookupError;
 
   const existingRow = current as { status: string; grace_period_end: string | null } | null;
-  const gracePeriodEnd = resolveGracePeriodEnd(subscription.status, existingRow);
+  /*
+    Always null now. Written on every sync rather than left alone, so any
+    deadline surviving from the old policy is cleared the next time Stripe
+    tells us anything about that subscription.
+  */
+  const gracePeriodEnd = resolveGracePeriodEnd();
 
   const record = {
     stripe_customer_id:
@@ -292,7 +262,7 @@ export async function syncSubscription(supabase: SupabaseClient, userId: string,
       the same decline is how a useful warning becomes spam.
     */
     if (subscription.status === 'past_due') {
-      await sendPaymentFailedEmail(supabase, userId, gracePeriodEnd, subscription);
+      await sendPaymentFailedEmail(supabase, userId, subscription);
     }
   }
 

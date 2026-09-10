@@ -1,101 +1,85 @@
 import { describe, it, expect } from 'vitest';
 
 /*
-  The grace-period rule from supabase/functions/_shared/subscriptionSync.ts.
+  There is no grace period any more: a failed card ends access at the decline.
 
-  Mirrored here rather than imported: the edge functions are Deno and this
-  suite is Node, so they cannot share a module. The logic is small and the
-  cases below are the ones that actually cost a subscriber their access, so
-  the duplication is worth catching a regression in. If the rule changes in
-  one place it must change in both.
+  These tests are what is left of the rule, kept rather than deleted because
+  the column still exists and the danger now runs the other way. A deadline
+  left behind in grace_period_end, or a resolver that returns one again,
+  would quietly hand paid access to somebody whose payment is failing.
 
-  It caught nothing when grace periods were withdrawn, because the mirror
-  went on testing its own copy and passed while the real rule had inverted -
-  which is exactly the failure mode a mirror invites. Worth remembering the
-  next time this file disagrees with the function it claims to describe.
+  A note on this file's history, because it is the useful part: when grace
+  periods were withdrawn, every test in here passed. It mirrors the rule from
+  supabase/functions/_shared/subscriptionSync.ts rather than importing it -
+  the edge functions are Deno and this suite is Node - so it went on testing
+  its own untouched copy while the real rule inverted underneath. If this file
+  ever disagrees with that one, this file is wrong.
 */
-function resolveGracePeriodEnd(
-  status: string,
-  existing: { status: string; grace_period_end: string | null } | null,
-): string | null {
-  if (status !== 'past_due') return null;
-  if (existing?.status === 'past_due' && existing.grace_period_end) {
-    return existing.grace_period_end;
-  }
+function resolveGracePeriodEnd(): string | null {
   return null;
 }
 
-const OPEN_WINDOW = '2026-09-17T00:00:00.000Z';
-
 describe('resolveGracePeriodEnd', () => {
-  /*
-    The change that matters. A failed card used to buy seven days; it now
-    stops access immediately, and the subscriber restores it by fixing the
-    card rather than by waiting.
-  */
-  it('grants no window when a payment first fails', () => {
-    expect(resolveGracePeriodEnd('past_due', null)).toBeNull();
+  it('never grants a window, whatever the status', () => {
+    expect(resolveGracePeriodEnd()).toBeNull();
   });
-
-  it('grants no window when a subscription lapses with no row yet', () => {
-    expect(resolveGracePeriodEnd('past_due', { status: 'active', grace_period_end: null }))
-      .toBeNull();
-  });
-
-  /*
-    The exception, and the reason this function is not simply () => null.
-    Accounts that were already inside a grace period when the policy changed
-    had been emailed the date it ends. Cutting them off early would make that
-    email untrue.
-  */
-  it('honours a window that was already open', () => {
-    expect(
-      resolveGracePeriodEnd('past_due', { status: 'past_due', grace_period_end: OPEN_WINDOW })
-    ).toBe(OPEN_WINDOW);
-  });
-
-  it('does not extend an open window on a later retry', () => {
-    const preserved = resolveGracePeriodEnd(
-      'past_due',
-      { status: 'past_due', grace_period_end: OPEN_WINDOW }
-    );
-    expect(preserved).toBe(OPEN_WINDOW);
-  });
-
-  it.each(['active', 'trialing', 'canceled', 'incomplete', 'unpaid'])(
-    'clears the window when status becomes %s',
-    (status) => {
-      const wasPastDue = { status: 'past_due', grace_period_end: OPEN_WINDOW };
-      expect(resolveGracePeriodEnd(status, wasPastDue)).toBeNull();
-    }
-  );
 });
 
 /*
-  Which of the two things the payment-failure email says, mirrored from
-  buildPaymentFailedHtml for the same Deno/Node reason as above.
+  The database rule that actually enforces the paywall, mirrored from
+  has_active_subscription(). Every RLS policy on every paid table consults it,
+  so this is the one that decides - the frontend check is a convenience.
 */
-function noticeIsStillOpen(gracePeriodEnd: string | null, now: Date): boolean {
-  return gracePeriodEnd ? new Date(gracePeriodEnd).getTime() > now.getTime() : false;
+function hasActiveSubscription(
+  row: { status: string; current_period_end?: string | null; grace_period_end?: string | null },
+  now: Date,
+): boolean {
+  if (row.status === 'active' || row.status === 'trialing') return true;
+  if (row.status === 'canceled' && row.current_period_end) {
+    return new Date(row.current_period_end).getTime() > now.getTime();
+  }
+  return false;
 }
 
-describe('what the payment failure email tells the subscriber', () => {
-  const now = new Date('2026-09-10T12:00:00.000Z');
+describe('who still has access', () => {
+  const now = new Date('2026-09-10T18:00:00.000Z');
 
-  it('says access is paused when there is no window', () => {
-    expect(noticeIsStillOpen(null, now)).toBe(false);
+  it('lets an active subscriber in', () => {
+    expect(hasActiveSubscription({ status: 'active' }, now)).toBe(true);
   });
 
   /*
-    The seven accounts carried over from the old policy. They can still get
-    in, so telling them access is paused would send them to support over
-    nothing.
+    Trials are no longer offered, but 25 people were inside one when the offer
+    was withdrawn and none of them should be thrown out for it.
   */
-  it('says days remain while a carried-over window is still open', () => {
-    expect(noticeIsStillOpen(OPEN_WINDOW, now)).toBe(true);
+  it('lets someone still inside an existing trial in', () => {
+    expect(hasActiveSubscription({ status: 'trialing' }, now)).toBe(true);
   });
 
-  it('says access is paused once a carried-over window has passed', () => {
-    expect(noticeIsStillOpen('2026-09-09T00:00:00.000Z', now)).toBe(false);
+  it('keeps a cancelled subscriber in until the period they paid for ends', () => {
+    expect(
+      hasActiveSubscription({ status: 'canceled', current_period_end: '2026-09-20T00:00:00.000Z' }, now),
+    ).toBe(true);
+  });
+
+  it('locks out a cancelled subscriber once that period has passed', () => {
+    expect(
+      hasActiveSubscription({ status: 'canceled', current_period_end: '2026-09-01T00:00:00.000Z' }, now),
+    ).toBe(false);
+  });
+
+  it('locks out a failed payment immediately', () => {
+    expect(hasActiveSubscription({ status: 'past_due' }, now)).toBe(false);
+  });
+
+  /*
+    The regression that matters most. A deadline surviving from the old policy
+    must not let anyone back in - which is why the clause was removed from the
+    SQL function rather than merely left unused.
+  */
+  it('ignores a grace period left over from the old policy', () => {
+    expect(
+      hasActiveSubscription({ status: 'past_due', grace_period_end: '2026-09-17T00:00:00.000Z' }, now),
+    ).toBe(false);
   });
 });
