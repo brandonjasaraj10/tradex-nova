@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { AlertCircle, ArrowRight, Loader2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../lib/auth';
 
 /*
   What a subscriber sees when their card has failed and access has stopped.
@@ -18,6 +19,7 @@ import { supabase } from '../../lib/supabase';
   they already chose.
 */
 export default function PaymentFailedGate() {
+  const { signOut } = useAuth();
   const [opening, setOpening] = useState(false);
   const [failed, setFailed] = useState(false);
 
@@ -83,6 +85,23 @@ export default function PaymentFailedGate() {
             and a human will sort it.
           </p>
         )}
+
+        {/*
+          A way out, kept deliberately quiet.
+
+          This screen replaces every route, so without it the only exit is
+          closing the tab - and a wall with no door reads as a product holding
+          someone hostage over a declined card. Small and grey because the
+          card is still the thing we want them to fix; present because not
+          everyone wants to.
+        */}
+        <button
+          type="button"
+          onClick={signOut}
+          className="w-full mt-5 text-xs text-gray-500 hover:text-gray-300 transition-colors"
+        >
+          Sign out
+        </button>
       </div>
     </div>
   );
