@@ -8,94 +8,94 @@ import { describe, it, expect } from 'vitest';
   cases below are the ones that actually cost a subscriber their access, so
   the duplication is worth catching a regression in. If the rule changes in
   one place it must change in both.
-*/
-const GRACE_PERIOD_DAYS = 7;
 
+  It caught nothing when grace periods were withdrawn, because the mirror
+  went on testing its own copy and passed while the real rule had inverted -
+  which is exactly the failure mode a mirror invites. Worth remembering the
+  next time this file disagrees with the function it claims to describe.
+*/
 function resolveGracePeriodEnd(
   status: string,
   existing: { status: string; grace_period_end: string | null } | null,
-  now: Date = new Date()
 ): string | null {
   if (status !== 'past_due') return null;
   if (existing?.status === 'past_due' && existing.grace_period_end) {
     return existing.grace_period_end;
   }
-  return new Date(now.getTime() + GRACE_PERIOD_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  return null;
 }
 
-const NOW = new Date('2026-09-03T12:00:00.000Z');
-const SEVEN_DAYS_ON = '2026-09-10T12:00:00.000Z';
+const OPEN_WINDOW = '2026-09-17T00:00:00.000Z';
 
 describe('resolveGracePeriodEnd', () => {
-  it('opens a 7-day window when a payment first fails', () => {
-    expect(resolveGracePeriodEnd('past_due', { status: 'active', grace_period_end: null }, NOW))
-      .toBe(SEVEN_DAYS_ON);
+  /*
+    The change that matters. A failed card used to buy seven days; it now
+    stops access immediately, and the subscriber restores it by fixing the
+    card rather than by waiting.
+  */
+  it('grants no window when a payment first fails', () => {
+    expect(resolveGracePeriodEnd('past_due', null)).toBeNull();
   });
 
-  it('opens a window when there is no subscription row yet', () => {
-    expect(resolveGracePeriodEnd('past_due', null, NOW)).toBe(SEVEN_DAYS_ON);
+  it('grants no window when a subscription lapses with no row yet', () => {
+    expect(resolveGracePeriodEnd('past_due', { status: 'active', grace_period_end: null }))
+      .toBeNull();
   });
 
   /*
-    The one that matters. Stripe fires an event per retry, so recomputing the
-    deadline on each would push it further out every time and the grace period
-    would never expire - the subscriber would keep full access indefinitely on
-    a card that never charges.
+    The exception, and the reason this function is not simply () => null.
+    Accounts that were already inside a grace period when the policy changed
+    had been emailed the date it ends. Cutting them off early would make that
+    email untrue.
   */
-  it('does not extend a window that is already open', () => {
-    const alreadyOpen = { status: 'past_due', grace_period_end: '2026-09-08T00:00:00.000Z' };
-    const later = new Date('2026-09-06T12:00:00.000Z');
-    expect(resolveGracePeriodEnd('past_due', alreadyOpen, later))
-      .toBe('2026-09-08T00:00:00.000Z');
+  it('honours a window that was already open', () => {
+    expect(
+      resolveGracePeriodEnd('past_due', { status: 'past_due', grace_period_end: OPEN_WINDOW })
+    ).toBe(OPEN_WINDOW);
   });
 
-  it('opens a fresh window if past_due recurs with no deadline recorded', () => {
-    expect(resolveGracePeriodEnd('past_due', { status: 'past_due', grace_period_end: null }, NOW))
-      .toBe(SEVEN_DAYS_ON);
+  it('does not extend an open window on a later retry', () => {
+    const preserved = resolveGracePeriodEnd(
+      'past_due',
+      { status: 'past_due', grace_period_end: OPEN_WINDOW }
+    );
+    expect(preserved).toBe(OPEN_WINDOW);
   });
 
   it.each(['active', 'trialing', 'canceled', 'incomplete', 'unpaid'])(
     'clears the window when status becomes %s',
     (status) => {
-      const wasPastDue = { status: 'past_due', grace_period_end: '2026-09-08T00:00:00.000Z' };
-      expect(resolveGracePeriodEnd(status, wasPastDue, NOW)).toBeNull();
+      const wasPastDue = { status: 'past_due', grace_period_end: OPEN_WINDOW };
+      expect(resolveGracePeriodEnd(status, wasPastDue)).toBeNull();
     }
   );
 });
 
 /*
-  The "days left" wording in the payment-failure email, mirrored from
-  sendPaymentFailedEmail in supabase/functions/_shared/subscriptionSync.ts for
-  the same Deno/Node reason as above. If the rule changes there, change it here.
+  Which of the two things the payment-failure email says, mirrored from
+  buildPaymentFailedHtml for the same Deno/Node reason as above.
 */
-function daysLeftFromGraceEnd(gracePeriodEnd: string | null, now: Date): number {
-  return gracePeriodEnd
-    ? Math.max(1, Math.ceil((new Date(gracePeriodEnd).getTime() - now.getTime()) / 86400000))
-    : 7;
+function noticeIsStillOpen(gracePeriodEnd: string | null, now: Date): boolean {
+  return gracePeriodEnd ? new Date(gracePeriodEnd).getTime() > now.getTime() : false;
 }
 
-describe('days left in the payment failure email', () => {
-  const now = new Date('2026-09-04T12:00:00.000Z');
+describe('what the payment failure email tells the subscriber', () => {
+  const now = new Date('2026-09-10T12:00:00.000Z');
 
-  it('counts a full window as seven days', () => {
-    expect(daysLeftFromGraceEnd('2026-09-11T12:00:00.000Z', now)).toBe(7);
-  });
-
-  it('rounds a part day up, so half a day left still reads as one day', () => {
-    expect(daysLeftFromGraceEnd('2026-09-05T00:00:00.000Z', now)).toBe(1);
+  it('says access is paused when there is no window', () => {
+    expect(noticeIsStillOpen(null, now)).toBe(false);
   });
 
   /*
-    Never zero or negative. Telling somebody they have 0 days while they still
-    have access reads as though it is already too late, and a negative number
-    is nonsense in a subject line.
+    The seven accounts carried over from the old policy. They can still get
+    in, so telling them access is paused would send them to support over
+    nothing.
   */
-  it('never drops below one day, even past the deadline', () => {
-    expect(daysLeftFromGraceEnd('2026-09-04T11:00:00.000Z', now)).toBe(1);
-    expect(daysLeftFromGraceEnd('2026-09-01T12:00:00.000Z', now)).toBe(1);
+  it('says days remain while a carried-over window is still open', () => {
+    expect(noticeIsStillOpen(OPEN_WINDOW, now)).toBe(true);
   });
 
-  it('falls back to the full window when no deadline was recorded', () => {
-    expect(daysLeftFromGraceEnd(null, now)).toBe(7);
+  it('says access is paused once a carried-over window has passed', () => {
+    expect(noticeIsStillOpen('2026-09-09T00:00:00.000Z', now)).toBe(false);
   });
 });

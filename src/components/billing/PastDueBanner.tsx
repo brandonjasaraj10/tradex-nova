@@ -4,17 +4,21 @@ import { useAuth } from '../../lib/auth';
 import { supabase } from '../../lib/supabase';
 
 /*
-  Shown only while a failed payment is inside its grace period.
+  Shown only while a failed payment is inside a grace period.
 
-  Access continues for seven days after a card fails, and until now nothing in
-  the app said so. Someone whose payment bounced kept using TradeX normally
-  and then lost access with no warning they had seen - the only notice was an
-  email and an in-app notification behind the bell.
+  Grace periods are no longer granted, so in time this banner will stop
+  appearing entirely - it survives for the handful of accounts that were
+  already inside one when the policy changed, each of whom was emailed a date
+  and should see the app agree with that email until it passes.
 
-  Deliberately not dismissible. A banner you can close is one you will close,
-  and the cost of missing this one is losing your journal history's
-  availability at the end of the week. It disappears on its own the moment the
-  payment succeeds, because gracePeriodEnd goes null.
+  Everyone whose card fails from now on loses access at once and meets
+  PaymentFailedGate instead, which is a screen rather than a banner because
+  there is no longer anything to carry on doing behind it.
+
+  Deliberately not dismissible while it does show. A banner you can close is
+  one you will close, and the cost of missing this one is losing access at the
+  end of the week. It disappears on its own the moment the payment succeeds,
+  because gracePeriodEnd goes null.
 */
 export default function PastDueBanner() {
   const { gracePeriodEnd } = useAuth();

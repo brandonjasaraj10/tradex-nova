@@ -5,6 +5,8 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Shield, CheckCircle2, Lock, AlertCircle, ArrowLeft, Zap, Crown, TrendingUp, Sparkles, Star, Gift, X } from 'lucide-react';
 import Button from '../components/shared/Button';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../lib/auth';
+import PaymentFailedGate from '../components/billing/PaymentFailedGate';
 
 const FloatingParticle = ({ delay, duration, x, size }: { delay: number; duration: number; x: number; size: number }) => (
   <motion.div
@@ -39,6 +41,7 @@ interface PaymentProps {
 }
 
 export default function Payment({ onSubscriptionComplete, isFirstTime = false }: PaymentProps) {
+  const { pastDue } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -302,6 +305,14 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
   const activePlan = plans.find((pl) => pl.id === selectedPlan) ?? plans[0];
   const activeBilledAs = 'billedAs' in activePlan ? activePlan.billedAs : undefined;
   const chargeAmount = activeBilledAs ? activeBilledAs.split(' ')[0] : activePlan.price;
+
+  /*
+    A lapsed subscriber is not a prospect. Showing them plans would sell a
+    second subscription on top of the one that already exists.
+  */
+  if (pastDue) {
+    return <PaymentFailedGate />;
+  }
 
   // pb-44 below sm clears the CTA bar that is pinned to the bottom there.
   return (

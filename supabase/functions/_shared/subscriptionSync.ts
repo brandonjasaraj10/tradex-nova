@@ -36,31 +36,35 @@ export async function resolveUserIdFromCustomer(
   reconciliation job, so both stay behaviorally identical by construction
   rather than by two hand-kept-in-sync implementations.
 */
-const GRACE_PERIOD_DAYS = 7;
 
 /*
   The grace-period rule, kept separate so it can be reasoned about and tested
   without a Stripe fixture or a database.
 
-  Three cases:
-  - past_due and no window open yet -> start one, GRACE_PERIOD_DAYS out.
-  - past_due with a window already open -> leave it exactly as it is. Stripe
-    fires an event per retry attempt, so recomputing here would push the
-    deadline out on every failure and the grace period would never end.
-  - anything else -> clear it. A recovered card, a cancellation and a fresh
-    subscription all need the column empty, or a stale deadline would keep
-    granting access to somebody who is no longer past_due.
+  New grace periods are no longer granted. A failed card now pauses access at
+  once, and the subscriber restores it by updating their payment method.
+
+  Windows already open are still honoured, and that is the whole reason this
+  function did not simply become `() => null`. Seven people are inside a
+  grace period right now and every one of them has had an email naming the
+  date it ends. Cutting them off early would make that email a lie, which is
+  a worse thing to be than generous.
+
+  So:
+  - past_due with a window already open -> leave it exactly as it is, until
+    it expires on its own and never renews.
+  - anything else, past_due included -> null. No access on a failed card.
 */
 export function resolveGracePeriodEnd(
   status: string,
   existing: { status: string; grace_period_end: string | null } | null,
-  now: Date = new Date()
+  _now: Date = new Date()
 ): string | null {
   if (status !== 'past_due') return null;
   if (existing?.status === 'past_due' && existing.grace_period_end) {
     return existing.grace_period_end;
   }
-  return new Date(now.getTime() + GRACE_PERIOD_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  return null;
 }
 
 const APP_URL = 'https://tradexnova.com';
@@ -79,7 +83,24 @@ const SUPPORT_EMAIL = 'tradenovaai@gmail.com';
   Gmail's dark-mode inversion, a table-drawn logo because most clients block
   remote images, and a real reply-to so a confused customer reaches a human.
 */
-function buildPaymentFailedHtml(daysLeft: number, amountLabel: string): string {
+function buildPaymentFailedHtml(gracePeriodEnd: string | null, amountLabel: string): string {
+  /*
+    Two truths to tell, depending on whether this account is inside one of
+    the grace periods granted before they were withdrawn. Saying "access is
+    paused" to somebody who can still get in would send them to support for
+    no reason; saying "you have days left" to somebody locked out would be
+    worse.
+  */
+  const stillOpen = gracePeriodEnd ? new Date(gracePeriodEnd).getTime() > Date.now() : false;
+  const daysLeft = stillOpen
+    ? Math.max(1, Math.ceil((new Date(gracePeriodEnd!).getTime() - Date.now()) / 86400000))
+    : 0;
+  const noticeHeading = stillOpen
+    ? `Your account stays open for ${daysLeft} more ${daysLeft === 1 ? 'day' : 'days'}.`
+    : 'Your access is paused until your card is updated.';
+  const noticeBody = stillOpen
+    ? 'Nothing is deleted. Update your card before then and everything carries on as normal.'
+    : 'Nothing is deleted. Update your card and everything comes straight back.';
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -106,8 +127,8 @@ function buildPaymentFailedHtml(daysLeft: number, amountLabel: string): string {
 
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#F5F8FF;border:1px solid #D6E4FF;border-radius:10px;margin-bottom:24px;">
                 <tr><td style="padding:16px 18px;">
-                  <p style="margin:0;font-size:15px;line-height:1.6;color:#111111;"><strong>Your account stays open for ${daysLeft} more ${daysLeft === 1 ? 'day' : 'days'}.</strong></p>
-                  <p style="margin:6px 0 0 0;font-size:14px;line-height:1.6;color:#555555;">Nothing is deleted. Update your card before then and everything carries on as normal.</p>
+                  <p style="margin:0;font-size:15px;line-height:1.6;color:#111111;"><strong>${noticeHeading}</strong></p>
+                  <p style="margin:6px 0 0 0;font-size:14px;line-height:1.6;color:#555555;">${noticeBody}</p>
                 </td></tr>
               </table>
 
@@ -161,11 +182,6 @@ async function sendPaymentFailedEmail(
       return;
     }
 
-    // Rounded up, and never below one: telling somebody they have 0 days left
-    // while they still have access reads as though it is already too late.
-    const daysLeft = gracePeriodEnd
-      ? Math.max(1, Math.ceil((new Date(gracePeriodEnd).getTime() - Date.now()) / 86400000))
-      : 7;
 
     const amount = subscription.items.data[0]?.price?.unit_amount;
     const currency = (subscription.items.data[0]?.price?.currency ?? 'usd').toUpperCase();
@@ -180,8 +196,8 @@ async function sendPaymentFailedEmail(
         from: 'TradeX <noreply@tradexnova.com>',
         to: [email],
         reply_to: [SUPPORT_EMAIL],
-        subject: `Your TradeX payment failed - ${daysLeft} ${daysLeft === 1 ? 'day' : 'days'} to update your card`,
-        html: buildPaymentFailedHtml(daysLeft, amountLabel),
+        subject: 'Your TradeX payment failed - update your card to restore access',
+        html: buildPaymentFailedHtml(gracePeriodEnd, amountLabel),
       }),
     });
 
@@ -190,7 +206,7 @@ async function sendPaymentFailedEmail(
       return;
     }
 
-    console.info('Payment failure email sent to', email, `(${daysLeft} days left)`);
+    console.info('Payment failure email sent to', email);
   } catch (err) {
     console.error('Payment failure email failed for', userId, err);
   }
