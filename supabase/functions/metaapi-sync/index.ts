@@ -85,6 +85,12 @@ Deno.serve(async (req: Request) => {
     const body = await req.json().catch(() => ({}));
     const connectionId = String(body?.connectionId ?? "").trim();
     if (!connectionId) return json({ error: "Which account?" }, 400);
+    /*
+      Diagnostic only: echoes what MetaStats actually sent instead of what
+      we hoped it sent. Never on by default - it returns raw trade data.
+    */
+    const debug = body?.debug === true;
+    const sinceDays = Number(body?.sinceDays) > 0 ? Number(body.sinceDays) : 365;
 
     const { data: connection, error: readError } = await supabase
       .from("user_broker_connections")
@@ -104,9 +110,10 @@ Deno.serve(async (req: Request) => {
       since, minus a day of overlap for the timezone reasons above.
     */
     const now = new Date();
-    const since = connection.last_sync
+    const explicitWindow = Number(body?.sinceDays) > 0;
+    const since = (connection.last_sync && !explicitWindow)
       ? new Date(new Date(connection.last_sync).getTime() - 24 * 60 * 60 * 1000)
-      : new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+      : new Date(now.getTime() - sinceDays * 24 * 60 * 60 * 1000);
 
     const url =
       `${METASTATS_URL}/users/current/accounts/${connection.metaapi_account_id}` +
@@ -117,6 +124,18 @@ Deno.serve(async (req: Request) => {
     if (!res.ok) {
       const detail = await res.text().catch(() => "");
       return json({ error: `Couldn't read your trade history. ${detail}`.trim() }, 400);
+    }
+
+    if (debug) {
+      const text = await res.text().catch(() => "");
+      return json({
+        debug: true,
+        requestedUrl: url,
+        windowFrom: metaStatsTime(since),
+        windowTo: metaStatsTime(now),
+        status: res.status,
+        rawFirst2000: text.slice(0, 2000),
+      });
     }
 
     const payload = await res.json().catch(() => null) as
@@ -130,16 +149,31 @@ Deno.serve(async (req: Request) => {
       : [];
 
     const rows = [];
-    let skipped = 0;
+    let stillOpen = 0;
+    let notTrades = 0;
 
     for (const t of raw) {
       const externalId = t._id ?? t.positionId;
+
+      /*
+        Deposits, withdrawals and credit adjustments come back in the same
+        list as trades, typed DEAL_TYPE_BALANCE and carrying no symbol. The
+        opening deposit on a funded account is the dangerous one: it has a
+        profit of the full account size, so letting one through would show
+        as a $200,000 winning trade and wreck every metric on the page.
+      */
+      const dealType = String(t.type ?? "").toUpperCase();
+      if (!t.symbol || dealType.includes("BALANCE") || dealType.includes("CREDIT")) {
+        notTrades++;
+        continue;
+      }
+
       /*
         A trade still open has no close time and no final profit. Those
         belong on a live-positions view, not in a journal of what happened.
       */
-      if (!externalId || !t.symbol || !t.openTime || !t.closeTime) {
-        skipped++;
+      if (!externalId || !t.openTime || !t.closeTime) {
+        stillOpen++;
         continue;
       }
 
@@ -187,7 +221,8 @@ Deno.serve(async (req: Request) => {
       synced: true,
       found: raw.length,
       imported,
-      skippedStillOpen: skipped,
+      skippedStillOpen: stillOpen,
+      skippedNotTrades: notTrades,
     });
   } catch (error) {
     return json(
