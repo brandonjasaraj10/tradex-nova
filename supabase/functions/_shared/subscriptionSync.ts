@@ -50,6 +50,124 @@ export function resolveGracePeriodEnd(): string | null {
   return null;
 }
 
+/*
+  Global endpoint, not regional - see the note in mt-servers/index.ts.
+*/
+const PROVISIONING_URL = 'https://mt-provisioning-api-v1.agiliumtrade.agiliumtrade.ai';
+
+/*
+  Stop paying MetaApi for accounts belonging to somebody who is no longer a
+  subscriber.
+
+  MetaApi bills per connected account for as long as it exists in their
+  cloud, and none of that stops on its own. Without this, a cancelled
+  customer's connections keep running and keep charging us - a cost with no
+  revenue behind it and nobody using it, which is the worst kind because
+  nothing surfaces it until the invoice.
+
+  Two different actions, because a failed card and a cancellation are not the
+  same thing:
+
+    past_due -> undeploy. The account stops running, which takes it from
+    about $9 a month to about $0.77, but it stays registered with MetaApi.
+    That matters because we deliberately never store the investor password:
+    deleting would mean the trader has to dig it out again to reconnect, and
+    a card that fails at 2am and is fixed at 9am should not cost them that.
+
+    canceled / unpaid / incomplete_expired -> delete. They are gone; keep
+    nothing and pay nothing.
+
+    back to active or trialing -> deploy again, so syncing resumes on its
+    own. Without this the undeploy above would be a silent one-way door:
+    the subscriber pays, gets their access back, and their trades quietly
+    never sync again.
+
+  Never allowed to break the subscription sync. What Stripe says is true
+  about a subscription matters far more than our housekeeping at a third
+  party, so every failure here is caught and logged.
+*/
+async function applyBrokerSyncPolicy(
+  supabase: SupabaseClient,
+  userId: string,
+  status: string,
+) {
+  const token = Deno.env.get('METAAPI_TOKEN');
+  if (!token) return;
+
+  const stop = status === 'past_due';
+  const remove = ['canceled', 'unpaid', 'incomplete_expired'].includes(status);
+  const resume = status === 'active' || status === 'trialing';
+  if (!stop && !remove && !resume) return;
+
+  try {
+    const { data, error } = await supabase
+      .from('broker_connections')
+      .select('id, metaapi_account_id')
+      .eq('user_id', userId)
+      .not('metaapi_account_id', 'is', null);
+
+    if (error) {
+      console.error('Could not read broker connections for', userId, error);
+      return;
+    }
+
+    const connections = (data ?? []) as { id: string; metaapi_account_id: string }[];
+    if (connections.length === 0) return;
+
+    for (const connection of connections) {
+      const base = `${PROVISIONING_URL}/users/current/accounts/${connection.metaapi_account_id}`;
+      const auth = { 'auth-token': token };
+
+      try {
+        if (resume) {
+          const res = await fetch(`${base}/deploy`, { method: 'POST', headers: auth });
+          if (!res.ok) {
+            console.error('Could not resume', connection.metaapi_account_id, await res.text());
+          }
+          continue;
+        }
+
+        if (stop) {
+          const res = await fetch(`${base}/undeploy`, { method: 'POST', headers: auth });
+          if (!res.ok) {
+            console.error('Could not stop', connection.metaapi_account_id, await res.text());
+          }
+          continue;
+        }
+
+        /*
+          Undeploy before delete: MetaApi can refuse to delete an account
+          that is still running, and a refused delete is the exact failure
+          that leaves us paying.
+        */
+        await fetch(`${base}/undeploy`, { method: 'POST', headers: auth }).catch(() => undefined);
+        const res = await fetch(base, { method: 'DELETE', headers: auth });
+
+        if (!res.ok && res.status !== 404) {
+          // Deliberately leaves metaapi_account_id in place. It is the only
+          // pointer we have to an account still being billed, and losing it
+          // would make the charge invisible.
+          console.error('Could not remove', connection.metaapi_account_id, await res.text());
+          continue;
+        }
+
+        await supabase
+          .from('broker_connections')
+          .update({ metaapi_account_id: null, is_auto_sync_enabled: false })
+          .eq('id', connection.id);
+      } catch (err) {
+        console.error('Broker sync policy failed for connection', connection.id, err);
+      }
+    }
+
+    console.info(
+      `Broker sync policy applied for ${userId} (${status}): ${connections.length} connection(s)`,
+    );
+  } catch (err) {
+    console.error('Broker sync policy failed for', userId, err);
+  }
+}
+
 const APP_URL = 'https://tradexnova.com';
 const SUPPORT_EMAIL = 'tradenovaai@gmail.com';
 
@@ -256,6 +374,8 @@ export async function syncSubscription(supabase: SupabaseClient, userId: string,
     if (subscription.status === 'past_due') {
       await sendPaymentFailedEmail(supabase, userId, subscription);
     }
+
+    await applyBrokerSyncPolicy(supabase, userId, subscription.status);
   }
 
   console.info(`Synced subscription ${subscription.id} (${subscription.status}) for user ${userId}`);

@@ -67,7 +67,7 @@ Deno.serve(async (req: Request) => {
     if (!connectionId) {
       return json({ error: "Which account?" }, 400);
     }
-    if (!["status", "deploy", "disconnect", "enable-metastats"].includes(action)) {
+    if (!["status", "deploy", "undeploy", "disconnect", "enable-metastats"].includes(action)) {
       return json({ error: "Unknown action" }, 400);
     }
 
@@ -112,6 +112,21 @@ Deno.serve(async (req: Request) => {
         return json({ error: `Couldn't enable metrics. ${detail}`.trim() }, 400);
       }
       return json({ metastatsEnabled: true });
+    }
+
+    if (action === "undeploy") {
+      /*
+        Stops the account without removing it. Takes an account from about
+        $9 a month to about $0.77 while keeping it registered, so it can be
+        started again without the investor password - which we never store.
+        This is what a failed payment does, as opposed to a cancellation.
+      */
+      const res = await fetch(`${base}/undeploy`, { method: "POST", headers: auth });
+      if (!res.ok) {
+        const detail = await res.text().catch(() => "");
+        return json({ error: `Couldn't stop the account. ${detail}`.trim() }, 400);
+      }
+      return json({ undeployed: true });
     }
 
     if (action === "deploy") {
