@@ -1696,6 +1696,48 @@ export default function Journal() {
                 </div>
               </div>
 
+              {/*
+                Above the editor on purpose.
+
+                This panel used to sit at the very bottom of the card - about
+                2,500px down a 2,700px page. Arriving from Trade Logs, the
+                first thing on screen was "No entries yet", and the trade you
+                had just clicked was two and a half screens below it, so the
+                day read as empty when it wasn't.
+
+                For a synced account the trades are what happened; the entry
+                is what you have not written yet. Show what happened first.
+              */}
+              {recentTrades.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-sm font-medium text-gray-300 mb-3 flex items-center gap-2">
+                    <LineChart size={16} />
+                    Trades on this day ({recentTrades.length})
+                  </h3>
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {recentTrades.map((trade) => (
+                      <div
+                        key={trade.id}
+                        className="flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-2 h-2 rounded-full ${trade.direction === 'LONG' ? 'bg-blue-400' : 'bg-gray-400'}`} />
+                          <div>
+                            <p className="text-sm font-medium">{trade.symbol}</p>
+                            <p className="text-xs text-gray-400">{trade.setup || 'No setup'}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className={`text-sm font-medium ${(trade.pnl || 0) >= 0 ? 'text-blue-400' : 'text-gray-400'}`}>
+                            ${(trade.pnl || 0) >= 0 ? '+' : ''}{(trade.pnl || 0).toFixed(2)}
+                          </p>
+                          <p className="text-xs text-gray-400">{trade.quantity} shares</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               {dailyEntries.length > 0 && (
                 <div className="mb-6">
                   <div className="flex items-center justify-between mb-3">
@@ -2630,36 +2672,6 @@ export default function Journal() {
               </div>
               )}
 
-              {recentTrades.length > 0 && (
-                <div className="mt-6">
-                  <h3 className="text-sm font-medium text-gray-300 mb-3 flex items-center gap-2">
-                    <LineChart size={16} />
-                    Today's Trades ({recentTrades.length})
-                  </h3>
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {recentTrades.map((trade) => (
-                      <div
-                        key={trade.id}
-                        className="flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className={`w-2 h-2 rounded-full ${trade.direction === 'LONG' ? 'bg-blue-400' : 'bg-gray-400'}`} />
-                          <div>
-                            <p className="text-sm font-medium">{trade.symbol}</p>
-                            <p className="text-xs text-gray-400">{trade.setup || 'No setup'}</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className={`text-sm font-medium ${(trade.pnl || 0) >= 0 ? 'text-blue-400' : 'text-gray-400'}`}>
-                            ${(trade.pnl || 0) >= 0 ? '+' : ''}{(trade.pnl || 0).toFixed(2)}
-                          </p>
-                          <p className="text-xs text-gray-400">{trade.quantity} shares</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </Card>
           </motion.div>
         </div>
