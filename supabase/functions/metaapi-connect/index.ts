@@ -131,6 +131,44 @@ Deno.serve(async (req: Request) => {
     }
 
     /*
+      Checked before anything is created, because creating is what costs
+      money: $2.10 the first time an account is added in a month, and about
+      $9 a month for as long as it runs. A cap enforced after the fact would
+      be a cap that had already been paid for.
+
+      The limit comes from synced_account_limit() rather than a number
+      written here, so the screen that says "1 of 2 used" and the rule that
+      refuses the third are reading the same thing.
+    */
+    const { data: limitData, error: limitError } = await supabase.rpc('synced_account_limit');
+    const limit = typeof limitData === 'number' ? limitData : 0;
+
+    if (limitError) {
+      return json({ error: "Couldn't check your plan's account limit." }, 500);
+    }
+
+    const { count: connectedCount, error: countError } = await supabase
+      .from('user_broker_connections')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .not('metaapi_account_id', 'is', null);
+
+    if (countError) {
+      return json({ error: "Couldn't check how many accounts you have connected." }, 500);
+    }
+
+    if ((connectedCount ?? 0) >= limit) {
+      return json({
+        error: limit === 0
+          ? 'Automatic syncing needs an active subscription.'
+          : `Your plan covers ${limit} synced ${limit === 1 ? 'account' : 'accounts'}. Disconnect one to connect another.`,
+        limitReached: true,
+        limit,
+        connected: connectedCount ?? 0,
+      }, 403);
+    }
+
+    /*
       type and reliability are left at MetaApi's defaults (cloud-g2 /
       high) on purpose - g2 is roughly a third the price of g1, and
       regular reliability isn't offered on g2 anyway.
