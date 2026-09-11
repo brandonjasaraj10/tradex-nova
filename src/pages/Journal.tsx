@@ -1879,26 +1879,37 @@ export default function Journal() {
                                 </p>
                               </div>
                             </div>
-                            <div className="text-right flex-shrink-0">
-                              {(() => {
-                                const linked = entry.trade_id ? tradesById.get(entry.trade_id) : undefined;
-                                const pnl = linked?.pnl ?? 0;
-                                return (
-                                  <>
-                                    <p className={`text-sm font-medium ${pnl >= 0 ? 'text-blue-400' : 'text-gray-400'}`}>
-                                      ${pnl >= 0 ? '+' : ''}{pnl.toFixed(2)}
-                                    </p>
-                                    <p className="text-xs text-gray-400">
-                                      {linked ? formatQuantity(linked)
-                                             : (editingEntryId === entry.id ? entryForm.position_size : entry.position_size) || ''}
-                                    </p>
-                                  </>
-                                );
-                              })()}
+                            {/*
+                              The badge and the figures share one right-hand
+                              group, rather than being separate children of a
+                              justify-between row. As siblings the row spread
+                              all three apart, which shoved the P&L into the
+                              middle of the card on whichever entry was open -
+                              so the one row you were looking at was the one
+                              that did not line up with the rest.
+                            */}
+                            <div className="flex items-center gap-3 flex-shrink-0">
+                              {editingEntryId === entry.id && (
+                                <span className="px-2 py-1 bg-blue-400/20 text-blue-400 text-xs rounded-full font-medium">Editing</span>
+                              )}
+                              <div className="text-right">
+                                {(() => {
+                                  const linked = entry.trade_id ? tradesById.get(entry.trade_id) : undefined;
+                                  const pnl = linked?.pnl ?? 0;
+                                  return (
+                                    <>
+                                      <p className={`text-sm font-medium ${pnl >= 0 ? 'text-blue-400' : 'text-gray-400'}`}>
+                                        ${pnl >= 0 ? '+' : ''}{pnl.toFixed(2)}
+                                      </p>
+                                      <p className="text-xs text-gray-400">
+                                        {linked ? formatQuantity(linked)
+                                               : (editingEntryId === entry.id ? entryForm.position_size : entry.position_size) || ''}
+                                      </p>
+                                    </>
+                                  );
+                                })()}
+                              </div>
                             </div>
-                            {editingEntryId === entry.id && (
-                              <span className="flex-shrink-0 px-2 py-1 bg-blue-400/20 text-blue-400 text-xs rounded-full font-medium">Editing</span>
-                            )}
                           </div>
                         ) : (
                         <div className="flex items-start justify-between gap-4">
