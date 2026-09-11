@@ -18,6 +18,11 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import {
+  type MetaStatsTrade,
+  isBalanceMovement,
+  toTradeRow,
+} from "../_shared/metaStatsTrade.ts";
 
 const METASTATS_URL = "https://metastats-api-v1.london.agiliumtrade.ai";
 
@@ -29,19 +34,6 @@ const json = (body: unknown, status = 200) =>
 
 const metaStatsTime = (d: Date) =>
   d.toISOString().replace("T", " ").replace("Z", "");
-
-interface MetaStatsTrade {
-  _id?: string;
-  positionId?: string;
-  symbol?: string;
-  type?: string;
-  volume?: number;
-  openPrice?: number;
-  closePrice?: number;
-  openTime?: string;
-  closeTime?: string;
-  profit?: number;
-}
 
 async function syncOne(
   admin: ReturnType<typeof createClient>,
@@ -84,33 +76,17 @@ async function syncOne(
   let sawDeposit = false;
 
   for (const t of raw) {
-    const externalId = t._id ?? t.positionId;
-    const dealType = String(t.type ?? "").toUpperCase();
-
-    /* Deposits are not trades - see the note in metaapi-sync. */
-    if (!t.symbol || dealType.includes("BALANCE") || dealType.includes("CREDIT")) {
+    if (isBalanceMovement(t)) {
       if (Number.isFinite(t.profit)) {
         netDeposits += Number(t.profit);
         sawDeposit = true;
       }
       continue;
     }
-    if (!externalId || !t.openTime || !t.closeTime) continue;
 
-    rows.push({
-      /* Always the connection's owner, never anything from the request. */
-      user_id: connection.user_id,
-      broker_id: connection.id,
-      external_id: String(externalId),
-      symbol: t.symbol,
-      direction: dealType.includes("SELL") ? "SHORT" : "LONG",
-      quantity: Number(t.volume ?? 0),
-      entry_price: Number(t.openPrice ?? 0),
-      exit_price: Number(t.closePrice ?? 0),
-      entry_date: new Date(t.openTime).toISOString(),
-      exit_date: new Date(t.closeTime).toISOString(),
-      pnl: Number(t.profit ?? 0),
-    });
+    /* Owner comes from the connection, never from anything in the payload. */
+    const row = toTradeRow(t, connection.user_id, connection.id);
+    if (row) rows.push(row);
   }
 
   if (rows.length) {

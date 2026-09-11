@@ -21,6 +21,11 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import {
+  type MetaStatsTrade,
+  isBalanceMovement,
+  toTradeRow,
+} from "../_shared/metaStatsTrade.ts";
 
 const METASTATS_URL = "https://metastats-api-v1.london.agiliumtrade.ai";
 
@@ -39,19 +44,6 @@ const json = (body: unknown, status = 200) =>
 /* MetaStats wants "YYYY-MM-DD HH:mm:ss.SSS", not ISO. */
 const metaStatsTime = (d: Date) =>
   d.toISOString().replace("T", " ").replace("Z", "");
-
-interface MetaStatsTrade {
-  _id?: string;
-  positionId?: string;
-  symbol?: string;
-  type?: string;
-  volume?: number;
-  openPrice?: number;
-  closePrice?: number;
-  openTime?: string;
-  closeTime?: string;
-  profit?: number;
-}
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -162,8 +154,6 @@ Deno.serve(async (req: Request) => {
     let sawDeposit = false;
 
     for (const t of raw) {
-      const externalId = t._id ?? t.positionId;
-
       /*
         Deposits, withdrawals and credit adjustments come back in the same
         list as trades, typed DEAL_TYPE_BALANCE and carrying no symbol. The
@@ -171,8 +161,7 @@ Deno.serve(async (req: Request) => {
         profit of the full account size, so letting one through would show
         as a $200,000 winning trade and wreck every metric on the page.
       */
-      const dealType = String(t.type ?? "").toUpperCase();
-      if (!t.symbol || dealType.includes("BALANCE") || dealType.includes("CREDIT")) {
+      if (isBalanceMovement(t)) {
         notTrades++;
         if (Number.isFinite(t.profit)) {
           netDeposits += Number(t.profit);
@@ -182,31 +171,15 @@ Deno.serve(async (req: Request) => {
       }
 
       /*
-        A trade still open has no close time and no final profit. Those
-        belong on a live-positions view, not in a journal of what happened.
+        Null for a position still open - no close time, no final profit -
+        which belongs on a live view rather than a record of what happened.
       */
-      if (!externalId || !t.openTime || !t.closeTime) {
+      const row = toTradeRow(t, user.id, connection.id);
+      if (!row) {
         stillOpen++;
         continue;
       }
-
-      const direction = String(t.type ?? "").toUpperCase().includes("SELL")
-        ? "SHORT"
-        : "LONG";
-
-      rows.push({
-        user_id: user.id,
-        broker_id: connection.id,
-        external_id: String(externalId),
-        symbol: t.symbol,
-        direction,
-        quantity: Number(t.volume ?? 0),
-        entry_price: Number(t.openPrice ?? 0),
-        exit_price: Number(t.closePrice ?? 0),
-        entry_date: new Date(t.openTime).toISOString(),
-        exit_date: new Date(t.closeTime).toISOString(),
-        pnl: Number(t.profit ?? 0),
-      });
+      rows.push(row);
     }
 
     let imported = 0;
