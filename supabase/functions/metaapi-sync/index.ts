@@ -24,6 +24,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import {
   type MetaStatsTrade,
   isBalanceMovement,
+  summariseDeals,
   toTradeRow,
 } from "../_shared/metaStatsTrade.ts";
 
@@ -120,6 +121,64 @@ Deno.serve(async (req: Request) => {
 
     if (debug) {
       const text = await res.text().catch(() => "");
+
+      /*
+        Diagnostic for one specific question: is the profit MetaStats gives
+        us gross, or already net of commission and swap? Adding them to a
+        figure that already includes them would make P&L less accurate, not
+        more, so this compares the two for the same positions before any
+        column is written.
+      */
+      /*
+        Summarised rather than sampled. A raw prefix answers "what does the
+        first order look like", which is the wrong question - the one that
+        matters is whether any order in the account carries a stop loss.
+      */
+      const clientBase =
+        `https://mt-client-api-v1.london.agiliumtrade.ai` +
+        `/users/current/accounts/${connection.metaapi_account_id}`;
+      const range =
+        `/time/${encodeURIComponent(since.toISOString())}` +
+        `/${encodeURIComponent(now.toISOString())}`;
+
+      let dealsSample: unknown = null;
+      if (body?.probeDeals === true) {
+        const r = await fetch(`${clientBase}/history-deals${range}`, {
+          headers: { "auth-token": token },
+        });
+        const d = await r.json().catch(() => []) as Record<string, unknown>[];
+        const list = Array.isArray(d) ? d : [];
+        dealsSample = {
+          status: r.status,
+          count: list.length,
+          withCommission: list.filter((x) => Number(x.commission ?? 0) !== 0).length,
+          withSwap: list.filter((x) => Number(x.swap ?? 0) !== 0).length,
+          totalCommission: list.reduce((n, x) => n + Number(x.commission ?? 0), 0),
+          totalSwap: list.reduce((n, x) => n + Number(x.swap ?? 0), 0),
+          reasons: [...new Set(list.map((x) => String(x.reason ?? "")))],
+        };
+      }
+
+      let ordersSample: unknown = null;
+      if (body?.probeOrders === true) {
+        const r = await fetch(`${clientBase}/history-orders${range}`, {
+          headers: { "auth-token": token },
+        });
+        const d = await r.json().catch(() => []) as Record<string, unknown>[];
+        const list = Array.isArray(d) ? d : [];
+        const withSl = list.filter((x) => x.stopLoss != null);
+        ordersSample = {
+          status: r.status,
+          count: list.length,
+          withStopLoss: withSl.length,
+          withTakeProfit: list.filter((x) => x.takeProfit != null).length,
+          reasons: [...new Set(list.map((x) => String(x.reason ?? "")))],
+          types: [...new Set(list.map((x) => String(x.type ?? "")))],
+          exampleWithStopLoss: withSl[0] ?? null,
+          exampleAny: list[0] ?? null,
+        };
+      }
+
       return json({
         debug: true,
         requestedUrl: url,
@@ -127,6 +186,8 @@ Deno.serve(async (req: Request) => {
         windowTo: metaStatsTime(now),
         status: res.status,
         rawFirst2000: text.slice(0, 2000),
+        dealsSample,
+        ordersSample,
       });
     }
 
@@ -139,6 +200,36 @@ Deno.serve(async (req: Request) => {
       : Array.isArray(payload?.trades)
       ? payload!.trades!
       : [];
+
+
+    /*
+      MetaTrader's deal history, for what MetaStats leaves out: how each
+      position ended, and what it cost in commission and swap.
+
+      Free - MetaApi charges for account hosting, not per call - and the
+      account is already deployed while a sync runs, so this is one more
+      request inside a window being paid for regardless.
+
+      A failure here degrades rather than breaks: the trades still import,
+      just without the close reason and costs, which is much better than
+      losing the sync over an enrichment.
+    */
+    let dealSummary = new Map();
+    try {
+      const dealsRes = await fetch(
+        `https://mt-client-api-v1.london.agiliumtrade.ai` +
+          `/users/current/accounts/${connection.metaapi_account_id}/history-deals` +
+          `/time/${encodeURIComponent(since.toISOString())}` +
+          `/${encodeURIComponent(now.toISOString())}`,
+        { headers: { "auth-token": token } },
+      );
+      if (dealsRes.ok) {
+        const deals = await dealsRes.json().catch(() => []);
+        if (Array.isArray(deals)) dealSummary = summariseDeals(deals);
+      }
+    } catch {
+      /* Enrichment only. The trades below import either way. */
+    }
 
     const rows = [];
     let stillOpen = 0;
@@ -174,7 +265,7 @@ Deno.serve(async (req: Request) => {
         Null for a position still open - no close time, no final profit -
         which belongs on a live view rather than a record of what happened.
       */
-      const row = toTradeRow(t, user.id, connection.id);
+      const row = toTradeRow(t, user.id, connection.id, dealSummary);
       if (!row) {
         stillOpen++;
         continue;

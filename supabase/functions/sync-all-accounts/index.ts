@@ -21,6 +21,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import {
   type MetaStatsTrade,
   isBalanceMovement,
+  summariseDeals,
   toTradeRow,
 } from "../_shared/metaStatsTrade.ts";
 
@@ -71,6 +72,36 @@ async function syncOne(
     ? payload!.trades!
     : [];
 
+
+  /*
+    MetaTrader's deal history, for what MetaStats leaves out: how each
+    position ended, and what it cost in commission and swap.
+
+    Free - MetaApi charges for account hosting, not per call - and the
+    account is already deployed while a sync runs, so this is one more
+    request inside a window being paid for regardless.
+
+    A failure here degrades rather than breaks: the trades still import,
+    just without the close reason and costs, which is much better than
+    losing the sync over an enrichment.
+  */
+  let dealSummary = new Map();
+  try {
+    const dealsRes = await fetch(
+      `https://mt-client-api-v1.london.agiliumtrade.ai` +
+        `/users/current/accounts/${connection.metaapi_account_id}/history-deals` +
+        `/time/${encodeURIComponent(since.toISOString())}` +
+        `/${encodeURIComponent(now.toISOString())}`,
+      { headers: { "auth-token": token } },
+    );
+    if (dealsRes.ok) {
+      const deals = await dealsRes.json().catch(() => []);
+      if (Array.isArray(deals)) dealSummary = summariseDeals(deals);
+    }
+  } catch {
+    /* Enrichment only. The trades below import either way. */
+  }
+
   const rows = [];
   let netDeposits = 0;
   let sawDeposit = false;
@@ -85,7 +116,7 @@ async function syncOne(
     }
 
     /* Owner comes from the connection, never from anything in the payload. */
-    const row = toTradeRow(t, connection.user_id, connection.id);
+    const row = toTradeRow(t, connection.user_id, connection.id, dealSummary);
     if (row) rows.push(row);
   }
 
