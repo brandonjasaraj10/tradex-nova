@@ -129,6 +129,55 @@ export interface TradeRow {
   swap: number | null;
 }
 
+/*
+  Pips, computed from the prices rather than taken from MetaStats.
+
+  MetaStats' own `pips` field is pips multiplied by lot size. Measured
+  against this account: 50 lots of AUDUSD moving 4.2 pips came back as 210,
+  11.42 lots moving 7.9 came back as 90, 5.36 lots moving 29.4 came back as
+  160. It scales with position size, so "you give up 269 pips on a stop"
+  actually meant 269 pip-lots, which says more about bet size than about
+  where the stop sat.
+
+  The derived figure reconciles with the money exactly - 50 lots at -4.2
+  pips is -$2,100 gross, and the broker charged -$2,100.00.
+
+  Only forex gets a pip count. A futures contract moves in ticks, an index
+  in points, a share in cents; MetaStats returns a number for all of them
+  and calling any of it "pips" would be confidently wrong in a different way
+  each time. Null is the honest answer there, and the price move is still on
+  the row for anyone who wants it.
+*/
+function derivePips(
+  symbol: string,
+  entryPrice: number,
+  exitPrice: number,
+  direction: "LONG" | "SHORT",
+): number | null {
+  /*
+    Broker suffixes are everywhere - EURUSD.sim, EURUSD.raw, EURUSDm - so
+    the currency pair is read off the front rather than by matching the
+    whole symbol.
+  */
+  const base = symbol.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 6);
+  if (base.length !== 6 || !/^[A-Z]{6}$/.test(base)) return null;
+
+  const CURRENCIES = new Set([
+    "USD", "EUR", "GBP", "JPY", "CHF", "AUD", "NZD", "CAD",
+    "SEK", "NOK", "DKK", "SGD", "HKD", "MXN", "ZAR", "TRY", "PLN", "CZK",
+  ]);
+  const quote = base.slice(3);
+  if (!CURRENCIES.has(base.slice(0, 3)) || !CURRENCIES.has(quote)) return null;
+
+  /* A yen pip is the second decimal, not the fourth. */
+  const pipSize = quote === "JPY" ? 0.01 : 0.0001;
+
+  const move = (exitPrice - entryPrice) / pipSize;
+  /* Signed by whether the trade made money, so it agrees with pnl. */
+  const signed = direction === "SHORT" ? -move : move;
+  return Math.round(signed * 10) / 10;
+}
+
 /* A number, or null - never 0 standing in for "the broker didn't say". */
 const numberOrNull = (v: unknown): number | null =>
   typeof v === "number" && Number.isFinite(v) ? v : null;
@@ -175,7 +224,16 @@ export function toTradeRow(
     entry_date: new Date(t.openTime).toISOString(),
     exit_date: new Date(t.closeTime).toISOString(),
     pnl: Number(t.profit ?? 0),
-    pips: numberOrNull(t.pips),
+    /*
+      Not numberOrNull(t.pips) - see derivePips. What MetaStats calls pips
+      is pips times lot size.
+    */
+    pips: derivePips(
+      t.symbol,
+      Number(t.openPrice ?? 0),
+      Number(t.closePrice ?? 0),
+      dealType.includes("SELL") ? "SHORT" : "LONG",
+    ),
     gain_percent: numberOrNull(t.gain),
     duration_minutes: numberOrNull(t.durationInMinutes),
     /*
