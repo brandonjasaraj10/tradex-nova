@@ -172,8 +172,39 @@ Deno.serve(async (req: Request) => {
 
   if (error) return json({ error: error.message }, 500);
 
+  /*
+    Only sync for people who are actually paying.
+
+    A cancelled or failed-payment subscriber keeps their connection - it is
+    stopped at MetaApi rather than deleted, so it can start again untouched
+    when they come back. But "kept" is not "running": syncing them would
+    mean calling a third party on behalf of somebody with no access to the
+    result, every cycle, for as long as they stay gone.
+
+    Read here rather than trusted from is_auto_sync_enabled, because that
+    flag is the trader's own on/off switch and should not be quietly
+    rewritten by billing.
+  */
+  const userIds = [...new Set((connections ?? []).map((c: { user_id: string }) => c.user_id))];
+  const { data: subs } = await admin
+    .from("subscriptions")
+    .select("user_id, status, current_period_end")
+    .in("user_id", userIds.length ? userIds : ["00000000-0000-0000-0000-000000000000"]);
+
+  const now = Date.now();
+  const paying = new Set(
+    (subs ?? [])
+      .filter((s: { status: string; current_period_end: string | null }) =>
+        s.status === "active" || s.status === "trialing" ||
+        (s.status === "canceled" && s.current_period_end
+          && new Date(s.current_period_end).getTime() > now))
+      .map((s: { user_id: string }) => s.user_id),
+  );
+
   const results = [];
-  for (const connection of connections ?? []) {
+  for (const connection of (connections ?? []).filter(
+    (c: { user_id: string }) => paying.has(c.user_id),
+  )) {
     try {
       results.push(await syncOne(admin, token, connection as never));
     } catch (err) {

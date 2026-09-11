@@ -65,22 +65,28 @@ const PROVISIONING_URL = 'https://mt-provisioning-api-v1.agiliumtrade.agiliumtra
   revenue behind it and nobody using it, which is the worst kind because
   nothing surfaces it until the invoice.
 
-  Two different actions, because a failed card and a cancellation are not the
-  same thing:
+  Stopping, never deleting:
 
-    past_due -> undeploy. The account stops running, which takes it from
-    about $9 a month to about $0.77, but it stays registered with MetaApi.
-    That matters because we deliberately never store the investor password:
-    deleting would mean the trader has to dig it out again to reconnect, and
-    a card that fails at 2am and is fixed at 9am should not cost them that.
+    no longer paying (past_due, canceled, unpaid, incomplete_expired) ->
+    undeploy. The account stops running, which takes it from about $9 a
+    month to about $0.77, but it stays registered with MetaApi.
 
-    canceled / unpaid / incomplete_expired -> delete. They are gone; keep
-    nothing and pay nothing.
+    paying again (active, trialing) -> deploy. Syncing resumes on its own,
+    with nothing to re-enter. Without this the undeploy above would be a
+    silent one-way door: the subscriber pays, gets their access back, and
+    their trades quietly never sync again.
 
-    back to active or trialing -> deploy again, so syncing resumes on its
-    own. Without this the undeploy above would be a silent one-way door:
-    the subscriber pays, gets their access back, and their trades quietly
-    never sync again.
+  Cancelling used to delete. It was changed because we deliberately never
+  store the investor password, so deleting means the trader has to find it
+  again to come back - and people who cancel a trading journal frequently do
+  come back. TradeZella's own documentation says unlinking a broker "does not
+  delete any existing trades. It only removes the connection for future
+  syncs", and keeping the connection is the same promise one step further.
+
+  The cost of that choice is about $0.77 a month per churned account,
+  accumulating quietly. The point at which it stops being worth it is a
+  dormancy sweep - delete accounts stopped for, say, six months - not a
+  deletion at the moment somebody cancels.
 
   Never allowed to break the subscription sync. What Stripe says is true
   about a subscription matters far more than our housekeeping at a third
@@ -94,10 +100,9 @@ async function applyBrokerSyncPolicy(
   const token = Deno.env.get('METAAPI_TOKEN');
   if (!token) return;
 
-  const stop = status === 'past_due';
-  const remove = ['canceled', 'unpaid', 'incomplete_expired'].includes(status);
   const resume = status === 'active' || status === 'trialing';
-  if (!stop && !remove && !resume) return;
+  const stop = ['past_due', 'canceled', 'unpaid', 'incomplete_expired'].includes(status);
+  if (!stop && !resume) return;
 
   try {
     const { data, error } = await supabase
@@ -127,34 +132,17 @@ async function applyBrokerSyncPolicy(
           continue;
         }
 
-        if (stop) {
-          const res = await fetch(`${base}/undeploy`, { method: 'POST', headers: auth });
-          if (!res.ok) {
-            console.error('Could not stop', connection.metaapi_account_id, await res.text());
-          }
-          continue;
+        const res = await fetch(`${base}/undeploy`, { method: 'POST', headers: auth });
+        if (!res.ok) {
+          console.error('Could not stop', connection.metaapi_account_id, await res.text());
         }
 
         /*
-          Undeploy before delete: MetaApi can refuse to delete an account
-          that is still running, and a refused delete is the exact failure
-          that leaves us paying.
+          metaapi_account_id is deliberately kept. It is what lets the
+          account start again untouched when they resubscribe, and it is
+          also the only pointer to something still costing us $0.77 a month
+          - losing it would make that charge invisible.
         */
-        await fetch(`${base}/undeploy`, { method: 'POST', headers: auth }).catch(() => undefined);
-        const res = await fetch(base, { method: 'DELETE', headers: auth });
-
-        if (!res.ok && res.status !== 404) {
-          // Deliberately leaves metaapi_account_id in place. It is the only
-          // pointer we have to an account still being billed, and losing it
-          // would make the charge invisible.
-          console.error('Could not remove', connection.metaapi_account_id, await res.text());
-          continue;
-        }
-
-        await supabase
-          .from('broker_connections')
-          .update({ metaapi_account_id: null, is_auto_sync_enabled: false })
-          .eq('id', connection.id);
       } catch (err) {
         console.error('Broker sync policy failed for connection', connection.id, err);
       }
