@@ -36,7 +36,18 @@ export interface JournalEntry {
   pre_trade_emotional_state?: number | null;
   pre_trade_focus?: number | null;
   pre_trade_confidence?: number | null;
-  manual_pnl?: number;
+  /*
+    Set on entries created from a synced broker trade, and null on everything
+    written by hand.
+
+    It is what stops a re-sync making a second entry for the same trade, and
+    it is also where that entry's P&L comes from: manual_pnl stays null on
+    these, because an entry carrying manual_pnl is counted as a logged trade
+    in its own right across the Dashboard, Analytics, the Calendar and Nova,
+    and the trade is already being counted.
+  */
+  trade_id?: string | null;
+  manual_pnl?: number | null;
   tags: string[];
   attachments: any[];
   before_screenshots?: Screenshot[];

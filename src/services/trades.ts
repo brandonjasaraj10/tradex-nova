@@ -22,6 +22,59 @@ export async function createTrade(data: TradeFormData): Promise<Trade> {
   return trade;
 }
 
+/*
+  Correct the P&L on a synced trade from its journal entry.
+
+  Separate from updateTrade because it is a different act: updateTrade takes
+  a whole TradeFormData and is used by the trade editor, while this changes
+  one number on a trade the broker supplied. Brokers routinely leave
+  commissions and swap out of what they report, so the figure that syncs is
+  often a little off and the trader is the one who knows the real number.
+
+  It writes to the trade rather than to the journal entry's manual_pnl on
+  purpose. A journal entry carrying manual_pnl is counted as a logged trade
+  in its own right across the Dashboard, Analytics, the Calendar and Nova -
+  putting the figure there would count the same trade twice. The trade stays
+  the single source of the money; the entry is a view onto it.
+*/
+/*
+  The P&L currently recorded against one trade.
+
+  Fetched when a journal entry linked to that trade is opened, rather than
+  read from whatever the page happens to have in state. The first attempt at
+  this used a ref filled by the day's trade load, and it was a race by
+  construction: in development React mounts twice, the second instance got a
+  fresh empty ref, and the field came up blank on exactly the instance the
+  user was looking at. One small query has no such failure mode.
+*/
+export async function getTradePnl(tradeId: string): Promise<number | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data, error } = await supabase
+    .from('trades')
+    .select('pnl')
+    .eq('id', tradeId)
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return (data as { pnl: number | null }).pnl;
+}
+
+export async function updateTradePnl(tradeId: string, pnl: number): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { error } = await supabase
+    .from('trades')
+    .update({ pnl, updated_at: new Date().toISOString() })
+    .eq('id', tradeId)
+    .eq('user_id', user.id);
+
+  if (error) throw error;
+}
+
 export async function updateTrade(id: string, data: Partial<TradeFormData>): Promise<Trade> {
   const { data: trade, error } = await supabase
     .from('trades')

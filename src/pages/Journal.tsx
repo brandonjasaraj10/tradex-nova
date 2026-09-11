@@ -27,7 +27,7 @@ import {
   JournalFolder,
   JournalEntry,
 } from '../services/journalService';
-import { getTrades } from '../services/trades';
+import { getTrades, updateTradePnl, getTradePnl} from '../services/trades';
 import type { Trade } from '../types/trade';
 import { getUserConfluences, type Confluence } from '../services/confluences';
 import { supabase } from '../lib/supabase';
@@ -109,6 +109,16 @@ export default function Journal() {
   const [novaSessionId, setNovaSessionId] = useState<string | null>(null);
   const novaSessionIdRef = React.useRef<string | null>(null);
   const [recentTrades, setRecentTrades] = useState<Trade[]>([]);
+  /*
+    The P&L that was on the linked trade when this entry was opened.
+
+    Entries created from a synced trade carry no manual_pnl of their own -
+    that field is counted as a logged trade across the whole app, so filling
+    it would count the same trade twice. The figure is read from the trade,
+    and this is what an edit gets compared against on save so an untouched
+    field never writes.
+  */
+  const openedTradePnlRef = React.useRef<number | null>(null);
   const [dailyPnL, setDailyPnL] = useState<number>(0);
 
   const [folderForm, setFolderForm] = useState({
@@ -523,9 +533,27 @@ export default function Journal() {
         ? form.position_size.trim()
         : null;
 
+      /*
+        For an entry linked to a synced trade the P&L belongs to the trade,
+        so an edit is written there and manual_pnl stays null. Brokers
+        routinely leave commissions and swap out of what they report, so
+        correcting the figure by hand is a normal thing to want - it just has
+        to land on the trade, or the same money is counted twice.
+      */
+      const linkedTradeId = entry?.trade_id ?? null;
+      if (linkedTradeId && parsedManualPnl !== null &&
+          parsedManualPnl !== openedTradePnlRef.current) {
+        await updateTradePnl(linkedTradeId, parsedManualPnl);
+        openedTradePnlRef.current = parsedManualPnl;
+        // Keep the panel above the editor honest without a refetch.
+        setRecentTrades(prev =>
+          prev.map(t => (t.id === linkedTradeId ? { ...t, pnl: parsedManualPnl } : t)),
+        );
+      }
+
       const dataToSave = {
         ...form,
-        manual_pnl: parsedManualPnl,
+        manual_pnl: linkedTradeId ? null : parsedManualPnl,
         position_size: parsedPositionSize,
         direction: form.direction || null,
         entry_date: date,
@@ -717,6 +745,14 @@ export default function Journal() {
   };
 
   const loadEntryForEditing = async (entry: JournalEntry) => {
+    /*
+      Fetched before the form is built, so the field is right the first time
+      it renders rather than filled in by a later effect.
+    */
+    const rawLinkedPnl = entry.trade_id ? await getTradePnl(entry.trade_id) : null;
+    const linkedPnl = rawLinkedPnl != null ? Math.round(rawLinkedPnl * 100) / 100 : null;
+    openedTradePnlRef.current = linkedPnl;
+
     setCurrentEntry(entry);
     currentEntryRef.current = entry;
     setEditingEntryId(entry.id);
@@ -729,7 +765,20 @@ export default function Journal() {
       direction: entry.direction || '',
       trade_duration: entry.trade_duration || '',
       position_size: entry.position_size != null ? String(entry.position_size) : '',
-      manual_pnl: entry.manual_pnl != null ? String(entry.manual_pnl) : '',
+      /*
+        A synced entry's P&L lives on the trade, not here - manual_pnl stays
+        null on those so the same trade is not counted twice across the app.
+        linkedPnl was fetched from the trade a moment ago; handleSave writes
+        any edit back there too.
+      */
+      manual_pnl: entry.trade_id
+        /*
+          Rounded, because the figure arrives from the broker as a float and
+          reaches us as -2215.7200000000003. Showing that in a money field
+          looks broken, and it is the number the trader is asked to correct.
+        */
+        ? (linkedPnl != null ? String(Math.round(linkedPnl * 100) / 100) : '')
+        : entry.manual_pnl != null ? String(entry.manual_pnl) : '',
       tags: entry.tags || [],
       before_screenshots: entry.before_screenshots || [],
       after_screenshots: entry.after_screenshots || [],
