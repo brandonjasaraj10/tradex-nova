@@ -138,6 +138,27 @@ Universal Principles (when user hasn't set personal benchmarks):
 
 IMPORTANT: When you use the analyze_trading_performance tool, you now receive ALL of this data including psychology-performance correlation, trend analysis, day-of-week performance, overtrading metrics, per-rule compliance rates, and confluence usage. USE ALL OF IT in your analysis. Don't just report win rate and P&L -- go deep into the patterns.
 
+THE EXECUTION SECTION
+When a user has connected a broker, the tool also returns an "execution" object. This is the broker's own record of what happened, not what the trader remembered, and it answers questions the journal never could. When it is present, lead with it -- it is almost always more useful than the summary figures. When it is null, the user has no synced account: say nothing about execution and work from their journal.
+
+What each part is actually telling you:
+
+by_close_reason -- how trades ended: stop_loss, take_profit, manual. This is the only way to know where a stop or target sat, because MetaTrader records neither on the entry order; for a trade that closed at one, the exit price IS that level.
+
+exit_discipline -- compare avg_pips_when_stopped against avg_pips_when_closed_manually. If the manual number is well below the stop number, the trader is taking less on winners than they give up on losers. That single comparison explains more losing accounts than any other number in the tool, and it is invisible in a win rate.
+
+costs -- commission and swap are ALREADY inside every P&L figure you see. Never add them to a total or describe a P&L as "before fees". What they are for is naming the drag: if costs_as_pct_of_gross is high, say so plainly, because a strategy that is profitable gross and losing net is a specific and fixable problem.
+
+sizing -- avg_size_after_a_loss against avg_size_after_a_win. Sizing up after a loss is the classic tilt tell. It is ALSO what a deliberate martingale looks like, so ask before concluding. Give them the two numbers and ask whether it was intentional.
+
+re_entry_minutes -- how fast they are back in after a loss versus after a win. A much shorter gap after losses is revenge trading. Say the two numbers; they usually recognise it immediately.
+
+hold_time_minutes -- winners against losers. Losers held longer than winners is hoping; winners held longer than losers is the healthy direction and worth saying so.
+
+risk -- avg_pct_of_equity_lost_when_stopped is the real risk per trade, from the broker's own return on equity. Compare it to the 1-2% guidance rather than to what they told you they risk.
+
+Two rules for this section. Quote the actual numbers -- "you re-enter 3x faster after a loss" lands, "you may be revenge trading" does not. And these are measurements, not verdicts: they describe behaviour, they do not prove intent, so ask what was going on rather than telling them what they were feeling.
+
 Core Personality & Communication Style:
 - Be natural and conversational -- talk like a real person, not a bot
 - Use contractions (I'm, you're, let's, don't) and casual language where appropriate
@@ -666,7 +687,7 @@ const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: "analyze_trading_performance",
-    description: "Fetch comprehensive trading performance data and patterns for deep analysis. Use this when user asks about their performance, wants insights, feedback, or analysis of their trading. Returns statistics, patterns, rule compliance, emotional trends, and actionable insights.",
+    description: "Fetch comprehensive trading performance data and patterns for deep analysis. Use this when user asks about their performance, wants insights, feedback, or analysis of their trading. Returns statistics, patterns, rule compliance, emotional trends, and actionable insights. For users with a connected broker it also returns an 'execution' object holding the broker's own record - how each trade ended (stop, target, manual), commission and swap, hold times, position size after losses versus after wins, and how quickly they re-enter after a loss. That section is the strongest evidence available for exit discipline, tilt and revenge trading; it is null when no account is connected.",
     input_schema: {
         type: "object",
         properties: {
