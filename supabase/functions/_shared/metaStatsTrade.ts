@@ -38,6 +38,22 @@ export interface DealEnrichment {
   close_reason: string | null;
   commission: number | null;
   swap: number | null;
+  /*
+    True UTC, taken from the deal's own `time` field.
+
+    MetaStats reports openTime and closeTime in BROKER time, with no offset
+    on the string - "2026-03-20 05:05:24.718". Parsing that as UTC stores a
+    trade at the wrong instant by however far the broker's server sits from
+    UTC, which was +3 hours on the account this was found on. It then puts
+    trades on the wrong calendar day, which matters now that a trade belongs
+    to the day it closed.
+
+    The deal history carries both: `time` is a proper UTC instant and
+    `brokerTime` is the same string MetaStats gives. Taking `time` removes
+    the guesswork entirely - no timezone has to be inferred for anybody.
+  */
+  open_utc: string | null;
+  close_utc: string | null;
 }
 
 export interface MetaApiDeal {
@@ -46,6 +62,8 @@ export interface MetaApiDeal {
   reason?: string;
   commission?: number;
   swap?: number;
+  /* A real UTC instant, unlike MetaStats' broker-time strings. */
+  time?: string;
 }
 
 /*
@@ -91,7 +109,8 @@ export function summariseDeals(deals: MetaApiDeal[]): Map<string, DealEnrichment
     if (!positionId) continue;
 
     const current = byPosition.get(positionId) ??
-      { close_reason: null, commission: null, swap: null };
+      { close_reason: null, commission: null, swap: null,
+        open_utc: null, close_utc: null };
 
     if (typeof d.commission === "number" && Number.isFinite(d.commission)) {
       current.commission = (current.commission ?? 0) + d.commission;
@@ -99,8 +118,21 @@ export function summariseDeals(deals: MetaApiDeal[]): Map<string, DealEnrichment
     if (typeof d.swap === "number" && Number.isFinite(d.swap)) {
       current.swap = (current.swap ?? 0) + d.swap;
     }
-    if (String(d.entryType ?? "").toUpperCase().includes("OUT")) {
+    /*
+      A position opens once and can close in several parts. The open is the
+      earliest IN deal, the close the latest OUT deal, so a partially closed
+      position reports the span it was actually held.
+    */
+    const entryType = String(d.entryType ?? "").toUpperCase();
+    if (entryType.includes("OUT")) {
       current.close_reason = readCloseReason(d.reason) ?? current.close_reason;
+      if (d.time && (!current.close_utc || d.time > current.close_utc)) {
+        current.close_utc = d.time;
+      }
+    } else if (entryType.includes("IN")) {
+      if (d.time && (!current.open_utc || d.time < current.open_utc)) {
+        current.open_utc = d.time;
+      }
     }
 
     byPosition.set(positionId, current);
@@ -221,8 +253,14 @@ export function toTradeRow(
     quantity: Number(t.volume ?? 0),
     entry_price: Number(t.openPrice ?? 0),
     exit_price: Number(t.closePrice ?? 0),
-    entry_date: new Date(t.openTime).toISOString(),
-    exit_date: new Date(t.closeTime).toISOString(),
+    /*
+      The deal's UTC instant wherever we have it. Falling back to
+      MetaStats' string keeps a trade importable when the deal history is
+      unavailable, but that string is broker time and will be off by the
+      server's offset - see DealEnrichment.open_utc.
+    */
+    entry_date: enrichment?.open_utc ?? new Date(t.openTime).toISOString(),
+    exit_date: enrichment?.close_utc ?? new Date(t.closeTime).toISOString(),
     pnl: Number(t.profit ?? 0),
     /*
       Not numberOrNull(t.pips) - see derivePips. What MetaStats calls pips
