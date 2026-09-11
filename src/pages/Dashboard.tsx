@@ -5,6 +5,8 @@ import Card from '../components/shared/Card';
 import Button from '../components/shared/Button';
 import DateRangePicker from '../components/shared/DateRangePicker';
 import AccountSelector from '../components/shared/AccountSelector';
+import OpenPositions from '../components/trades/OpenPositions';
+import { BROKER_SYNC_ENABLED } from '../lib/featureFlags';
 import BalanceCard from '../components/dashboard/BalanceCard';
 import { useAccount } from '../lib/accountContext';
 import { useDateRange } from '../lib/dateRangeContext';
@@ -1048,6 +1050,22 @@ export default function Dashboard() {
             </div>
           </Card>
         </motion.div>
+
+        {/*
+          Above the calendar, because it is the only thing on this page
+          about right now. Everything below is closed trades, and a trade
+          belongs to the day it closed - so a position held for three weeks
+          appears nowhere until it is exited.
+
+          Draws nothing at all when there is no synced account, or when
+          nothing is open and nothing is wrong.
+        */}
+        {BROKER_SYNC_ENABLED && (
+          <OpenPositions
+            connectionId={selectedAccount?.id ?? null}
+            accountName={selectedAccount?.account_name ?? null}
+          />
+        )}
 
         {/* Second Section - Calendar and NOVA AI */}
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 mt-6">
