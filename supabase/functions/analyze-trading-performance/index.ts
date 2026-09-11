@@ -80,7 +80,16 @@ Deno.serve(async (req: Request) => {
     */
     let tradesQuery = supabaseClient
       .from("trades")
-      .select("pnl, entry_date, exit_date, symbol, direction")
+      /*
+        The broker-sourced columns are here for the execution analysis
+        below. They are null on anything typed by hand or imported from a
+        CSV, which is why that analysis reports on synced trades only rather
+        than quietly averaging nulls in with real figures.
+      */
+      .select(
+        "pnl, entry_date, exit_date, symbol, direction, quantity, quantity_unit, " +
+        "pips, gain_percent, duration_minutes, close_reason, commission, swap, external_id"
+      )
       .eq("user_id", user_id)
       .gte("entry_date", cutoffDateStr)
       .order("entry_date", { ascending: false });
@@ -532,6 +541,173 @@ Deno.serve(async (req: Request) => {
     const consistencyScore = calculateConsistencyScore(trades, getPnl);
     const disciplineScore = calculateDisciplineScore(entryRules, entryIdSet);
 
+
+    /*
+      What the broker recorded, as opposed to what the trader wrote down.
+
+      Everything here comes from synced trades only. A hand-typed or
+      CSV-imported trade has no close reason, no commission and no pip
+      count, and averaging nulls in beside real figures would produce
+      numbers that look authoritative and mean nothing. When there are no
+      synced trades this whole section is null, which tells Nova to talk
+      about the journal instead of inventing execution analysis.
+    */
+    const syncedTrades = (tradesResult.data || []).filter((t: any) => t.external_id);
+
+    const avg = (xs: number[]) =>
+      xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null;
+    const round2 = (n: number | null) =>
+      n === null ? null : Math.round(n * 100) / 100;
+
+    const byCloseReason: Record<string, any> = {};
+    for (const t of syncedTrades) {
+      const reason = t.close_reason ?? "unknown";
+      const bucket = byCloseReason[reason] ??= { count: 0, pnl: [], pips: [], minutes: [] };
+      bucket.count++;
+      if (typeof t.pnl === "number") bucket.pnl.push(t.pnl);
+      if (typeof t.pips === "number") bucket.pips.push(Math.abs(t.pips));
+      if (typeof t.duration_minutes === "number") bucket.minutes.push(t.duration_minutes);
+    }
+    for (const key of Object.keys(byCloseReason)) {
+      const b = byCloseReason[key];
+      byCloseReason[key] = {
+        count: b.count,
+        share_of_trades: round2((b.count / syncedTrades.length) * 100),
+        avg_pnl: round2(avg(b.pnl)),
+        total_pnl: round2(b.pnl.reduce((a: number, c: number) => a + c, 0)),
+        avg_pips_moved: round2(avg(b.pips)),
+        avg_minutes_held: round2(avg(b.minutes)),
+      };
+    }
+
+    /*
+      Ordered oldest-first, because every sequential question below - did
+      size go up after a loss, how long until the next trade - is about what
+      came after what.
+    */
+    const inOrder = [...syncedTrades].sort(
+      (a: any, b: any) => new Date(a.entry_date).getTime() - new Date(b.entry_date).getTime(),
+    );
+
+    const sizeAfterLoss: number[] = [];
+    const sizeAfterWin: number[] = [];
+    const minutesToNextAfterLoss: number[] = [];
+    const minutesToNextAfterWin: number[] = [];
+
+    for (let i = 1; i < inOrder.length; i++) {
+      const prev = inOrder[i - 1];
+      const cur = inOrder[i];
+      const lost = Number(prev.pnl ?? 0) < 0;
+
+      if (typeof cur.quantity === "number") {
+        (lost ? sizeAfterLoss : sizeAfterWin).push(cur.quantity);
+      }
+      /*
+        Measured from the previous trade's close to this one's open: the
+        gap between being hurt and acting again. Negative values mean the
+        positions overlapped, which is a different behaviour and not a
+        re-entry, so they are dropped rather than counted as zero.
+      */
+      const gap =
+        (new Date(cur.entry_date).getTime() - new Date(prev.exit_date).getTime()) / 60000;
+      if (Number.isFinite(gap) && gap >= 0) {
+        (lost ? minutesToNextAfterLoss : minutesToNextAfterWin).push(gap);
+      }
+    }
+
+    const commissionTotal = syncedTrades.reduce(
+      (n: number, t: any) => n + Number(t.commission ?? 0), 0);
+    const swapTotal = syncedTrades.reduce(
+      (n: number, t: any) => n + Number(t.swap ?? 0), 0);
+    const netTotal = syncedTrades.reduce(
+      (n: number, t: any) => n + Number(t.pnl ?? 0), 0);
+    const grossTotal = netTotal - commissionTotal - swapTotal;
+
+    const execution = syncedTrades.length === 0 ? null : {
+      synced_trades: syncedTrades.length,
+      /*
+        How trades ended, which is the only route to a stop or target from
+        history: MetaTrader records neither on the entry order, so for a
+        trade that closed at one, the exit price is where that level sat.
+      */
+      by_close_reason: byCloseReason,
+      /*
+        The comparison that exposes cutting winners and running losers.
+        Stops are set once and hit at full distance; a manual exit is a
+        decision made under pressure. When the manual number is well below
+        the stop number, the trader is taking less on winners than they give
+        up on losers, whatever their win rate says.
+      */
+      exit_discipline: {
+        avg_pips_when_stopped: byCloseReason.stop_loss?.avg_pips_moved ?? null,
+        avg_pips_when_target_hit: byCloseReason.take_profit?.avg_pips_moved ?? null,
+        avg_pips_when_closed_manually: byCloseReason.manual?.avg_pips_moved ?? null,
+      },
+      /*
+        Already inside pnl - the broker's profit is net. Here so the drag
+        can be named: a strategy that is profitable gross and losing net is
+        a specific, fixable problem, and it is invisible without this.
+      */
+      costs: {
+        commission_total: round2(commissionTotal),
+        swap_total: round2(swapTotal),
+        net_pnl: round2(netTotal),
+        gross_pnl_before_costs: round2(grossTotal),
+        costs_as_pct_of_gross: grossTotal !== 0
+          ? round2(Math.abs((commissionTotal + swapTotal) / grossTotal) * 100)
+          : null,
+      },
+      hold_time_minutes: {
+        average: round2(avg(syncedTrades
+          .map((t: any) => t.duration_minutes)
+          .filter((n: any) => typeof n === "number"))),
+        winners: round2(avg(syncedTrades
+          .filter((t: any) => Number(t.pnl ?? 0) > 0 && typeof t.duration_minutes === "number")
+          .map((t: any) => t.duration_minutes))),
+        losers: round2(avg(syncedTrades
+          .filter((t: any) => Number(t.pnl ?? 0) < 0 && typeof t.duration_minutes === "number")
+          .map((t: any) => t.duration_minutes))),
+      },
+      /*
+        Tilt, stated as a measurement rather than a diagnosis. Sizing up
+        after a loss is the classic tell, but it is also what a planned
+        martingale looks like, so Nova is given the numbers and the trader
+        is asked - never told - what they mean.
+      */
+      sizing: {
+        unit: syncedTrades[0]?.quantity_unit ?? null,
+        avg_size: round2(avg(syncedTrades
+          .map((t: any) => t.quantity)
+          .filter((n: any) => typeof n === "number"))),
+        avg_size_after_a_loss: round2(avg(sizeAfterLoss)),
+        avg_size_after_a_win: round2(avg(sizeAfterWin)),
+      },
+      /*
+        Revenge trading: how quickly the next position goes on after a
+        loss, against how quickly after a win. A large gap between the two
+        is worth asking about.
+      */
+      re_entry_minutes: {
+        after_a_loss: round2(avg(minutesToNextAfterLoss)),
+        after_a_win: round2(avg(minutesToNextAfterWin)),
+      },
+      /*
+        Risk actually taken, from the broker's own return-on-equity figure,
+        which accounts for the balance at the time rather than today's.
+      */
+      risk: {
+        avg_pct_of_equity_lost_when_stopped: round2(avg(syncedTrades
+          .filter((t: any) => t.close_reason === "stop_loss" && typeof t.gain_percent === "number")
+          .map((t: any) => Math.abs(t.gain_percent)))),
+        worst_single_trade_pct_of_equity: round2(
+          syncedTrades
+            .filter((t: any) => typeof t.gain_percent === "number")
+            .reduce((worst: number, t: any) =>
+              Math.min(worst, t.gain_percent), 0),
+        ),
+      },
+    };
+
     const analysis = {
       summary: {
         total_trades: trades.length,
@@ -593,6 +769,8 @@ Deno.serve(async (req: Request) => {
       // The trader's own checklist, whatever they have named the items.
       psychology_checklist: psychCheckStats,
       pre_trade_scales: preTradeScales,
+      /* Broker-sourced execution analysis; null with no synced trades. */
+      execution,
       emotional_patterns: emotionalSummary,
       psychology_performance_correlation: psychPerformanceCorrelation,
       trend_analysis: trendAnalysis,
