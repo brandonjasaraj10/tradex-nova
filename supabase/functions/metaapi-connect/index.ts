@@ -28,6 +28,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
+const SUPPORT_EMAIL = "tradenovaai@gmail.com";
+
 const PROVISIONING_URL =
   // Global endpoint, not regional - see the note in mt-servers/index.ts.
   "https://mt-provisioning-api-v1.agiliumtrade.agiliumtrade.ai";
@@ -205,7 +207,16 @@ Deno.serve(async (req: Request) => {
 
     if (!distinctThisMonth.has(accountKey) && distinctThisMonth.size >= monthLimit) {
       return json({
-        error: `You've connected ${monthLimit} different accounts this month, which is the most your plan allows. Reconnecting one you've already used this month still works.`,
+        /*
+          An invitation rather than a wall.
+
+          Nobody has hit this yet, so what a higher tier should cost and
+          include is still a guess. The first person who emails about it is
+          worth more than that guess, and handling a few by hand is how the
+          tier gets designed from something real. A dead end here would lose
+          exactly the person who wanted to pay more.
+        */
+        error: `You've connected ${monthLimit} different accounts this month, which is the most your plan covers. Reconnecting one you've already used this month still works. Need more than that? Email ${SUPPORT_EMAIL} and we'll sort it out.`,
         monthLimitReached: true,
         monthLimit,
         usedThisMonth: distinctThisMonth.size,
