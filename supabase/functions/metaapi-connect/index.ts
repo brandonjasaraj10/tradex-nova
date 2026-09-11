@@ -169,6 +169,50 @@ Deno.serve(async (req: Request) => {
     }
 
     /*
+      The second limit, and the one that actually bounds cost.
+
+      The cap above is on accounts held at once, which does not stop
+      connect / disconnect / connect-a-different-one. MetaApi charges $2.10
+      per unique account added per calendar month, so that cycle is $2.10 a
+      go with nothing to stop it. This counts distinct accounts for the
+      month, which is exactly the thing being billed.
+
+      Keyed on login@server because that is the identity MetaApi charges
+      per: reconnecting the same account later in the same month costs us
+      nothing and must not cost the trader an allowance either, since
+      disconnecting and reconnecting is ordinary troubleshooting.
+    */
+    const accountKey = `${login}@${server}`.toLowerCase();
+
+    const { data: monthLimitData } = await supabase.rpc('synced_account_month_limit');
+    const monthLimit = typeof monthLimitData === 'number' ? monthLimitData : 4;
+
+    const { data: activations, error: activationError } = await supabase
+      .from('synced_account_activations')
+      .select('account_key')
+      .eq('user_id', user.id)
+      .gte('activated_at', new Date(Date.UTC(
+        new Date().getUTCFullYear(), new Date().getUTCMonth(), 1,
+      )).toISOString());
+
+    if (activationError) {
+      return json({ error: "Couldn't check your account allowance." }, 500);
+    }
+
+    const distinctThisMonth = new Set(
+      (activations ?? []).map((a: { account_key: string }) => a.account_key),
+    );
+
+    if (!distinctThisMonth.has(accountKey) && distinctThisMonth.size >= monthLimit) {
+      return json({
+        error: `You've connected ${monthLimit} different accounts this month, which is the most your plan allows. Reconnecting one you've already used this month still works.`,
+        monthLimitReached: true,
+        monthLimit,
+        usedThisMonth: distinctThisMonth.size,
+      }, 403);
+    }
+
+    /*
       type and reliability are left at MetaApi's defaults (cloud-g2 /
       high) on purpose - g2 is roughly a third the price of g1, and
       regular reliability isn't offered on g2 anyway.
@@ -243,6 +287,32 @@ Deno.serve(async (req: Request) => {
         error: "Connected, but we couldn't save it. Please contact support.",
         accountId,
       }, 500);
+    }
+
+    /*
+      Recorded only after MetaApi has actually created the account, because
+      this is a log of what we have been charged for. An attempt that was
+      refused, or failed on a wrong password, costs nothing and must not
+      count against anybody.
+    */
+    try {
+      /*
+        Written with the service role, not the caller's token. The table has
+        no insert policy on purpose: a user who could write their own rows
+        could not raise their own allowance, but they could certainly muddle
+        it, and this is the record of what we have been billed for.
+      */
+      const admin = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      );
+      await admin
+        .from('synced_account_activations')
+        .insert({ user_id: user.id, account_key: accountKey });
+    } catch (err) {
+      // Never worth failing a working connection over. Logged so an
+      // allowance that looks wrong can be traced.
+      console.error('Could not record activation for', user.id, err);
     }
 
     /*
