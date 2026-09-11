@@ -68,6 +68,18 @@ const FOLDER_ICONS = {
   'file-text': FileText,
 };
 
+/*
+  A trade's size with its unit, when the unit is actually known.
+
+  This used to be hardcoded as "shares", which for a forex account was wrong
+  by roughly a hundred thousand to one - 33.33 lots read as 33.33 shares.
+  MetaTrader reports volume in lots and synced trades now record that; a
+  hand-typed trade could be anything, so it shows the bare number rather than
+  guessing.
+*/
+const formatQuantity = (trade: { quantity: number; quantity_unit?: string | null }) =>
+  trade.quantity_unit ? `${trade.quantity} ${trade.quantity_unit}` : `${trade.quantity}`;
+
 const generateDefaultTitle = (date: string, entryNumber: number) => {
   const [y, m, d] = date.split('-').map(Number);
   const formattedDate = `${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}-${y}`;
@@ -119,6 +131,31 @@ export default function Journal() {
     field never writes.
   */
   const openedTradePnlRef = React.useRef<number | null>(null);
+
+  /*
+    The day's trades keyed by id, so an entry created from one can show its
+    P&L and size. Derived at render rather than cached in a ref - the ref
+    version of this was a race that came up blank on the instance React kept.
+  */
+  const tradesById = React.useMemo(
+    () => new Map(recentTrades.map((t) => [t.id, t])),
+    [recentTrades],
+  );
+
+  /*
+    Trades the entry list is not already showing.
+
+    Every synced trade gets its own entry, so listing all of them above the
+    entries printed the same day twice in two different styles. What is worth
+    surfacing separately is a trade with no entry - a CSV import, or anything
+    that arrived before this existed.
+  */
+  const unjournaledTrades = React.useMemo(() => {
+    const claimed = new Set(
+      dailyEntries.map((e) => e.trade_id).filter(Boolean) as string[],
+    );
+    return recentTrades.filter((t) => !claimed.has(t.id));
+  }, [recentTrades, dailyEntries]);
   const [dailyPnL, setDailyPnL] = useState<number>(0);
 
   const [folderForm, setFolderForm] = useState({
@@ -1757,14 +1794,14 @@ export default function Journal() {
                 For a synced account the trades are what happened; the entry
                 is what you have not written yet. Show what happened first.
               */}
-              {recentTrades.length > 0 && (
+              {unjournaledTrades.length > 0 && (
                 <div className="mb-6">
                   <h3 className="text-sm font-medium text-gray-300 mb-3 flex items-center gap-2">
                     <LineChart size={16} />
-                    Trades on this day ({recentTrades.length})
+                    Trades on this day ({unjournaledTrades.length})
                   </h3>
                   <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {recentTrades.map((trade) => (
+                    {unjournaledTrades.map((trade) => (
                       <div
                         key={trade.id}
                         className="flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
@@ -1780,7 +1817,7 @@ export default function Journal() {
                           <p className={`text-sm font-medium ${(trade.pnl || 0) >= 0 ? 'text-blue-400' : 'text-gray-400'}`}>
                             ${(trade.pnl || 0) >= 0 ? '+' : ''}{(trade.pnl || 0).toFixed(2)}
                           </p>
-                          <p className="text-xs text-gray-400">{trade.quantity} shares</p>
+                          <p className="text-xs text-gray-400">{formatQuantity(trade)}</p>
                         </div>
                       </div>
                     ))}
@@ -1809,12 +1846,61 @@ export default function Journal() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.05 }}
                         onClick={() => loadEntryForEditing(entry)}
-                        className={`p-4 rounded-lg border transition-all cursor-pointer ${
+                        className={`${entry.trade_id ? 'p-3' : 'p-4'} rounded-lg border transition-all cursor-pointer ${
                           editingEntryId === entry.id
                             ? 'border-blue-400 bg-blue-400/5'
                             : 'border-white/10 hover:border-white/20 bg-white/5'
                         }`}
                       >
+                        {/*
+                          An entry made from a synced trade is rendered like
+                          the trade rows above it - a direction dot, the
+                          instrument, the money on the right. The full card
+                          below repeats the symbol as a chip, the title, a
+                          mood chip and an account chip, which for a row that
+                          is simply "this trade" is a lot of furniture around
+                          one fact. Hand-written entries keep the full card,
+                          because for those the title and the text are the
+                          content.
+                        */}
+                        {entry.trade_id ? (
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                                (editingEntryId === entry.id ? entryForm.direction : entry.direction) === 'LONG'
+                                  ? 'bg-blue-400' : 'bg-gray-400'
+                              }`} />
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium truncate">
+                                  {(editingEntryId === entry.id ? entryForm.symbol : entry.symbol) || 'Trade'}
+                                </p>
+                                <p className="text-xs text-gray-400 truncate">
+                                  {(editingEntryId === entry.id ? entryForm.title : entry.title) || ''}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-right flex-shrink-0">
+                              {(() => {
+                                const linked = entry.trade_id ? tradesById.get(entry.trade_id) : undefined;
+                                const pnl = linked?.pnl ?? 0;
+                                return (
+                                  <>
+                                    <p className={`text-sm font-medium ${pnl >= 0 ? 'text-blue-400' : 'text-gray-400'}`}>
+                                      ${pnl >= 0 ? '+' : ''}{pnl.toFixed(2)}
+                                    </p>
+                                    <p className="text-xs text-gray-400">
+                                      {linked ? formatQuantity(linked)
+                                             : (editingEntryId === entry.id ? entryForm.position_size : entry.position_size) || ''}
+                                    </p>
+                                  </>
+                                );
+                              })()}
+                            </div>
+                            {editingEntryId === entry.id && (
+                              <span className="flex-shrink-0 px-2 py-1 bg-blue-400/20 text-blue-400 text-xs rounded-full font-medium">Editing</span>
+                            )}
+                          </div>
+                        ) : (
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
@@ -1856,6 +1942,7 @@ export default function Journal() {
                             </div>
                           )}
                         </div>
+                        )}
                       </motion.div>
                     ))}
                   </div>
