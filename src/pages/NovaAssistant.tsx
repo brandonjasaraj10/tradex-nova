@@ -223,7 +223,7 @@ export default function NovaAssistant() {
           .from('trades')
           .select('pnl, entry_date, exit_date, created_at')
           .eq('user_id', user.id)
-          .order('entry_date', { ascending: false })
+          .order('exit_date', { ascending: false })
           .limit(100);
 
         let novaJournalQuery = supabase
@@ -231,7 +231,7 @@ export default function NovaAssistant() {
           .select('id, title, entry_type, manual_pnl, entry_date, created_at')
           .eq('user_id', user.id)
           .not('manual_pnl', 'is', null)
-          .order('entry_date', { ascending: false })
+          .order('exit_date', { ascending: false })
           .limit(100);
 
         if (selectedAccount) {

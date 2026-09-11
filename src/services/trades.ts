@@ -62,6 +62,29 @@ export async function getTradePnl(tradeId: string): Promise<number | null> {
   return (data as { pnl: number | null }).pnl;
 }
 
+/*
+  Which day a trade belongs to: the day it CLOSED.
+
+  Not the day it was opened, which is what most of this file used to use.
+  The money does not exist until the position closes, a broker statement
+  attributes it to the close date, and - the reason it actually matters
+  here - every prop firm measures its daily loss limit on realised P&L per
+  day. A trade opened at 11pm Monday and closed Tuesday for -$2,000 counts
+  against Tuesday at FTMO. Showing it on Monday would tell a trader they had
+  a clean slate on the day they were closest to breaching.
+
+  The two disagreed before this: the Calendar filtered on exit_date while
+  everything else filtered on entry_date, so the same trade appeared on
+  different days depending which screen you were looking at. On one real
+  account 4 of 25 trades crossed midnight, carrying $1,479 that the calendar
+  and the journal each put on a different day.
+
+  journal_entries is untouched by any of this. Its entry_date is a plain
+  DATE meaning "the day this entry is about", not a timestamp, and it is
+  already the day the trader chose.
+*/
+const TRADE_DAY = 'exit_date';
+
 export async function updateTradePnl(tradeId: string, pnl: number): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
@@ -104,7 +127,7 @@ export async function getTrades(filters?: TradeFilters, accountId?: string): Pro
     .from('trades')
     .select('*')
     .eq('user_id', user.id)
-    .order('entry_date', { ascending: false });
+    .order(TRADE_DAY, { ascending: false });
 
   if (accountId) {
     query = query.eq('broker_id', accountId);
@@ -113,8 +136,8 @@ export async function getTrades(filters?: TradeFilters, accountId?: string): Pro
   if (filters) {
     if (filters.dateRange) {
       query = query
-        .gte('entry_date', filters.dateRange[0].toISOString())
-        .lte('entry_date', filters.dateRange[1].toISOString());
+        .gte(TRADE_DAY, filters.dateRange[0].toISOString())
+        .lte(TRADE_DAY, filters.dateRange[1].toISOString());
     }
     if (filters.symbols?.length) {
       query = query.in('symbol', filters.symbols);
@@ -186,8 +209,8 @@ async function getAllUnifiedTrades(
 
   if (dateRange) {
     tradesQuery = tradesQuery
-      .gte('entry_date', dateRange[0].toISOString())
-      .lte('entry_date', dateRange[1].toISOString());
+      .gte(TRADE_DAY, dateRange[0].toISOString())
+      .lte(TRADE_DAY, dateRange[1].toISOString());
   }
   if (accountId) {
     tradesQuery = tradesQuery.eq('broker_id', accountId);
@@ -303,11 +326,16 @@ export async function getDailyPnL(
     // a `date` column there, never stored with a time/offset) - only the
     // timestamp case needs converting to a local calendar day, otherwise
     // that conversion would wrongly shift the already-correct plain date.
-    const dateStr = !trade.entry_date
+    /*
+      exit_date, not entry_date - see TRADE_DAY. Journal-sourced rows carry
+      the same value in both, so this reads correctly for them too.
+    */
+    const tradeDay = trade.exit_date || trade.entry_date;
+    const dateStr = !tradeDay
       ? ''
-      : trade.entry_date.includes('T')
-        ? toLocalDateStr(new Date(trade.entry_date))
-        : trade.entry_date;
+      : tradeDay.includes('T')
+        ? toLocalDateStr(new Date(tradeDay))
+        : tradeDay;
     if (dateStr < startStr || dateStr > endStr) continue;
     const day = parseInt(dateStr.split('-')[2], 10);
     const existing = dailyMap.get(day) || { pnl: 0, trades: 0, hasJournal: false };
@@ -441,8 +469,8 @@ export async function getTradeLog(
 
   if (dateRange) {
     tradesQuery = tradesQuery
-      .gte('entry_date', dateRange[0].toISOString())
-      .lte('entry_date', dateRange[1].toISOString());
+      .gte(TRADE_DAY, dateRange[0].toISOString())
+      .lte(TRADE_DAY, dateRange[1].toISOString());
   }
   if (accountId) {
     tradesQuery = tradesQuery.eq('broker_id', accountId);
@@ -541,6 +569,7 @@ export async function getTradeLog(
   }));
 
   return [...fromTrades, ...fromJournal].sort(
-    (a, b) => new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime()
+    (a, b) => new Date(b.exit_date || b.entry_date).getTime() -
+              new Date(a.exit_date || a.entry_date).getTime()
   );
 }

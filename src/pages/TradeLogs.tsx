@@ -74,9 +74,16 @@ export default function TradeLogs() {
       trade is not on, so the journal looked empty. Journal rows are already
       plain YYYY-MM-DD and are passed through unchanged.
     */
-    const dateParam = /^\d{4}-\d{2}-\d{2}$/.test(row.entry_date)
-      ? row.entry_date
-      : toLocalDateStr(new Date(row.entry_date));
+    /*
+      The close date, because that is the day the journal files the trade
+      under - see TRADE_DAY in services/trades.ts. Opening the entry date
+      would land on a day the trade is not on whenever it was held over
+      midnight, which is the bug this link had before, in a new disguise.
+    */
+    const dayField = row.exit_date || row.entry_date;
+    const dateParam = /^\d{4}-\d{2}-\d{2}$/.test(dayField)
+      ? dayField
+      : toLocalDateStr(new Date(dayField));
     navigate(`/journal?date=${dateParam}`);
   };
 

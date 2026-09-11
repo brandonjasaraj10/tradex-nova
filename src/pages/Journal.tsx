@@ -77,6 +77,26 @@ const FOLDER_ICONS = {
   hand-typed trade could be anything, so it shows the bare number rather than
   guessing.
 */
+/*
+  "opened Mar 19" - but only when the trade was opened on a different day
+  from the one it is filed under.
+
+  A trade belongs to the day it closed, which is what a broker statement and
+  a prop firm's daily loss limit both use. That is right, and it is also
+  slightly surprising the first time you see a trade on a day you do not
+  remember taking it, so the day it was actually opened is shown whenever
+  the two differ. Same-day trades say nothing, because there is nothing to
+  explain.
+*/
+const openedOnLabel = (openedIso: string | undefined, filedOnDay: string): string | null => {
+  if (!openedIso) return null;
+  const opened = new Date(openedIso);
+  if (Number.isNaN(opened.getTime())) return null;
+  const openedDay = `${opened.getFullYear()}-${String(opened.getMonth() + 1).padStart(2, '0')}-${String(opened.getDate()).padStart(2, '0')}`;
+  if (openedDay === filedOnDay) return null;
+  return `opened ${opened.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} ${opened.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`;
+};
+
 const formatQuantity = (trade: { quantity: number; quantity_unit?: string | null }) =>
   trade.quantity_unit ? `${trade.quantity} ${trade.quantity_unit}` : `${trade.quantity}`;
 
@@ -1876,6 +1896,11 @@ export default function Journal() {
                                 </p>
                                 <p className="text-xs text-gray-400 truncate">
                                   {(editingEntryId === entry.id ? entryForm.title : entry.title) || ''}
+                                  {(() => {
+                                    const linked = entry.trade_id ? tradesById.get(entry.trade_id) : undefined;
+                                    const label = openedOnLabel(linked?.entry_date, selectedDate);
+                                    return label ? <span className="text-gray-500"> &middot; {label}</span> : null;
+                                  })()}
                                 </p>
                               </div>
                             </div>

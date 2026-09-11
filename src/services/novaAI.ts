@@ -304,7 +304,7 @@ export class NovaAIService {
         .from('trades')
         .select('*')
         .eq('user_id', user.id)
-        .order('entry_date', { ascending: false })
+        .order('exit_date', { ascending: false })
         .limit(50);
 
       if (!trades || trades.length === 0) {
@@ -360,7 +360,7 @@ export class NovaAIService {
         .from('trades')
         .select('*')
         .eq('user_id', user.id)
-        .order('entry_date', { ascending: false })
+        .order('exit_date', { ascending: false })
         .limit(5);
 
       if (!trades || trades.length === 0) {

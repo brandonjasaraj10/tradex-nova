@@ -240,9 +240,13 @@ export default function Dashboard() {
         .from('trades')
         .select('*')
         .eq('user_id', user.id)
-        .gte('entry_date', dateRange.startDate.toISOString())
-        .lte('entry_date', dateRange.endDate.toISOString())
-        .order('entry_date', { ascending: false })
+        /*
+          exit_date: a trade belongs to the day it closed, not the day it
+          opened. See TRADE_DAY in services/trades.ts.
+        */
+        .gte('exit_date', dateRange.startDate.toISOString())
+        .lte('exit_date', dateRange.endDate.toISOString())
+        .order('exit_date', { ascending: false })
         .limit(20);
 
       if (selectedAccount) {
@@ -538,9 +542,13 @@ export default function Dashboard() {
         .from('trades')
         .select('pnl, entry_date, exit_date, created_at')
         .eq('user_id', user.id)
-        .gte('entry_date', dateRange.startDate.toISOString())
-        .lte('entry_date', dateRange.endDate.toISOString())
-        .order('entry_date', { ascending: false })
+        /*
+          exit_date: a trade belongs to the day it closed, not the day it
+          opened. See TRADE_DAY in services/trades.ts.
+        */
+        .gte('exit_date', dateRange.startDate.toISOString())
+        .lte('exit_date', dateRange.endDate.toISOString())
+        .order('exit_date', { ascending: false })
         .limit(100);
 
       if (selectedAccount) {
