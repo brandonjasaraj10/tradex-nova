@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { supabase } from './supabase';
 import { NovaAIService, ChatMessage } from '../services/novaAI';
 
@@ -46,27 +46,54 @@ export function NovaProvider({ children }: { children: ReactNode }) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: existingSession } = await supabase
-        .from('nova_conversation_sessions')
-        .select('id')
-        .eq('id', sessionId)
-        .maybeSingle();
+      /*
+        One idempotent write, not a read followed by a conditional write.
 
-      if (!existingSession) {
-        await supabase
-          .from('nova_conversation_sessions')
-          .insert({
-            id: sessionId,
-            user_id: user.id,
-            title: 'New Conversation'
-          });
-      }
+        The previous shape was the same check-then-insert race that produced
+        duplicate welcome messages: two loads both find no session, both
+        insert, and the second comes back 409 against the primary key. The
+        error was swallowed so nothing appeared in the logs, but the request
+        still went out on every page load - two of the 409s that made the
+        console permanently red.
+
+        ignoreDuplicates turns this into INSERT ... ON CONFLICT DO NOTHING,
+        which cannot race with itself. It also drops the SELECT, so this is
+        one round trip where it used to be two.
+      */
+      const { error } = await supabase
+        .from('nova_conversation_sessions')
+        .upsert(
+          { id: sessionId, user_id: user.id, title: 'New Conversation' },
+          { onConflict: 'id', ignoreDuplicates: true },
+        );
+
+      if (error) throw error;
     } catch (error) {
       console.error('Error ensuring session exists:', error);
     }
   }, []);
 
+  /*
+    One load per session at a time.
+
+    Two concurrent loads both read an empty history and both try to write the
+    welcome message. A unique index has stopped that becoming two visible
+    greetings since August, but the losing insert still made a round trip and
+    came back 409, on every page load. Sharing the in-flight promise means the
+    second caller waits for the first rather than racing it.
+
+    Kept alongside the index rather than replacing it. This stops the common
+    case - one tab, two effects - while the index is what holds when the races
+    are further apart than a shared promise can reach, like two open tabs.
+  */
+  const inFlightLoads = useRef(new Map<string, Promise<void>>());
+
   const loadMessages = useCallback(async (sessionId?: string) => {
+    const key = sessionId || currentSessionId || 'current';
+    const running = inFlightLoads.current.get(key);
+    if (running) return running;
+
+    const load = (async () => {
     try {
       const targetSessionId = sessionId || currentSessionId;
       await ensureSessionExists(targetSessionId);
@@ -95,6 +122,14 @@ export function NovaProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error('Error loading messages:', error);
+    }
+    })();
+
+    inFlightLoads.current.set(key, load);
+    try {
+      await load;
+    } finally {
+      inFlightLoads.current.delete(key);
     }
   }, [novaService, currentSessionId, ensureSessionExists]);
 
