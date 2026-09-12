@@ -66,13 +66,11 @@ const SUPPORT_EMAIL = 'tradenovaai@gmail.com';
   a bgcolor attribute as well as an inline style, because some clients strip
   styles and would otherwise render light text on white.
 
-  The logo is drawn with table cells rather than loaded as an image, and that
-  is deliberate rather than old-fashioned. Gmail, Outlook and Apple Mail all
-  block remote images until the reader clicks "load images", so an <img> logo
-  spends most of its life as a broken-image icon at the top of a billing
-  email - which is the one email where looking broken costs the most. Three
-  coloured bars and a word need no network fetch and cannot fail to render.
+  The logo is the real mark, served from www because the bare domain
+  308-redirects there and some clients will not follow a redirect for an
+  image. Alt text is white so a reader who blocks images still sees the word.
 */
+const LOGO_URL = 'https://www.tradexnova.com/tradex_logo.png';
 function buildPaymentFailedHtml(): string {
   return `
 <!DOCTYPE html>
@@ -89,12 +87,8 @@ function buildPaymentFailedHtml(): string {
       <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:560px;">
 
         <tr><td align="center" style="padding-bottom:32px;">
-          <table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr>
-            <td valign="middle" style="padding-right:4px;"><div style="width:4px;height:22px;background-color:#3B82F6;border-radius:2px;font-size:0;line-height:22px;">&nbsp;</div></td>
-            <td valign="middle" style="padding-right:4px;"><div style="width:4px;height:30px;background-color:#3B82F6;border-radius:2px;font-size:0;line-height:30px;">&nbsp;</div></td>
-            <td valign="middle" style="padding-right:12px;"><div style="width:4px;height:14px;background-color:#3B82F6;border-radius:2px;font-size:0;line-height:14px;">&nbsp;</div></td>
-            <td valign="middle"><span style="font-size:26px;font-weight:700;letter-spacing:-0.5px;color:#ffffff;">TradeX</span></td>
-          </tr></table>
+          <img src="${LOGO_URL}" width="72" height="72" alt="TradeX"
+               style="display:block;border:0;outline:none;text-decoration:none;color:#ffffff;font-size:22px;font-weight:700;">
         </td></tr>
 
         <tr><td>

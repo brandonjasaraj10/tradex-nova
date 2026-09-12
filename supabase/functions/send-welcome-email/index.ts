@@ -32,11 +32,12 @@ const SUPPORT_EMAIL = "tradenovaai@gmail.com";
   Two things keep it safe there. Every background carries a bgcolor attribute
   as well as an inline style, because some clients strip styles from body and
   table elements and would otherwise render light text on white. And the logo
-  is drawn out of table cells rather than loaded as an image: Gmail, Outlook
-  and Apple Mail all block remote images by default, and alt text is not the
-  rescue it sounds like - the reader still gets a broken-image glyph beside
-  it. Bars and a word cannot fail to render.
+  is a real image with white alt text, so a client that blocks remote images
+  shows the word TradeX rather than nothing at all. It is served from www
+  because the bare domain 308-redirects there and some clients will not
+  follow a redirect for an image.
 */
+const LOGO_URL = "https://www.tradexnova.com/tradex_logo.png";
 
 function buildWelcomeHtml(): string {
   const step = (n: string, title: string, body: string) => `
@@ -73,12 +74,8 @@ function buildWelcomeHtml(): string {
 
           <tr>
             <td align="center" style="padding-bottom: 32px;">
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr>
-            <td valign="middle" style="padding-right:4px;"><div style="width:4px;height:22px;background-color:#3B82F6;border-radius:2px;font-size:0;line-height:22px;">&nbsp;</div></td>
-            <td valign="middle" style="padding-right:4px;"><div style="width:4px;height:30px;background-color:#3B82F6;border-radius:2px;font-size:0;line-height:30px;">&nbsp;</div></td>
-            <td valign="middle" style="padding-right:12px;"><div style="width:4px;height:14px;background-color:#3B82F6;border-radius:2px;font-size:0;line-height:14px;">&nbsp;</div></td>
-            <td valign="middle"><span style="font-size:26px;font-weight:700;letter-spacing:-0.5px;color:#ffffff;">TradeX</span></td>
-          </tr></table>
+              <img src="${LOGO_URL}" width="72" height="72" alt="TradeX"
+               style="display:block;border:0;outline:none;text-decoration:none;color:#ffffff;font-size:22px;font-weight:700;">
             </td>
           </tr>
 

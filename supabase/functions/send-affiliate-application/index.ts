@@ -24,6 +24,10 @@ const corsHeaders = {
 
 const OWNER_EMAIL = "tradenovaai@gmail.com";
 
+// Served from www: the bare domain 308-redirects there and some mail
+// clients will not follow a redirect for an image.
+const LOGO_URL = "https://www.tradexnova.com/tradex_logo.png";
+
 // Applicant-supplied text goes into HTML, so it has to be escaped. Without
 // this, a name containing a tag would break the layout at best and inject
 // markup into the owner's inbox at worst.
@@ -89,12 +93,8 @@ function buildHtml(app: {
       <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:560px;">
 
         <tr><td align="center" style="padding-bottom:28px;">
-          <table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr>
-            <td valign="middle" style="padding-right:4px;"><div style="width:4px;height:22px;background-color:#3B82F6;border-radius:2px;font-size:0;line-height:22px;">&nbsp;</div></td>
-            <td valign="middle" style="padding-right:4px;"><div style="width:4px;height:30px;background-color:#3B82F6;border-radius:2px;font-size:0;line-height:30px;">&nbsp;</div></td>
-            <td valign="middle" style="padding-right:12px;"><div style="width:4px;height:14px;background-color:#3B82F6;border-radius:2px;font-size:0;line-height:14px;">&nbsp;</div></td>
-            <td valign="middle"><span style="font-size:26px;font-weight:700;letter-spacing:-0.5px;color:#ffffff;">TradeX</span></td>
-          </tr></table>
+          <img src="${LOGO_URL}" width="72" height="72" alt="TradeX"
+               style="display:block;border:0;outline:none;text-decoration:none;color:#ffffff;font-size:22px;font-weight:700;">
         </td></tr>
 
         <tr><td>
