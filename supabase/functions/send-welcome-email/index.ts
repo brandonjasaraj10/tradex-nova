@@ -32,8 +32,10 @@ const SUPPORT_EMAIL = "tradenovaai@gmail.com";
   Two things keep it safe there. Every background carries a bgcolor attribute
   as well as an inline style, because some clients strip styles from body and
   table elements and would otherwise render light text on white. And the logo
-  is a real image with white alt text, so a client that blocks remote images
-  shows the word TradeX rather than a broken icon on black.
+  is drawn out of table cells rather than loaded as an image: Gmail, Outlook
+  and Apple Mail all block remote images by default, and alt text is not the
+  rescue it sounds like - the reader still gets a broken-image glyph beside
+  it. Bars and a word cannot fail to render.
 */
 
 function buildWelcomeHtml(): string {

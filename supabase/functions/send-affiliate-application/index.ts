@@ -35,17 +35,6 @@ function esc(value: unknown): string {
     .replace(/"/g, "&quot;");
 }
 
-/*
-  The logo, served from www rather than the bare domain.
-
-  tradexnova.com 308-redirects to www, and plenty of mail clients will not
-  follow a redirect for an image - they just show nothing. The www URL is the
-  one that returns the PNG directly.
-
-  It is a white mark on transparency, which is precisely why this email is
-  dark: on the old light background the logo would have been invisible.
-*/
-
 function buildHtml(app: {
   name: string;
   email: string;
@@ -100,8 +89,6 @@ function buildHtml(app: {
       <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:560px;">
 
         <tr><td align="center" style="padding-bottom:28px;">
-          <!-- alt text is white, so a client that blocks images still shows
-               the brand rather than a broken-image icon on black. -->
           <table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr>
             <td valign="middle" style="padding-right:4px;"><div style="width:4px;height:22px;background-color:#3B82F6;border-radius:2px;font-size:0;line-height:22px;">&nbsp;</div></td>
             <td valign="middle" style="padding-right:4px;"><div style="width:4px;height:30px;background-color:#3B82F6;border-radius:2px;font-size:0;line-height:30px;">&nbsp;</div></td>
