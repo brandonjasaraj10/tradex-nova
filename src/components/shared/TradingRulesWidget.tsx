@@ -48,15 +48,11 @@ export default function TradingRulesWidget() {
       const userRules = await getTradingRules(user.id);
       const enabledRules = userRules.filter(r => r.enabled);
 
-      const rulesWithStats = await Promise.all(
-        enabledRules.map(async (rule) => {
-          const adherenceRate = await calculateRuleAdherence(rule.id);
-          return {
-            ...rule,
-            adherence_rate: adherenceRate,
-          };
-        })
-      );
+      const adherenceByRule = await calculateRuleAdherence(enabledRules.map(r => r.id));
+      const rulesWithStats = enabledRules.map(rule => ({
+        ...rule,
+        adherence_rate: adherenceByRule.get(rule.id) ?? null,
+      }));
 
       setRules(rulesWithStats);
 
@@ -86,12 +82,24 @@ export default function TradingRulesWidget() {
     accounts left adherence unchanged because it was silently averaging
     every account together.
   */
-  async function calculateRuleAdherence(ruleId: string): Promise<number | null> {
+  /*
+    Every rule in one request, rather than one request per rule.
+
+    This took a single ruleId and was called from inside a map, so the widget
+    made one round trip per enabled rule - on mount, on every account switch,
+    and on every realtime refresh. Same query, asked once with `in`, grouped
+    here. A rule with no logged entries is simply absent from the map, which
+    is what the old empty-result `null` meant.
+  */
+  async function calculateRuleAdherence(ruleIds: string[]): Promise<Map<string, number>> {
+    const rates = new Map<string, number>();
+    if (ruleIds.length === 0) return rates;
+
     try {
       let query = supabase
         .from('journal_entry_rules')
-        .select('followed, journal_entries!inner(account_id)')
-        .eq('rule_id', ruleId);
+        .select('rule_id, followed, journal_entries!inner(account_id)')
+        .in('rule_id', ruleIds);
 
       if (selectedAccount) {
         query = query.eq('journal_entries.account_id', selectedAccount.id);
@@ -100,14 +108,23 @@ export default function TradingRulesWidget() {
       const { data, error } = await query;
 
       if (error) throw error;
-      if (!data || data.length === 0) return null;
 
-      const followedCount = data.filter(entry => entry.followed === true).length;
-      return Math.round((followedCount / data.length) * 100);
+      const buckets = new Map<string, { total: number; followed: number }>();
+      for (const row of (data ?? []) as { rule_id: string; followed: boolean | null }[]) {
+        const bucket = buckets.get(row.rule_id) ?? { total: 0, followed: 0 };
+        bucket.total += 1;
+        if (row.followed === true) bucket.followed += 1;
+        buckets.set(row.rule_id, bucket);
+      }
+
+      for (const [ruleId, bucket] of buckets) {
+        if (bucket.total > 0) rates.set(ruleId, Math.round((bucket.followed / bucket.total) * 100));
+      }
     } catch (error) {
       console.error('Error calculating adherence:', error);
-      return null;
     }
+
+    return rates;
   }
 
   function getCategoryIcon(category: TradingRule['category']) {

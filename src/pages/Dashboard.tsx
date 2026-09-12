@@ -377,19 +377,29 @@ export default function Dashboard() {
         distinct, and folding blanks into the denominator would report a
         collapsing score for someone who simply has not filled it in yet.
       */
-      const rates = await Promise.all(
-        enabled.map(async (check) => {
-          const { data, error } = await supabase
-            .from('journal_entry_psychology_checks')
-            .select('confirmed')
-            .eq('check_id', check.id)
-            .not('confirmed', 'is', null);
+      const { data: checkRows, error: checkError } = await supabase
+        .from('journal_entry_psychology_checks')
+        .select('check_id, confirmed')
+        .in('check_id', enabled.map(c => c.id))
+        .not('confirmed', 'is', null);
 
-          if (error || !data || data.length === 0) return null;
-          const yes = data.filter(r => r.confirmed === true).length;
-          return Math.round((yes / data.length) * 100);
-        })
-      );
+      if (checkError) throw checkError;
+
+      const byCheck = new Map<string, { total: number; yes: number }>();
+      for (const row of (checkRows ?? []) as { check_id: string; confirmed: boolean | null }[]) {
+        const bucket = byCheck.get(row.check_id) ?? { total: 0, yes: 0 };
+        bucket.total += 1;
+        if (row.confirmed === true) bucket.yes += 1;
+        byCheck.set(row.check_id, bucket);
+      }
+
+      // null, not 0, for a check with nothing answered - it is dropped from
+      // the average below rather than dragging it down.
+      const rates = enabled.map(check => {
+        const bucket = byCheck.get(check.id);
+        if (!bucket || bucket.total === 0) return null;
+        return Math.round((bucket.yes / bucket.total) * 100);
+      });
 
       const answered = rates.filter((r): r is number => r !== null);
       setAveragePsychAdherence(
@@ -410,22 +420,38 @@ export default function Dashboard() {
       const rules = await getTradingRules(user.id);
       setTradingRules(rules);
 
-      // Calculate average adherence for enabled rules
+      /*
+        One request for every rule, not one request per rule.
+
+        This used to fire a separate query inside a map, so a trader with ten
+        rules made ten round trips to work out a single percentage - and the
+        dashboard runs this on every load and on every realtime refresh.
+        `in` asks the same question once and the rates are grouped here.
+      */
       const enabledRules = rules.filter(r => r.enabled);
       if (enabledRules.length > 0) {
-        const adherenceRates = await Promise.all(
-          enabledRules.map(async (rule) => {
-            const { data, error } = await supabase
-              .from('journal_entry_rules')
-              .select('followed')
-              .eq('rule_id', rule.id);
+        const { data: ruleRows, error: ruleError } = await supabase
+          .from('journal_entry_rules')
+          .select('rule_id, followed')
+          .in('rule_id', enabledRules.map(r => r.id));
 
-            if (error || !data || data.length === 0) return 0;
+        if (ruleError) throw ruleError;
 
-            const followedCount = data.filter(entry => entry.followed === true).length;
-            return Math.round((followedCount / data.length) * 100);
-          })
-        );
+        const byRule = new Map<string, { total: number; followed: number }>();
+        for (const row of (ruleRows ?? []) as { rule_id: string; followed: boolean | null }[]) {
+          const bucket = byRule.get(row.rule_id) ?? { total: 0, followed: 0 };
+          bucket.total += 1;
+          if (row.followed === true) bucket.followed += 1;
+          byRule.set(row.rule_id, bucket);
+        }
+
+        // A rule nobody has logged against still counts as 0, exactly as it
+        // did when its own query came back empty.
+        const adherenceRates = enabledRules.map(rule => {
+          const bucket = byRule.get(rule.id);
+          if (!bucket || bucket.total === 0) return 0;
+          return Math.round((bucket.followed / bucket.total) * 100);
+        });
 
         const avgAdherence = Math.round(
           adherenceRates.reduce((sum, rate) => sum + rate, 0) / adherenceRates.length
