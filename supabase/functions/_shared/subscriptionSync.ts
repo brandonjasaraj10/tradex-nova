@@ -64,13 +64,16 @@ const SUPPORT_EMAIL = 'tradenovaai@gmail.com';
 
   Dark, matching the app and the other TradeX emails. Every background carries
   a bgcolor attribute as well as an inline style, because some clients strip
-  styles and would otherwise render light text on white; the logo has white
-  alt text so a client blocking remote images shows the word rather than a
-  broken icon.
-*/
-const LOGO_URL = 'https://www.tradexnova.com/tradex_logo.png';
+  styles and would otherwise render light text on white.
 
-function buildPaymentFailedHtml(amountLabel: string): string {
+  The logo is drawn with table cells rather than loaded as an image, and that
+  is deliberate rather than old-fashioned. Gmail, Outlook and Apple Mail all
+  block remote images until the reader clicks "load images", so an <img> logo
+  spends most of its life as a broken-image icon at the top of a billing
+  email - which is the one email where looking broken costs the most. Three
+  coloured bars and a word need no network fetch and cannot fail to render.
+*/
+function buildPaymentFailedHtml(): string {
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -86,15 +89,19 @@ function buildPaymentFailedHtml(amountLabel: string): string {
       <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:560px;">
 
         <tr><td align="center" style="padding-bottom:32px;">
-          <img src="${LOGO_URL}" width="72" height="72" alt="TradeX"
-               style="display:block;border:0;outline:none;text-decoration:none;color:#ffffff;font-size:22px;font-weight:700;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr>
+            <td valign="middle" style="padding-right:4px;"><div style="width:4px;height:22px;background-color:#3B82F6;border-radius:2px;font-size:0;line-height:22px;">&nbsp;</div></td>
+            <td valign="middle" style="padding-right:4px;"><div style="width:4px;height:30px;background-color:#3B82F6;border-radius:2px;font-size:0;line-height:30px;">&nbsp;</div></td>
+            <td valign="middle" style="padding-right:12px;"><div style="width:4px;height:14px;background-color:#3B82F6;border-radius:2px;font-size:0;line-height:14px;">&nbsp;</div></td>
+            <td valign="middle"><span style="font-size:26px;font-weight:700;letter-spacing:-0.5px;color:#ffffff;">TradeX</span></td>
+          </tr></table>
         </td></tr>
 
         <tr><td>
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#0A0A0A" style="background-color:#0A0A0A;border:1px solid #1f1f1f;border-radius:14px;">
             <tr><td style="padding:36px 32px;">
               <h1 style="margin:0 0 12px 0;font-size:21px;font-weight:700;color:#ffffff;letter-spacing:-0.3px;">Your last payment didn&rsquo;t go through</h1>
-              <p style="margin:0 0 24px 0;font-size:15px;line-height:1.6;color:#8b8b8b;">We tried to charge ${amountLabel} and your bank declined it. This happens most often with an expired card or a new card number &mdash; it usually is not a problem with your account.</p>
+              <p style="margin:0 0 24px 0;font-size:15px;line-height:1.6;color:#8b8b8b;">Your bank declined the charge. This happens most often with an expired card or a new card number &mdash; it usually is not a problem with your account.</p>
 
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#0d1a2f" style="background-color:#0d1a2f;border:1px solid #1e3a5f;border-radius:10px;margin-bottom:24px;">
                 <tr><td style="padding:16px 18px;">
@@ -136,7 +143,6 @@ function buildPaymentFailedHtml(amountLabel: string): string {
 async function sendPaymentFailedEmail(
   supabase: SupabaseClient,
   userId: string,
-  subscription: Stripe.Subscription,
 ) {
   try {
     const resendApiKey = Deno.env.get('RESEND_API_KEY');
@@ -152,12 +158,21 @@ async function sendPaymentFailedEmail(
       return;
     }
 
-    const amount = subscription.items.data[0]?.price?.unit_amount;
-    const currency = (subscription.items.data[0]?.price?.currency ?? 'usd').toUpperCase();
-    // Falls back to wording that is true whatever the plan, rather than
-    // inventing a figure - a wrong amount in a billing email is worse than none.
-    const amountLabel = amount != null ? `$${(amount / 100).toFixed(2)} ${currency}` : 'your subscription';
+    /*
+      No figure in the email, on purpose.
 
+      This used to print price.unit_amount off the subscription, which is the
+      list price of the plan and not what Stripe actually tried to take. A
+      proration, a partial credit, tax, or any discount makes the two differ,
+      and it read "$24.99" to an annual subscriber whose real charge was
+      $249.90. A wrong number in a billing email is worse than no number - it
+      is the thing a worried customer checks first, and getting it wrong is
+      how a real charge starts looking like a scam.
+
+      Fetching the true figure means pulling the latest invoice, which this
+      handler does not have. The card is what needs attention either way, and
+      the exact amount is one click away in the billing portal.
+    */
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { Authorization: `Bearer ${resendApiKey}`, 'Content-Type': 'application/json' },
@@ -166,7 +181,7 @@ async function sendPaymentFailedEmail(
         to: [email],
         reply_to: [SUPPORT_EMAIL],
         subject: 'Your TradeX payment failed - update your card to restore access',
-        html: buildPaymentFailedHtml(amountLabel),
+        html: buildPaymentFailedHtml(),
       }),
     });
 
@@ -259,7 +274,7 @@ export async function syncSubscription(supabase: SupabaseClient, userId: string,
       the same decline is how a useful warning becomes spam.
     */
     if (subscription.status === 'past_due') {
-      await sendPaymentFailedEmail(supabase, userId, subscription);
+      await sendPaymentFailedEmail(supabase, userId);
     }
   }
 

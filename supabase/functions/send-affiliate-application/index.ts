@@ -45,7 +45,6 @@ function esc(value: unknown): string {
   It is a white mark on transparency, which is precisely why this email is
   dark: on the old light background the logo would have been invisible.
 */
-const LOGO_URL = "https://www.tradexnova.com/tradex_logo.png";
 
 function buildHtml(app: {
   name: string;
@@ -103,8 +102,12 @@ function buildHtml(app: {
         <tr><td align="center" style="padding-bottom:28px;">
           <!-- alt text is white, so a client that blocks images still shows
                the brand rather than a broken-image icon on black. -->
-          <img src="${LOGO_URL}" width="72" height="72" alt="TradeX"
-               style="display:block;border:0;outline:none;text-decoration:none;color:#ffffff;font-size:22px;font-weight:700;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr>
+            <td valign="middle" style="padding-right:4px;"><div style="width:4px;height:22px;background-color:#3B82F6;border-radius:2px;font-size:0;line-height:22px;">&nbsp;</div></td>
+            <td valign="middle" style="padding-right:4px;"><div style="width:4px;height:30px;background-color:#3B82F6;border-radius:2px;font-size:0;line-height:30px;">&nbsp;</div></td>
+            <td valign="middle" style="padding-right:12px;"><div style="width:4px;height:14px;background-color:#3B82F6;border-radius:2px;font-size:0;line-height:14px;">&nbsp;</div></td>
+            <td valign="middle"><span style="font-size:26px;font-weight:700;letter-spacing:-0.5px;color:#ffffff;">TradeX</span></td>
+          </tr></table>
         </td></tr>
 
         <tr><td>

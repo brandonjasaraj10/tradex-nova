@@ -35,7 +35,6 @@ const SUPPORT_EMAIL = "tradenovaai@gmail.com";
   is a real image with white alt text, so a client that blocks remote images
   shows the word TradeX rather than a broken icon on black.
 */
-const LOGO_URL = "https://www.tradexnova.com/tradex_logo.png";
 
 function buildWelcomeHtml(): string {
   const step = (n: string, title: string, body: string) => `
@@ -72,8 +71,12 @@ function buildWelcomeHtml(): string {
 
           <tr>
             <td align="center" style="padding-bottom: 32px;">
-              <img src="${LOGO_URL}" width="72" height="72" alt="TradeX"
-                   style="display:block;border:0;outline:none;text-decoration:none;color:#ffffff;font-size:22px;font-weight:700;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr>
+            <td valign="middle" style="padding-right:4px;"><div style="width:4px;height:22px;background-color:#3B82F6;border-radius:2px;font-size:0;line-height:22px;">&nbsp;</div></td>
+            <td valign="middle" style="padding-right:4px;"><div style="width:4px;height:30px;background-color:#3B82F6;border-radius:2px;font-size:0;line-height:30px;">&nbsp;</div></td>
+            <td valign="middle" style="padding-right:12px;"><div style="width:4px;height:14px;background-color:#3B82F6;border-radius:2px;font-size:0;line-height:14px;">&nbsp;</div></td>
+            <td valign="middle"><span style="font-size:26px;font-weight:700;letter-spacing:-0.5px;color:#ffffff;">TradeX</span></td>
+          </tr></table>
             </td>
           </tr>
 
