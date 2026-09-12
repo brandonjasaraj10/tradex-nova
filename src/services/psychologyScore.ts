@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabase, getCurrentUser } from '../lib/supabase';
 
 export interface PsychologyScoreData {
   date: string;
@@ -129,7 +129,7 @@ export async function getPsychologyScores(
   timeFrame: TimeFrame = 'weekly'
 ): Promise<PsychologyScoreAggregates> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
     if (!user) {
       return getEmptyAggregates();
     }

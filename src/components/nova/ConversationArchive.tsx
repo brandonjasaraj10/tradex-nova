@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, MessageSquare, Trash2, Calendar, X, Plus } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { supabase, getCurrentUser } from '../../lib/supabase';
 import Button from '../shared/Button';
 import ConfirmModal from '../shared/ConfirmModal';
 
@@ -48,7 +48,7 @@ export default function ConversationArchive({
   const loadSessions = async () => {
     try {
       setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) return;
 
       const { data, error } = await supabase

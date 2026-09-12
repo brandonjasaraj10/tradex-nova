@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabase, getCurrentUser } from '../lib/supabase';
 
 export interface Note {
   id: string;
@@ -11,7 +11,7 @@ export interface Note {
 
 export async function getNotes(limit: number = 10): Promise<Note[]> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
     if (!user) throw new Error('Not authenticated');
 
     const { data, error } = await supabase
@@ -31,7 +31,7 @@ export async function getNotes(limit: number = 10): Promise<Note[]> {
 
 export async function createNote(content: string, title?: string): Promise<Note | null> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
     if (!user) throw new Error('Not authenticated');
 
     const noteTitle = title || content.substring(0, 50).trim() || 'Quick Note';
@@ -52,7 +52,7 @@ export async function createNote(content: string, title?: string): Promise<Note 
 
 export async function updateNote(id: string, content: string): Promise<Note | null> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
     if (!user) throw new Error('Not authenticated');
 
     const { data, error } = await supabase
@@ -73,7 +73,7 @@ export async function updateNote(id: string, content: string): Promise<Note | nu
 
 export async function deleteNote(id: string): Promise<boolean> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
     if (!user) throw new Error('Not authenticated');
 
     const { error } = await supabase
@@ -92,7 +92,7 @@ export async function deleteNote(id: string): Promise<boolean> {
 
 export async function markNoteAsRead(id: string): Promise<Note | null> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
     if (!user) throw new Error('Not authenticated');
 
     const { data, error } = await supabase
@@ -113,7 +113,7 @@ export async function markNoteAsRead(id: string): Promise<Note | null> {
 
 export async function toggleNoteReadStatus(id: string, currentStatus: boolean): Promise<Note | null> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
     if (!user) throw new Error('Not authenticated');
 
     const { data, error } = await supabase

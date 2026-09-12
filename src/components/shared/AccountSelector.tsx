@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Check, Plus, FileUp, X } from 'lucide-react';
 import Button from './Button';
 import CSVUpload from '../broker/CSVUpload';
-import { supabase } from '../../lib/supabase';
+import { supabase, getCurrentUser } from '../../lib/supabase';
 import { brokerService, type BrokerFromAPI } from '../../services/brokerService';
 import { useToast } from '../../lib/toastContext';
 
@@ -80,7 +80,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
 
     setIsCreating(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) throw new Error('Not authenticated');
 
       const isOther = selectedBrokerId === '__other__';

@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabase, getCurrentUser } from '../lib/supabase';
 import { balanceService } from './balanceService';
 
 export interface VoiceJournalData {
@@ -90,7 +90,7 @@ export async function processVoiceJournalEntry(
   mode: 'trade' | 'notes' = 'trade'
 ): Promise<VoiceJournalData> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
     if (!user) throw new Error('User not authenticated');
 
     /*

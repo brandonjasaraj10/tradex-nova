@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabase, getCurrentUser } from '../lib/supabase';
 
 export interface CSVTrade {
   ticket?: string;
@@ -501,7 +501,7 @@ export class CSVParser {
   }
 
   static async importTrades(trades: CSVTrade[], connectionId?: string): Promise<{ imported: number, updated: number, errors: string[] }> {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
     if (!user) throw new Error('Not authenticated');
 
     let imported = 0;

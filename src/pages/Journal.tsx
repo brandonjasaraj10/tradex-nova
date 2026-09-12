@@ -7,7 +7,7 @@ import Card from '../components/shared/Card';
 import Button from '../components/shared/Button';
 import ConfirmModal from '../components/shared/ConfirmModal';
 import MiniCalendar from '../components/journal/MiniCalendar';
-import { RichTextEditor } from '../components/journal/RichTextEditor';
+import { LazyRichTextEditor as RichTextEditor } from '../components/journal/LazyRichTextEditor';
 import { PsychologyTemplate } from '../components/journal/PsychologyTemplate';
 import NovaJournalAssistant from '../components/journal/NovaJournalAssistant';
 import AccountSelector from '../components/shared/AccountSelector';
@@ -30,7 +30,7 @@ import {
 import { getTrades } from '../services/trades';
 import type { Trade } from '../types/trade';
 import { getUserConfluences, type Confluence } from '../services/confluences';
-import { supabase } from '../lib/supabase';
+import { supabase, getCurrentUser } from '../lib/supabase';
 import { uploadScreenshot, deleteScreenshot } from '../lib/screenshots';
 import ScreenshotImage from '../components/shared/ScreenshotImage';
 import {
@@ -84,7 +84,8 @@ const formatLocalDate = (date: Date) => {
 export default function Journal() {
   const { showToast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { refreshTrigger } = useDataSync();
+  // Entries, the trades they link to, and the plan items ticked against them.
+  const { refreshTrigger } = useDataSync(['journal_entries', 'trades', 'trading_confluences', 'trading_rules']);
 
   const { accounts, selectedAccount, setSelectedAccount, refreshAccounts } = useAccount();
   const [folders, setFolders] = useState<JournalFolder[]>([]);
@@ -261,7 +262,7 @@ export default function Journal() {
 
   const loadConfluencesAndRules = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) return;
 
       const [confluences, rules] = await Promise.all([
@@ -1373,7 +1374,7 @@ export default function Journal() {
 
     setUploadingScreenshot(type);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) throw new Error('Not authenticated');
 
       /*

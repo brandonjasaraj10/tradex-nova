@@ -52,7 +52,9 @@ export default function Calendar() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { selectedAccount } = useAccount();
-  const { refreshTrigger } = useDataSync();
+  // The calendar shows P&L per day, which comes from trades and from
+  // journal entries carrying a manual P&L. Nothing else moves it.
+  const { refreshTrigger } = useDataSync(['trades', 'journal_entries']);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [calendarData, setCalendarData] = useState<Map<string, DayData>>(new Map());
   const [viewMode, setViewMode] = useState<ViewMode>('pnl');

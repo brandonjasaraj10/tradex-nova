@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabase, getCurrentUser } from '../lib/supabase';
 
 const ADMIN_EMAILS = [
   'brandon.jasaraj10@gmail.com',
@@ -36,7 +36,7 @@ export interface SubscriptionAccess {
 }
 
 export async function getSubscription(): Promise<Subscription | null> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   if (!user) {
     return null;
@@ -57,7 +57,7 @@ export async function getSubscription(): Promise<Subscription | null> {
 }
 
 export async function checkSubscriptionAccess(): Promise<SubscriptionAccess> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   if (
     (user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase())) ||

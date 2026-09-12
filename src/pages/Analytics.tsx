@@ -92,7 +92,10 @@ const commonOptions = {
 
 export default function Analytics() {
   const { accounts, selectedAccount, setSelectedAccount, refreshAccounts } = useAccount();
-  const { refreshTrigger } = useDataSync();
+  // Scoped deliberately: this page regenerates AI insights when the trigger
+  // moves, which is an edge function call. It should not fire because a
+  // trading rule was renamed.
+  const { refreshTrigger } = useDataSync(['trades', 'journal_entries']);
   const { user } = useAuth();
 
   // Shared across pages and remembered between visits - see dateRangeContext.

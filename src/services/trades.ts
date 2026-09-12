@@ -1,9 +1,9 @@
-import { supabase } from '../lib/supabase';
+import { supabase, getCurrentUser } from '../lib/supabase';
 import type { Trade, TradeFormData, TradeStats, TradeFilters } from '../types/trade';
 import { toLocalDateStr } from '../utils/dateHelpers';
 
 export async function createTrade(data: TradeFormData): Promise<Trade> {
-  const user = supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) throw new Error('User not authenticated');
 
   const pnl = calculatePnL(data);
@@ -12,7 +12,7 @@ export async function createTrade(data: TradeFormData): Promise<Trade> {
     .from('trades')
     .insert({
       ...data,
-      user_id: (await user).data.user?.id,
+      user_id: user.id,
       pnl,
     })
     .select()
@@ -44,7 +44,7 @@ export async function deleteTrade(id: string): Promise<void> {
 }
 
 export async function getTrades(filters?: TradeFilters, accountId?: string): Promise<Trade[]> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) throw new Error('Not authenticated');
 
   let query = supabase
@@ -93,7 +93,7 @@ export async function getTrades(filters?: TradeFilters, accountId?: string): Pro
 
 export async function getRecentTrades(limit: number = 10): Promise<Trade[]> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
     if (!user) throw new Error('Not authenticated');
 
     const { data, error } = await supabase
@@ -192,7 +192,7 @@ async function getAllUnifiedTrades(
 }
 
 export async function getTradeStats(dateRange?: [Date, Date], accountId?: string): Promise<TradeStats> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) throw new Error('Not authenticated');
 
   const allTrades = await getAllUnifiedTrades(user.id, dateRange, accountId);
@@ -218,7 +218,7 @@ export async function getTradeStats(dateRange?: [Date, Date], accountId?: string
 }
 
 export async function getTradesForCharts(dateRange?: [Date, Date], accountId?: string): Promise<UnifiedTrade[]> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) throw new Error('Not authenticated');
   return getAllUnifiedTrades(user.id, dateRange, accountId);
 }
@@ -228,7 +228,7 @@ export async function getDailyPnL(
   month: number,
   accountId?: string
 ): Promise<Map<number, { pnl: number; trades: number; hasJournal: boolean }>> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return new Map();
 
   const startDate = new Date(year, month, 1);
@@ -378,7 +378,7 @@ export async function getTradeLog(
   dateRange?: [Date, Date],
   accountId?: string
 ): Promise<TradeLogRow[]> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) throw new Error('Not authenticated');
 
   let tradesQuery = supabase
