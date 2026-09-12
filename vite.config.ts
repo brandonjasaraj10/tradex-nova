@@ -1,7 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
-import { nodePolyfills } from 'vite-plugin-node-polyfills';
 import fs from 'fs';
 import path from 'path';
 
@@ -24,6 +23,27 @@ const uploadSourceMaps = !!sentryAuthToken;
 export default defineConfig({
   build: {
     sourcemap: uploadSourceMaps,
+    rollupOptions: {
+      output: {
+        /*
+          One chunk for the icons, not one per icon.
+
+          lucide-react exports every icon as its own module, so Rollup was
+          splitting each one into its own file - 37 chunks of about 1KB each.
+          Measured on the live site, that is not free: the landing page asked
+          for fifteen of them at once and they took between 350ms and 870ms
+          apiece, because the cost of a request at that point is queueing and
+          round trips, not bytes. The last one landed 870ms after the first.
+
+          Grouped, they are a single request of a few KB. Deliberately narrow
+          - grouping all of node_modules would drag TipTap and Chart.js into
+          the first load and undo the route splitting that already works.
+        */
+        manualChunks(id) {
+          if (id.includes('node_modules/lucide-react')) return 'icons';
+        },
+      },
+    },
   },
   plugins: [
     react(),
@@ -46,14 +66,6 @@ export default defineConfig({
           }),
         ]
       : []),
-    nodePolyfills({
-      include: ['path', 'util', 'buffer', 'process'],
-      globals: {
-        Buffer: true,
-        global: true,
-        process: true
-      }
-    }),
     {
       name: 'copy-public-files',
       apply: 'build',
