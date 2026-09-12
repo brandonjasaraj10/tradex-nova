@@ -7,7 +7,7 @@ import Card from '../components/shared/Card';
 import Button from '../components/shared/Button';
 import ConfirmModal from '../components/shared/ConfirmModal';
 import MiniCalendar from '../components/journal/MiniCalendar';
-import { RichTextEditor } from '../components/journal/RichTextEditor';
+import { LazyRichTextEditor as RichTextEditor } from '../components/journal/LazyRichTextEditor';
 import { PsychologyTemplate } from '../components/journal/PsychologyTemplate';
 import NovaJournalAssistant from '../components/journal/NovaJournalAssistant';
 import AccountSelector from '../components/shared/AccountSelector';

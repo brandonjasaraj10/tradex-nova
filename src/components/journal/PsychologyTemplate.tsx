@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { combinePsychologyScores } from '../../services/psychologyScore';
 import { createPortal } from 'react-dom';
 import { Brain, Heart, Target, TrendingUp, Zap, AlertCircle, Award, Smile, Frown, Meh, X, Maximize2, Minimize2, Sparkles } from 'lucide-react';
-import { RichTextEditor } from './RichTextEditor';
 import { AnimatePresence, motion } from 'framer-motion';
 
 interface PsychologyTemplateData {
