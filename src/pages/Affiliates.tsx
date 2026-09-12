@@ -181,7 +181,7 @@ export default function Affiliates() {
 
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
           <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-brand-blue/10 text-brand-blue-light border border-brand-blue-light/30 mb-5">
-            Affiliate programme
+            Affiliate program
           </span>
 
           {/* leading-normal, not leading-tight: a clipped descender on a
