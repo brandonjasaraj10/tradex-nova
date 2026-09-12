@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabase, getCurrentUser } from '../lib/supabase';
 
 export interface JournalFolder {
   id: string;
@@ -73,7 +73,7 @@ export async function getFolders(): Promise<JournalFolder[]> {
 }
 
 export async function createFolder(folder: Omit<JournalFolder, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<JournalFolder> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) throw new Error('Not authenticated');
 
   const { data, error } = await supabase
@@ -169,7 +169,7 @@ export async function getEntriesByDate(folderId: string, date: string, accountId
 }
 
 export async function createEntry(entry: Omit<JournalEntry, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<JournalEntry> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) throw new Error('Not authenticated');
 
   const { data, error } = await supabase
@@ -289,7 +289,7 @@ export async function createLinkedPsychologyEntry(
   sourceEntry: JournalEntry,
   templateData: any
 ): Promise<JournalEntry> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) throw new Error('Not authenticated');
 
   const psychologyFolderId = await getPsychologyFolderId();
@@ -332,7 +332,7 @@ export async function syncPsychologyToLinkedEntry(
   entryId: string,
   templateData: any
 ): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) throw new Error('Not authenticated');
 
   // Get the entry being edited
@@ -368,7 +368,7 @@ export async function syncPsychologyToLinkedEntry(
 }
 
 export async function getAllEntriesForDate(date: string): Promise<JournalEntry[]> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) throw new Error('Not authenticated');
 
   const { data, error } = await supabase

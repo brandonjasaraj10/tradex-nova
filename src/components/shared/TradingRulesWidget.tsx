@@ -5,7 +5,7 @@ import Card from './Card';
 import PageLoader from './PageLoader';
 import { getTradingRules, type TradingRule } from '../../services/tradingRules';
 import { getJournalEntryRules } from '../../services/tradingRules';
-import { supabase } from '../../lib/supabase';
+import { supabase, getCurrentUser } from '../../lib/supabase';
 import { useDataSync } from '../../lib/dataSync';
 import { useAccount } from '../../lib/accountContext';
 
@@ -42,7 +42,7 @@ export default function TradingRulesWidget() {
 
   async function loadRulesWithStats() {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) return;
 
       const userRules = await getTradingRules(user.id);

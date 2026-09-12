@@ -5,7 +5,7 @@ import Card from './Card';
 import { getPsychologyScores, type PsychologyScoreAggregates, type TimeFrame } from '../../services/psychologyScore';
 import { useNavigate } from 'react-router-dom';
 import { useDataSync } from '../../lib/dataSync';
-import { supabase } from '../../lib/supabase';
+import { supabase, getCurrentUser } from '../../lib/supabase';
 
 const TIMEFRAMES: { value: TimeFrame; label: string }[] = [
   { value: 'daily', label: 'Today' },
@@ -66,7 +66,7 @@ export default function PsychologyScore() {
         setHasAnyEntries(allTime.totalEntries > 0);
 
         if (allTime.totalEntries === 0) {
-          const { data: { user } } = await supabase.auth.getUser();
+          const user = await getCurrentUser();
           if (user) {
             const { data: trades } = await supabase
               .from('trades')

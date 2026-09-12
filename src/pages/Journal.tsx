@@ -30,7 +30,7 @@ import {
 import { getTrades } from '../services/trades';
 import type { Trade } from '../types/trade';
 import { getUserConfluences, type Confluence } from '../services/confluences';
-import { supabase } from '../lib/supabase';
+import { supabase, getCurrentUser } from '../lib/supabase';
 import { uploadScreenshot, deleteScreenshot } from '../lib/screenshots';
 import ScreenshotImage from '../components/shared/ScreenshotImage';
 import {
@@ -261,7 +261,7 @@ export default function Journal() {
 
   const loadConfluencesAndRules = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) return;
 
       const [confluences, rules] = await Promise.all([
@@ -1373,7 +1373,7 @@ export default function Journal() {
 
     setUploadingScreenshot(type);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) throw new Error('Not authenticated');
 
       /*

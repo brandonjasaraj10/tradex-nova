@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabase, getCurrentUser } from '../lib/supabase';
 
 export interface BalanceData {
   starting_balance: number;
@@ -89,7 +89,7 @@ export class BalanceService {
     reason?: string
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) {
         return { success: false, error: 'Not authenticated' };
       }
@@ -186,7 +186,7 @@ export class BalanceService {
 
   async getCombinedBalance(userId?: string): Promise<BalanceData | null> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       const targetUserId = userId || user?.id;
 
       if (!targetUserId) {

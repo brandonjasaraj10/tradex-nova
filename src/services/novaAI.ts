@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabase, getCurrentUser } from '../lib/supabase';
 
 export interface ChatMessage {
   id: string;
@@ -17,7 +17,7 @@ export class NovaAIService {
   }
 
   async initialize() {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
     this.userId = user?.id || null;
   }
 
@@ -311,7 +311,7 @@ export class NovaAIService {
 
   private async getPerformanceInsights(): Promise<string> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) return 'Please log in to view your performance metrics.';
 
       const { data: trades } = await supabase
@@ -341,7 +341,7 @@ export class NovaAIService {
 
   private async getConfluences(): Promise<string> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) return 'Please log in to view your confluences.';
 
       const { data: confluences } = await supabase
@@ -367,7 +367,7 @@ export class NovaAIService {
 
   private async getRecentTrades(): Promise<string> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) return 'Please log in to view your trades.';
 
       const { data: trades } = await supabase
@@ -396,7 +396,7 @@ export class NovaAIService {
 
   private async getNovaScore(): Promise<string> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) return 'Please log in to view your NOVA Score.';
 
       const { data: scoreData } = await supabase
@@ -425,7 +425,7 @@ export class NovaAIService {
 
   private async getPsychologyInsights(): Promise<string> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) return 'Please log in to view your psychology insights.';
 
       const { data: entries } = await supabase

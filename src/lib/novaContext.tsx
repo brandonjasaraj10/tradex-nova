@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
-import { supabase } from './supabase';
+import { supabase, getCurrentUser } from './supabase';
 import { NovaAIService, ChatMessage } from '../services/novaAI';
 
 interface NovaContextType {
@@ -43,7 +43,7 @@ export function NovaProvider({ children }: { children: ReactNode }) {
 
   const ensureSessionExists = useCallback(async (sessionId: string) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) return;
 
       /*
@@ -135,7 +135,7 @@ export function NovaProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const initialize = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) {
         setIsLoading(false);
         setIsInitialized(false);
@@ -164,7 +164,7 @@ export function NovaProvider({ children }: { children: ReactNode }) {
         },
         async (payload) => {
           const newMessage = payload.new as any;
-          const { data: { user } } = await supabase.auth.getUser();
+          const user = await getCurrentUser();
 
           if (newMessage.user_id === user?.id && newMessage.session_id === getOrCreateSessionId()) {
             setMessages(prev => {
@@ -297,7 +297,7 @@ export function NovaProvider({ children }: { children: ReactNode }) {
     try {
       setIsLoading(true);
       const newSessionId = crypto.randomUUID();
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) return;
 
       await supabase

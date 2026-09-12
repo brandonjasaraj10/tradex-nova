@@ -5,7 +5,7 @@ import { Link2, CheckCircle2, AlertCircle, Trash2, Clock, Upload, Plus, X, Refre
 import Button from '../shared/Button';
 import ConfirmModal from '../shared/ConfirmModal';
 import { brokerService, type BrokerConnection, type BrokerFromAPI } from '../../services/brokerService';
-import { supabase } from '../../lib/supabase';
+import { supabase, getCurrentUser } from '../../lib/supabase';
 import { useToast } from '../../lib/toastContext';
 import CSVUpload from './CSVUpload';
 import EditBalanceModal from './EditBalanceModal';
@@ -120,7 +120,7 @@ export default function BrokerConnectionsList() {
 
     setIsCreating(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) throw new Error('Not authenticated');
 
       const isOther = selectedBrokerId === '__other__';

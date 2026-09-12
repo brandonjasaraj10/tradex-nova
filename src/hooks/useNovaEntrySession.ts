@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, getCurrentUser } from '../lib/supabase';
 import { NovaAIService, ChatMessage } from '../services/novaAI';
 
 async function ensureSessionExists(sessionId: string) {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return;
 
   const { data: existingSession } = await supabase

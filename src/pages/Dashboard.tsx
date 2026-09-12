@@ -9,7 +9,7 @@ import BalanceCard from '../components/dashboard/BalanceCard';
 import { useAccount } from '../lib/accountContext';
 import { useDateRange } from '../lib/dateRangeContext';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase, getCurrentUser } from '../lib/supabase';
 import NOVAScore from '../components/shared/NOVAScore';
 import { calculateNOVAScore, type NOVAScoreBreakdown } from '../services/novaScore';
 import { getPsychologyAggregate } from '../services/psychologyChecks';
@@ -144,7 +144,7 @@ export default function Dashboard() {
   const reportMenuRef = useRef<HTMLDivElement>(null);
 
   const handleGenerateReport = async (reportType: 'weekly' | 'monthly' | 'quarterly' | 'yearly') => {
-    const user = (await supabase.auth.getUser()).data.user;
+    const user = await getCurrentUser();
     if (!user) return;
 
     setLoadingReport(true);
@@ -233,7 +233,7 @@ export default function Dashboard() {
 
   const loadRecentTrades = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) return;
 
       let tradesQuery = supabase
@@ -358,7 +358,7 @@ export default function Dashboard() {
 
   const loadPsychologyChecks = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) return;
 
       const checks = await getPsychologyChecks(user.id);
@@ -404,7 +404,7 @@ export default function Dashboard() {
 
   const loadTradingRules = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) return;
 
       const rules = await getTradingRules(user.id);
@@ -450,7 +450,7 @@ export default function Dashboard() {
     if (!newRule.name.trim()) return;
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) return;
 
       const maxOrder = Math.max(...tradingRules.map(r => r.order_index), -1);
@@ -518,7 +518,7 @@ export default function Dashboard() {
 
   const calculateAndSetNovaScore = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) return;
 
       /*
