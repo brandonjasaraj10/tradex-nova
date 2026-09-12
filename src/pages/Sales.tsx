@@ -9,6 +9,25 @@ import LaunchCountdown from '../components/shared/LaunchCountdown';
 import { useState } from 'react';
 
 const features = [
+  /*
+    First in the list on purpose. It is the only thing here a trader cannot
+    do by typing harder, and it is the reason the rest of the page is worth
+    reading: an AI that reviews your trading is only as good as whether your
+    trades are actually in it.
+
+    The read-only claim is load-bearing and must stay true. The connection
+    uses an investor password, which cannot place, close or modify a trade
+    and cannot withdraw - if that ever changes, this copy changes first.
+  */
+  {
+    icon: Zap,
+    title: 'MT4 & MT5 Auto Sync',
+    description: 'Connect your MetaTrader account and your closed trades import themselves - entries, exits, size, commission and how each one ended. Read-only: we can see your trades, never place them.',
+    metrics: [
+      { label: 'Platforms', value: 'MT4/MT5' },
+      { label: 'Entry Needed', value: 'None' }
+    ]
+  },
   {
     icon: BookOpen,
     title: 'Advanced Trading Journal',
@@ -1535,7 +1554,29 @@ export default function Sales() {
             >
               <h3 className="text-lg font-medium mb-2">Can I import my trades automatically?</h3>
               <p className="text-sm text-gray-400">
-                Currently, trades can be manually entered directly into the platform. We're working on AutoSync, an automatic trade importing feature that will connect with major brokers. This exciting update is coming soon!
+                Yes. Connect a MetaTrader 4 or MetaTrader 5 account and your closed trades import on their own &mdash; entry and exit, size, commission, how long you held it, and whether it ended at your stop, your target, or by hand. You can still log trades yourself, and you can import a statement, whichever suits you.
+              </p>
+            </motion.div>
+
+            {/*
+              The question that actually decides whether somebody connects.
+
+              A trader being asked for a password to their trading account
+              is right to hesitate, and answering it vaguely reads as
+              evasion. Every claim here is a fact about how it is built: the
+              investor password genuinely cannot trade, and it genuinely is
+              not stored. If either stops being true, this answer comes down
+              before the code ships.
+            */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="p-6 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-white/20 transition-colors"
+            >
+              <h3 className="text-lg font-medium mb-2">Is it safe to connect my trading account?</h3>
+              <p className="text-sm text-gray-400">
+                We ask for your <span className="text-white">investor password</span> &mdash; MetaTrader&rsquo;s read-only one. It can look at an account and nothing else: it cannot open, close or change a trade, and it cannot withdraw. We pass it to our data provider once to set the connection up and never store it. Disconnect whenever you like; your trades and notes stay exactly where they are. Worth checking your broker&rsquo;s or prop firm&rsquo;s own rules first, as some restrict third-party access.
               </p>
             </motion.div>
 
