@@ -84,7 +84,8 @@ const formatLocalDate = (date: Date) => {
 export default function Journal() {
   const { showToast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { refreshTrigger } = useDataSync();
+  // Entries, the trades they link to, and the plan items ticked against them.
+  const { refreshTrigger } = useDataSync(['journal_entries', 'trades', 'trading_confluences', 'trading_rules']);
 
   const { accounts, selectedAccount, setSelectedAccount, refreshAccounts } = useAccount();
   const [folders, setFolders] = useState<JournalFolder[]>([]);

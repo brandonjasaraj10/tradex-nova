@@ -38,7 +38,8 @@ const EMPTY_COPY: Record<TimeFrame, { title: string; body: string }> = {
 
 export default function PsychologyScore() {
   const navigate = useNavigate();
-  const { refreshTrigger } = useDataSync();
+  // Psychology comes entirely from journal entries' template data.
+  const { refreshTrigger } = useDataSync(['journal_entries']);
   const [timeFrame, setTimeFrame] = useState<TimeFrame>('weekly');
   const [data, setData] = useState<PsychologyScoreAggregates | null>(null);
   const [loading, setLoading] = useState(true);

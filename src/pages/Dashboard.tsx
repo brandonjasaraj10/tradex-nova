@@ -96,7 +96,12 @@ function WinningDaysCard({ winningDays }: { winningDays: number }) {
 export default function Dashboard() {
   const navigate = useNavigate();
   const { accounts, selectedAccount, setSelectedAccount, refreshAccounts } = useAccount();
-  const { refreshTrigger } = useDataSync();
+  /*
+    Everything this page loads comes from these four. Notably not
+    user_profiles - completing the tour or editing a profile used to re-run
+    all eight loaders below.
+  */
+  const { refreshTrigger } = useDataSync(['trades', 'journal_entries', 'trading_confluences', 'trading_rules']);
   const [activeTab, setActiveTab] = useState('trades');
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [calendarData, setCalendarData] = useState(() =>

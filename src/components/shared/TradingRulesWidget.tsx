@@ -23,7 +23,9 @@ const CATEGORY_ICONS = {
 };
 
 export default function TradingRulesWidget() {
-  const { refreshTrigger } = useDataSync();
+  // Rules and the entries they are ticked on. A synced trade used to
+  // re-run this whole widget for no reason.
+  const { refreshTrigger } = useDataSync(['trading_rules', 'journal_entries']);
   const { selectedAccount } = useAccount();
   const [rules, setRules] = useState<RuleWithStats[]>([]);
   const [overallAdherence, setOverallAdherence] = useState<number | null>(null);

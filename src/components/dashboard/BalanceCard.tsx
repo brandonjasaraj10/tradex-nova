@@ -8,7 +8,9 @@ import { useDataSync } from '../../lib/dataSync';
 
 export default function BalanceCard() {
   const { selectedAccount } = useAccount();
-  const { refreshTrigger } = useDataSync();
+  // Balances come from the connected account, so only that table matters -
+  // this used to reload on every trade and every journal edit as well.
+  const { refreshTrigger } = useDataSync(['broker_connections']);
   const [balanceData, setBalanceData] = useState<BalanceData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
