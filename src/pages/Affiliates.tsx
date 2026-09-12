@@ -24,9 +24,24 @@ const AUDIENCE_SIZES = [
   '50,000+',
 ] as const;
 
-const COMMISSION_RATE = 0.2;
+/*
+  The starting rate, and deliberately only the starting rate.
+
+  The tiers above it - a higher percentage and a discount code for your
+  audience once you have actually referred people - are real, but they are
+  not on this page. Publishing a full tier ladder to an audience of nobody
+  invites haggling over a rung you have not built yet, and it sets terms in
+  public before there is any retention data to set them against. The page
+  says the rate grows; what it grows to is settled with each partner.
+
+  Kept as constants so the headline, the cards and the earnings figures can
+  never drift apart - the rate used to be written out by hand in three
+  places, which is exactly how a page ends up advertising two numbers.
+*/
+const COMMISSION_RATE = 0.15;
 const MONTHLY_PRICE = 24.99;
 const COMMISSION_MONTHS = 12;
+const RATE_LABEL = `${Math.round(COMMISSION_RATE * 100)}%`;
 
 // The glow used on the NOVA score and the weekly summary card. Reused rather
 // than invented so this page reads as the same product.
@@ -177,9 +192,10 @@ export default function Affiliates() {
           <p className="text-lg text-gray-300 mb-10">
             Earn{' '}
             <span className="text-brand-blue-light font-semibold">
-              20% recurring commission for 12 months
+              {RATE_LABEL} recurring commission for 12 months
             </span>{' '}
-            on every trader you refer.
+            on every trader you refer &mdash; and that is where you start, not
+            where you finish.
           </p>
         </motion.div>
 
@@ -206,14 +222,16 @@ export default function Affiliates() {
             ))}
           </div>
           <p className="text-[11px] text-gray-500 mt-4 leading-relaxed">
-            Over 12 months, if they stay subscribed. Based on the $24.99/month plan.
+            Over 12 months at {RATE_LABEL}, if they stay subscribed. Based on the
+            ${MONTHLY_PRICE}/month plan. Partners who refer consistently move to a
+            higher rate.
           </p>
         </motion.div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-12">
           {[
-            { Icon: Wallet, title: '20% recurring', body: 'On every payment they make, for their first 12 months.' },
-            { Icon: TrendingUp, title: 'Paid monthly', body: 'Commission arrives as long as your referral stays subscribed.' },
+            { Icon: Wallet, title: `${RATE_LABEL} recurring`, body: 'On every payment they make, for their first 12 months.' },
+            { Icon: TrendingUp, title: 'It grows with you', body: 'The rate goes up as you bring more traders in. We work that out with you.' },
             { Icon: Users, title: 'Any audience', body: 'YouTube, Discord, newsletter, a trading community - all welcome.' },
           ].map(({ Icon, title, body }, i) => (
             <motion.div
