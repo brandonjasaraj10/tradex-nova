@@ -1461,8 +1461,8 @@ export default function Sales() {
                 </div>
                 <p className="text-sm md:text-base text-gray-400">
                   {launched
-                    ? '7-day free trial • Cancel anytime'
-                    : 'Locked in forever • 7-day free trial • Cancel anytime'}
+                    ? 'Cancel anytime'
+                    : 'Locked in forever • Cancel anytime'}
                 </p>
               </div>
 

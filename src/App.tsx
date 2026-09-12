@@ -1,5 +1,4 @@
 import { Suspense, useState, useEffect } from 'react';
-import PastDueBanner from './components/billing/PastDueBanner';
 import { lazyWithReload } from './lib/lazyWithReload';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './lib/auth';
@@ -192,7 +191,6 @@ function PrivateLayout() {
             informative rather than blocking.
           */}
           <main className="pt-16">
-            <PastDueBanner />
             <Suspense fallback={<PageLoader className="min-h-[calc(100vh-4rem)]" />}>
               <Routes>
                 <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />

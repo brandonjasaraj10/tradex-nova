@@ -119,7 +119,21 @@ export class NovaAIService {
       .single();
 
     if (error) {
-      console.error('Error saving message:', error);
+      /*
+        23505 is not logged, because it is not a fault.
+
+        A unique index allows one welcome message per conversation
+        (20260815070500). When two loads race to create it, one is refused -
+        which is the index doing its job - and novaContext catches that case
+        and re-reads whichever message won. Logging it painted the console
+        red on every page load with something expected, which is how a real
+        error ends up overlooked.
+
+        Still thrown, because the caller decides what it means.
+      */
+      if (error.code !== '23505') {
+        console.error('Error saving message:', error);
+      }
       throw error;
     }
 
