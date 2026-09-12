@@ -41,6 +41,15 @@ export default function Footer() {
           </div>
 
           <div className="col-span-1">
+            <h3 className="text-sm font-bold text-gold-400 uppercase tracking-wider">Program</h3>
+            <ul className="mt-4 space-y-2">
+              <li>
+                <Link to="/affiliates" className="text-gray-300 hover:text-gold-300 transition-colors">Affiliates</Link>
+              </li>
+            </ul>
+          </div>
+
+          <div className="col-span-1">
             <h3 className="text-sm font-bold text-gold-400 uppercase tracking-wider">Legal</h3>
             <ul className="mt-4 space-y-2">
               <li>
