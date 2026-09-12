@@ -1576,7 +1576,7 @@ export default function Sales() {
             >
               <h3 className="text-lg font-medium mb-2">Is it safe to connect my trading account?</h3>
               <p className="text-sm text-gray-400">
-                We ask for your <span className="text-white">investor password</span> &mdash; MetaTrader&rsquo;s read-only one. It can look at an account and nothing else: it cannot open, close or change a trade, and it cannot withdraw. We pass it to our data provider once to set the connection up and never store it. Disconnect whenever you like; your trades and notes stay exactly where they are. Worth checking your broker&rsquo;s or prop firm&rsquo;s own rules first, as some restrict third-party access.
+                We ask for your <span className="text-white">investor password</span> &mdash; MetaTrader&rsquo;s read-only one. It can look at an account and nothing else: it cannot open, close or change a trade, and it cannot withdraw. We pass it to our data provider once to set the connection up and never store it. Disconnect whenever you like; your trades and notes stay exactly where they are.
               </p>
             </motion.div>
 
