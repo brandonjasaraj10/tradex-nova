@@ -5,6 +5,7 @@ import * as Sentry from '@sentry/react';
 import App from './App';
 import { initAnalytics } from './lib/analytics';
 import { initProductAnalytics } from './lib/productAnalytics';
+import { hasAnalyticsConsent } from './lib/consent';
 import './index.css';
 
 /*
@@ -84,10 +85,22 @@ if (sentryDsn && import.meta.env.PROD) {
   });
 }
 
-// No-op unless VITE_GA_MEASUREMENT_ID is set, same gating as Sentry above.
-initAnalytics();
-// No-op unless VITE_POSTHOG_KEY is set, and silenced by the same opt-out.
-initProductAnalytics();
+/*
+  Analytics start only once the visitor has said yes.
+
+  Both of these used to run here unconditionally, so Google Analytics and
+  PostHog - session recording included - were loaded before anyone had been
+  asked anything. Neither is strictly necessary to serve the page, so under
+  GDPR and ePrivacy they need consent first rather than a notice afterwards.
+
+  CookieConsent calls these itself the moment someone accepts, so an
+  acceptance takes effect immediately rather than on the next page load.
+*/
+if (hasAnalyticsConsent()) {
+  // Each is still a no-op unless its own env var is configured.
+  initAnalytics();
+  initProductAnalytics();
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

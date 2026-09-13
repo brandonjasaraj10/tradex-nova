@@ -16,6 +16,7 @@ import WelcomeAnimation from './components/shared/WelcomeAnimation';
 import ProfileSetup from './components/auth/ProfileSetup';
 import TourOverlay from './components/tour/TourOverlay';
 import PageLoader from './components/shared/PageLoader';
+import CookieConsent from './components/shared/CookieConsent';
 import { trackPageView, setAuthState } from './lib/analytics';
 import { captureAppPageView, identifyUser, resetUser } from './lib/productAnalytics';
 
@@ -247,11 +248,17 @@ function AppContent() {
     captureAppPageView(location.pathname + location.search, pageType);
   }, [location.pathname, location.search, isPublicPage]);
 
-  if (isPublicPage) {
-    return <PublicLayout />;
-  }
-
-  return <PrivateLayout />;
+  /*
+    Mounted here rather than inside a layout so it shows on every route -
+    somebody can land on /privacy or /auth first, and the rule applies there
+    exactly as it does on the landing page.
+  */
+  return (
+    <>
+      {isPublicPage ? <PublicLayout /> : <PrivateLayout />}
+      <CookieConsent />
+    </>
+  );
 }
 
 function App() {

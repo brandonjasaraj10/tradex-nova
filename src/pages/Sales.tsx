@@ -435,8 +435,10 @@ export default function Sales() {
                 body: 'Hit record and talk like you would to a trading partner. Rambling is fine.',
                 visual: (
                   <div className="flex items-center gap-3">
-                    <span className="flex-shrink-0 w-9 h-9 rounded-full bg-white/10 flex items-center justify-center">
-                      <span className="w-2.5 h-2.5 rounded-full bg-white/70" />
+                    {/* Blue here on purpose - this is the record button, and it
+                        is blue in the product. One accent, where it is literal. */}
+                    <span className="flex-shrink-0 w-9 h-9 rounded-full bg-brand-blue/15 border border-brand-blue-light/30 flex items-center justify-center">
+                      <span className="w-2.5 h-2.5 rounded-full bg-brand-blue-light" />
                     </span>
                     <div className="flex items-end gap-[3px] h-7" aria-hidden="true">
                       {[7, 14, 22, 12, 26, 18, 9, 20, 28, 15, 8, 19, 24, 11, 6].map((h, i) => (
@@ -528,7 +530,12 @@ export default function Sales() {
                 { label: 'Discipline', value: 6, of: 10 },
               ].map((m) => (
                 <div key={m.label} className="rounded-xl border border-white/[0.07] bg-brand-elevated p-3 sm:p-4">
-                  <p className="text-[10px] uppercase tracking-[0.12em] text-gray-600">{m.label}</p>
+                  {/*
+                    Tracking and size drop on mobile because "CONFIDENCE" at
+                    10px/0.12em is wider than a third of a 375px screen and was
+                    running into the card's right border.
+                  */}
+                  <p className="text-[9px] sm:text-[10px] uppercase tracking-[0.04em] sm:tracking-[0.12em] text-gray-600 whitespace-nowrap">{m.label}</p>
                   <p className="mt-1.5 text-xl sm:text-2xl font-semibold text-white tabular-nums">
                     {m.value}<span className="text-gray-600 text-sm">/{m.of}</span>
                   </p>
@@ -703,13 +710,30 @@ export default function Sales() {
               </p>
             </div>
 
+            {/*
+              Real urgency, not a countdown clock.
+
+              MT4 and MT5 sync ships in the next week or two and the price
+              goes up with it. Saying so is both the honest warning and the
+              strongest reason to join today - and unlike a fake timer, it is
+              a promise that can actually be kept.
+            */}
+            {launched && (
+              <div className="mb-7 rounded-xl border border-brand-blue-light/25 bg-brand-blue/[0.06] px-4 py-3.5">
+                <p className="text-[12.5px] sm:text-[13px] text-gray-300 leading-relaxed">
+                  <span className="text-white font-medium">MT4 &amp; MT5 sync lands in the next couple of weeks</span>
+                  {' \u2014 '}and the price goes up when it does. Join now and yours stays at $24.99.
+                </p>
+              </div>
+            )}
+
             <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-2.5 mb-7">
               {[
                 'Voice journaling',
                 'Nova AI analysis',
                 'Psychology scoring',
                 'Unlimited trades',
-                'Unlimited accounts',
+                'Up to 5 accounts',
                 'CSV import',
                 'Performance analytics',
                 'Trading rules & confluences',
@@ -769,8 +793,18 @@ export default function Sales() {
           <div className="flex flex-col gap-2.5">
             {[
               {
-                q: 'Is connecting my broker safe?',
-                a: 'Read-only. TradeX can see your trade history and nothing else \u2014 it cannot place, close or modify a trade, and it never has access to your money. You can disconnect in one click.',
+                /*
+                  The doubt underneath every other question, and the one
+                  TradeZella leads their own FAQ with. Answering it honestly -
+                  including the condition - reads as more credible than a
+                  promise.
+                */
+                q: 'Does journaling actually work?',
+                a: 'Only if you keep doing it. That is the whole problem, and it is what TradeX is built around \u2014 a journal you abandon in week three teaches you nothing, however good its charts are. Thirty seconds of talking is a habit people keep.',
+              },
+              {
+                q: 'Can I connect my broker?',
+                a: 'Right now you import a CSV from your broker or add trades as you go. Direct MT4 and MT5 sync lands in the next couple of weeks, and it is read-only when it does \u2014 TradeX will see your trade history and nothing else. It can never place, close or modify a trade, and it never touches your money.',
               },
               {
                 q: 'How is this different from a spreadsheet?',
@@ -778,7 +812,15 @@ export default function Sales() {
               },
               {
                 q: 'I have tried journals before and quit. Why is this different?',
-                a: 'Because the quitting is the problem we built around. Journals do not fail on features, they fail at 4pm when typing up a trade is the last thing you want to do. Thirty seconds of talking is a habit people keep.',
+                a: 'Because the quitting is the problem we built around. Journals do not fail on features, they fail at 4pm when typing up a trade is the last thing you want to do.',
+              },
+              {
+                /*
+                  Worth answering plainly: this product asks people to record
+                  their state of mind, which is more personal than a P&L.
+                */
+                q: 'Who can see what I write?',
+                a: 'Only you. Your entries, your psychology scores and your conversations with Nova are yours \u2014 they are not shown to other users and they are not sold to anyone. You can export or delete everything from Settings.',
               },
               {
                 q: 'What if it is not for me?',
