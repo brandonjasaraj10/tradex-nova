@@ -839,14 +839,27 @@ export default function Sales() {
 
             <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-2.5 mb-7">
               {[
+                /*
+                  This list, not the product tour, is where "is it complete
+                  enough?" gets answered. The research on landing pages is
+                  consistent that clarity beats completeness - piling every
+                  feature into the tour turns three clear ideas into twelve
+                  competing ones - but somebody reading a price is checking
+                  for gaps, and that is the right moment to show there are
+                  none. Everything here exists today.
+                */
                 'Voice journaling',
                 'Nova AI analysis',
                 'Psychology scoring',
+                'NOVA Score',
+                'Pre-trade checklists',
+                'Weekly & monthly reports',
+                'Trading rules & confluences',
+                'Performance analytics',
                 'Unlimited trades',
                 'Up to 5 accounts',
                 'CSV import',
-                'Performance analytics',
-                'Trading rules & confluences',
+                'Notes',
               ].map((feature) => (
                 <li key={feature} className="flex items-center gap-2.5 text-[13.5px] text-gray-300">
                   <Check className="w-3.5 h-3.5 flex-shrink-0 text-gray-500" strokeWidth={3} />
