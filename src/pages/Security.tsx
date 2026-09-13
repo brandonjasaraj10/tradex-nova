@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import PageShell from '../components/layout/PageShell';
-import { Section, Card, CardGrid, QA, ClosingCta } from '../components/marketing/blocks';
+import { Split, Section, QA, ClosingCta } from '../components/marketing/blocks';
+import { Frame, PullQuote, PermissionsPanel } from '../components/marketing/product';
 
 /*
   The page that answers "is my money safe".
@@ -12,104 +13,178 @@ import { Section, Card, CardGrid, QA, ClosingCta } from '../components/marketing
   decoration has learned exactly the wrong thing about a product they trusted
   with their trading history.
 
-  What it does instead is describe the actual architecture in plain words,
-  which for this audience is more convincing than a seal anyway: the whole
-  objection is "can TradeX touch my account", and the answer is a structural
-  no rather than a promise.
+  What it does instead is show the architecture rather than describe it. The
+  permissions table at the top is the whole argument in one glance - six rows,
+  two of them read-only and four of them never - and it answers the actual
+  objection faster than the four paragraphs it replaced.
 */
 
 export default function Security() {
   return (
     <PageShell
+      width="wide"
       eyebrow="Security"
       title="TradeX can never place a trade"
-      subtitle="Not by policy, by design. Here is exactly what it can reach, what it stores, and what it is structurally incapable of doing."
+      subtitle="Not by policy — by design. Here is exactly what it can reach, what it stores, and what it is structurally incapable of doing."
     >
-      <Section
+      <PermissionsPanel />
+
+      <Split
+        eyebrow="Your broker"
         title="Your account is not connected to TradeX"
-        lead="The thing people actually worry about, answered first."
-      >
-        <CardGrid>
-          <Card title="No trading permissions, ever" accent>
-            TradeX has no ability to place, close or modify an order. It never asks
-            for the kind of access that would allow it, so there is nothing to
-            revoke and nothing to misuse.
-          </Card>
-          <Card title="No withdrawal access">
-            Your broker password and your money stay with your broker. TradeX
-            never holds funds, never moves them, and has no payout path of any
-            kind.
-          </Card>
-          <Card title="CSV import today">
-            Right now your trades reach TradeX either by typing them or by
-            uploading the statement your broker exports. A file you chose to
-            upload cannot grant access to anything.
-          </Card>
-          <Card title="Read-only sync when it ships">
-            MT4 and MT5 sync lands in the next couple of weeks. It is read-only:
-            TradeX will see closed trade history and account balance, and nothing
-            else. That is the only access it will ever request.
-          </Card>
-        </CardGrid>
-      </Section>
+        lead="The thing people actually worry about, answered first and without hedging."
+        points={[
+          'No trading permissions, ever — there is nothing to revoke',
+          'No withdrawal access. TradeX never holds or moves funds',
+          'Today your trades arrive by CSV or by you typing them',
+          'MT4 and MT5 sync is read-only when it ships: closed trades and balance, nothing else',
+        ]}
+        visual={
+          <Frame label="How trades get in" note="Both paths, today and soon">
+            <div className="flex flex-col gap-3">
+              {[
+                { k: 'Type it', v: 'You enter the trade. Nothing is connected at all.', now: true },
+                { k: 'Talk it', v: 'You describe it and Nova writes the entry.', now: true },
+                { k: 'CSV import', v: 'You upload the statement your broker exports.', now: true },
+                { k: 'MT4 / MT5 sync', v: 'Read-only. Closed trades and balance.', now: false },
+              ].map((r) => (
+                <div key={r.k} className="rounded-xl border border-white/[0.07] bg-brand-elevated px-3.5 py-3">
+                  <div className="flex items-center justify-between gap-3 mb-1">
+                    <p className="text-[13px] font-medium text-white">{r.k}</p>
+                    <span className={`flex-shrink-0 text-[9.5px] font-medium uppercase tracking-[0.1em] rounded-full px-2 py-0.5
+                      ${r.now
+                        ? 'text-brand-blue-light bg-brand-blue-light/10'
+                        : 'text-gray-500 border border-white/10'}`}>
+                      {r.now ? 'Available now' : 'A couple of weeks'}
+                    </span>
+                  </div>
+                  <p className="text-[12px] leading-relaxed text-gray-500">{r.v}</p>
+                </div>
+              ))}
+            </div>
+          </Frame>
+        }
+      />
 
-      <Section
+      <PullQuote>
+        A screen that declines to show you someone else&rsquo;s trades is not the same
+        thing as a database that refuses to hand them over.
+      </PullQuote>
+
+      <Split
+        flip
+        eyebrow="Isolation"
         title="Your data is separated at the database, not in the interface"
-        lead="A screen that declines to show you someone else's trades is not the same thing as a database that refuses to hand them over."
-      >
-        <div className="flex flex-col gap-3.5">
-          <Card title="Row-level security on every table">
-            Every table holding user data carries a policy tying each row to the
-            account that owns it. The check runs inside the database, so it
-            applies to the app, the API and anything else that ever queries it.
-          </Card>
-          <Card title="Tested with two real accounts, not by reading the code">
-            Before launch, one account created records across every distinct
-            access pattern in the app, and a second account then tried to read,
-            update and delete each of them using its own real credentials
-            against the raw API. Every attempt was refused, and the first
-            account&rsquo;s data was confirmed byte-for-byte unchanged afterwards.
-          </Card>
-          <Card title="Encrypted in transit and at rest">
-            Traffic runs over HTTPS with HSTS. Stored data is encrypted at rest
-            by the database provider.
-          </Card>
-        </div>
-      </Section>
+        lead="Every table holding user data carries a policy tying each row to the account that owns it. The check runs inside the database, so it applies to the app, the API, and anything else that ever queries it."
+        points={[
+          'Row-level security on every table that holds user data',
+          'Tested with two real accounts against the raw API, not by reading the code',
+          'Every cross-account read, update and delete was refused',
+          'Encrypted in transit over HTTPS, and at rest by the database provider',
+        ]}
+        visual={
+          <Frame label="Two-account isolation test" note="Run before launch">
+            <div className="flex flex-col divide-y divide-white/[0.06]">
+              {[
+                'Read account A’s journal entries',
+                'Read account A’s trades by row ID',
+                'Update account A’s psychology scores',
+                'Delete account A’s Nova conversations',
+                'List account A’s trading rules',
+              ].map((attempt) => (
+                <div key={attempt} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
+                  <span className="text-[12.5px] text-gray-400">{attempt}</span>
+                  <span className="flex-shrink-0 text-[10px] font-medium uppercase tracking-[0.1em]
+                    text-gray-500 border border-white/10 rounded-full px-2.5 py-1">
+                    Blocked
+                  </span>
+                </div>
+              ))}
+            </div>
+            <p className="mt-3.5 text-[11.5px] leading-relaxed text-gray-600">
+              Attempted as account B using its own real credentials, then account
+              A&rsquo;s data was checked in the database and confirmed unchanged.
+            </p>
+          </Frame>
+        }
+      />
 
-      <Section
+      <Split
+        eyebrow="Payments"
         title="Your card never reaches us"
-        lead="Payments run through Stripe end to end."
-      >
-        <Card>
-          Card numbers are entered on Stripe&rsquo;s own payment form and go straight
-          to Stripe. TradeX never sees them, never receives them and stores
-          nothing beyond the fact that a subscription is active. Cancelling is
-          two clicks in Settings &mdash; no email, no retention call.
-        </Card>
-      </Section>
+        lead="Payments run through Stripe end to end. Card numbers are entered on Stripe’s own form and go straight to Stripe."
+        points={[
+          'TradeX never sees, receives or stores a card number',
+          'All we keep is whether a subscription is active',
+          'Cancel in two clicks from Settings — no email, no retention call',
+        ]}
+        visual={
+          <Frame label="What we store about your payment" note={null}>
+            <div className="flex flex-col divide-y divide-white/[0.06]">
+              {[
+                ['Card number', false],
+                ['CVV / expiry', false],
+                ['Billing address', false],
+                ['Subscription is active', true],
+                ['Renewal date', true],
+              ].map(([label, stored]) => (
+                <div key={label as string} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
+                  <span className={`text-[13px] ${stored ? 'text-gray-300' : 'text-gray-500'}`}>{label}</span>
+                  <span className={`flex-shrink-0 text-[10px] font-medium uppercase tracking-[0.1em] rounded-full px-2.5 py-1
+                    ${stored
+                      ? 'text-brand-blue-light bg-brand-blue-light/10'
+                      : 'text-gray-500 border border-white/10'}`}>
+                    {stored ? 'Stored' : 'Never stored'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </Frame>
+        }
+      />
 
-      <Section
-        title="What Nova does and does not do with what you write"
-        lead="Nova is built on Claude, Anthropic's AI. This is the part most journals are vague about, so here it is plainly."
-      >
-        <div className="flex flex-col gap-3.5">
-          <Card title="Your entries are sent to Anthropic to answer your questions">
-            That is how Nova reads your trading history at all. Anthropic does not
-            train its models on data sent through its API.
-          </Card>
-          <Card title="Nobody else sees your entries">
-            Your journal, your psychology scores and your conversations with Nova
-            are not shown to other users and are not sold to anyone.
-          </Card>
-          <Card title="You can take it all with you, or delete it">
-            Export or delete everything from Settings. Deleting your account
-            removes your data rather than deactivating it.
-          </Card>
-        </div>
-      </Section>
+      <Split
+        flip
+        eyebrow="Nova and your entries"
+        title="What the AI does and does not do with what you write"
+        lead="Nova is built on Claude, from Anthropic. This is the part most journals are vague about, so here it is plainly."
+        points={[
+          'Your entries are sent to Anthropic so Nova can read them and answer you',
+          'Anthropic does not train its models on data sent through its API',
+          'Your entries are not shown to other users and are not sold to anyone',
+          'Export or delete everything from Settings — deleting removes rather than deactivates',
+        ]}
+        visual={
+          <Frame label="Where your journal goes" note={null}>
+            <div className="flex flex-col gap-2.5">
+              {[
+                { k: 'Your browser', v: 'Where you write it' },
+                { k: 'TradeX database', v: 'Stored against your account only, encrypted at rest' },
+                { k: 'Anthropic (Claude)', v: 'Sent when you ask Nova a question, so it can answer' },
+              ].map((s, i) => (
+                <div key={s.k} className="flex gap-3">
+                  <div className="flex flex-col items-center flex-shrink-0">
+                    <span className="w-6 h-6 rounded-full border border-white/10 bg-brand-elevated
+                      flex items-center justify-center text-[10px] text-gray-500 tabular-nums">{i + 1}</span>
+                    {i < 2 && <span className="w-px flex-1 bg-white/[0.08] my-1" />}
+                  </div>
+                  <div className="pb-1">
+                    <p className="text-[13px] font-medium text-white">{s.k}</p>
+                    <p className="text-[12px] leading-relaxed text-gray-500 mt-0.5">{s.v}</p>
+                  </div>
+                </div>
+              ))}
+              <div className="mt-1 rounded-xl border border-white/[0.07] bg-brand-elevated px-3.5 py-2.5">
+                <p className="text-[12px] leading-relaxed text-gray-500">
+                  Nowhere else. No advertisers, no brokers, no prop firms, no data buyers.
+                </p>
+              </div>
+            </div>
+          </Frame>
+        }
+      />
 
-      <Section title="Straight answers">
+      <Section title="Straight answers, including the uncomfortable ones">
         <QA
           items={[
             {
@@ -127,6 +202,10 @@ export default function Security() {
             {
               q: 'Do you sell or share my trading data?',
               a: 'No. Not to brokers, not to prop firms, not to advertisers. There is no arrangement of that kind and there is not going to be one.',
+            },
+            {
+              q: 'Does my prop firm see any of this?',
+              a: 'No. TradeX has no arrangement with any prop firm and does not share data with one.',
             },
           ]}
         />

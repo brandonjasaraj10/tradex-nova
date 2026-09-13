@@ -1,19 +1,28 @@
-import PageShell from '../components/layout/PageShell';
 import { Link } from 'react-router-dom';
-import { Section, TickList, QA, ClosingCta } from '../components/marketing/blocks';
+import PageShell from '../components/layout/PageShell';
+import NOVAScore from '../components/shared/NOVAScore';
+import { Section, TickList, QA, Steps, ClosingCta } from '../components/marketing/blocks';
+import { Frame, PullQuote, StatBand } from '../components/marketing/product';
+import { EXAMPLE_SCORE } from '../components/marketing/exampleScore';
 import { useHasLaunched } from '../lib/launch';
 
 /*
-  Pricing, on its own page, because people search for it by name and because a
-  price buried two-thirds of the way down a long landing page is a price a
-  comparison shopper never finds.
+  Pricing, on its own page, because people search for it by name and a price
+  two-thirds of the way down a long landing page is one a comparison shopper
+  never finds.
 
   One plan, one card. No three-column tier table with a "most popular" badge
-  in the middle - there is one product and inventing tiers to make the middle
-  one look chosen is the kind of thing this audience notices.
+  in the middle - there is one product, and inventing tiers so the middle one
+  looks chosen is exactly the kind of thing this audience notices.
 
-  The numbers come from one place. They used to be typed out by hand in
-  several, which is how a site ends up advertising two different prices.
+  The card is the whole page's centre of gravity, so it gets the width and
+  everything else is arranged around it. The research on pricing pages is
+  specific about the order: plan name, benefit line, price, features, one
+  primary CTA - and burying the price under a wall of bullets adds friction a
+  scannable card avoids. Hence the price before the feature list, not after.
+
+  The numbers live in one place. They used to be typed by hand in several,
+  which is how a site ends up advertising two different prices.
 */
 
 const MONTHLY_PRICE = '$24.99';
@@ -22,12 +31,14 @@ const FOUNDING_PRICE = '$14.99';
 const INCLUDED = [
   'Voice journaling',
   'Nova AI analysis',
-  'Psychology scoring',
+  'Psychology template & scoring',
   'NOVA Score',
   'Pre-trade checklists',
   'Weekly & monthly reports',
   'Trading rules & confluences',
   'Performance analytics',
+  'Trading calendar',
+  'Searchable trade log',
   'Unlimited trades',
   'Up to 5 accounts',
   'CSV import',
@@ -39,11 +50,12 @@ export default function Pricing() {
 
   return (
     <PageShell
+      width="wide"
       eyebrow="Pricing"
       title="One plan. Everything in it."
       subtitle="No tiers, no add-ons, no trade limits, and no feature held back to sell you later."
     >
-      <div className="max-w-xl">
+      <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)] gap-6 lg:gap-10 items-start">
         <div className="rounded-2xl border border-white/10 bg-brand-surface p-6 sm:p-8">
           <div className="text-center pb-7 mb-7 border-b border-white/[0.07]">
             {!launched && (
@@ -57,12 +69,12 @@ export default function Pricing() {
                   {MONTHLY_PRICE}
                 </span>
               )}
-              <span className="text-[44px] sm:text-5xl font-semibold text-white tracking-[-0.03em] tabular-nums">
+              <span className="text-[52px] leading-none sm:text-6xl font-semibold text-white tracking-[-0.035em] tabular-nums">
                 {launched ? MONTHLY_PRICE : FOUNDING_PRICE}
               </span>
               <span className="text-[15px] text-gray-500">/month</span>
             </p>
-            <p className="mt-2 text-[12.5px] text-gray-500">
+            <p className="mt-3 text-[12.5px] text-gray-500">
               {launched
                 ? '14-day money back guarantee · Cancel anytime'
                 : 'Locked in forever · Cancel anytime'}
@@ -93,18 +105,68 @@ export default function Pricing() {
 
           <Link
             to="/auth?mode=signup"
-            className="w-full inline-flex items-center justify-center px-7 py-3 rounded-full
-              bg-white text-black text-[14px] font-medium hover:bg-gray-200 transition-colors"
+            className="w-full inline-flex items-center justify-center px-7 py-3.5 rounded-full
+              bg-white text-black text-[14.5px] font-medium hover:bg-gray-200 transition-colors"
           >
             Start journaling
           </Link>
+          <p className="mt-3 text-center text-[11.5px] text-gray-500">
+            Cancel in two clicks. No retention call.
+          </p>
+        </div>
+
+        {/*
+          What the money buys, beside the number rather than under it. A price
+          on its own is a cost; a price next to the thing it produces is a
+          trade. This is the real NOVAScore component, not a picture of one.
+        */}
+        <div className="flex flex-col gap-5">
+          <Frame label="What you get from it" note="Example figures">
+            <NOVAScore breakdown={EXAMPLE_SCORE} size="md" showBreakdown periodLabel="Last 30 days" />
+          </Frame>
+          <p className="text-[13.5px] leading-relaxed text-gray-400">
+            Every feature on the list feeds one thing: knowing whether you are
+            actually getting better, and what specifically is holding you back.
+            That is what the subscription is for.
+          </p>
         </div>
       </div>
 
-      <Section
-        title="What happens when you subscribe"
-        lead="No surprises, because the surprises are what people actually brace for."
-      >
+      <div className="my-12 sm:my-16">
+        <StatBand
+          items={[
+            { value: '14 days', label: 'Money back, no questions asked' },
+            { value: '2 clicks', label: 'To cancel, from Settings' },
+            { value: '$0', label: 'Of your card ever stored by us' },
+          ]}
+        />
+      </div>
+
+      <Section title="Getting started takes about a minute" lead="There is nothing to connect and nothing to configure.">
+        <Steps
+          items={[
+            {
+              title: 'Make an account',
+              body: 'Email and a password. No broker credentials, no card details beyond the subscription itself.',
+            },
+            {
+              title: 'Get your trades in',
+              body: 'Upload the CSV your broker exports to bring your history across, or just start talking through trades as you take them.',
+            },
+            {
+              title: 'Ask Nova something',
+              body: 'Once there is history to read, ask it what your worst habit is. That is the moment the subscription either earns its place or does not.',
+            },
+          ]}
+        />
+      </Section>
+
+      <PullQuote>
+        Fourteen days is longer than most people last with a journal. That is
+        rather the point.
+      </PullQuote>
+
+      <Section title="The questions people actually ask before paying">
         <QA
           items={[
             {
@@ -129,7 +191,7 @@ export default function Pricing() {
             },
             {
               q: 'Do you take crypto or PayPal?',
-              a: 'Card only for now, handled by Stripe.',
+              a: 'Card only for now, handled by Stripe. Your card details never reach TradeX.',
             },
           ]}
         />

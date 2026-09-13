@@ -1,145 +1,211 @@
 import PageShell from '../components/layout/PageShell';
-import { Section, Card, CardGrid, TickList, ClosingCta } from '../components/marketing/blocks';
+import NOVAScore from '../components/shared/NOVAScore';
+import PreTradeScales from '../components/journal/PreTradeScales';
+import TranscriptToEntry from '../components/sales/TranscriptToEntry';
+import NovaAnswer from '../components/sales/NovaAnswer';
+import { useState } from 'react';
+import { Split, Section, TickList, ClosingCta } from '../components/marketing/blocks';
+import {
+  Frame,
+  StatBand,
+  PullQuote,
+  CalendarPanel,
+  ChecklistPanel,
+  WeeklyReportPanel,
+  AccountsPanel,
+  EquityPanel,
+} from '../components/marketing/product';
+import { EXAMPLE_SCORE } from '../components/marketing/exampleScore';
 
 /*
   The page for the buyer checking for gaps.
 
-  It exists because three real parts of the product are mentioned nowhere on
-  the public site: the psychology template, Nova's memory across sessions, and
-  multi-account switching. The landing page is deliberately not the place to
-  fix that - piling every feature into a three-step tour turns three clear
-  ideas into twelve competing ones, and the research on landing pages is
-  consistent that clarity beats completeness. This is where completeness
-  belongs.
+  Rebuilt after the first version came out as a column of identical bordered
+  cards - accurate and unreadable, particularly on a phone. The research on
+  product pages is consistent: lead with real interface rather than
+  descriptions of it, and an interactive piece draws roughly twice the
+  engagement of a static image where the point lands in seconds.
 
-  Grouped by what a trader is trying to do, not by which part of the codebase
-  a feature lives in. "Record the trade" is a job; "Journal module" is an org
-  chart.
+  So every section here is a piece of the actual product beside the sentence
+  explaining it, and the sides alternate so the page has a rhythm rather than
+  a stack. Three of the panels are genuinely interactive. Two of them - the
+  NOVA Score and the pre-trade scales - are the real components the app
+  renders, imported rather than redrawn, so a marketing page cannot drift
+  away from the product it is selling.
 */
+
+function ScalesDemo() {
+  /*
+    The real pre-trade scales, live. Someone can rate themselves on this page
+    and see what the journal actually asks for, which is a faster answer to
+    "what is the psychology bit?" than any paragraph.
+  */
+  const [values, setValues] = useState<Record<string, number | null>>({
+    emotional_state: 3,
+    focus: 2,
+    confidence: 4,
+  });
+  return (
+    <Frame label="Before you enter" note="Try it — this is the real thing">
+      <PreTradeScales
+        values={values}
+        onChange={(key, value) => setValues((v) => ({ ...v, [key]: value }))}
+      />
+    </Frame>
+  );
+}
 
 export default function Features() {
   return (
     <PageShell
+      width="wide"
       eyebrow="Features"
       title="Everything TradeX does"
-      subtitle="Grouped by what you are trying to do, rather than by which screen it happens to live on."
+      subtitle="Shown, rather than listed. Three of the panels below are live — tap them."
     >
-      <Section
-        title="Record the trade"
-        lead="The part every journal gets wrong, because the part people quit over is the typing."
-      >
-        <CardGrid>
-          <Card title="Voice journaling" accent>
-            Hit record and talk like you would to a trading partner. Rambling is
-            fine. TradeX pulls out symbol, direction, size, P&amp;L and your
-            reasoning and files each in the right place.
-          </Card>
-          <Card title="Type it instead">
-            Voice is the fast path, not the only one. The full entry form is
-            there whenever you would rather write.
-          </Card>
-          <Card title="CSV import">
-            Upload the statement your broker exports and your history comes in
-            at once, rather than being retyped an evening at a time.
-          </Card>
-          <Card title="Screenshots and tags">
-            Attach the chart, tag the setup. Tags are searchable later, which is
-            how &ldquo;every time I traded this&rdquo; becomes a question you can
-            actually answer.
-          </Card>
-        </CardGrid>
-      </Section>
+      <EquityPanel />
 
-      <Section
-        title="Record how you were, not just what you did"
-        lead="The difference between seeing that you lost and seeing why. This is the part no spreadsheet has."
-      >
-        <div className="flex flex-col gap-3.5">
-          <Card title="The psychology template" accent>
-            A structured entry for the state you were actually in: pre-trade
-            mindset and intention, mood, focus, the feeling during the trade and
-            what you made of it afterwards. Filled in at the time, so it is a
-            record rather than a reconstruction.
-          </Card>
-          <Card title="Psychology scoring">
-            Those entries are scored rather than just stored, so patterns in how
-            you were feeling can be matched against patterns in what you earned.
-          </Card>
-          <Card title="The NOVA Score">
-            One number across five components &mdash; consistency, risk
-            management, profitability, discipline and execution &mdash; so
-            &ldquo;am I getting better?&rdquo; has an answer that is not just this
-            month&rsquo;s P&amp;L.
-          </Card>
-          <Card title="Pre-trade checklists">
-            Your own list, ticked before you enter rather than judged
-            afterwards. Built for the rules you keep breaking.
-          </Card>
-        </div>
-      </Section>
+      <div className="my-12 sm:my-16">
+        <StatBand
+          items={[
+            { value: '30s', label: 'To log a trade, start to finish' },
+            { value: '5', label: 'Accounts, each scored separately' },
+            { value: '1', label: 'Plan, with all of this in it' },
+          ]}
+        />
+      </div>
 
-      <Section
-        title="Find out what you keep doing"
-        lead="Across every entry, not one at a time."
-      >
-        <CardGrid>
-          <Card title="Nova, your AI analyst" accent>
-            Ask a plain question and get an answer drawn from your own trades.
-            Nova remembers what you have told it in previous conversations, so
-            you are not re-explaining yourself every session.
-          </Card>
-          <Card title="Weekly and monthly reports">
-            What happened, what changed, and what it thinks is behind it &mdash;
-            written, not just charted.
-          </Card>
-          <Card title="Performance analytics">
-            Cumulative P&amp;L, win rate trend, P&amp;L by symbol, average P&amp;L
-            by day of week, and trade types.
-          </Card>
-          <Card title="Trading calendar">
-            Your month laid out day by day, so a bad stretch is something you
-            can see the shape of.
-          </Card>
-        </CardGrid>
-      </Section>
+      <Split
+        eyebrow="Record the trade"
+        title="Talk. It writes the entry."
+        lead="The reason journals die is the typing, so TradeX takes it off you. Ramble at it like you would a trading partner."
+        points={[
+          'Symbol, direction, size and P&L pulled out and filed',
+          'Your reasoning organised into what actually happened',
+          'Type it instead whenever you would rather',
+          'Or import a CSV and bring your whole history in at once',
+        ]}
+        visual={
+          <Frame label="Journal — new entry" note="Plays on its own">
+            <TranscriptToEntry />
+          </Frame>
+        }
+      />
 
-      <Section
-        title="Keep yourself honest"
-        lead="Rules are easy to write and easy to quietly stop following."
-      >
-        <CardGrid>
-          <Card title="Trading rules">
-            Write the rules you trade by, then mark against each entry whether
-            you actually followed them. The gap between the two is the report.
-          </Card>
-          <Card title="Confluences">
-            Define what has to line up before you take a setup, and record which
-            of them were really present.
-          </Card>
-          <Card title="Trade log">
-            Every position in one searchable list &mdash; by symbol, setup, note
-            or tag &mdash; rather than scrolling a calendar hunting for one
-            trade.
-          </Card>
-          <Card title="Notes">
-            A place for the thinking that is not attached to a single trade.
-          </Card>
-        </CardGrid>
-      </Section>
+      <Split
+        flip
+        eyebrow="Psychology"
+        title="How you were, not just what you did"
+        lead="Rated before you enter, so it is a record rather than a reconstruction. This is the part no spreadsheet has ever had."
+        points={[
+          'Emotional state, focus and confidence, taken at the time',
+          'A full psychology template for the longer write-up',
+          'Scored, so feeling can be matched against earnings',
+          'Unanswered stays unanswered — it is not the same as a low rating',
+        ]}
+        visual={<ScalesDemo />}
+      />
 
-      <Section
-        title="Run more than one account"
-        lead="Prop challenge, funded account and personal capital are three different traders. TradeX treats them that way."
-      >
-        <Card>
-          Up to five accounts, each with its own trades, balance, analytics and
-          NOVA Score, and a selector at the top to switch between them. Metrics
-          follow the account you are looking at, so a funded account&rsquo;s
-          numbers are never quietly averaged in with a demo&rsquo;s.
-        </Card>
-      </Section>
+      <PullQuote>
+        Every journal shows you that you lost. Almost none of them record why.
+      </PullQuote>
 
-      <Section title="All of it, in one plan" lead="Nothing here is an add-on.">
+      <Split
+        eyebrow="NOVA Score"
+        title="One number for “am I getting better?”"
+        lead="Five components plus psychology, so the answer is not just this month’s P&L. Open it up and see which one is dragging."
+        points={[
+          'Consistency, risk management, profitability, discipline, execution',
+          'Psychology folded in once you have rated enough trades',
+          'Scored per account, never averaged across them',
+          'Moves on behaviour, not on one lucky week',
+        ]}
+        visual={
+          <Frame label="Dashboard — NOVA Score">
+            <NOVAScore breakdown={EXAMPLE_SCORE} size="md" showBreakdown periodLabel="Last 30 days" />
+          </Frame>
+        }
+      />
+
+      <Split
+        flip
+        eyebrow="Nova AI"
+        title="Ask it anything about your trading"
+        lead="Nova reads every entry together and answers in plain language, with your real numbers in the answer."
+        points={[
+          'It queries your actual trades rather than guessing',
+          'It remembers what you told it in previous conversations',
+          'It can write the journal entry for you',
+          'Rate any answer down and it sharpens',
+        ]}
+        visual={
+          <Frame label="Nova" note="Example conversation">
+            <div className="flex flex-col gap-4">
+              <div className="flex justify-end">
+                <p className="max-w-[85%] rounded-2xl rounded-br-sm bg-brand-elevated border border-white/[0.07]
+                  px-4 py-2.5 text-[13px] text-gray-300">
+                  Why am I losing on Fridays?
+                </p>
+              </div>
+              <NovaAnswer />
+            </div>
+          </Frame>
+        }
+      />
+
+      <Split
+        eyebrow="Rules & confluences"
+        title="The rule you keep breaking, in front of you"
+        lead="Ticked before you enter, rather than judged afterwards. The gap between what you wrote and what you did is the report."
+        points={[
+          'Your own rules and confluences, written once',
+          'Marked per trade, so the pattern is countable',
+          '“You moved your stop on 4 of your last 6 losers”',
+          'Weekly reports show which rules slipped and when',
+        ]}
+        visual={<ChecklistPanel />}
+      />
+
+      <Split
+        flip
+        eyebrow="Calendar"
+        title="A bad stretch has a shape"
+        lead="Your month laid out day by day, in P&L or in psychology. Three losing days in a row look different from three spread across a month."
+        points={[
+          'Every day coloured by result, or by how you felt',
+          'Journal-only days marked so nothing looks like a gap',
+          'Click any day to open what you wrote',
+          'Weekly reviews sit alongside each week',
+        ]}
+        visual={<CalendarPanel />}
+      />
+
+      <Split
+        eyebrow="Reports"
+        title="Written, not just charted"
+        lead="A chart tells you what happened. The weekly and monthly reports tell you what changed and what is behind it."
+        points={[
+          'Weekly and monthly, generated from your own entries',
+          'Rules kept, psychology trend and P&L in one place',
+          'Full analytics underneath: cumulative P&L, win rate trend, P&L by symbol, average P&L by day of week, trade types',
+        ]}
+        visual={<WeeklyReportPanel />}
+      />
+
+      <Split
+        flip
+        eyebrow="Multiple accounts"
+        title="A challenge and a funded account are two different traders"
+        lead="Up to five, each with its own trades, balance, analytics and score. Switch at the top and every screen follows."
+        points={[
+          'Prop challenge, funded account and personal capital kept apart',
+          'A demo you are messing about on never drags a live score down',
+          'CSV import per account',
+        ]}
+        visual={<AccountsPanel />}
+      />
+
+      <Section title="All of it, in one plan" lead="Nothing here is an add-on, and nothing is held back to sell you later.">
         <TickList
           items={[
             'Voice journaling',
