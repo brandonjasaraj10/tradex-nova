@@ -419,6 +419,22 @@ export default function Sales() {
             </h2>
           </div>
           <ProductTabs />
+
+          {/*
+            The way deeper.
+
+            Everything the landing page holds back now lives on a real page,
+            and until this the only route to one was the footer. A visitor who
+            wants more detail is the most interested person on the site; making
+            them hunt for it is the one mistake worth avoiding here. Quiet grey
+            text so it never competes with the CTA - the job is to be findable,
+            not to be clicked instead of signing up.
+          */}
+          <p className="mt-7 text-center">
+            <Link to="/features" className="inline-flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-white transition-colors underline underline-offset-[3px] decoration-white/20 hover:decoration-white/50">
+              See everything it does
+            </Link>
+          </p>
         </div>
       </div>
 
@@ -568,6 +584,12 @@ export default function Sales() {
             </div>
             <p className="mt-5 text-center text-[11px] text-gray-600">Example conversation</p>
           </div>
+
+          <p className="mt-7 text-center">
+            <Link to="/nova" className="inline-flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-white transition-colors underline underline-offset-[3px] decoration-white/20 hover:decoration-white/50">
+              More on how Nova works
+            </Link>
+          </p>
         </div>
       </div>
 
@@ -648,24 +670,34 @@ export default function Sales() {
             </div>
 
             {/*
-              preload="metadata" so visitors only download the ~12MB video if
-              they actually press play - otherwise landing on the page would
-              pull it down for everyone. playsInline keeps iOS from hijacking
-              it into fullscreen. No autoplay: it has voice audio, and
-              browsers block autoplay-with-sound anyway.
+              The video moved to /about.
+
+              Founder videos earn their slot on enterprise pages with long
+              sales cycles, where a buyer wants to know who they are entering
+              a year-long relationship with; for a self-serve product at
+              $24.99 a month a product demo converts better in the same space,
+              which this page now has several of. The story is worth keeping
+              here - it is the most human thing on the page and it is one
+              sentence - but a two-minute, 12MB commitment two thirds of the
+              way down is a bigger ask than a link, and the people who want it
+              will follow one.
             */}
-            <div className="rounded-2xl overflow-hidden border border-white/10 bg-black shadow-2xl shadow-blue-500/10">
-              <video
-                className="w-full aspect-video bg-black"
-                controls
-                preload="metadata"
-                playsInline
-                poster="/founder-video-poster.jpg"
+            <div className="max-w-md mx-auto">
+              <p className="text-[14.5px] sm:text-base leading-relaxed text-gray-400 text-balance">
+                Not because the market needed another journal. Because every one I
+                tried died the same way &mdash; a fortnight of neat entries, then a
+                bad week, then nothing. The typing was the thing that killed it, so
+                that is the thing TradeX removes.
+              </p>
+              <Link
+                to="/about"
+                className="mt-6 inline-flex items-center gap-2 px-5 py-2.5 rounded-full
+                  border border-white/15 text-[13.5px] text-gray-300
+                  hover:text-white hover:border-white/25 transition-colors"
               >
-                <source src="/founder-video.mp4" type="video/mp4" />
-                Your browser doesn't support embedded video. You can still sign up
-                below.
-              </video>
+                Watch the two-minute version
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
             </div>
           </div>
         </div>
@@ -765,7 +797,13 @@ export default function Sales() {
                 'Notes',
               ].map((feature) => (
                 <li key={feature} className="flex items-center gap-2.5 text-[13.5px] text-gray-300">
-                  <Check className="w-3.5 h-3.5 flex-shrink-0 text-gray-500" strokeWidth={3} />
+                  {/* Blue, matching the same list on /pricing and /features.
+                      Grey here and blue there made one list look like a
+                      lesser version of the other. The hero's three checks
+                      stay grey on purpose - that block is deliberately
+                      monochrome so the first blue on the page is the product
+                      panel, where it means something. */}
+                  <Check className="w-3.5 h-3.5 flex-shrink-0 text-brand-blue-light" strokeWidth={3} />
                   {feature}
                 </li>
               ))}
@@ -876,6 +914,15 @@ export default function Sales() {
               </details>
             ))}
           </div>
+
+          <p className="mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+            <Link to="/faq" className="inline-flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-white transition-colors underline underline-offset-[3px] decoration-white/20 hover:decoration-white/50">
+              Every other question
+            </Link>
+            <Link to="/security" className="inline-flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-white transition-colors underline underline-offset-[3px] decoration-white/20 hover:decoration-white/50">
+              How your data is kept
+            </Link>
+          </p>
         </div>
       </div>
 

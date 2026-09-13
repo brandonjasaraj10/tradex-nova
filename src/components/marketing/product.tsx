@@ -140,19 +140,29 @@ const LOSS = 'bg-gradient-to-br from-slate-600/20 via-gray-600/15 to-zinc-600/10
 const JOURNAL_ONLY = 'bg-white/5 border-blue-400/70';
 const EMPTY = 'bg-white/[0.03] border-white/10';
 
-/* day -> [state, amount]. Shaped like a real month: weekends blank, a
-   losing run mid-month, a recovery after it. */
+/*
+  day -> [state, amount].
+
+  The grid starts on Monday, so with day 1 in the Monday column the weekends
+  are 6/7, 13/14, 20/21 and 27/28. Those stay blank - an example month that
+  showed EURUSD trades closing on a Saturday would be wrong in a way this
+  audience spots instantly.
+
+  Shaped like a real month rather than a flattering one: a three-day losing
+  run in week two, a journal-only day where nothing was traded, and a
+  recovery after it.
+*/
 const MONTH: Record<number, [string, string]> = {
-  1: [WIN, '+180'], 2: [LOSS, '-95'], 3: [WIN, '+240'], 6: [WIN, '+120'],
-  7: [JOURNAL_ONLY, ''], 8: [LOSS, '-310'], 9: [LOSS, '-220'], 10: [LOSS, '-140'],
-  13: [WIN, '+95'], 14: [WIN, '+410'], 15: [LOSS, '-60'], 16: [WIN, '+275'], 17: [WIN, '+150'],
-  20: [WIN, '+330'], 21: [JOURNAL_ONLY, ''], 22: [WIN, '+185'], 23: [LOSS, '-120'], 24: [WIN, '+520'],
-  27: [WIN, '+240'], 28: [WIN, '+160'], 29: [LOSS, '-85'], 30: [WIN, '+390'],
+  1: [WIN, '+180'], 2: [LOSS, '-95'], 3: [WIN, '+240'], 4: [WIN, '+120'], 5: [JOURNAL_ONLY, ''],
+  8: [LOSS, '-310'], 9: [LOSS, '-220'], 10: [LOSS, '-140'], 11: [JOURNAL_ONLY, ''], 12: [WIN, '+95'],
+  15: [WIN, '+410'], 16: [LOSS, '-60'], 17: [WIN, '+275'], 18: [WIN, '+150'], 19: [WIN, '+330'],
+  22: [WIN, '+185'], 23: [LOSS, '-120'], 24: [WIN, '+520'], 25: [WIN, '+240'], 26: [LOSS, '-85'],
+  29: [WIN, '+160'], 30: [WIN, '+390'],
 };
 
-export function CalendarPanel() {
+export function CalendarGrid({ compact = false }: { compact?: boolean }) {
   return (
-    <Frame label="Calendar">
+    <>
       <div className="grid grid-cols-7 gap-1 sm:gap-1.5 mb-1.5">
         {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
           <p key={i} className="text-center text-[9px] uppercase tracking-wider text-gray-600">{d}</p>
@@ -191,7 +201,18 @@ export function CalendarPanel() {
         <span className="flex items-center gap-1.5">
           <span className={`w-2.5 h-2.5 rounded-[3px] border ${JOURNAL_ONLY}`} />Journal only
         </span>
+        {!compact && (
+          <span className="ml-auto text-gray-600">Or switch to the psychology view</span>
+        )}
       </div>
+    </>
+  );
+}
+
+export function CalendarPanel() {
+  return (
+    <Frame label="Calendar">
+      <CalendarGrid />
     </Frame>
   );
 }
