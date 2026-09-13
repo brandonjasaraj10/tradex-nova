@@ -396,7 +396,11 @@ export default function Sales() {
                 </p>
                 <div className="mt-3 flex flex-wrap gap-1.5">
                   {['Moved stop', 'Revenge entry', 'Focus 4/10'].map((tag) => (
-                    <span key={tag} className="text-[11px] text-gray-400 border border-white/10 rounded-full px-2.5 py-1">
+                    /* Blue because tags are blue in the product - the Journal
+                       renders them bg-blue-400/10 text-blue-400. This panel is
+                       a claim about what the app looks like, so it should not
+                       invent a greyer version of it. */
+                    <span key={tag} className="text-[11px] font-medium text-brand-blue-light bg-brand-blue-light/10 rounded-full px-2.5 py-1">
                       {tag}
                     </span>
                   ))}
