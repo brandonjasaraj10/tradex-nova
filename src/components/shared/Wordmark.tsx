@@ -21,30 +21,37 @@ interface WordmarkProps {
   className?: string;
 }
 
-export function XMark({ className = 'h-[0.92em] w-[0.92em]' }: { className?: string }) {
+export function XMark({ className = 'h-[0.88em] w-[0.88em]' }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 100 100"
       className={className}
-      fill="none"
+      fill="currentColor"
       aria-hidden="true"
       focusable="false"
     >
       {/*
-        Two bars crossing, with a small diamond bitten out of the middle so
-        they read as four separate arms - which is what the real mark does.
-        Arms are deliberately heavy and the gap small: the first pass had it
-        the other way round and the result read as an asterisk rather than an
-        X.
+        Four arms, drawn as solid wedges rather than two crossed bars.
+
+        The gap is not a centred diamond - that was the first attempt and it
+        read as an asterisk. In the real mark the break runs as a diagonal
+        slice, so the upper-left arm sits detached from the rest while the
+        other three meet. Each arm is a quadrilateral with a squared outer end
+        and a mitred inner one, which is what gives it the angular, cut look
+        rather than the soft feel of a stroked X.
       */}
-      <mask id="tradex-x-gap">
-        <rect width="100" height="100" fill="white" />
-        <rect x="41" y="41" width="18" height="18" fill="black" transform="rotate(45 50 50)" />
-      </mask>
-      <g mask="url(#tradex-x-gap)" fill="currentColor">
-        <rect x="39" y="2" width="22" height="96" rx="2" transform="rotate(45 50 50)" />
-        <rect x="39" y="2" width="22" height="96" rx="2" transform="rotate(-45 50 50)" />
-      </g>
+
+      {/* upper left - the detached one */}
+      <path d="M8 10 L30 10 L58 44 L47 57 Z" />
+
+      {/* upper right */}
+      <path d="M70 10 L92 10 L53 57 L42 44 Z" />
+
+      {/* lower left */}
+      <path d="M30 90 L8 90 L47 43 L58 56 Z" />
+
+      {/* lower right */}
+      <path d="M92 90 L70 90 L42 56 L53 43 Z" />
     </svg>
   );
 }

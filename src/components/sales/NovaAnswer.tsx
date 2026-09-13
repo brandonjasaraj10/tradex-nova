@@ -53,19 +53,29 @@ export default function NovaAnswer() {
             setThinking(false);
             let i = 0;
             writing = setInterval(() => {
-              i += 3;
+              i += 2;
               setShown(i);
               if (i >= ANSWER.length) {
                 clearInterval(writing);
                 loop = setTimeout(run, 6000);
               }
-            }, 18);
+            }, 26);
           }, 900);
         };
 
         run();
       },
-      { threshold: 0.5 },
+      /*
+        A low threshold, not a half.
+
+        0.5 means "half of this element is on screen", and on a phone this
+        panel is taller than half the viewport - so that fraction was never
+        reached and the observer never fired. Reported as "I don't see the
+        Nova animation". rootMargin pulls the trigger line up from the bottom
+        edge so it starts as the panel arrives rather than the instant one
+        pixel of it appears.
+      */
+      { threshold: 0.01, rootMargin: '0px 0px -120px 0px' },
     );
 
     observer.observe(host);

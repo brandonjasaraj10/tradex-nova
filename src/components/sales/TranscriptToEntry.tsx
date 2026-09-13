@@ -86,23 +86,27 @@ export default function TranscriptToEntry() {
           setShowEntry(false);
 
           typing = setInterval(() => {
-            i += 2;
+            i += 1;
             setTyped(i);
             if (i >= TRANSCRIPT.length) {
               clearInterval(typing);
               // A beat, so the cause reads before the effect.
               reveal = setTimeout(() => {
                 setShowEntry(true);
-                loop = setTimeout(run, 4200);
+                loop = setTimeout(run, 5200);
               }, 420);
             }
-          }, 26);
+          }, 34);
         };
 
         run();
       },
-      // Fires once the panel is properly on screen, not as its top edge grazes it.
-      { threshold: 0.55 },
+      /*
+        Low threshold on purpose: 0.55 means "over half of this on screen",
+        which a panel taller than half a phone's viewport never satisfies.
+        rootMargin does the "properly on screen" job instead.
+      */
+      { threshold: 0.01, rootMargin: '0px 0px -120px 0px' },
     );
 
     observer.observe(host);
