@@ -1,7 +1,8 @@
 import { useState, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, CheckCircle2, TrendingUp, Users, Wallet, Plus, X } from 'lucide-react';
+import { CheckCircle2, TrendingUp, Users, Wallet, Plus, X } from 'lucide-react';
+import PageShell from '../components/layout/PageShell';
 import { supabase } from '../lib/supabase';
 
 /*
@@ -129,11 +130,11 @@ export default function Affiliates() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center px-4 py-16">
+      <PageShell>
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="max-w-md w-full text-center"
+          className="max-w-md mx-auto w-full text-center py-8 sm:py-16"
         >
           <div
             className="w-16 h-16 rounded-full bg-brand-blue/10 border border-brand-blue-light/30 flex items-center justify-center mx-auto mb-6"
@@ -141,20 +142,22 @@ export default function Affiliates() {
           >
             <CheckCircle2 className="w-8 h-8 text-brand-blue-light" />
           </div>
-          <h1 className="text-2xl font-bold mb-3">Application received</h1>
-          <p className="text-gray-400 mb-8">
+          <h1 className="text-[28px] sm:text-3xl font-semibold tracking-[-0.03em] text-white mb-3">
+            Application received
+          </h1>
+          <p className="text-[14.5px] sm:text-base leading-relaxed text-gray-400 mb-8">
             Thanks for applying. We read every application and will get back to you
             by email &mdash; usually within a few days.
           </p>
           <Link
             to="/"
-            className="inline-flex items-center gap-2 text-brand-blue-light hover:text-white transition-colors"
+            className="inline-flex items-center justify-center px-6 py-2.5 rounded-full
+              bg-white text-black text-[14px] font-medium hover:bg-gray-200 transition-colors"
           >
-            <ArrowLeft className="w-4 h-4" />
             Back to TradeX
           </Link>
         </motion.div>
-      </div>
+      </PageShell>
     );
   }
 
@@ -163,33 +166,36 @@ export default function Affiliates() {
     'focus:outline-none focus:border-brand-blue-light/50 focus:ring-1 focus:ring-brand-blue-light/30 transition-colors';
 
   return (
-    <div className="min-h-screen bg-black text-white relative overflow-hidden">
+    <PageShell>
       {/* Same soft blue wash the paywall and dashboard use, so the page does
-          not read as a different product. */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-brand-blue/[0.07] rounded-full blur-3xl" />
-      </div>
-
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-12 sm:py-16 relative z-10">
-        <Link
-          to="/"
-          className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-10"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to TradeX
-        </Link>
+          not read as a different product. Scoped to this block rather than the
+          viewport now that PageShell owns the page frame. */}
+      {/* overflow-x-clip, not overflow-hidden: the glow is 600px wide inside a
+          narrower column, so it pushed the document 112px sideways and the
+          whole page scrolled horizontally. Clipping only the x axis contains
+          that while letting the glow still bleed upward, which is the point
+          of it. */}
+      <div className="relative max-w-2xl mx-auto overflow-x-clip">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -top-52 left-1/2 -translate-x-1/2 w-[600px] h-[600px]
+            bg-brand-blue/[0.07] rounded-full blur-3xl"
+        />
+        <div className="relative">
 
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
           <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-brand-blue/10 text-brand-blue-light border border-brand-blue-light/30 mb-5">
             Affiliate program
           </span>
 
-          {/* leading-normal, not leading-tight: a clipped descender on a
-              gradient heading is the exact bug fixed on the landing page. */}
-          <h1 className="text-3xl sm:text-5xl font-bold mb-4 leading-normal bg-gradient-to-r from-white via-white to-gray-400 bg-clip-text text-transparent">
+          {/* Solid white, semibold, tight tracking - the landing page's
+              treatment. The white-to-grey gradient this used to carry is the
+              one the landing page dropped: it reads as the headline dimming
+              out rather than being emphasised. */}
+          <h1 className="text-[34px] leading-[1.06] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance mb-4">
             Get paid to share TradeX
           </h1>
-          <p className="text-lg text-gray-300 mb-10">
+          <p className="text-[14.5px] sm:text-base leading-relaxed text-gray-400 mb-10">
             Earn{' '}
             <span className="text-brand-blue-light font-semibold">
               {RATE_LABEL} recurring commission for 12 months
@@ -348,7 +354,8 @@ export default function Affiliates() {
             to get your referral link.
           </p>
         </form>
+        </div>
       </div>
-    </div>
+    </PageShell>
   );
 }

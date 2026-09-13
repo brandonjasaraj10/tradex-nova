@@ -1,41 +1,44 @@
-import { Link } from 'react-router-dom';
-import { ArrowLeft, AlertTriangle } from 'lucide-react';
-import Footer from '../components/layout/Footer';
+import { AlertTriangle } from 'lucide-react';
+import PageShell from '../components/layout/PageShell';
+import LegalProse from '../components/layout/LegalProse';
 
 export default function RiskDisclaimer() {
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-        <Link
-          to="/"
-          className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors mb-8"
-        >
-          <ArrowLeft size={16} />
-          Back to Home
-        </Link>
-
-        <div className="flex items-center gap-3 mb-4">
-          <AlertTriangle className="w-8 h-8 text-blue-400" />
-          <h1 className="text-4xl sm:text-5xl font-bold">Risk Disclaimer</h1>
-        </div>
-        <p className="text-gray-400 mb-8">Last Updated: August 13, 2026</p>
-
-        <div className="bg-blue-500/10 border-2 border-blue-500/30 rounded-lg p-6 mb-8">
-          <p className="font-bold text-blue-400 text-xl mb-4">IMPORTANT RISK WARNING</p>
-          <p className="text-white leading-relaxed">
-            Trading financial instruments involves substantial risk and is not suitable for all investors. You may lose
-            some or all of your invested capital. Past performance is not indicative of future results. Please read this
-            entire disclaimer carefully before using TradeX.
+    <PageShell
+      eyebrow="Legal"
+      title="Risk Disclaimer"
+      meta="Last updated 13 August 2026"
+    >
+      {/*
+        The warning sits above the prose rather than inside it. It is the one
+        part of this page a regulator, and a reader, expects to see without
+        scrolling - burying it as section zero would defeat the point of
+        having it. Blue rather than red because blue is the product's only
+        accent; a red alert box here would be the single loudest thing on the
+        whole site.
+      */}
+      <div className="mb-10 rounded-2xl border border-brand-blue-light/25 bg-brand-blue/[0.07] p-5 sm:p-6">
+        <div className="flex items-center gap-2.5 mb-3">
+          <AlertTriangle className="w-4 h-4 text-brand-blue-light flex-shrink-0" />
+          <p className="text-[10px] tracking-[0.16em] uppercase text-brand-blue-light font-medium">
+            Important risk warning
           </p>
         </div>
+        <p className="text-[14.5px] sm:text-[15px] leading-[1.7] text-gray-200">
+          Trading financial instruments involves substantial risk and is not suitable
+          for all investors. You may lose some or all of your invested capital. Past
+          performance is not indicative of future results. Please read this entire
+          disclaimer carefully before using TradeX.
+        </p>
+      </div>
 
-        <div className="space-y-8 text-gray-300 leading-relaxed">
+      <LegalProse>
           <section>
-            <h2 className="text-2xl font-bold text-white mb-4">1. Nature of the Service</h2>
+            <h2>1. Nature of the Service</h2>
             <p className="mb-4">
               TradeX is a <strong>trading journal and analytics platform only</strong>. We provide:
             </p>
-            <ul className="list-disc pl-6 space-y-2">
+            <ul>
               <li>Tools to record and analyze your trading activities</li>
               <li>Statistical analysis of your trading performance</li>
               <li>AI-powered insights about your trading psychology and patterns</li>
@@ -47,12 +50,12 @@ export default function RiskDisclaimer() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold text-white mb-4">2. Not Financial Advice</h2>
+            <h2>2. Not Financial Advice</h2>
             <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-6 mb-4">
               <p className="mb-4">
                 <strong>NOVA AI and all other features of TradeX are analytical tools only.</strong> They are NOT:
               </p>
-              <ul className="list-disc pl-6 space-y-2">
+              <ul>
                 <li>Investment advice or recommendations</li>
                 <li>Trading signals or buy/sell indicators</li>
                 <li>Financial planning or wealth management services</li>
@@ -68,10 +71,10 @@ export default function RiskDisclaimer() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold text-white mb-4">3. Trading Risks</h2>
+            <h2>3. Trading Risks</h2>
 
-            <h3 className="text-xl font-semibold text-white mb-3 mt-6">3.1 General Trading Risks</h3>
-            <ul className="list-disc pl-6 space-y-2">
+            <h3>3.1 General Trading Risks</h3>
+            <ul>
               <li><strong>Capital Loss:</strong> You can lose all of your invested capital</li>
               <li><strong>Leverage Risk:</strong> Leveraged trading magnifies both gains and losses</li>
               <li><strong>Market Volatility:</strong> Markets can move rapidly against your positions</li>
@@ -80,7 +83,7 @@ export default function RiskDisclaimer() {
               <li><strong>Systemic Risk:</strong> Broader market or economic events can affect your positions</li>
             </ul>
 
-            <h3 className="text-xl font-semibold text-white mb-3 mt-6">3.2 Specific Market Risks</h3>
+            <h3>3.2 Specific Market Risks</h3>
             <div className="space-y-4">
               <div className="bg-white/5 rounded-lg p-4 border border-white/10">
                 <p className="font-semibold mb-2">Forex Trading:</p>
@@ -118,11 +121,11 @@ export default function RiskDisclaimer() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold text-white mb-4">4. No Performance Guarantees</h2>
+            <h2>4. No Performance Guarantees</h2>
             <p className="mb-4">
               <strong>Past performance is not indicative of future results.</strong> The fact that:
             </p>
-            <ul className="list-disc pl-6 space-y-2">
+            <ul>
               <li>You had profitable trades in the past does not guarantee future profits</li>
               <li>A trading strategy worked historically does not mean it will work in the future</li>
               <li>NOVA identified certain patterns does not mean those patterns will continue</li>
@@ -135,12 +138,12 @@ export default function RiskDisclaimer() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold text-white mb-4">5. AI-Generated Insights</h2>
+            <h2>5. AI-Generated Insights</h2>
             <p className="mb-4">
               NOVA's AI-generated insights are based on pattern recognition and statistical analysis of your data.
               Important limitations:
             </p>
-            <ul className="list-disc pl-6 space-y-2">
+            <ul>
               <li>AI insights are probabilistic, not deterministic</li>
               <li>Correlations identified do not imply causation</li>
               <li>AI cannot predict unexpected market events or "black swan" scenarios</li>
@@ -155,11 +158,11 @@ export default function RiskDisclaimer() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold text-white mb-4">6. Data Accuracy</h2>
+            <h2>6. Data Accuracy</h2>
             <p className="mb-4">
               While we strive for accuracy, we cannot guarantee:
             </p>
-            <ul className="list-disc pl-6 space-y-2">
+            <ul>
               <li>100% accuracy of data imported from broker connections</li>
               <li>Real-time data updates (there may be delays)</li>
               <li>Absence of technical errors or glitches</li>
@@ -173,7 +176,7 @@ export default function RiskDisclaimer() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold text-white mb-4">7. Educational Purpose</h2>
+            <h2>7. Educational Purpose</h2>
             <p>
               TradeX is designed for educational and record-keeping purposes. It helps you:
             </p>
@@ -190,12 +193,12 @@ export default function RiskDisclaimer() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold text-white mb-4">8. Professional Advice Recommended</h2>
+            <h2>8. Professional Advice Recommended</h2>
             <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-6">
               <p className="mb-4">
                 Before engaging in trading, we strongly recommend that you:
               </p>
-              <ul className="list-disc pl-6 space-y-2">
+              <ul>
                 <li>Consult with a licensed financial advisor</li>
                 <li>Understand your financial situation and risk tolerance</li>
                 <li>Only invest money you can afford to lose</li>
@@ -209,11 +212,11 @@ export default function RiskDisclaimer() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold text-white mb-4">9. Emotional and Psychological Impact</h2>
+            <h2>9. Emotional and Psychological Impact</h2>
             <p className="mb-4">
               Trading can have significant emotional and psychological effects:
             </p>
-            <ul className="list-disc pl-6 space-y-2">
+            <ul>
               <li>Trading losses can cause stress, anxiety, and emotional distress</li>
               <li>The pressure of financial risk can affect mental health</li>
               <li>Trading addiction or compulsive trading behaviors can develop</li>
@@ -227,11 +230,11 @@ export default function RiskDisclaimer() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold text-white mb-4">10. Regulatory Considerations</h2>
+            <h2>10. Regulatory Considerations</h2>
             <p className="mb-4">
               Important regulatory information:
             </p>
-            <ul className="list-disc pl-6 space-y-2">
+            <ul>
               <li>TradeX is not a registered investment advisor or broker-dealer</li>
               <li>We are not regulated by financial authorities</li>
               <li>Trading regulations vary by jurisdiction</li>
@@ -245,11 +248,11 @@ export default function RiskDisclaimer() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold text-white mb-4">11. Third-Party Brokers</h2>
+            <h2>11. Third-Party Brokers</h2>
             <p className="mb-4">
               When connecting your broker accounts to TradeX:
             </p>
-            <ul className="list-disc pl-6 space-y-2">
+            <ul>
               <li>We are not responsible for broker actions or policies</li>
               <li>Broker failures or issues are beyond our control</li>
               <li>Execution quality and pricing are determined by your broker</li>
@@ -260,11 +263,11 @@ export default function RiskDisclaimer() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold text-white mb-4">12. Service Limitations</h2>
+            <h2>12. Service Limitations</h2>
             <p className="mb-4">
               TradeX has limitations that could affect your use:
             </p>
-            <ul className="list-disc pl-6 space-y-2">
+            <ul>
               <li>Service interruptions may prevent access to your data</li>
               <li>Technical issues could result in data loss or corruption</li>
               <li>Feature limitations may not meet all your needs</li>
@@ -277,11 +280,11 @@ export default function RiskDisclaimer() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold text-white mb-4">13. Statistics and Backtesting</h2>
+            <h2>13. Statistics and Backtesting</h2>
             <p className="mb-4">
               Performance statistics and analysis provided by TradeX are based on your historical trading data:
             </p>
-            <ul className="list-disc pl-6 space-y-2">
+            <ul>
               <li>Historical statistics do not guarantee future performance</li>
               <li>Sample size and time period significantly affect reliability</li>
               <li>Survivorship bias may affect your perception of success</li>
@@ -291,14 +294,14 @@ export default function RiskDisclaimer() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold text-white mb-4">14. No Liability for Trading Losses</h2>
+            <h2>14. No Liability for Trading Losses</h2>
             <div className="bg-blue-500/10 border-2 border-blue-500/30 rounded-lg p-6">
               <p className="font-bold text-blue-400 mb-4">CRITICAL NOTICE:</p>
               <p className="mb-4">
                 TradeX and its operators, employees, and affiliates are NOT liable for any trading losses or damages
                 you may incur, including but not limited to:
               </p>
-              <ul className="list-disc pl-6 space-y-2">
+              <ul>
                 <li>Direct financial losses from trading activities</li>
                 <li>Losses from following patterns or insights identified by the Service</li>
                 <li>Missed opportunities or timing issues</li>
@@ -312,7 +315,7 @@ export default function RiskDisclaimer() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold text-white mb-4">15. Your Acknowledgment</h2>
+            <h2>15. Your Acknowledgment</h2>
             <div className="bg-white/10 border border-white/20 rounded-lg p-6">
               <p className="mb-4 font-semibold">By using TradeX, you acknowledge and agree that:</p>
               <ul className="list-disc pl-6 space-y-3">
@@ -330,7 +333,7 @@ export default function RiskDisclaimer() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold text-white mb-4">16. Contact Information</h2>
+            <h2>16. Contact Information</h2>
             <p className="mb-4">
               If you have questions about this Risk Disclaimer:
             </p>
@@ -350,9 +353,7 @@ export default function RiskDisclaimer() {
               </p>
             </div>
           </div>
-        </div>
-      </div>
-      <Footer />
-    </div>
+      </LegalProse>
+    </PageShell>
   );
 }
