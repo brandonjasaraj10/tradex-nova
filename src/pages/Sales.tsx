@@ -355,9 +355,11 @@ export default function Sales() {
             <div className="p-4 sm:p-6">
               <div className="grid grid-cols-3 gap-3 sm:gap-4">
                 {[
-                  { label: 'Net P&L', value: '+$4,812', tone: 'text-brand-profit' },
-                  { label: 'Win rate', value: '58%', tone: 'text-white' },
-                  { label: 'Profit factor', value: '1.94', tone: 'text-white' },
+                  /* The Dashboard's own labels, so the page and the product
+                     call the same numbers the same things. */
+                  { label: 'Total P&L', value: '+$4,812', tone: 'text-brand-profit' },
+                  { label: 'Win Rate', value: '58%', tone: 'text-white' },
+                  { label: 'Profit Factor', value: '1.94', tone: 'text-white' },
                 ].map((stat) => (
                   <div key={stat.label} className="rounded-xl border border-white/[0.07] bg-brand-elevated px-3 py-3 sm:px-4 sm:py-4">
                     <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.12em] text-gray-600">{stat.label}</p>

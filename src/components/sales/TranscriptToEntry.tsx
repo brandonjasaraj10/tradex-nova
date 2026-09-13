@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 
 /*
   What step 02 claims, shown happening: a rambling voice transcript resolving
@@ -33,12 +33,23 @@ export default function TranscriptToEntry() {
   // Starts finished. The effect rewinds it only when animation is wanted.
   const [typed, setTyped] = useState(TRANSCRIPT.length);
   const [showFields, setShowFields] = useState(true);
-  const started = useRef(false);
 
   useEffect(() => {
-    if (prefersReduced || started.current) return;
-    started.current = true;
+    if (prefersReduced) return;
 
+    /*
+      No "have I already run" ref here, and that is the point.
+
+      There used to be one, and it broke the whole thing in a way that only
+      shows up in the browser: StrictMode double-invokes effects, so the first
+      run set the flag and started the interval, the cleanup cleared the
+      interval, and the second run hit the flag and returned early. The result
+      was a caret blinking next to permanently empty text - reported from
+      testing as "a blue thing that's about to type, but nothing's typing".
+
+      Rewinding on every run is correct instead of merely tolerated: the
+      cleanup cancels the previous pass, so a double-invoke just restarts it.
+    */
     let i = 0;
     setTyped(0);
     setShowFields(false);
@@ -49,11 +60,16 @@ export default function TranscriptToEntry() {
       if (i >= TRANSCRIPT.length) {
         clearInterval(typing);
         // A beat before the fields land, so the cause reads before the effect.
-        setTimeout(() => setShowFields(true), 380);
+        reveal = setTimeout(() => setShowFields(true), 380);
       }
     }, 28);
 
-    return () => clearInterval(typing);
+    let reveal: ReturnType<typeof setTimeout>;
+
+    return () => {
+      clearInterval(typing);
+      clearTimeout(reveal);
+    };
   }, [prefersReduced]);
 
   const isTyping = typed < TRANSCRIPT.length;

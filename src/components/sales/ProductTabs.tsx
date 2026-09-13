@@ -16,6 +16,11 @@ import { useState } from 'react';
 
   User-controlled, never auto-rotating: nothing moves unless somebody asks it
   to, and the first panel is the one that matters if they never do.
+
+  Three panels, not four. Psychology had its own tab until the section
+  directly below this one turned out to say the same thing better, and four
+  labels forced the row to scroll sideways on a phone, which reads as
+  unfinished. Three fit.
 */
 
 type Panel = {
@@ -92,45 +97,19 @@ const PANELS: Panel[] = [
   {
     id: 'analytics',
     label: 'Analytics',
-    caption: 'The numbers behind the habit, not just the balance.',
+    caption: 'Five reports built from your trades, not a wall of ratios.',
     body: (
-      <div className="grid grid-cols-2 gap-2.5 text-[12px]">
+      <div className="flex flex-col gap-2">
         {[
-          ['Best session', 'London'],
-          ['Worst weekday', 'Friday'],
-          ['Avg hold', '42 min'],
-          ['Stop moved', '9 trades'],
-          ['Win rate', '58%'],
-          ['Profit factor', '1.94'],
-        ].map(([k, v]) => (
-          <div key={k} className={`${cell} flex items-baseline justify-between gap-2`}>
-            <span className="text-gray-600">{k}</span>
-            <span className="text-gray-300 tabular-nums">{v}</span>
-          </div>
-        ))}
-      </div>
-    ),
-  },
-  {
-    id: 'psychology',
-    label: 'Psychology',
-    caption: 'How you felt going in, scored against what happened.',
-    body: (
-      <div className="flex flex-col gap-3">
-        {[
-          ['Focus', 7],
-          ['Confidence', 4],
-          ['Discipline', 6],
-        ].map(([label, value]) => (
-          <div key={label as string} className="flex items-center gap-3">
-            <span className="w-[76px] flex-shrink-0 text-[12px] text-gray-500">{label}</span>
-            <span className="flex-1 h-1.5 rounded-full bg-white/[0.07] overflow-hidden">
-              <span
-                className="block h-full rounded-full bg-brand-blue-light/70"
-                style={{ width: `${(value as number) * 10}%` }}
-              />
-            </span>
-            <span className="w-8 text-right text-[12px] text-gray-300 tabular-nums">{value}/10</span>
+          ['Cumulative P&L', 'Where the account actually went'],
+          ['Win Rate Trend', 'Whether you are getting better'],
+          ['P&L by Symbol', 'What you should stop trading'],
+          ['Average P&L by Day of Week', 'Your worst day, named'],
+          ['Trade Types', 'Long against short, side by side'],
+        ].map(([name, what]) => (
+          <div key={name} className={`${cell} flex items-baseline justify-between gap-3`}>
+            <span className="text-[12px] text-gray-300">{name}</span>
+            <span className="text-[11px] text-gray-600 text-right">{what}</span>
           </div>
         ))}
       </div>
@@ -144,15 +123,11 @@ export default function ProductTabs() {
 
   return (
     <div>
-      {/*
-        Scrollable on a phone so four labels never wrap into two ragged rows.
-        No scrollbar, but the row still moves by touch.
-      */}
+      {/* Three labels fit a 375px row, so it centres rather than scrolls. */}
       <div
         role="tablist"
         aria-label="What TradeX looks like"
-        className="flex gap-1.5 overflow-x-auto pb-1 -mx-5 px-5 sm:mx-0 sm:px-0 sm:justify-center
-          [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex gap-1.5 justify-center"
       >
         {PANELS.map((p) => {
           const isActive = p.id === active;
@@ -163,7 +138,7 @@ export default function ProductTabs() {
               type="button"
               aria-selected={isActive}
               onClick={() => setActive(p.id)}
-              className={`flex-shrink-0 px-4 py-2 rounded-full text-[13px] transition-colors
+              className={`flex-shrink-0 px-4 py-2 rounded-full text-[12.5px] transition-colors
                 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/40 ${
                   isActive
                     ? 'bg-white text-black font-medium'

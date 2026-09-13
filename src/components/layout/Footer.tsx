@@ -32,7 +32,7 @@ export default function Footer() {
                 href="https://www.instagram.com/tradexnova/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-gray-400 hover:text-gold-400 transition-colors"
+                className="text-gray-500 hover:text-white transition-colors"
               >
                 <span className="sr-only">Instagram</span>
                 <Instagram size={20} />
@@ -41,25 +41,25 @@ export default function Footer() {
           </div>
 
           <div className="col-span-1">
-            <h3 className="text-sm font-bold text-gold-400 uppercase tracking-wider">Program</h3>
+            <h3 className="text-[10px] font-medium text-gray-500 uppercase tracking-[0.18em]">Program</h3>
             <ul className="mt-4 space-y-2">
               <li>
-                <Link to="/affiliates" className="text-gray-300 hover:text-gold-300 transition-colors">Affiliates</Link>
+                <Link to="/affiliates" className="text-[13px] text-gray-400 hover:text-white transition-colors">Affiliates</Link>
               </li>
             </ul>
           </div>
 
           <div className="col-span-1">
-            <h3 className="text-sm font-bold text-gold-400 uppercase tracking-wider">Legal</h3>
+            <h3 className="text-[10px] font-medium text-gray-500 uppercase tracking-[0.18em]">Legal</h3>
             <ul className="mt-4 space-y-2">
               <li>
-                <Link to="/privacy" className="text-gray-300 hover:text-gold-300 transition-colors">Privacy Policy</Link>
+                <Link to="/privacy" className="text-[13px] text-gray-400 hover:text-white transition-colors">Privacy Policy</Link>
               </li>
               <li>
-                <Link to="/terms" className="text-gray-300 hover:text-gold-300 transition-colors">Terms of Service</Link>
+                <Link to="/terms" className="text-[13px] text-gray-400 hover:text-white transition-colors">Terms of Service</Link>
               </li>
               <li>
-                <Link to="/risk-disclaimer" className="text-gray-300 hover:text-gold-300 transition-colors">Risk Disclaimer</Link>
+                <Link to="/risk-disclaimer" className="text-[13px] text-gray-400 hover:text-white transition-colors">Risk Disclaimer</Link>
               </li>
             </ul>
           </div>
