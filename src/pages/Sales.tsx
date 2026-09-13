@@ -811,76 +811,66 @@ export default function Sales() {
         </div>
       </div>
 
-      {/* Testimonials Section */}
-      <div className="py-16 sm:py-24 lg:py-32 relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="text-center mb-10 sm:mb-16">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4 text-white px-4">Trusted by Early Users</h2>
-            <p className="text-base sm:text-lg md:text-xl text-gray-400 px-4">Real results from traders using TradeX</p>
+      {/*
+        Testimonials, restyled to match the rest of the page.
+
+        Content unchanged - that is a decision already taken. What changed is
+        the treatment: quote first and name second, because on a page this
+        quiet the words carry more than an avatar circle does, and three
+        heavy cards in a row was the last piece of the old visual language
+        left standing.
+      */}
+      <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
+        <div className="max-w-4xl mx-auto px-5 sm:px-8">
+          <div className="text-center mb-10 sm:mb-14">
+            <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
+              Early users
+            </p>
+            <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
+              What they say
+            </h2>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="p-6 md:p-8 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-white/20 transition-all"
-            >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
-                  <span className="text-white font-medium">MS</span>
-                </div>
-                <div>
-                  <h3 className="font-medium text-white">Michael S.</h3>
-                  <p className="text-sm text-gray-400">Forex Trader</p>
-                </div>
-              </div>
-              <p className="text-gray-300 leading-relaxed">
-                "NOVA's psychological insights helped me identify and fix my emotional trading patterns. My win rate improved by 35% in just two months."
-              </p>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
-              className="p-6 md:p-8 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-white/20 transition-all"
-            >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
-                  <span className="text-white font-medium">SL</span>
-                </div>
-                <div>
-                  <h3 className="font-medium text-white">Sarah L.</h3>
-                  <p className="text-sm text-gray-400">Options Trader</p>
-                </div>
-              </div>
-              <p className="text-gray-300 leading-relaxed">
-                "The visual trade calendar and analytics helped me identify my most profitable setups. TradeX has completely transformed my trading approach."
-              </p>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.2 }}
-              className="p-6 md:p-8 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-white/20 transition-all"
-            >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
-                  <span className="text-white font-medium">DR</span>
-                </div>
-                <div>
-                  <h3 className="font-medium text-white">David R.</h3>
-                  <p className="text-sm text-gray-400">Crypto Trader</p>
-                </div>
-              </div>
-              <p className="text-gray-300 leading-relaxed">
-                "The detailed analytics and journaling features save me hours each week. NOVA's insights have helped me become more consistent and disciplined."
-              </p>
-            </motion.div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+            {[
+              {
+                quote: "NOVA's psychological insights helped me identify and fix my emotional trading patterns. My win rate improved by 35% in just two months.",
+                name: 'Michael S.',
+                role: 'Forex Trader',
+                initials: 'MS',
+              },
+              {
+                quote: 'The visual trade calendar and analytics helped me identify my most profitable setups. TradeX has completely transformed my trading approach.',
+                name: 'Sarah L.',
+                role: 'Options Trader',
+                initials: 'SL',
+              },
+              {
+                quote: "The detailed analytics and journaling features save me hours each week. NOVA's insights have helped me become more consistent and disciplined.",
+                name: 'David K.',
+                role: 'Crypto Trader',
+                initials: 'DK',
+              },
+            ].map((t) => (
+              <figure
+                key={t.name}
+                className="flex flex-col rounded-2xl border border-white/[0.07] bg-brand-surface p-5 sm:p-6"
+              >
+                <blockquote className="text-[13.5px] sm:text-sm text-gray-300 leading-relaxed flex-1">
+                  &ldquo;{t.quote}&rdquo;
+                </blockquote>
+                <figcaption className="mt-5 pt-4 border-t border-white/[0.06] flex items-center gap-2.5">
+                  <span className="w-7 h-7 rounded-full bg-brand-elevated border border-white/10
+                    flex items-center justify-center text-[10px] font-medium text-gray-400">
+                    {t.initials}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-[12.5px] text-gray-300 truncate">{t.name}</span>
+                    <span className="block text-[11px] text-gray-600 truncate">{t.role}</span>
+                  </span>
+                </figcaption>
+              </figure>
+            ))}
           </div>
         </div>
       </div>
