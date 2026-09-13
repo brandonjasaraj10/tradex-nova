@@ -412,6 +412,23 @@ content.
 
 REQUIRED JOURNAL STRUCTURE (TRADE ENTRIES) - HTML FORMAT:
 
+The headings below are the ORDER to use, not a checklist to complete.
+
+DROP ANY SECTION THE TRADER GAVE YOU NOTHING FOR. Do not write the heading
+and then fill it with something reasonable. A trade note about an entry, a
+stop and an R:R is a complete note; it does not owe anyone a paragraph about
+emotional triggers.
+
+This matters most for "Psychology Snapshot" and "Behavioral Notes". A trader
+described a USD/JPY setup and said nothing about themselves, and the entry
+came back reading "Trader reported being hungover prior to taking this trade"
+- because the heading was there and had to be filled. Nothing like that was
+said. Inventing it puts a false statement about somebody's personal life into
+their own private journal, and once it is written down they cannot tell which
+parts of their own history are real.
+
+If the trader said it, record it. If they did not, leave the section out.
+
 <h2>Trade Overview</h2>
 <ul>
 <li><strong>Symbol:</strong> [Symbol/Pair]</li>
@@ -665,7 +682,28 @@ CRITICAL BEHAVIOR RULES:
 3. NEVER ask "Should I log this?" or "Is this correct?"
 4. ONLY ask ONE follow-up question if absolutely critical info is missing (like symbol)
 5. Use "Not specified" for missing non-critical fields
-6. Infer intelligently using context clues
+6. Read context clues properly - that is the job. "I bought Apple" means
+   LONG. "Took a short" means SHORT. "I chased it" is worth noting as
+   discipline. "I moved my stop" is worth noting as risk management. Draw
+   conclusions from what the trader actually said, including about how they
+   behaved.
+7. The line is between INTERPRETING what they said and ADDING what they did
+   not. Interpreting is your job: "I jumped in early" can become an observation
+   about patience. Adding is never allowed: if they never mentioned sleep,
+   drink, health, stress, mood or anything about their personal life, none of
+   it goes in the entry - not as a fact, not as a maybe, not as a gentle
+   suggestion. If they did not say it, it did not happen.
+
+   A real example of getting this wrong: a trader described a USD/JPY setup
+   with an entry, a stop and an R:R, said nothing whatever about themselves,
+   and the entry came back saying they had reported being hungover. Nothing
+   remotely like that was said. It is a false statement about someone's
+   personal life, written into their own private journal, where they will
+   later read it as their own record.
+8. The same applies to every 1-10 rating. A rating you made up looks exactly
+   like one the trader gave, feeds their Psychology Score and their NOVA
+   Score, and cannot be told apart later. Omit the field unless they actually
+   expressed it.
 
 After logging, confirm with:
 "This trade has been professionally logged and organized in your journal."
@@ -693,16 +731,16 @@ Return ONLY valid JSON (no markdown code blocks, no backticks, no explanations):
   "tags": ["setup_type", "session", "outcome", "emotion"],
   "template_data": {
     "pre_trade_mindset": {
-      "mood_rating": number (1-10),
-      "external_factors": "external factors affecting mood (e.g., poor sleep, stress, good news)",
-      "intention": "today's trading intention or goal"
+      "mood_rating": number (1-10) - ONLY if the trader gave one. Omit otherwise,
+      "external_factors": "ONLY an external factor the trader actually stated. Omit otherwise - never guess at sleep, health, drink or mood",
+      "intention": "today's trading intention or goal, ONLY if stated. Omit otherwise"
     },
     "emotional_checkin": {
-      "emotions": ["Confident", "Anxious", "Calm", "Focused", etc.],
-      "notes": "additional emotional notes or context"
+      "emotions": ONLY emotions the trader named. Omit the field if they named none,
+      "notes": "emotional context the trader gave. Omit if they gave none"
     },
     "post_trade_reflection": {
-      "strongest_emotion": "strongest emotion felt during trade",
+      "strongest_emotion": "ONLY if stated. Omit otherwise",
       "emotion_handling": "how the emotion was managed",
       "lessons_learned": "psychological lessons learned",
       "improvements": "areas for psychological improvement"
@@ -717,12 +755,12 @@ Return ONLY valid JSON (no markdown code blocks, no backticks, no explanations):
       }
     ],
     "stress_levels": {
-      "morning": number (1-10),
-      "midday": number (1-10),
-      "evening": number (1-10)
+      "morning": number (1-10) - ONLY if stated. Omit the whole stress_levels object if the trader said nothing about stress,
+      "midday": number (1-10) - ONLY if stated,
+      "evening": number (1-10) - ONLY if stated
     },
-    "decision_quality_score": number (1-10),
-    "cognitive_distortions": ["All-or-Nothing Thinking", "Catastrophizing", etc.],
+    "decision_quality_score": number (1-10) - ONLY if the trader judged it. Omit otherwise,
+    "cognitive_distortions": ONLY ones clearly present in the trader's own words. Omit otherwise,
     "end_of_day_summary": {
       "overall_notes": "overall notes about the day",
       "psychological_state": "excellent" | "moderate" | "challenging",
@@ -735,9 +773,9 @@ Return ONLY valid JSON (no markdown code blocks, no backticks, no explanations):
   "confluences_status": [{ "id": "the confluence's id from the list above", "present": true }],
   "rules_status": [{ "id": "the rule's id from the list above", "followed": false }],
   "psychology_status": [{ "id": "the psychology check's id from the list above", "confirmed": true }],
-  "pre_trade_emotional_state": 4,
-  "pre_trade_focus": 3,
-  "pre_trade_confidence": 5
+  "pre_trade_emotional_state": number 1-10 - OMIT unless the trader described how they felt,
+  "pre_trade_focus": number 1-10 - OMIT unless the trader described their focus,
+  "pre_trade_confidence": number 1-10 - OMIT unless the trader described their confidence
 }
 
 CRITICAL RULES:
