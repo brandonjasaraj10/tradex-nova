@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { CheckCircle2, ArrowRight, Brain, Target, LineChart, Zap, AlertTriangle, ChevronRight, School as Psychology, TrendingUp, Eye, Clock, BarChart2, Sparkles, Calendar, BookOpen, ChevronLeft, Plus, Smile, Meh, Frown, DollarSign, Award, MessageSquare, Check } from 'lucide-react';
 import Button from '../components/shared/Button';
 import Footer from '../components/layout/Footer';
+import TranscriptToEntry from '../components/sales/TranscriptToEntry';
 import SignupOrWaitlist from '../components/shared/SignupOrWaitlist';
 import { useHasLaunched } from '../lib/launch';
 import LaunchCountdown from '../components/shared/LaunchCountdown';
@@ -452,21 +453,7 @@ export default function Sales() {
                 step: '02',
                 title: 'It writes the entry',
                 body: 'Symbol, direction, size, P&L and your reasoning, pulled out and filed where they belong.',
-                visual: (
-                  <div className="grid grid-cols-2 gap-2 text-[11.5px]">
-                    {[
-                      ['Symbol', 'EURUSD'],
-                      ['Direction', 'Short'],
-                      ['Size', '0.5 lots'],
-                      ['Result', '-$180'],
-                    ].map(([k, v]) => (
-                      <div key={k} className="flex items-baseline justify-between gap-3 rounded-lg border border-white/[0.07] px-2.5 py-1.5">
-                        <span className="text-gray-600">{k}</span>
-                        <span className="text-gray-300 tabular-nums">{v}</span>
-                      </div>
-                    ))}
-                  </div>
-                ),
+                visual: <TranscriptToEntry />,
               },
               {
                 step: '03',
@@ -554,6 +541,70 @@ export default function Sales() {
               </p>
             </div>
             <p className="mt-4 text-center text-[11px] text-gray-600">Example figures</p>
+          </div>
+        </div>
+      </div>
+
+      {/*
+        NOVA.
+
+        The product is named after her and the page never said what she does.
+        Kept to one section and one exchange rather than a feature grid: what
+        makes Nova worth paying for is that she has read every entry, so the
+        demonstration is an answer no generic chatbot could give.
+      */}
+      <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
+        <div className="max-w-3xl mx-auto px-5 sm:px-8">
+          <div className="text-center mb-10 sm:mb-14">
+            <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
+              Nova
+            </p>
+            <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
+              Ask her anything about your trading
+            </h2>
+            <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-sm sm:max-w-md mx-auto text-balance">
+              She has read every entry you have written. Not generic advice &mdash;
+              your trades, your numbers, your habits.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-white/[0.07] bg-brand-surface p-5 sm:p-7">
+            <div className="flex flex-col gap-4">
+              <div className="flex justify-end">
+                <p className="max-w-[85%] rounded-2xl rounded-br-sm bg-brand-elevated border border-white/[0.07]
+                  px-4 py-2.5 text-[13px] sm:text-sm text-gray-300">
+                  Why am I losing on Fridays?
+                </p>
+              </div>
+
+              <div className="flex gap-2.5">
+                <span className="flex-shrink-0 w-7 h-7 rounded-full bg-brand-blue/15 border border-brand-blue-light/30
+                  flex items-center justify-center text-[10px] font-medium text-brand-blue-light">
+                  N
+                </span>
+                <div className="rounded-2xl rounded-tl-sm bg-brand-blue/[0.06] border border-brand-blue-light/20
+                  px-4 py-3 text-[13px] sm:text-sm text-gray-300 leading-relaxed">
+                  You are not. You are losing on the days you rate your focus below 5,
+                  and eleven of those fourteen days were Fridays. Your Friday setups win
+                  at the same rate as the rest of the week &mdash; you just size up on them
+                  after a flat week.
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 pt-5 border-t border-white/[0.06] grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {[
+                ['Reads every entry', 'Not just the last one. Patterns show up across months, not trades.'],
+                ['Remembers you', 'Tell her once what you are working on and she holds on to it.'],
+                ['Writes your entries', 'Talk it through and she files the whole thing for you.'],
+              ].map(([title, body]) => (
+                <div key={title}>
+                  <p className="text-[12.5px] font-medium text-white">{title}</p>
+                  <p className="mt-1 text-[12px] text-gray-500 leading-relaxed">{body}</p>
+                </div>
+              ))}
+            </div>
+            <p className="mt-5 text-center text-[11px] text-gray-600">Example conversation</p>
           </div>
         </div>
       </div>
@@ -812,7 +863,7 @@ export default function Sales() {
               },
               {
                 q: 'I have tried journals before and quit. Why is this different?',
-                a: 'Because the quitting is the problem we built around. Journals do not fail on features, they fail at 4pm when typing up a trade is the last thing you want to do.',
+                a: 'Two reasons. The quitting is the problem we built around \u2014 journals do not fail on features, they fail at 4pm when typing up a trade is the last thing you want to do. And every other journal shows you your P&L. TradeX records how you felt going in and matches it against what happened, because seeing that you lost and seeing why you lost are different things.',
               },
               {
                 /*
