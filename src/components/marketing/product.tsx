@@ -1,4 +1,5 @@
 import { useState, ReactNode } from 'react';
+import { CheckSquare, Square, X } from 'lucide-react';
 
 /*
   Real interface, not descriptions of it.
@@ -193,7 +194,7 @@ export function CalendarPanel() {
 }
 
 /* ------------------------------------------------------------------ */
-/* Pre-trade checklist. Actually tickable.                             */
+/* Pre-trade checklist. Actually tickable, with the app's three states. */
 /* ------------------------------------------------------------------ */
 
 const CHECKS = [
@@ -203,54 +204,114 @@ const CHECKS = [
   'I am not trying to win back this morning',
 ];
 
+/*
+  Three states, not two, because that is what the product does.
+
+  Journal.tsx cycles each rule unset -> followed -> not followed -> unset, and
+  renders them as a blue CheckSquare, a grey X and an empty Square. A
+  marketing panel that only toggled on and off would be teaching the wrong
+  interaction - and it would lose the point of the feature, which is that
+  "I broke this one" is a thing you record deliberately rather than the
+  absence of a tick. The counts underneath are the app's own pair, Followed
+  and Not Followed, for the same reason.
+*/
+type RuleState = null | true | false;
+
+const NEXT_STATE: Record<string, RuleState> = {
+  null: true,
+  true: false,
+  false: null,
+};
+
 export function ChecklistPanel() {
   /*
     Interactive rather than a picture of a checklist. It is the cheapest
     honest demo on the site - the point lands in about three seconds, which
     is the condition under which an interactive demo beats a screenshot at
-    all. The last item starts unticked on purpose: that is the one nobody
-    ticks honestly, and leaving it open is the whole argument for the
-    feature.
+    all. The last item starts on "not followed" rather than unset: that is
+    the one nobody keeps honestly, and showing it already marked broken is
+    the whole argument for the feature.
   */
-  const [ticked, setTicked] = useState<boolean[]>([true, true, true, false]);
+  const [states, setStates] = useState<RuleState[]>([true, true, true, false]);
+
+  const cycle = (i: number) =>
+    setStates((prev) =>
+      prev.map((v, j) => (j === i ? NEXT_STATE[String(v)] : v)),
+    );
+
+  const followed = states.filter((v) => v === true).length;
+  const broken = states.filter((v) => v === false).length;
 
   return (
-    <Frame label="Pre-trade checklist" note="Try it — this one is live">
+    <Frame label="Pre-trade checklist" note="Try it — tap twice to mark one broken">
+      <p className="text-[11px] text-gray-600 mb-3">
+        Blue = followed &middot; grey = not followed &middot; empty = not marked
+      </p>
+
       <div className="flex flex-col gap-2">
-        {CHECKS.map((check, i) => (
-          <button
-            key={check}
-            type="button"
-            onClick={() => setTicked((t) => t.map((v, j) => (j === i ? !v : v)))}
-            aria-pressed={ticked[i]}
-            className={`group flex items-start gap-3 text-left rounded-xl border px-3.5 py-3 transition-colors
-              ${ticked[i]
-                ? 'border-brand-blue-light/30 bg-brand-blue/[0.07]'
-                : 'border-white/[0.07] bg-brand-elevated hover:border-white/15'}`}
-          >
-            <span
-              className={`mt-[1px] w-[18px] h-[18px] rounded-md border flex items-center justify-center flex-shrink-0 transition-colors
-                ${ticked[i]
-                  ? 'bg-brand-blue-light border-brand-blue-light'
-                  : 'border-white/25 group-hover:border-white/40'}`}
+        {CHECKS.map((check, i) => {
+          const state = states[i];
+          return (
+            <button
+              key={check}
+              type="button"
+              onClick={() => cycle(i)}
+              aria-label={`${check} — ${
+                state === true ? 'followed' : state === false ? 'not followed' : 'not marked'
+              }`}
+              className={`group flex items-start gap-3 text-left rounded-xl border px-3.5 py-3 transition-colors
+                ${state === true
+                  ? 'border-brand-blue-light/40 bg-brand-blue-light/10'
+                  : state === false
+                    ? 'border-gray-500/50 bg-gray-400/10'
+                    : 'border-white/[0.07] bg-brand-elevated hover:border-white/20'}`}
             >
-              {ticked[i] && (
-                <svg viewBox="0 0 12 12" className="w-3 h-3" aria-hidden="true">
-                  <path d="M2.5 6.2 L4.8 8.5 L9.5 3.8" fill="none" stroke="#000" strokeWidth="1.8"
-                    strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              )}
-            </span>
-            <span className={`text-[13px] leading-snug ${ticked[i] ? 'text-gray-300' : 'text-gray-500'}`}>
-              {check}
-            </span>
-          </button>
-        ))}
+              <span className="mt-[1px] flex-shrink-0" aria-hidden="true">
+                {state === true ? (
+                  <CheckSquare size={18} className="text-brand-blue-light" />
+                ) : state === false ? (
+                  <X size={18} className="text-gray-400" />
+                ) : (
+                  <Square size={18} className="text-gray-600 group-hover:text-gray-400 transition-colors" />
+                )}
+              </span>
+              <span
+                className={`text-[13px] leading-snug
+                  ${state === true
+                    ? 'text-gray-300'
+                    : state === false
+                      ? 'text-gray-400 line-through decoration-gray-600'
+                      : 'text-gray-500'}`}
+              >
+                {check}
+              </span>
+            </button>
+          );
+        })}
       </div>
-      <p className="mt-3.5 text-[11.5px] text-gray-600 leading-relaxed">
-        {ticked.every(Boolean)
-          ? 'All four. Take the trade.'
-          : `${ticked.filter(Boolean).length} of 4 — and you already know which one is missing.`}
+
+      {/* The app's own pair of counts, in the app's own wording. */}
+      <div className="mt-3.5 pt-3.5 border-t border-white/[0.07] flex flex-col gap-1">
+        <div className="flex items-center justify-between text-[12px]">
+          <span className="text-gray-500">Followed</span>
+          <span className="text-brand-blue-light font-medium tabular-nums">
+            {followed} / {CHECKS.length}
+          </span>
+        </div>
+        <div className="flex items-center justify-between text-[12px]">
+          <span className="text-gray-500">Not followed</span>
+          <span className="text-gray-400 font-medium tabular-nums">
+            {broken} / {CHECKS.length}
+          </span>
+        </div>
+      </div>
+
+      <p className="mt-3 text-[11.5px] text-gray-600 leading-relaxed">
+        {broken > 0
+          ? 'That is the part a spreadsheet never records — and the number the weekly report counts.'
+          : followed === CHECKS.length
+            ? 'All four followed. Take the trade.'
+            : 'Mark each one honestly. The gap is the whole point.'}
       </p>
     </Frame>
   );
