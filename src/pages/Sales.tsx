@@ -643,62 +643,62 @@ export default function Sales() {
         </div>
       </div>
 
-      {/* Founder Video Section */}
       {/*
-        A founder on camera is the strongest trust signal a small brand has.
-        Competitors answer this slot with customer logos and five-figure user
-        counts; we cannot, and imitating them with invented proof would be
-        the one thing on this page that could not be defended. A real person
-        saying why they built it beats a fake logo wall.
+        FROM THE FOUNDER.
 
-        Kept from the old page, restyled to match: no badge pill, no blue
-        wash, same type scale as every other section.
+        A real person saying why they built it is the strongest trust signal a
+        small brand has. Competitors fill this slot with customer logos and
+        five-figure user counts; we cannot, and inventing them would be the one
+        thing on this page that could not be defended.
+
+        The video itself lives on /about now - founder videos earn their slot
+        on enterprise pages with long sales cycles, and for a self-serve
+        product a product demo converts better in the same space, which this
+        page has several of. The story stays here because it is one sentence
+        and it is the most human thing on the page.
+
+        One centred column, not a centred heading above a left-aligned
+        paragraph - the alignment change mid-block read as a layout error, and
+        a section-sized gap between a heading and the sentence finishing its
+        thought made it worse.
       */}
       <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
-        <div className="max-w-3xl mx-auto px-5 sm:px-8 relative">
-          <div>
-            <div className="text-center mb-10 sm:mb-12">
-              <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
-                From the founder
-              </p>
-              <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
-                Why I built this
-              </h2>
-              <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-sm sm:max-w-md mx-auto text-balance">
-                I kept quitting my own trading journal. So I built the one I would actually keep.
-              </p>
-            </div>
+        <div className="max-w-3xl mx-auto px-5 sm:px-8">
+          <div className="max-w-lg mx-auto text-center">
+            <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
+              From the founder
+            </p>
+            <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
+              Why I built this
+            </h2>
+
+            <p className="mt-5 text-[15px] sm:text-[17px] leading-relaxed text-gray-300 text-balance">
+              I kept quitting my own trading journal. So I built the one I would
+              actually keep.
+            </p>
 
             {/*
-              The video moved to /about.
-
-              Founder videos earn their slot on enterprise pages with long
-              sales cycles, where a buyer wants to know who they are entering
-              a year-long relationship with; for a self-serve product at
-              $24.99 a month a product demo converts better in the same space,
-              which this page now has several of. The story is worth keeping
-              here - it is the most human thing on the page and it is one
-              sentence - but a two-minute, 12MB commitment two thirds of the
-              way down is a bigger ask than a link, and the people who want it
-              will follow one.
+              The actual reason, in his words: the competition is not missing
+              features, it is missing the only one that matters. It also sets
+              up the psychology sections above and below rather than sitting
+              apart from them.
             */}
-            <div className="max-w-md mx-auto">
-              <p className="text-[14.5px] sm:text-base leading-relaxed text-gray-400 text-balance">
-                Not because the market needed another journal. Because every one I
-                tried died the same way &mdash; a fortnight of neat entries, then a
-                bad week, then nothing. The typing was the thing that killed it, so
-                that is the thing TradeX removes.
-              </p>
-              <Link
-                to="/about"
-                className="mt-6 inline-flex items-center gap-2 px-5 py-2.5 rounded-full
-                  border border-white/15 text-[13.5px] text-gray-300
-                  hover:text-white hover:border-white/25 transition-colors"
-              >
-                Watch the two-minute version
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
+            <p className="mt-4 text-[14.5px] sm:text-base leading-relaxed text-gray-400 text-balance">
+              Every one I tried had a hundred features and not one of them tracked
+              the thing that actually decided whether I made money &mdash; what was
+              going on in my head when I clicked buy. Everything else is just
+              tidier arithmetic on a loss you have already taken.
+            </p>
+
+            <Link
+              to="/about"
+              className="mt-8 inline-flex items-center gap-2 px-5 py-2.5 rounded-full
+                border border-white/15 text-[13.5px] text-gray-300
+                hover:text-white hover:border-white/25 transition-colors"
+            >
+              Watch the two-minute version
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
         </div>
       </div>

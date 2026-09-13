@@ -14,7 +14,7 @@ import {
   X,
   ListOrdered,
 } from 'lucide-react';
-import Logo from '../shared/Logo';
+import Wordmark, { XMark } from '../shared/Wordmark';
 
 const navigation = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
@@ -76,8 +76,12 @@ export default function Sidebar({ onCollapseChange, mobileOpen = false, onMobile
       `}>
         <div className={`p-4 border-b border-white/[0.05] relative ${isCollapsed ? 'flex justify-center' : 'flex items-center justify-between'}`}>
           <div className={`flex items-center gap-3 ${isCollapsed ? 'justify-center' : ''}`} data-tour="sidebar-logo">
-            <Logo className="h-8 w-8 flex-shrink-0" />
-            {!isCollapsed && <span className="font-semibold text-xl">TradeX</span>}
+            {/* Collapsed shows the mark alone; expanded shows the wordmark -
+                the same one the marketing site uses. Both were the old
+                three-bar Logo, which is not the brand mark. */}
+            {isCollapsed
+              ? <XMark className="h-7 w-7 flex-shrink-0" />
+              : <Wordmark className="text-xl" />}
           </div>
           {!isCollapsed && (
             <div className="flex items-center gap-2">
