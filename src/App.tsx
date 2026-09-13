@@ -17,6 +17,7 @@ import ProfileSetup from './components/auth/ProfileSetup';
 import TourOverlay from './components/tour/TourOverlay';
 import PageLoader from './components/shared/PageLoader';
 import CookieConsent from './components/shared/CookieConsent';
+import ScrollToTop from './components/layout/ScrollToTop';
 import { trackPageView, setAuthState } from './lib/analytics';
 import { captureAppPageView, identifyUser, resetUser } from './lib/productAnalytics';
 
@@ -272,6 +273,7 @@ function AppContent() {
   */
   return (
     <>
+      <ScrollToTop />
       {isPublicPage ? <PublicLayout /> : <PrivateLayout />}
       <CookieConsent />
     </>
