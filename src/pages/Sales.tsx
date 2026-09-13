@@ -203,86 +203,202 @@ export default function Sales() {
         </div>
       </motion.div>
 
-      {/* Hero Section */}
-      <div className="relative min-h-screen flex items-center justify-center overflow-hidden pt-14 sm:pt-16">
-        <motion.div
-          className="absolute inset-0 opacity-30"
-          style={{ y }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-b from-gold-400/20 via-transparent to-transparent" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-gold-400/20 via-transparent to-transparent" />
-        </motion.div>
+      {/*
+        Hero.
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 lg:py-32 text-center relative">
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={{
-              visible: { transition: { staggerChildren: 0.1 } }
+        Monochrome - black, white and grey. The blue is held back for the
+        product panel below, where it means something.
+
+        Centred in the first screen rather than stacked from the top: the
+        block is vertically centred in the viewport minus the header, so a
+        phone opens on a composed screen instead of content pinned to the top
+        edge with dead space beneath it. min-h is calc-based, not 100vh, so it
+        can grow past the fold on a small phone rather than clipping.
+      */}
+      <div className="relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          {/*
+            A faint grid, faded at the edges, so the black has texture rather
+            than reading as an empty void. 48px cells at 3.5% white.
+          */}
+          <div
+            className="absolute inset-0 opacity-[0.35]"
+            style={{
+              backgroundImage:
+                'linear-gradient(to right, rgba(255,255,255,0.035) 1px, transparent 1px),' +
+                'linear-gradient(to bottom, rgba(255,255,255,0.035) 1px, transparent 1px)',
+              backgroundSize: '48px 48px',
+              maskImage: 'radial-gradient(ellipse 70% 60% at 50% 30%, #000 40%, transparent 100%)',
+              WebkitMaskImage: 'radial-gradient(ellipse 70% 60% at 50% 30%, #000 40%, transparent 100%)',
             }}
-          >
-            <motion.div variants={fadeInUp} className="inline-block mb-4 sm:mb-6">
-              <span className="px-3 py-1 sm:px-4 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium bg-gradient-to-r from-gold-400/20 to-gold-500/20 text-gold-400 border border-gold-400/30 backdrop-blur-sm">
-                Introducing Tradex Nova
-              </span>
-            </motion.div>
+          />
+          <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[820px] h-[520px] rounded-full bg-white/[0.04] blur-3xl" />
+        </div>
 
-            <motion.h1
-              variants={fadeInUp}
-              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold mb-4 sm:mb-6 bg-gradient-to-r from-white via-white/50 to-white bg-[length:200%_auto] animate-text-shimmer bg-clip-text text-transparent leading-normal px-2"
+        <div className="relative max-w-3xl mx-auto px-5 sm:px-8 pt-14 sm:pt-16
+          min-h-[calc(100svh-3.5rem)] sm:min-h-[calc(100svh-4rem)]
+          flex flex-col justify-center text-center py-12">
+
+          <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
+            Trading journal &middot; Built around psychology
+          </p>
+
+          {/*
+            Solid white. The white-to-grey fade made the second line look like
+            it was dimming out rather than being emphasised - the headline is
+            the offer and it should not fade.
+          */}
+          <h1 className="text-[46px] leading-[1.02] sm:text-6xl lg:text-[80px] lg:leading-[0.98]
+            font-semibold tracking-[-0.04em] text-white text-balance">
+            Stop guessing<br className="sm:hidden" /> why you lose
+          </h1>
+
+          <p className="mt-4 text-[14.5px] sm:text-base leading-snug text-gray-400 max-w-sm sm:max-w-md mx-auto text-balance">
+            Talk through the trade. TradeX writes the entry and finds the pattern
+            costing you money.
+          </p>
+
+          <div className="mt-6 flex flex-col items-center gap-2.5">
+            <Link
+              to="/auth?mode=signup"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2
+                px-7 py-3 rounded-full bg-white text-black text-[14px] font-medium
+                hover:bg-gray-200 transition-colors"
             >
-              AI-Powered Trading Journal
-            </motion.h1>
+              Start journaling
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+            <p className="text-[11.5px] text-gray-500">
+              14-day money back guarantee &middot; Cancel anytime
+            </p>
+          </div>
 
-            <motion.p
-              variants={fadeInUp}
-              className="text-base sm:text-lg md:text-xl lg:text-2xl text-gray-400 mb-6 sm:mb-8 max-w-3xl mx-auto px-4"
-            >
-              Track your trades, analyze your performance, and let NOVA help you develop a winning edge through advanced psychology insights.
-            </motion.p>
+          {/*
+            The work they do not have to do. Every journal promises insight;
+            what stops people is the effort, so these name the effort removed.
+          */}
+          <ul className="mt-5 flex flex-wrap justify-center items-center gap-x-4 gap-y-1.5">
+            {[
+              /*
+                Objection-killers, not features. Each answers a reason a
+                trader does not buy a journal: it is too much work, I already
+                have a spreadsheet, I do not want you near my account.
 
-            <motion.div variants={fadeInUp} className="flex justify-center px-4">
-              <div className="w-full max-w-md">
-                <SignupOrWaitlist
-                  placeholder="Enter your email to join waitlist"
-                  preLaunchFootnote={
-                    <>
-                      <LaunchCountdown className="mt-6" />
-                      <p className="mt-4 text-sm text-gray-400">
-                        Join before launch to lock in{' '}
-                        <span className="text-gray-500 line-through">$24.99</span>{' '}
-                        <span className="text-blue-400 font-semibold">$14.99/mo</span>, forever.
-                      </p>
-                    </>
-                  }
-                  postLaunchFootnote={<LaunchCountdown className="mt-6" />}
-                />
-              </div>
-            </motion.div>
+                "Journal by voice" rather than "No typing" - you can still
+                type, so the restriction framing was simply wrong. "Never
+                touches your money" is active and stays true whether or not
+                broker sync is switched on, because read-only is the only
+                access TradeX ever asks for.
+              */
+              'Journal by voice',
+              'No spreadsheets',
+              'Never touches your money',
+            ].map((item) => (
+              <li key={item} className="flex items-center gap-1.5 text-[11.5px] text-gray-400">
+                <Check className="w-3 h-3 flex-shrink-0 text-gray-500" strokeWidth={3} />
+                {item}
+              </li>
+            ))}
+          </ul>
 
-            {/* Stats */}
-            <motion.div
-              variants={fadeInUp}
-              className="mt-10 sm:mt-16 grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-6 lg:gap-8"
-            >
-              <div className="p-3 sm:p-4 md:p-5 rounded-xl bg-white/5 backdrop-blur-sm border border-gold-400/10">
-                <div className="text-2xl sm:text-3xl md:text-3xl lg:text-4xl font-bold text-gold-400 mb-1">50+</div>
-                <div className="text-xs sm:text-sm text-gray-300">Data Points per Trade</div>
+          {/*
+            Social proof, sized to what is actually true.
+
+            Competitors put customer logos and five-figure counts here. We have
+            310 signups, so that is what it says. The circles carry initials
+            rather than faces - inventing photographs of customers who have not
+            agreed to appear would be the one thing on this page that could not
+            be defended.
+          */}
+          <div className="mt-6 flex flex-col items-center gap-2">
+            <div className="flex -space-x-2">
+              {['M', 'J', 'K', 'A', 'R'].map((initial, i) => (
+                <span
+                  key={initial}
+                  className="w-[22px] h-[22px] rounded-full bg-brand-elevated border border-white/15
+                    flex items-center justify-center text-[9px] font-medium text-gray-400"
+                  style={{ zIndex: 5 - i }}
+                >
+                  {initial}
+                </span>
+              ))}
+            </div>
+            <p className="text-[11.5px] text-gray-500">
+              Join <span className="text-gray-300">300+ traders</span> already journaling with TradeX
+            </p>
+          </div>
+        </div>
+
+        {/*
+          The product, before anyone scrolls.
+
+          This is the piece the page never had: a visitor could read the whole
+          hero without seeing that TradeX is software. It is the real interface
+          - the app's own tokens, type and profit/loss colours - rendered live
+          rather than screenshotted, so it stays sharp on every display and
+          cannot go stale when the product changes.
+
+          Figures are an example, and the panel says so.
+        */}
+        <div className="relative max-w-4xl mx-auto px-5 sm:px-8 pb-16 sm:pb-24">
+          <div className="relative rounded-2xl border border-white/10 bg-brand-surface overflow-hidden shadow-[0_0_60px_-15px_rgba(255,255,255,0.08)]">
+            {/* window chrome */}
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.06] bg-brand-elevated">
+              <span className="w-2.5 h-2.5 rounded-full bg-white/15" />
+              <span className="w-2.5 h-2.5 rounded-full bg-white/10" />
+              <span className="w-2.5 h-2.5 rounded-full bg-white/10" />
+              <span className="ml-2 text-[11px] text-gray-600 tracking-wide">Dashboard</span>
+            </div>
+
+            <div className="p-4 sm:p-6">
+              <div className="grid grid-cols-3 gap-3 sm:gap-4">
+                {[
+                  { label: 'Net P&L', value: '+$4,812', tone: 'text-brand-profit' },
+                  { label: 'Win rate', value: '58%', tone: 'text-white' },
+                  { label: 'Profit factor', value: '1.94', tone: 'text-white' },
+                ].map((stat) => (
+                  <div key={stat.label} className="rounded-xl border border-white/[0.07] bg-brand-elevated px-3 py-3 sm:px-4 sm:py-4">
+                    <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.12em] text-gray-600">{stat.label}</p>
+                    <p className={`mt-1.5 text-lg sm:text-2xl font-semibold tabular-nums ${stat.tone}`}>{stat.value}</p>
+                  </div>
+                ))}
               </div>
-              <div className="p-3 sm:p-4 md:p-5 rounded-xl bg-white/5 backdrop-blur-sm border border-gold-400/10">
-                <div className="text-2xl sm:text-3xl md:text-3xl lg:text-4xl font-bold text-gold-400 mb-1">45+</div>
-                <div className="text-xs sm:text-sm text-gray-300">Psychology Patterns</div>
+
+              {/* equity curve - one path, drawn to the box */}
+              <div className="mt-4 rounded-xl border border-white/[0.07] bg-brand-elevated p-4">
+                <div className="flex items-baseline justify-between mb-3">
+                  <p className="text-[11px] uppercase tracking-[0.12em] text-gray-600">Equity</p>
+                  <p className="text-[11px] text-gray-600">Last 30 days</p>
+                </div>
+                <svg viewBox="0 0 320 72" className="w-full h-16 sm:h-20" preserveAspectRatio="none" aria-hidden="true">
+                  <defs>
+                    <linearGradient id="heroEquityFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#60A5FA" stopOpacity="0.28" />
+                      <stop offset="100%" stopColor="#60A5FA" stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+                  <path d="M0 60 L32 55 L64 58 L96 44 L128 47 L160 33 L192 36 L224 22 L256 26 L288 14 L320 8 L320 72 L0 72 Z" fill="url(#heroEquityFill)" />
+                  <path d="M0 60 L32 55 L64 58 L96 44 L128 47 L160 33 L192 36 L224 22 L256 26 L288 14 L320 8" fill="none" stroke="#60A5FA" strokeWidth="1.75" strokeLinejoin="round" strokeLinecap="round" />
+                </svg>
               </div>
-              <div className="p-3 sm:p-4 md:p-5 rounded-xl bg-white/5 backdrop-blur-sm border border-gold-400/10">
-                <div className="text-2xl sm:text-3xl md:text-3xl lg:text-4xl font-bold text-gold-400 mb-1">Instant</div>
-                <div className="text-xs sm:text-sm text-gray-300">AI Feedback</div>
+
+              {/* what makes it TradeX rather than a P&L tracker */}
+              <div className="mt-4 rounded-xl border border-white/[0.07] bg-brand-elevated p-4">
+                <p className="text-[11px] uppercase tracking-[0.12em] text-gray-600 mb-2.5">Journal &mdash; today</p>
+                <p className="text-[13px] sm:text-sm text-gray-300 leading-relaxed">
+                  &ldquo;Moved my stop twice on the EURUSD short. Same thing I did Tuesday.&rdquo;
+                </p>
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {['Moved stop', 'Revenge entry', 'Focus 4/10'].map((tag) => (
+                    <span key={tag} className="text-[11px] text-gray-400 border border-white/10 rounded-full px-2.5 py-1">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
               </div>
-              <div className="p-3 sm:p-4 md:p-5 rounded-xl bg-white/5 backdrop-blur-sm border border-gold-400/10">
-                <div className="text-2xl sm:text-3xl md:text-3xl lg:text-4xl font-bold text-gold-400 mb-1">24/7</div>
-                <div className="text-xs sm:text-sm text-gray-300">NOVA Support</div>
-              </div>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
+          <p className="mt-3 text-center text-[11px] text-gray-600">Example figures</p>
         </div>
       </div>
 
