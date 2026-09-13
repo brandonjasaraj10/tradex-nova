@@ -57,7 +57,10 @@ export function StatBand({ items }: { items: { value: string; label: string }[] 
     <div className="grid grid-cols-3 divide-x divide-white/[0.07] border-y border-white/[0.07]">
       {items.map(({ value, label }) => (
         <div key={label} className="px-3 py-6 sm:py-8 text-center">
-          <p className="text-[26px] sm:text-4xl font-semibold tracking-[-0.03em] text-white tabular-nums">
+          {/* nowrap: "14 days" broke across two lines at 375px and threw the
+              row's baselines out. Values are single tokens; the words that
+              would have wrapped belong in the label underneath. */}
+          <p className="text-[26px] sm:text-4xl font-semibold tracking-[-0.03em] text-white tabular-nums whitespace-nowrap">
             {value}
           </p>
           <p className="mt-1.5 text-[11px] sm:text-[12px] text-gray-500 leading-snug text-balance">
@@ -434,5 +437,122 @@ export function PermissionsPanel() {
         ))}
       </div>
     </Frame>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* How trades actually get in. Shared by /security and /faq.           */
+/* ------------------------------------------------------------------ */
+
+export function ImportPathsPanel() {
+  const rows = [
+    { k: 'Type it', v: 'You enter the trade. Nothing is connected at all.', now: true },
+    { k: 'Talk it', v: 'You describe it and Nova writes the entry.', now: true },
+    { k: 'CSV import', v: 'You upload the statement your broker exports.', now: true },
+    { k: 'MT4 / MT5 sync', v: 'Read-only. Closed trades and balance.', now: false },
+  ];
+  return (
+    <Frame label="How trades get in" note="Both paths, today and soon">
+      <div className="flex flex-col gap-3">
+        {rows.map((r) => (
+          <div key={r.k} className="rounded-xl border border-white/[0.07] bg-brand-elevated px-3.5 py-3">
+            <div className="flex items-center justify-between gap-3 mb-1">
+              <p className="text-[13px] font-medium text-white">{r.k}</p>
+              <span className={`flex-shrink-0 text-[9.5px] font-medium uppercase tracking-[0.1em] rounded-full px-2 py-0.5
+                ${r.now
+                  ? 'text-brand-blue-light bg-brand-blue-light/10'
+                  : 'text-gray-500 border border-white/10'}`}>
+                {r.now ? 'Available now' : 'A couple of weeks'}
+              </span>
+            </div>
+            <p className="text-[12px] leading-relaxed text-gray-500">{r.v}</p>
+          </div>
+        ))}
+      </div>
+    </Frame>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* What has actually shipped, with real dates.                         */
+/* ------------------------------------------------------------------ */
+
+/*
+  Every entry here is a real commit on main, dated from the git history
+  rather than written to look busy. That matters more than it sounds: "we
+  ship fast" is a claim any about page can make, and a dated list is the only
+  version of it a reader can check. The unshipped item is marked as unshipped
+  for the same reason.
+*/
+const SHIPPED: { date: string; title: string; body: string; shipped: boolean }[] = [
+  {
+    date: '13 Aug 2026',
+    title: 'Nova moved to Claude, and learned to remember',
+    body: 'Swapped the model behind Nova, and gave it memory that survives between conversations instead of starting blank every session.',
+    shipped: true,
+  },
+  {
+    date: '23 Aug 2026',
+    title: 'TradeX launched',
+    body: 'Voice journaling, the NOVA Score, analytics and Nova, live to everyone.',
+    shipped: true,
+  },
+  {
+    date: '27 Aug 2026',
+    title: 'Trade Logs',
+    body: 'Every position in one searchable list — by symbol, setup, note, amount or account.',
+    shipped: true,
+  },
+  {
+    date: '28 Aug 2026',
+    title: 'The pre-trade psychology checklist',
+    body: 'Your own rules, ticked before you enter rather than judged afterwards — and able to record "no", not just yes or silence.',
+    shipped: true,
+  },
+  {
+    date: '29 Aug 2026',
+    title: 'Psychology folded into the score',
+    body: 'The checklist started feeding the NOVA Score, so discipline counts toward whether you are improving, not just profit.',
+    shipped: true,
+  },
+  {
+    date: '5 Sep 2026',
+    title: 'One psychology score everywhere',
+    body: 'The calendar, the journal and the dashboard had drifted apart. Now they agree.',
+    shipped: true,
+  },
+  {
+    date: 'Next couple of weeks',
+    title: 'MT4 and MT5 sync',
+    body: 'Read-only: closed trade history and balance, nothing else. The price goes up when it lands, and not for anyone already subscribed.',
+    shipped: false,
+  },
+];
+
+export function ShippedTimeline() {
+  return (
+    <ol className="flex flex-col">
+      {SHIPPED.map((item, i) => (
+        <li key={item.title} className="flex gap-4">
+          <div className="flex flex-col items-center flex-shrink-0">
+            <span
+              className={`w-2.5 h-2.5 rounded-full mt-[7px] flex-shrink-0
+                ${item.shipped ? 'bg-brand-blue-light' : 'bg-transparent border border-white/25'}`}
+            />
+            {i < SHIPPED.length - 1 && <span className="w-px flex-1 bg-white/[0.08] my-1.5" />}
+          </div>
+          <div className={i < SHIPPED.length - 1 ? 'pb-7' : ''}>
+            <p className="text-[11px] uppercase tracking-[0.12em] text-gray-600 mb-1.5 tabular-nums">
+              {item.date}
+              {!item.shipped && (
+                <span className="ml-2 normal-case tracking-normal text-gray-500">&middot; not shipped yet</span>
+              )}
+            </p>
+            <p className="text-[14.5px] font-medium text-white mb-1 text-balance">{item.title}</p>
+            <p className="text-[13.5px] leading-relaxed text-gray-400">{item.body}</p>
+          </div>
+        </li>
+      ))}
+    </ol>
   );
 }

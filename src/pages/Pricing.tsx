@@ -135,8 +135,8 @@ export default function Pricing() {
       <div className="my-12 sm:my-16">
         <StatBand
           items={[
-            { value: '14 days', label: 'Money back, no questions asked' },
-            { value: '2 clicks', label: 'To cancel, from Settings' },
+            { value: '14', label: 'Days money back, no questions asked' },
+            { value: '2', label: 'Clicks to cancel, from Settings' },
             { value: '$0', label: 'Of your card ever stored by us' },
           ]}
         />

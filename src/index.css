@@ -148,6 +148,20 @@ body {
   scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
 }
 
+/*
+  A scroller with no visible scrollbar - the FAQ's jump nav, which scrolls
+  sideways on a phone and would otherwise carry a 4px bar under the chips.
+  The row is short enough that its ends are obvious without one.
+*/
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* Date picker styling */
 input[type="date"] {
   color-scheme: dark;

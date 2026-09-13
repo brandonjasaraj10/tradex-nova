@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import PageShell from '../components/layout/PageShell';
 import { Split, Section, QA, ClosingCta } from '../components/marketing/blocks';
-import { Frame, PullQuote, PermissionsPanel } from '../components/marketing/product';
+import { PullQuote, PermissionsPanel, ImportPathsPanel, Frame } from '../components/marketing/product';
 
 /*
   The page that answers "is my money safe".
@@ -39,31 +39,7 @@ export default function Security() {
           'Today your trades arrive by CSV or by you typing them',
           'MT4 and MT5 sync is read-only when it ships: closed trades and balance, nothing else',
         ]}
-        visual={
-          <Frame label="How trades get in" note="Both paths, today and soon">
-            <div className="flex flex-col gap-3">
-              {[
-                { k: 'Type it', v: 'You enter the trade. Nothing is connected at all.', now: true },
-                { k: 'Talk it', v: 'You describe it and Nova writes the entry.', now: true },
-                { k: 'CSV import', v: 'You upload the statement your broker exports.', now: true },
-                { k: 'MT4 / MT5 sync', v: 'Read-only. Closed trades and balance.', now: false },
-              ].map((r) => (
-                <div key={r.k} className="rounded-xl border border-white/[0.07] bg-brand-elevated px-3.5 py-3">
-                  <div className="flex items-center justify-between gap-3 mb-1">
-                    <p className="text-[13px] font-medium text-white">{r.k}</p>
-                    <span className={`flex-shrink-0 text-[9.5px] font-medium uppercase tracking-[0.1em] rounded-full px-2 py-0.5
-                      ${r.now
-                        ? 'text-brand-blue-light bg-brand-blue-light/10'
-                        : 'text-gray-500 border border-white/10'}`}>
-                      {r.now ? 'Available now' : 'A couple of weeks'}
-                    </span>
-                  </div>
-                  <p className="text-[12px] leading-relaxed text-gray-500">{r.v}</p>
-                </div>
-              ))}
-            </div>
-          </Frame>
-        }
+        visual={<ImportPathsPanel />}
       />
 
       <PullQuote>
