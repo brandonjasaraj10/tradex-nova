@@ -4,6 +4,7 @@ import { CheckCircle2, ArrowRight, Brain, Target, LineChart, Zap, AlertTriangle,
 import Button from '../components/shared/Button';
 import Footer from '../components/layout/Footer';
 import TranscriptToEntry from '../components/sales/TranscriptToEntry';
+import ProductTabs from '../components/sales/ProductTabs';
 import SignupOrWaitlist from '../components/shared/SignupOrWaitlist';
 import { useHasLaunched } from '../lib/launch';
 import LaunchCountdown from '../components/shared/LaunchCountdown';
@@ -485,6 +486,32 @@ export default function Sales() {
               </div>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/*
+        THE PRODUCT, EXPLORABLE.
+
+        Placed here rather than in the hero on the evidence: Notre Dame found
+        ~1% of visitors click a hero carousel at all and 84% of those clicks
+        land on the first panel, and carousel-versus-static A/B testing
+        measured 1.96% interaction against 43.03%. Hyros and TradeZella both
+        put their own tabs mid-page for the same reason.
+
+        The hero keeps one static panel carrying one message. This is for the
+        visitor who is still reading and now wants to see more.
+      */}
+      <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
+        <div className="max-w-3xl mx-auto px-5 sm:px-8">
+          <div className="text-center mb-10 sm:mb-12">
+            <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
+              Inside TradeX
+            </p>
+            <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
+              Have a look around
+            </h2>
+          </div>
+          <ProductTabs />
         </div>
       </div>
 
