@@ -19,31 +19,12 @@ import { supabase } from '../lib/supabase';
 import { toLocalDateStr } from '../utils/dateHelpers';
 import { formatPeriodLabel, formatProfitFactor, valueColorClass } from '../utils/formatMetrics';
 
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend,
-} from 'chart.js';
-import { Line, Bar, Pie } from 'react-chartjs-2';
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend
-);
+/*
+  Chart.js is loaded on demand rather than imported here - see
+  components/analytics/LazyChart. Registration moved with it, so it still
+  happens exactly once, as a side effect of loading that module.
+*/
+import { LazyLine as Line, LazyBar as Bar, LazyPie as Pie } from '../components/analytics/LazyChart';
 
 /*
   Chart colours, from BRAND_GUIDE.md: gains/positive are blue, losses and
