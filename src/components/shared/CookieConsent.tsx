@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { getConsent, setConsent } from '../../lib/consent';
 import { initAnalytics } from '../../lib/analytics';
@@ -16,8 +16,14 @@ import { initProductAnalytics } from '../../lib/productAnalytics';
   stays a no - the banner reappears next visit rather than assuming consent
   from silence.
 */
+
+/* Matches the duration on the panel below. Kept as a constant so the timeout
+   that unmounts the banner and the CSS that animates it can never drift. */
+const TRANSITION_MS = 320;
+
 export default function CookieConsent() {
-  const [visible, setVisible] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [shown, setShown] = useState(false);
 
   useEffect(() => {
     /*
@@ -25,10 +31,32 @@ export default function CookieConsent() {
       privacy modes, and getConsent already swallows that, but keeping it in
       an effect means the first paint never depends on storage at all.
     */
-    if (getConsent() === 'unset') setVisible(true);
+    if (getConsent() !== 'unset') return;
+    setMounted(true);
+
+    /*
+      A beat before it slides up.
+
+      Two reasons for the delay rather than animating immediately. It lets the
+      page paint first, so the banner reads as arriving rather than as part of
+      the layout - and it keeps it out of the way of the hero for the moment
+      someone spends deciding whether to keep reading. And `shown` has to flip
+      on a later frame regardless: set in the same tick as the mount, the
+      element would render already in its final state and there would be
+      nothing to transition from.
+    */
+    const enter = setTimeout(() => setShown(true), 700);
+    return () => clearTimeout(enter);
   }, []);
 
-  if (!visible) return null;
+  /* Animates out, then unmounts - so the banner leaves the way it arrived
+     instead of blinking out of existence the instant a button is pressed. */
+  const dismiss = useCallback(() => {
+    setShown(false);
+    setTimeout(() => setMounted(false), TRANSITION_MS);
+  }, []);
+
+  if (!mounted) return null;
 
   const accept = () => {
     setConsent('accepted');
@@ -39,12 +67,12 @@ export default function CookieConsent() {
     */
     initAnalytics();
     initProductAnalytics();
-    setVisible(false);
+    dismiss();
   };
 
   const decline = () => {
     setConsent('rejected');
-    setVisible(false);
+    dismiss();
   };
 
   return (
@@ -54,7 +82,21 @@ export default function CookieConsent() {
       aria-label="Cookie preferences"
       className="fixed inset-x-0 bottom-0 z-50 p-3 sm:p-5"
     >
-      <div className="mx-auto max-w-3xl rounded-2xl border border-white/10 bg-brand-surface/95 backdrop-blur-md p-4 sm:p-5 shadow-2xl">
+      {/*
+        Slides up and fades in, 320ms on a gentle ease-out. Small on purpose:
+        a consent banner that makes an entrance is reading the room wrong.
+
+        motion-reduce drops the movement and the fade together - a user who
+        has asked for less motion gets the banner simply present, which is the
+        correct resting state anyway.
+      */}
+      <div
+        className={`mx-auto max-w-3xl rounded-2xl border border-white/10 bg-brand-surface/95
+          backdrop-blur-md p-4 sm:p-5 shadow-2xl
+          transition-all duration-[320ms] ease-out
+          motion-reduce:transition-none motion-reduce:transform-none motion-reduce:opacity-100
+          ${shown ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
+      >
         <div className="sm:flex sm:items-center sm:gap-6">
           <p className="text-[13px] sm:text-sm text-gray-400 leading-relaxed">
             We use cookies to understand how the site is used. Nothing runs until
