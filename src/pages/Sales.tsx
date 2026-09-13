@@ -602,24 +602,28 @@ export default function Sales() {
       </div>
 
       {/* Founder Video Section */}
-      <div className="py-16 sm:py-24 lg:py-32 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 via-transparent to-transparent" />
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-          >
-            <div className="text-center mb-8 sm:mb-10">
-              <div className="inline-block px-4 py-1.5 rounded-full text-xs sm:text-sm font-semibold tracking-[0.2em] bg-blue-500/10 text-blue-400 border border-blue-400/30 mb-4">
-                FROM THE FOUNDER
-              </div>
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4 px-4">
-                Why I built TradeX
+      {/*
+        A founder on camera is the strongest trust signal a small brand has.
+        Competitors answer this slot with customer logos and five-figure user
+        counts; we cannot, and imitating them with invented proof would be
+        the one thing on this page that could not be defended. A real person
+        saying why they built it beats a fake logo wall.
+
+        Kept from the old page, restyled to match: no badge pill, no blue
+        wash, same type scale as every other section.
+      */}
+      <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
+        <div className="max-w-3xl mx-auto px-5 sm:px-8 relative">
+          <div>
+            <div className="text-center mb-10 sm:mb-12">
+              <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
+                From the founder
+              </p>
+              <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
+                Why I built this
               </h2>
-              <p className="text-base sm:text-lg text-gray-400 px-4 max-w-2xl mx-auto">
-                A quick word on what this is, who it's for, and where it's going.
+              <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-sm sm:max-w-md mx-auto text-balance">
+                I kept quitting my own trading journal. So I built the one I would actually keep.
               </p>
             </div>
 
@@ -643,171 +647,166 @@ export default function Sales() {
                 below.
               </video>
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
 
-      {/* Pricing Section */}
-      <div className="py-16 sm:py-24 lg:py-32 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-gold-400/5 via-transparent to-transparent" />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="text-center mb-10 sm:mb-16">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4 px-4">Simple, Transparent Pricing</h2>
-            {/*
-              The card below already switches on `launched`; this line was
-              missed, so it went on inviting people to join the waitlist and
-              lock in founding member pricing well after both had ended -
-              offering a price checkout would not honour, right above the card
-              charging the real one.
-            */}
-            <p className="text-base sm:text-lg md:text-xl text-gray-400 px-4">
+      {/*
+        PRICING.
+
+        High-converting SaaS pages show the price rather than hiding it behind
+        a demo request - the visitor's fourth question is what it costs, and
+        making them ask loses the ones who would have paid.
+
+        One plan, so the layout is one card rather than a three-column tier
+        table with a fake "most popular" badge. Features are a plain list, not
+        three columns of categories: what matters here is that nothing is held
+        back, and a wall of ticks says that better than taxonomy.
+
+        The gold-* classes this section used were undefined and rendered as
+        nothing, which is why the old feature headings had no colour at all.
+      */}
+      <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
+        <div className="max-w-xl mx-auto px-5 sm:px-8">
+          <div className="text-center mb-10 sm:mb-12">
+            <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
+              Pricing
+            </p>
+            <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
+              One plan. Everything in it.
+            </h2>
+            <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-sm mx-auto text-balance">
               {launched
-                ? 'Everything included in one plan \u2014 no tiers, no add-ons.'
+                ? 'No tiers, no add-ons, no trade limits.'
                 : 'Join the waitlist before launch and lock in founding member pricing.'}
             </p>
           </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="max-w-3xl mx-auto"
-          >
-            <div className="p-6 md:p-8 lg:p-10 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-gold-400/50 transition-all">
-              {/*
-                The public price has to change at launch. $14.99 is founder
-                pricing - only for people already on the waitlist, and only
-                until Tuesday - so advertising it to every visitor after
-                launch promises a price checkout will not honour, and they
-                would discover that at the card form. Founders still see
-                their real price on the paywall, where eligibility is known.
-              */}
-              <div className="text-center mb-10 md:mb-12">
-                {/*
-                  Pre-launch the badge earns its place by saying something the
-                  heading doesn't - that this is founder pricing. After launch
-                  there is no second thing to say, and repeating "TradeX Pro"
-                  directly above the heading that already says it just adds
-                  noise, so it comes off entirely.
-                */}
-                {!launched && (
-                  <div className="inline-block px-4 py-1.5 rounded-full text-sm font-medium bg-white/10 text-white border border-white/20 mb-4">
-                    Founding Member Pricing
-                  </div>
-                )}
-                <h3 className="text-2xl md:text-3xl font-bold mb-2">TradeX Pro</h3>
-                <div className="text-4xl md:text-5xl font-bold mb-2">
-                  {!launched && (
-                    <span className="text-2xl md:text-3xl text-gray-500 line-through mr-3">$24.99</span>
-                  )}
-                  <span className="bg-gradient-to-b from-white to-white/70 bg-clip-text text-transparent">
-                    {launched ? '$24.99' : '$14.99'}
-                  </span>
-                  <span className="text-lg md:text-xl font-normal text-gray-400">/month</span>
-                </div>
-                <p className="text-sm md:text-base text-gray-400">
-                  {launched
-                    ? 'Cancel anytime'
-                    : 'Locked in forever • Cancel anytime'}
+          <div className="rounded-2xl border border-white/10 bg-brand-surface p-6 sm:p-8">
+            <div className="text-center pb-7 mb-7 border-b border-white/[0.07]">
+              {!launched && (
+                <p className="text-[11px] uppercase tracking-[0.14em] text-gray-400 mb-3">
+                  Founding member pricing
                 </p>
-              </div>
+              )}
+              <p className="flex items-baseline justify-center gap-1.5">
+                {!launched && (
+                  <span className="text-xl text-gray-600 line-through mr-1 tabular-nums">$24.99</span>
+                )}
+                <span className="text-[44px] sm:text-5xl font-semibold text-white tracking-[-0.03em] tabular-nums">
+                  {launched ? '$24.99' : '$14.99'}
+                </span>
+                <span className="text-[15px] text-gray-500">/month</span>
+              </p>
+              <p className="mt-2 text-[12.5px] text-gray-500">
+                {launched ? '14-day money back guarantee \u00b7 Cancel anytime' : 'Locked in forever \u00b7 Cancel anytime'}
+              </p>
+            </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8 mb-10 md:mb-12">
-                {proFeatures.map((category, index) => (
-                  <div key={index}>
-                    <h4 className="text-gold-400 font-medium mb-4">{category.category}</h4>
-                    <ul className="space-y-3">
-                      {category.features.map((feature, i) => (
-                        <li key={i} className="flex items-center gap-3 text-sm">
-                          <CheckCircle2 className="w-4 h-4 text-gold-400 flex-shrink-0" />
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
+            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-2.5 mb-7">
+              {[
+                'Voice journaling',
+                'Nova AI analysis',
+                'Psychology scoring',
+                'Unlimited trades',
+                'Unlimited accounts',
+                'CSV import',
+                'Performance analytics',
+                'Trading rules & confluences',
+              ].map((feature) => (
+                <li key={feature} className="flex items-center gap-2.5 text-[13.5px] text-gray-300">
+                  <Check className="w-3.5 h-3.5 flex-shrink-0 text-gray-500" strokeWidth={3} />
+                  {feature}
+                </li>
+              ))}
+            </ul>
 
+            {launched ? (
+              <Link
+                to="/auth?mode=signup"
+                className="w-full inline-flex items-center justify-center gap-2 px-7 py-3.5
+                  rounded-full bg-white text-black text-[14px] font-medium hover:bg-gray-200 transition-colors"
+              >
+                Start journaling
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            ) : (
               <SignupOrWaitlist
                 preLaunchFootnote={
-                  <p className="text-center text-sm text-gray-400 mt-4">
-                    Join now to lock in $14.99/mo — this price ends at launch
+                  <p className="text-center text-[12.5px] text-gray-500 mt-4">
+                    Join now to lock in $14.99/mo &mdash; this price ends at launch
                   </p>
                 }
               />
-            </div>
-          </motion.div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* FAQ Section */}
-      <div className="py-16 sm:py-24 lg:py-32 relative overflow-hidden">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="text-center mb-10 sm:mb-16">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4 px-4">Common Questions</h2>
-            <p className="text-base sm:text-lg md:text-xl text-gray-400 px-4">Everything you need to know</p>
+      {/*
+        FAQ.
+
+        Only the questions that stop a card coming out. A FAQ that explains
+        features is a second feature list; this one answers the four things a
+        sceptical trader actually thinks, in their words, and the security one
+        sits first because it is the one that stops broker connections.
+
+        Plain <details> rather than state-driven accordions: it works without
+        JavaScript, it is keyboard accessible for free, and the answer is in
+        the DOM for search engines whether or not anyone opens it.
+      */}
+      <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
+        <div className="max-w-2xl mx-auto px-5 sm:px-8">
+          <div className="text-center mb-10 sm:mb-12">
+            <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
+              Before you ask
+            </p>
+            <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
+              The honest answers
+            </h2>
           </div>
 
-          <div className="space-y-4">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="p-6 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-white/20 transition-colors"
-            >
-              <h3 className="text-lg font-medium mb-2">What makes TradeX different from other trading journals?</h3>
-              <p className="text-sm text-gray-400">
-                Unlike traditional trading journals, TradeX combines advanced journaling capabilities with NOVA, our AI trading assistant. NOVA analyzes your trading patterns, psychology, and behavior to provide personalized insights that help you develop a winning edge.
-              </p>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="p-6 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-white/20 transition-colors"
-            >
-              <h3 className="text-lg font-medium mb-2">How does NOVA AI help improve my trading?</h3>
-              <p className="text-sm text-gray-400">
-                NOVA analyzes your trading data to identify patterns in your behavior, psychology, and market conditions. It helps you understand when you're most profitable, detects emotional trading patterns, and provides actionable insights to improve your strategy.
-              </p>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="p-6 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-white/20 transition-colors"
-            >
-              <h3 className="text-lg font-medium mb-2">Can I import my trades automatically?</h3>
-              <p className="text-sm text-gray-400">
-                Currently, trades can be manually entered directly into the platform. We're working on AutoSync, an automatic trade importing feature that will connect with major brokers. This exciting update is coming soon!
-              </p>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="p-6 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-white/20 transition-colors"
-            >
-              <h3 className="text-lg font-medium mb-2">Is my trading data secure?</h3>
-              <p className="text-sm text-gray-400">
-                Absolutely. We use bank-level encryption to protect your data, and we never share your information with third parties. Your trading data is stored securely and is only used to provide you with insights and analysis through NOVA.
-              </p>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="p-6 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-white/20 transition-colors"
-            >
-              <h3 className="text-lg font-medium mb-2">What markets does TradeX support?</h3>
-              <p className="text-sm text-gray-400">
-                TradeX supports all major markets including stocks, options, futures, forex, and crypto. You can track trades across multiple markets and accounts in one place, with specialized analysis for each market type.
-              </p>
-            </motion.div>
+          <div className="flex flex-col gap-2.5">
+            {[
+              {
+                q: 'Is connecting my broker safe?',
+                a: 'Read-only. TradeX can see your trade history and nothing else \u2014 it cannot place, close or modify a trade, and it never has access to your money. You can disconnect in one click.',
+              },
+              {
+                q: 'How is this different from a spreadsheet?',
+                a: 'You stop typing. You talk through the trade and TradeX writes the entry, then reads every entry together and tells you what you keep doing \u2014 which a spreadsheet has never once done for anybody.',
+              },
+              {
+                q: 'I have tried journals before and quit. Why is this different?',
+                a: 'Because the quitting is the problem we built around. Journals do not fail on features, they fail at 4pm when typing up a trade is the last thing you want to do. Thirty seconds of talking is a habit people keep.',
+              },
+              {
+                q: 'What if it is not for me?',
+                a: '14-day money back guarantee, no questions asked. Cancel any time from Settings in two clicks \u2014 no email, no retention call.',
+              },
+            ].map((item) => (
+              <details
+                key={item.q}
+                className="group rounded-xl border border-white/[0.07] bg-brand-surface
+                  open:border-white/15 transition-colors"
+              >
+                <summary
+                  className="cursor-pointer list-none px-5 py-4 flex items-center justify-between gap-4
+                    text-[14.5px] sm:text-[15px] font-medium text-white
+                    focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/40 rounded-xl"
+                >
+                  {item.q}
+                  <Plus
+                    className="w-4 h-4 flex-shrink-0 text-gray-500 transition-transform duration-200
+                      group-open:rotate-45"
+                    strokeWidth={2}
+                  />
+                </summary>
+                <p className="px-5 pb-5 -mt-1 text-[13.5px] sm:text-sm text-gray-400 leading-relaxed">
+                  {item.a}
+                </p>
+              </details>
+            ))}
           </div>
         </div>
       </div>
@@ -886,32 +885,55 @@ export default function Sales() {
         </div>
       </div>
 
-      {/* CTA */}
-      <div className="py-16 sm:py-24 lg:py-32 relative overflow-hidden">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
-            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6 text-white px-4 leading-tight">
-              Ready to Transform Your Trading?
-            </h2>
-            <p className="text-base sm:text-lg md:text-xl text-gray-400 mb-8 sm:mb-10 max-w-2xl mx-auto px-4">
-              Join traders who have transformed their results with AI-powered insights from NOVA.
-            </p>
-              <div className="max-w-md mx-auto px-4">
-                <SignupOrWaitlist
-                  preLaunchFootnote={
-                    <p className="text-xs sm:text-sm text-gray-500 mt-4 sm:mt-6">
-                      Join before launch to lock in{' '}
-                      <span className="line-through">$24.99</span>{' '}
-                      <span className="text-blue-400 font-semibold">$14.99/mo</span>, forever.
-                    </p>
-                  }
-                />
-              </div>
-          </motion.div>
+      {/*
+        FINAL CTA.
+
+        Same words as the hero button, deliberately. A page that says "Start
+        journaling" at the top and "Transform Your Trading" at the bottom is
+        offering two different things; repeating one verb makes it one
+        decision the reader has now seen the case for.
+
+        The old copy - "Join traders who have transformed their results" -
+        claimed an outcome for people we cannot point to. The guarantee does
+        the same job and is checkable.
+      */}
+      <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
+        <div className="max-w-xl mx-auto px-5 sm:px-8 text-center">
+          <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
+            Stop guessing why you lose
+          </h2>
+          <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-sm mx-auto text-balance">
+            Thirty seconds a trade. The pattern you cannot see from inside it.
+          </p>
+
+          {launched ? (
+            <div className="mt-8 flex flex-col items-center gap-2.5">
+              <Link
+                to="/auth?mode=signup"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2
+                  px-7 py-3 rounded-full bg-white text-black text-[14px] font-medium
+                  hover:bg-gray-200 transition-colors"
+              >
+                Start journaling
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+              <p className="text-[11.5px] text-gray-500">
+                14-day money back guarantee &middot; Cancel anytime
+              </p>
+            </div>
+          ) : (
+            <div className="mt-8 max-w-md mx-auto">
+              <SignupOrWaitlist
+                preLaunchFootnote={
+                  <p className="text-[11.5px] text-gray-500 mt-4">
+                    Join before launch to lock in{' '}
+                    <span className="line-through">$24.99</span>{' '}
+                    <span className="text-gray-300">$14.99/mo</span>, forever.
+                  </p>
+                }
+              />
+            </div>
+          )}
         </div>
       </div>
 
