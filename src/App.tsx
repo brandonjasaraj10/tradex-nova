@@ -40,9 +40,19 @@ const Checklists = lazyWithReload('Checklists', () => import('./pages/Checklists
 const TermsOfService = lazyWithReload('TermsOfService', () => import('./pages/TermsOfService'));
 const PrivacyPolicy = lazyWithReload('PrivacyPolicy', () => import('./pages/PrivacyPolicy'));
 const RiskDisclaimer = lazyWithReload('RiskDisclaimer', () => import('./pages/RiskDisclaimer'));
+const Pricing = lazyWithReload('Pricing', () => import('./pages/Pricing'));
+const Features = lazyWithReload('Features', () => import('./pages/Features'));
+const Security = lazyWithReload('Security', () => import('./pages/Security'));
+const Nova = lazyWithReload('Nova', () => import('./pages/Nova'));
+const PropFirmTraders = lazyWithReload('PropFirmTraders', () => import('./pages/PropFirmTraders'));
+const About = lazyWithReload('About', () => import('./pages/About'));
+const FAQ = lazyWithReload('FAQ', () => import('./pages/FAQ'));
 const NotFound = lazyWithReload('NotFound', () => import('./pages/NotFound'));
 
-const PUBLIC_PATHS = ['/', '/auth', '/sales', '/terms', '/privacy', '/risk-disclaimer', '/payment', '/affiliates'];
+const PUBLIC_PATHS = [
+  '/', '/auth', '/sales', '/terms', '/privacy', '/risk-disclaimer', '/payment', '/affiliates',
+  '/pricing', '/features', '/security', '/nova', '/for-prop-firm-traders', '/about', '/faq',
+];
 
 function PublicLayout() {
   return (
@@ -58,6 +68,13 @@ function PublicLayout() {
             <Route path="/terms" element={<TermsOfService />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/risk-disclaimer" element={<RiskDisclaimer />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/features" element={<Features />} />
+            <Route path="/security" element={<Security />} />
+            <Route path="/nova" element={<Nova />} />
+            <Route path="/for-prop-firm-traders" element={<PropFirmTraders />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/faq" element={<FAQ />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
