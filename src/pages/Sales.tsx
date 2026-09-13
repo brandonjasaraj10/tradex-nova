@@ -241,7 +241,7 @@ export default function Sales() {
           min-h-[calc(88svh-3.5rem)] sm:min-h-[calc(84svh-4rem)]
           flex flex-col justify-center text-center pb-6 pt-10">
 
-          <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
+          <p className="text-[9.5px] sm:text-[10px] tracking-[0.16em] uppercase text-gray-600 mb-4">
             Trading journal &middot; Built around psychology
           </p>
 
