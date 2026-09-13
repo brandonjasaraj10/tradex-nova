@@ -219,13 +219,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       })();
     });
 
-    // Refresh session every 30 minutes to prevent JWT expiration
+    /*
+      Refresh every 30 minutes so the access token never expires mid-session.
+
+      The important part is what happens when the refresh FAILS. This used to
+      catch the error, log it, and carry on - which left a session in
+      localStorage that the server had already forgotten. getSession() reads
+      that store without asking anybody, so the app went on believing it was
+      signed in and handing a dead token to edge functions, which rejected it.
+
+      Seen in production on 2026-09-13: signing in as a second account in the
+      same browser retired the first session, and "Organize with Nova"
+      answered "Nova could not organize that note" for half an hour. The auth
+      log told the real story - /token returning refresh_token_not_found, then
+      /user returning session_not_found - while the app showed no sign of
+      being logged out at all.
+
+      A refresh token the server does not recognise means the session is over.
+      The only honest response is to end it here too, which puts the user on
+      the sign-in screen instead of leaving them in a broken one.
+    */
+    const SESSION_IS_GONE = ['refresh_token_not_found', 'session_not_found', 'refresh_token_already_used'];
+
     const refreshInterval = setInterval(async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          await supabase.auth.refreshSession();
+        if (!session) return;
+
+        const { error } = await supabase.auth.refreshSession();
+        if (!error) return;
+
+        const code = (error as { code?: string }).code ?? '';
+        if (SESSION_IS_GONE.includes(code) || error.status === 400 || error.status === 403) {
+          console.warn('Session is no longer valid on the server; signing out.', code || error.message);
+          await supabase.auth.signOut();
+          return;
         }
+        // Anything else - a network blip, the auth service having a moment -
+        // is not evidence the session is dead, so leave it alone and try
+        // again on the next tick.
+        console.error('Could not refresh the session:', error.message);
       } catch (error) {
         console.error('Error refreshing session:', error);
       }

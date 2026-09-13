@@ -1014,7 +1014,15 @@ export default function Journal() {
       }));
     } catch (error) {
       console.error('Error organizing notes:', error);
-      showToast('Nova could not organize that note. Please try again.', 'error');
+      /*
+        Pass the real reason through when there is one. A dead session is the
+        common failure here and it needs a different action from the user -
+        sign in again, not press the button again.
+      */
+      const message = error instanceof Error && error.message.includes('session has expired')
+        ? error.message
+        : 'Nova could not organize that note. Please try again.';
+      showToast(message, 'error');
     } finally {
       setIsAutoFilling(false);
     }

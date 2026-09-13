@@ -829,6 +829,26 @@ CRITICAL RULES:
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Voice processing API error:', response.status, response.statusText, errorText);
+
+      /*
+        A 401 here is never Nova's fault, and saying "Nova could not organize
+        that note" sends the user looking in the wrong place.
+
+        It means the token we just read out of localStorage is one the server
+        no longer recognises - the session was retired, most often by signing
+        in as somebody else in the same browser. getSession() hands that token
+        over without asking anybody, so the app has no idea until something
+        rejects it.
+
+        Ending the session here puts the user on the sign-in screen, which is
+        the actual fix, rather than leaving them to retry a button that cannot
+        work until they do.
+      */
+      if (response.status === 401) {
+        await supabase.auth.signOut().catch(() => {});
+        throw new Error('Your session has expired. Please sign in again.');
+      }
+
       throw new Error(`Failed to process voice input: ${response.status} - ${errorText}`);
     }
 
