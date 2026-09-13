@@ -21,7 +21,7 @@ interface WordmarkProps {
   className?: string;
 }
 
-export function XMark({ className = 'h-[0.88em] w-[0.88em]' }: { className?: string }) {
+export function XMark({ className = 'h-[0.9em] w-[0.9em]' }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 100 100"
@@ -31,27 +31,36 @@ export function XMark({ className = 'h-[0.88em] w-[0.88em]' }: { className?: str
       focusable="false"
     >
       {/*
-        Four arms, drawn as solid wedges rather than two crossed bars.
+        Traced from public/tradex_logo.png rather than guessed at - the first
+        two attempts were a crossed pair with a diamond bite and then four
+        loose wedges, and both read as an ordinary X because they were
+        symmetrical.
 
-        The gap is not a centred diamond - that was the first attempt and it
-        read as an asterisk. In the real mark the break runs as a diagonal
-        slice, so the upper-left arm sits detached from the rest while the
-        other three meet. Each arm is a quadrilateral with a squared outer end
-        and a mitred inner one, which is what gives it the angular, cut look
-        rather than the soft feel of a stroked X.
+        The real mark is not. Decoding the PNG's alpha channel and printing it
+        as a grid shows one diagonal running unbroken corner to corner, while
+        the other is cut clean through just ABOVE centre - so the top-left arm
+        hangs separate and the remaining three meet. That asymmetry is the
+        whole character of it.
       */}
+      <defs>
+        <mask id="tradex-x-break">
+          <rect width="100" height="100" fill="#fff" />
+          {/*
+            A band lying across the NW-SE stroke, perpendicular to it, sitting
+            above centre where the PNG shows the break.
+          */}
+          <rect x="18" y="36" width="64" height="13" fill="#000" transform="rotate(-45 50 50)" />
+        </mask>
+      </defs>
 
-      {/* upper left - the detached one */}
-      <path d="M8 10 L30 10 L58 44 L47 57 Z" />
-
-      {/* upper right */}
-      <path d="M70 10 L92 10 L53 57 L42 44 Z" />
-
-      {/* lower left */}
-      <path d="M30 90 L8 90 L47 43 L58 56 Z" />
-
-      {/* lower right */}
-      <path d="M92 90 L70 90 L42 56 L53 43 Z" />
+      {/* NW to SE - the broken one */}
+      <rect
+        x="40.5" y="3" width="19" height="94" rx="1.5"
+        transform="rotate(45 50 50)"
+        mask="url(#tradex-x-break)"
+      />
+      {/* NE to SW - continuous */}
+      <rect x="40.5" y="3" width="19" height="94" rx="1.5" transform="rotate(-45 50 50)" />
     </svg>
   );
 }
