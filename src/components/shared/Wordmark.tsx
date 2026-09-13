@@ -21,7 +21,7 @@ interface WordmarkProps {
   className?: string;
 }
 
-export function XMark({ className = 'h-[0.9em] w-[0.9em]' }: { className?: string }) {
+export function XMark({ className = 'h-[0.92em] w-[0.92em]' }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 100 100"
@@ -31,36 +31,33 @@ export function XMark({ className = 'h-[0.9em] w-[0.9em]' }: { className?: strin
       focusable="false"
     >
       {/*
-        Traced from public/tradex_logo.png rather than guessed at - the first
-        two attempts were a crossed pair with a diamond bite and then four
-        loose wedges, and both read as an ordinary X because they were
-        symmetrical.
+        Four wedges, traced from public/tradex_logo.png.
 
-        The real mark is not. Decoding the PNG's alpha channel and printing it
-        as a grid shows one diagonal running unbroken corner to corner, while
-        the other is cut clean through just ABOVE centre - so the top-left arm
-        hangs separate and the remaining three meet. That asymmetry is the
-        whole character of it.
+        Three earlier attempts all came back as "it just looks like a regular
+        X", and all three were wrong the same way: they drew crossed bars and
+        took a bite out of the middle. The mark is not crossed bars at all.
+
+        Decoding the PNG's alpha channel and measuring each row's filled spans
+        gives the real thing: four separate wedges, and BOTH diagonals broken.
+        The two long arms - top-right and bottom-left - run almost to the
+        centre and stop against a narrow vertical sliver of space. The two
+        short arms - top-left and bottom-right - are cut off well before it,
+        with mitred ends. Nothing touches anything.
+
+        Coordinates below are that measurement, in the mark's own 0-100 box.
       */}
-      <defs>
-        <mask id="tradex-x-break">
-          <rect width="100" height="100" fill="#fff" />
-          {/*
-            A band lying across the NW-SE stroke, perpendicular to it, sitting
-            above centre where the PNG shows the break.
-          */}
-          <rect x="18" y="36" width="64" height="13" fill="#000" transform="rotate(-45 50 50)" />
-        </mask>
-      </defs>
 
-      {/* NW to SE - the broken one */}
-      <rect
-        x="40.5" y="3" width="19" height="94" rx="1.5"
-        transform="rotate(45 50 50)"
-        mask="url(#tradex-x-break)"
-      />
-      {/* NE to SW - continuous */}
-      <rect x="40.5" y="3" width="19" height="94" rx="1.5" transform="rotate(-45 50 50)" />
+      {/* top left - short, mitred end */}
+      <path d="M0 0 L26 0 L48 30 L37 41 Z" />
+
+      {/* top right - long, squared inner edge against the centre gap */}
+      <path d="M73 0 L98 0 L51 55 L51 29 Z" />
+
+      {/* bottom left - long, mirrors the top right */}
+      <path d="M48 45 L49 72 L26 100 L0 100 Z" />
+
+      {/* bottom right - short, mirrors the top left */}
+      <path d="M63 59 L100 100 L74 100 L52 70 Z" />
     </svg>
   );
 }
