@@ -1,7 +1,6 @@
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { CheckCircle2, ArrowRight, Brain, Target, LineChart, Zap, AlertTriangle, ChevronRight, School as Psychology, TrendingUp, Eye, Clock, BarChart2, Sparkles, Calendar, BookOpen, ChevronLeft, Plus, Smile, Meh, Frown, DollarSign, Award, MessageSquare, Check } from 'lucide-react';
-import Button from '../components/shared/Button';
+import { ArrowRight, Plus, Check } from 'lucide-react';
 import Footer from '../components/layout/Footer';
 import TranscriptToEntry from '../components/sales/TranscriptToEntry';
 import ProductTabs from '../components/sales/ProductTabs';
@@ -9,170 +8,40 @@ import Wordmark from '../components/shared/Wordmark';
 import NovaAnswer from '../components/sales/NovaAnswer';
 import SignupOrWaitlist from '../components/shared/SignupOrWaitlist';
 import { useHasLaunched } from '../lib/launch';
-import LaunchCountdown from '../components/shared/LaunchCountdown';
-import { useState } from 'react';
-
-const features = [
-  {
-    icon: BookOpen,
-    title: 'Advanced Trading Journal',
-    description: 'Track every trade with detailed insights, screenshots, and custom tags. Your complete trading history at your fingertips.',
-    metrics: [
-      { label: 'Data Points', value: '50+' },
-      { label: 'Organization', value: '100%' }
-    ]
-  },
-  {
-    icon: Calendar,
-    title: 'Visual Trade Calendar',
-    description: 'See your trading activity and performance mapped across time. Identify your most profitable days and patterns.',
-    metrics: [
-      { label: 'View Options', value: '10+' },
-      { label: 'Time Saved', value: '75%' }
-    ]
-  },
-  {
-    icon: Psychology,
-    title: 'Trading Psychology Analysis',
-    description: 'NOVA analyzes your trading patterns to identify emotional biases and psychological triggers that affect your performance.',
-    metrics: [
-      { label: 'Patterns', value: '45+' },
-      { label: 'Accuracy', value: '94%' }
-    ]
-  },
-  {
-    icon: Eye,
-    title: 'Pattern Recognition',
-    description: 'Identify your most profitable setups and understand the market conditions where you perform best.',
-    metrics: [
-      { label: 'Success Rate', value: '87%' },
-      { label: 'Data Points', value: '250K+' }
-    ]
-  },
-  {
-    icon: Target,
-    title: 'Risk Profile Analysis',
-    description: 'Understand your risk tolerance patterns and receive personalized position sizing recommendations.',
-    metrics: [
-      { label: 'Risk Control', value: '89%' },
-      { label: 'Drawdown Cut', value: '45%' }
-    ]
-  },
-  {
-    icon: Brain,
-    title: 'AI Trading Assistant',
-    description: 'NOVA evolves with you, continuously learning from your trades to provide more personalized insights.',
-    metrics: [
-      { label: 'Learning Rate', value: '24hrs' },
-      { label: 'Personal Fit', value: '96%' }
-    ]
-  }
-];
-
-const insights = [
-  {
-    type: 'psychology',
-    title: 'Emotional Pattern Detected',
-    description: 'You tend to overtrade after three consecutive winning trades, reducing your win rate by 35% in these scenarios.',
-    recommendation: 'Take a 15-minute break after 3 consecutive wins to reset emotional state.',
-    metrics: [
-      { label: 'Pattern Confidence', value: '92%' },
-      { label: 'Impact', value: '-35% WR' },
-      { label: 'Occurrence', value: '24 times' }
-    ],
-    icon: Psychology,
-    color: 'primary',
-    badge: 'Critical Pattern'
-  },
-  {
-    type: 'performance',
-    title: 'Peak Performance Window',
-    description: 'Your win rate increases by 45% when trading during the first 2 hours of market open with smaller position sizes.',
-    recommendation: 'Focus 70% of your daily trades during this high-probability window.',
-    metrics: [
-      { label: 'Win Rate', value: '78%' },
-      { label: 'Avg Return', value: '2.1R' },
-      { label: 'Time Window', value: '9:30-11:30' }
-    ],
-    icon: Clock,
-    color: 'primary',
-    badge: 'Sweet Spot'
-  },
-  {
-    type: 'risk',
-    title: 'Risk Management Insight',
-    description: 'Detected a pattern of increasing position sizes after winning trades, leading to larger drawdowns.',
-    recommendation: 'Maintain consistent 1-2% risk per trade regardless of recent performance.',
-    metrics: [
-      { label: 'Risk Increase', value: '+85%' },
-      { label: 'Drawdown', value: '+28%' },
-      { label: 'Frequency', value: 'Weekly' }
-    ],
-    icon: AlertTriangle,
-    color: 'primary',
-    badge: 'Action Required'
-  },
-  {
-    type: 'behavior',
-    title: 'Trading Discipline Score',
-    description: 'Your adherence to trading rules has improved by 68% over the past 30 days, correlating with better overall performance.',
-    recommendation: 'Continue using pre-trade checklists to maintain this positive momentum.',
-    metrics: [
-      { label: 'Compliance', value: '85%' },
-      { label: 'Improvement', value: '+68%' },
-      { label: 'Rule Breaks', value: '3/month' }
-    ],
-    icon: Award,
-    color: 'primary',
-    badge: 'Trending Up'
-  }
-];
-
-const proFeatures = [
-  {
-    category: 'Trading Journal',
-    features: [
-      'Unlimited Trade Logging',
-      'Custom Tags & Categories',
-      'Screenshot Attachments',
-      'Multi-Timeframe Views'
-    ]
-  },
-  {
-    category: 'Performance Analytics',
-    features: [
-      'Advanced Metrics',
-      'Visual Trade Calendar',
-      'Risk Analysis',
-      'Custom Reports'
-    ]
-  },
-  {
-    category: 'NOVA AI Assistant',
-    features: [
-      'Trading Psychology Analysis',
-      'Pattern Recognition',
-      'Personalized Insights',
-      'Behavioral Coaching'
-    ]
-  }
-];
+import { useState, useEffect, useRef } from 'react';
 
 export default function Sales() {
   const launched = useHasLaunched();
-  const [showPsychologyCalendar, setShowPsychologyCalendar] = useState(false);
-  const [journalView, setJournalView] = useState<'entry' | 'psychology'>('entry');
-  const { scrollYProgress } = useScroll();
-  const y = useTransform(scrollYProgress, [0, 1], [0, -50]);
 
-  const fadeInUp = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.5 }
-    }
-  };
+  /*
+    The header CTA only exists below the fold.
+
+    Two findings pull against each other. Removing navigation from a landing
+    page lifts conversions 15-25% (Unbounce) - every link up there is an exit
+    taken before a word has been read - so this header stays a wordmark and a
+    quiet sign-in link, and never grows into a Features/Pricing/Security nav.
+    But on a page this long a sticky CTA earns its place: after five screens
+    of scrolling the primary action should still be one tap away.
+
+    Both hold if the button is absent on the first screen, where the hero's
+    own CTA is already the loudest thing on the page and a second copy of it
+    in the header is just clutter, and present from the moment that one
+    leaves. A sentinel sits directly under the hero CTA; when it goes, the
+    header one arrives.
+  */
+  const heroCtaRef = useRef<HTMLDivElement | null>(null);
+  const [showHeaderCta, setShowHeaderCta] = useState(false);
+
+  useEffect(() => {
+    const el = heroCtaRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setShowHeaderCta(!entry.isIntersecting && entry.boundingClientRect.top < 0),
+      { threshold: 0 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <div className="min-h-screen bg-black">
@@ -198,12 +67,40 @@ export default function Sales() {
             to reach an account they already pay for - and the header's
             right-hand side, where everyone looks, was empty.
           */}
-          <Link
-            to="/auth?mode=signin"
-            className="text-sm font-medium text-gray-300 hover:text-white transition-colors"
-          >
-            Sign In
-          </Link>
+          <div className="flex items-center">
+            <Link
+              to="/auth?mode=signin"
+              className="text-sm font-medium text-gray-400 hover:text-white transition-colors"
+            >
+              Sign in
+            </Link>
+            {/*
+              Deliberately NOT a button. Someone signing in is already sold;
+              giving them a filled button puts them in a fight with the trial
+              CTA next to it, and the two cancel out. Quiet grey text, the
+              standard shape, is right.
+            */}
+            <Link
+              to="/auth?mode=signup"
+              aria-hidden={!showHeaderCta}
+              tabIndex={showHeaderCta ? 0 : -1}
+              /*
+                Collapses to zero width when hidden rather than sitting there
+                invisible. Reserving the space left "Sign in" stranded in the
+                middle of the header on the first screen - the one screen that
+                matters most - to avoid a shift that happens mid-scroll where
+                nobody is looking at the header anyway.
+              */
+              className={`inline-flex items-center justify-center whitespace-nowrap overflow-hidden
+                py-1.5 rounded-full bg-white text-black text-[13px] font-medium
+                hover:bg-gray-200 transition-all duration-300
+                ${showHeaderCta
+                  ? 'opacity-100 max-w-[180px] px-4 ml-4 sm:ml-5 pointer-events-auto'
+                  : 'opacity-0 max-w-0 px-0 ml-0 pointer-events-none'}`}
+            >
+              Start journaling
+            </Link>
+          </div>
         </div>
       </motion.div>
 
@@ -275,6 +172,8 @@ export default function Sales() {
             <p className="text-[11.5px] text-gray-500">
               14-day money back guarantee &middot; Cancel anytime
             </p>
+            {/* Watched by the header - see showHeaderCta above. */}
+            <div ref={heroCtaRef} aria-hidden="true" className="h-px w-full" />
           </div>
 
           {/*
