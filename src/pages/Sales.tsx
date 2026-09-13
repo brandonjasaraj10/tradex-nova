@@ -535,27 +535,27 @@ export default function Sales() {
               Your P&amp;L is the symptom
             </h2>
             <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-sm sm:max-w-md mx-auto text-balance">
-              TradeX scores how you felt going in, then matches it against what
-              actually happened. That is where the money is.
+              Rate your head before the trade. TradeX matches it against what
+              actually happened, and turns it into one score you can watch move.
             </p>
           </div>
 
           <div className="rounded-2xl border border-white/[0.07] bg-brand-surface p-5 sm:p-8">
-            <div className="grid grid-cols-3 gap-3 sm:gap-5 mb-6">
+            {/*
+              What you log, per trade. Three sliders before you enter, which is
+              the whole ask - the rest is TradeX's problem.
+            */}
+            <p className="text-[10px] uppercase tracking-[0.12em] text-gray-600 mb-3">Before the trade</p>
+            <div className="grid grid-cols-3 gap-3 sm:gap-5">
               {[
-                { label: 'Focus', value: 7, of: 10 },
-                { label: 'Confidence', value: 4, of: 10 },
-                { label: 'Discipline', value: 6, of: 10 },
+                { label: 'Focus', value: 7 },
+                { label: 'Confidence', value: 4 },
+                { label: 'Discipline', value: 6 },
               ].map((m) => (
                 <div key={m.label} className="rounded-xl border border-white/[0.07] bg-brand-elevated p-3 sm:p-4">
-                  {/*
-                    Tracking and size drop on mobile because "CONFIDENCE" at
-                    10px/0.12em is wider than a third of a 375px screen and was
-                    running into the card's right border.
-                  */}
                   <p className="text-[9px] sm:text-[10px] uppercase tracking-[0.04em] sm:tracking-[0.12em] text-gray-600 whitespace-nowrap">{m.label}</p>
                   <p className="mt-1.5 text-xl sm:text-2xl font-semibold text-white tabular-nums">
-                    {m.value}<span className="text-gray-600 text-sm">/{m.of}</span>
+                    {m.value}<span className="text-gray-600 text-sm">/10</span>
                   </p>
                   <div className="mt-2.5 h-1 rounded-full bg-white/[0.07] overflow-hidden">
                     <div className="h-full rounded-full bg-brand-blue-light/70" style={{ width: `${m.value * 10}%` }} />
@@ -563,7 +563,47 @@ export default function Sales() {
                 </div>
               ))}
             </div>
-            <div className="rounded-xl border border-white/[0.07] bg-brand-elevated p-4 sm:p-5">
+
+            {/*
+              And what it turns into. The NOVA Score is the app's own roll-up -
+              0 to 100, banded Developing through Elite, built from
+              profitability, consistency, risk management, discipline and
+              execution. It belongs here because it is the number that moves
+              when your head does, and it was the one real feature the page
+              never mentioned.
+            */}
+            <div className="mt-4 rounded-xl border border-brand-blue-light/20 bg-brand-blue/[0.06] p-4 sm:p-5">
+              <div className="flex items-center justify-between gap-4 mb-4">
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.12em] text-gray-500">NOVA Score</p>
+                  <p className="mt-1 flex items-baseline gap-2">
+                    <span className="text-3xl sm:text-4xl font-semibold text-white tabular-nums">68</span>
+                    <span className="text-[13px] text-brand-blue-light">Advanced</span>
+                  </p>
+                </div>
+                <p className="text-[11px] text-gray-500 text-right max-w-[9rem] leading-relaxed">
+                  One number for whether you are actually improving
+                </p>
+              </div>
+              <div className="flex flex-col gap-2">
+                {[
+                  ['Discipline', 74],
+                  ['Risk Management', 71],
+                  ['Consistency', 62],
+                  ['Execution', 58],
+                ].map(([label, value]) => (
+                  <div key={label as string} className="flex items-center gap-3">
+                    <span className="w-[104px] sm:w-[124px] flex-shrink-0 text-[11.5px] text-gray-500">{label}</span>
+                    <span className="flex-1 h-1 rounded-full bg-white/[0.07] overflow-hidden">
+                      <span className="block h-full rounded-full bg-brand-blue-light/60" style={{ width: `${value}%` }} />
+                    </span>
+                    <span className="w-7 text-right text-[11.5px] text-gray-400 tabular-nums">{value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-xl border border-white/[0.07] bg-brand-elevated p-4 sm:p-5">
               <p className="text-[10px] uppercase tracking-[0.12em] text-gray-600 mb-2">What it found</p>
               <p className="text-[13.5px] sm:text-[15px] text-gray-300 leading-relaxed">
                 Every trade you rated <span className="text-white">confidence below 5</span> lost money.

@@ -62,7 +62,7 @@ const PANELS: Panel[] = [
   {
     id: 'calendar',
     label: 'Calendar',
-    caption: 'Your month at a glance, coloured by result or by state of mind.',
+    caption: 'Your month in P&L, or the same month scored by how you traded it.',
     body: (
       <div>
         <div className="grid grid-cols-7 gap-1.5">
@@ -92,6 +92,7 @@ const PANELS: Panel[] = [
           <span className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-[2px] bg-gray-600/50" /> Red day
           </span>
+          <span className="ml-auto text-gray-600">Switch to psychology view</span>
         </div>
       </div>
     ),
