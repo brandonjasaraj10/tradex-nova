@@ -49,7 +49,9 @@ const PANELS: Panel[] = [
         </p>
         <div className="flex flex-wrap gap-1.5 pt-1">
           {['Moved stop', 'Revenge entry', 'London'].map((t) => (
-            <span key={t} className="text-[11px] text-gray-400 border border-white/10 rounded-full px-2.5 py-1">
+            /* Blue outline: these are the tags Nova assigns, and the accent
+               is what marks something TradeX worked out rather than recorded. */
+            <span key={t} className="text-[11px] text-brand-blue-light/90 border border-brand-blue-light/30 bg-brand-blue/[0.07] rounded-full px-2.5 py-1">
               {t}
             </span>
           ))}

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Instagram, Lock } from 'lucide-react';
-import Logo from '../shared/Logo';
+import Wordmark from '../shared/Wordmark';
 import EarlyAccessModal from '../shared/EarlyAccessModal';
 import { useHasLaunched } from '../../lib/launch';
 
@@ -20,12 +20,12 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="col-span-1">
-            <Link to="/" className="flex items-center">
-              <Logo className="h-8 w-auto" />
-              <span className="ml-2 text-xl font-bold text-white">TradeX</span>
+            <Link to="/" className="inline-flex items-center">
+              <Wordmark className="text-xl" />
             </Link>
-            <p className="mt-4 text-sm text-gray-400">
-              AI-powered trading journal for the modern trader. Track, analyze, and improve your performance.
+            <p className="mt-4 text-[13px] text-gray-500 max-w-xs leading-relaxed">
+              A trading journal built around psychology. Talk through the trade,
+              and TradeX finds the pattern costing you money.
             </p>
             <div className="mt-6 flex space-x-6">
               <a

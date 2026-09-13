@@ -5,6 +5,8 @@ import Button from '../components/shared/Button';
 import Footer from '../components/layout/Footer';
 import TranscriptToEntry from '../components/sales/TranscriptToEntry';
 import ProductTabs from '../components/sales/ProductTabs';
+import Wordmark from '../components/shared/Wordmark';
+import NovaAnswer from '../components/sales/NovaAnswer';
 import SignupOrWaitlist from '../components/shared/SignupOrWaitlist';
 import { useHasLaunched } from '../lib/launch';
 import LaunchCountdown from '../components/shared/LaunchCountdown';
@@ -183,7 +185,7 @@ export default function Sales() {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h1 className="text-base sm:text-lg font-medium">TradeX</h1>
+            <Wordmark className="text-lg" />
           </div>
           {/*
             The way back in for people who already have an account.
@@ -606,19 +608,7 @@ export default function Sales() {
                 </p>
               </div>
 
-              <div className="flex gap-2.5">
-                <span className="flex-shrink-0 w-7 h-7 rounded-full bg-brand-blue/15 border border-brand-blue-light/30
-                  flex items-center justify-center text-[10px] font-medium text-brand-blue-light">
-                  N
-                </span>
-                <div className="rounded-2xl rounded-tl-sm bg-brand-blue/[0.06] border border-brand-blue-light/20
-                  px-4 py-3 text-[13px] sm:text-sm text-gray-300 leading-relaxed">
-                  You are not. You are losing on the days you rate your focus below 5,
-                  and eleven of those fourteen days were Fridays. Your Friday setups win
-                  at the same rate as the rest of the week &mdash; you just size up on them
-                  after a flat week.
-                </div>
-              </div>
+              <NovaAnswer />
             </div>
 
             <div className="mt-6 pt-5 border-t border-white/[0.06] grid grid-cols-1 sm:grid-cols-3 gap-4">

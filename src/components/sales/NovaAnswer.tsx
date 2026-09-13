@@ -1,0 +1,109 @@
+import { useState, useEffect, useRef } from 'react';
+
+/*
+  Nova's answer arriving, rather than sitting there pre-written.
+
+  The second of two animated things on the page, which is the ceiling the
+  research puts on this: two or three animated areas, no more, or it reads as
+  noise and costs load time. This one earns its place because the point of
+  the section is that Nova had to work something out - watching the answer
+  land says that; a paragraph already on screen does not.
+
+  Same rules as the transcript animation. Resting state is the finished
+  answer, so a link preview and a fast scroller get the substance. It starts
+  when the panel is properly in view, not on mount. And
+  prefers-reduced-motion gets the finished state with no movement at all.
+*/
+
+const ANSWER =
+  'You are not. You are losing on the days you rate your focus below 5, and eleven of those fourteen days were Fridays. Your Friday setups win at the same rate as the rest of the week — you just size up on them after a flat week.';
+
+export default function NovaAnswer() {
+  const prefersReduced =
+    typeof window !== 'undefined' &&
+    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+  const [shown, setShown] = useState(ANSWER.length);
+  const [thinking, setThinking] = useState(false);
+  const hostRef = useRef<HTMLDivElement | null>(null);
+  const played = useRef(false);
+
+  useEffect(() => {
+    if (prefersReduced) return;
+    const host = hostRef.current;
+    if (!host || typeof IntersectionObserver === 'undefined') return;
+
+    let think: ReturnType<typeof setTimeout>;
+    let writing: ReturnType<typeof setInterval>;
+    let loop: ReturnType<typeof setTimeout>;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries[0].isIntersecting || played.current) return;
+        played.current = true;
+        observer.disconnect();
+
+        const run = () => {
+          setShown(0);
+          setThinking(true);
+
+          // A short pause first: she is reading months of entries, and an
+          // instant answer would look like a canned one.
+          think = setTimeout(() => {
+            setThinking(false);
+            let i = 0;
+            writing = setInterval(() => {
+              i += 3;
+              setShown(i);
+              if (i >= ANSWER.length) {
+                clearInterval(writing);
+                loop = setTimeout(run, 6000);
+              }
+            }, 18);
+          }, 900);
+        };
+
+        run();
+      },
+      { threshold: 0.5 },
+    );
+
+    observer.observe(host);
+    return () => {
+      observer.disconnect();
+      clearTimeout(think);
+      clearInterval(writing);
+      clearTimeout(loop);
+    };
+  }, [prefersReduced]);
+
+  return (
+    <div ref={hostRef} className="flex gap-2.5">
+      <span className="flex-shrink-0 w-7 h-7 rounded-full bg-brand-blue/15 border border-brand-blue-light/30
+        flex items-center justify-center text-[10px] font-medium text-brand-blue-light">
+        N
+      </span>
+      {/*
+        min-h reserves the full answer's height so the section below never
+        shifts as the text grows - layout jump is the thing that makes a
+        typing effect feel cheap.
+      */}
+      <div className="rounded-2xl rounded-tl-sm bg-brand-blue/[0.06] border border-brand-blue-light/20
+        px-4 py-3 text-[13px] sm:text-sm text-gray-300 leading-relaxed min-h-[7.5em] sm:min-h-[5.5em]">
+        {thinking ? (
+          <span className="inline-flex gap-1 items-center" aria-label="Nova is thinking">
+            {[0, 1, 2].map((i) => (
+              <span
+                key={i}
+                className="w-1.5 h-1.5 rounded-full bg-brand-blue-light/60 animate-pulse"
+                style={{ animationDelay: `${i * 160}ms` }}
+              />
+            ))}
+          </span>
+        ) : (
+          ANSWER.slice(0, shown)
+        )}
+      </div>
+    </div>
+  );
+}

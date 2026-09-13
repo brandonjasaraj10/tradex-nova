@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from 'react';
 
   Three rules, each learned from getting it wrong.
 
-  It plays when it comes INTO VIEW, not on mount. Playing on mount meant it
+  It loops, and it plays when it comes INTO VIEW rather than on mount. Playing on mount meant it
   had always finished by the time anyone scrolled down to it - reported as
   "I don't see it anymore". The section sits well below the fold; an
   animation nobody is looking at has not run.
@@ -56,6 +56,7 @@ export default function TranscriptToEntry() {
 
     let typing: ReturnType<typeof setInterval>;
     let reveal: ReturnType<typeof setTimeout>;
+    let loop: ReturnType<typeof setTimeout>;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -68,19 +69,37 @@ export default function TranscriptToEntry() {
         played.current = true;
         observer.disconnect();
 
-        let i = 0;
-        setTyped(0);
-        setShowEntry(false);
+        /*
+          Loops, because a single pass is easy to miss entirely - scroll past
+          at the wrong moment and you get a finished panel and no idea it
+          ever did anything. That was the report: "I can't see it anymore."
 
-        typing = setInterval(() => {
-          i += 2;
-          setTyped(i);
-          if (i >= TRANSCRIPT.length) {
-            clearInterval(typing);
-            // A beat, so the cause reads before the effect.
-            reveal = setTimeout(() => setShowEntry(true), 420);
-          }
-        }, 26);
+          The hold is long on purpose. Four seconds on the finished entry is
+          most of the cycle, so what is on screen almost always is the
+          result rather than the animation - the demonstration reads as a
+          product panel that occasionally redraws itself, not a looping
+          advert competing with the copy around it.
+        */
+        const run = () => {
+          let i = 0;
+          setTyped(0);
+          setShowEntry(false);
+
+          typing = setInterval(() => {
+            i += 2;
+            setTyped(i);
+            if (i >= TRANSCRIPT.length) {
+              clearInterval(typing);
+              // A beat, so the cause reads before the effect.
+              reveal = setTimeout(() => {
+                setShowEntry(true);
+                loop = setTimeout(run, 4200);
+              }, 420);
+            }
+          }, 26);
+        };
+
+        run();
       },
       // Fires once the panel is properly on screen, not as its top edge grazes it.
       { threshold: 0.55 },
@@ -91,6 +110,7 @@ export default function TranscriptToEntry() {
       observer.disconnect();
       clearInterval(typing);
       clearTimeout(reveal);
+      clearTimeout(loop);
     };
   }, [prefersReduced]);
 
