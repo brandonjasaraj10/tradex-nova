@@ -311,7 +311,10 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
   */
   return (
     <div className="min-h-screen bg-black text-white">
-      <div className="max-w-3xl mx-auto px-5 sm:px-8 pt-6 sm:pt-12 pb-44 sm:pb-20">
+      {/* Wider from lg up so the two columns have room to be columns. At
+          max-w-3xl the split produced two cramped strips in the corner of a
+          1280px screen. */}
+      <div className="max-w-3xl lg:max-w-[62rem] mx-auto px-5 sm:px-8 pt-6 sm:pt-12 pb-44 sm:pb-20">
         {/*
           The way out is a corner X on a phone, as it is on every paywall
           worth copying. "Back to Dashboard" is a wide, prominent control
@@ -406,6 +409,28 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
             </p>
           )}
 
+          {/* ----------------------------------------------------------
+            Two columns from lg up, one below it.
+
+            Measured before this change: on a 1440x820 desktop the button sat
+            1575px down the page - 755px BELOW the fold - so a desktop visitor
+            had to scroll nearly a full screen past the plans to reach the
+            thing they came to press. Mobile was already fine, because the CTA
+            is pinned there.
+
+            A floating bar would have fixed that but not the other half of the
+            problem: a max-w-3xl column on a 1440px screen left most of the
+            viewport empty. Splitting it puts the decision and the button
+            together on the left, above the fold, and moves the supporting
+            material - guarantee, feature list, score - into the space that
+            was doing nothing.
+
+            lg, not sm, because the split needs real width. Tablets keep the
+            single column, where the order still reads correctly top to
+            bottom.
+          */}
+          <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)] lg:gap-10 lg:items-start">
+            <div>
           {/* ---------------------------------------------------------- */}
           {/* The plans. Two rows, not two tall cards - the choice here is
               monthly against annual, which is one decision, and a card each
@@ -475,6 +500,85 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
             })}
           </div>
 
+        {/*
+          The button is pinned to the bottom of a phone screen. Measured
+          before this change: it sat 1079px down an 844px screen, so nobody
+          reached it without scrolling past both plans. Static from sm up,
+          where it has always been in view.
+        */}
+        <div
+          className="fixed inset-x-0 bottom-0 z-40 max-w-md mx-auto p-4 space-y-3
+            bg-black/95 backdrop-blur-sm border-t border-white/10
+            sm:static sm:z-auto sm:max-w-none sm:p-0 sm:space-y-4 sm:bg-transparent
+            sm:backdrop-blur-none sm:border-0"
+        >
+          {!stripeConfigured && (
+            <div className="p-4 rounded-xl bg-brand-blue/10 border border-brand-blue-light/20 flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-brand-blue-light flex-shrink-0 mt-0.5" />
+              <div className="text-[13px]">
+                <p className="font-medium text-brand-blue-light mb-1">Development mode</p>
+                <p className="text-gray-400">Stripe is not configured. Use manual activation for testing.</p>
+              </div>
+            </div>
+          )}
+
+          {error && (
+            <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+              <div className="text-[13px] leading-relaxed text-red-300">{error}</div>
+            </div>
+          )}
+
+          {success && (
+            <div className="p-4 rounded-xl bg-brand-blue/10 border border-brand-blue-light/20 flex items-start gap-3">
+              <CheckCircle2 className="w-5 h-5 text-brand-blue-light flex-shrink-0 mt-0.5" />
+              <div className="text-[13px] leading-relaxed text-gray-300">{success}</div>
+            </div>
+          )}
+
+          {/* The white pill every other CTA on the site uses. */}
+          {stripeConfigured ? (
+            <button
+              type="button"
+              onClick={handleSubscribe}
+              disabled={loading}
+              className="w-full inline-flex items-center justify-center px-7 py-3.5 rounded-full
+                bg-white text-black text-[14.5px] font-medium hover:bg-gray-200
+                transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {loading
+                ? 'Processing…'
+                : `Start journaling — ${chargeAmount}${selectedPlan === 'annual' ? '/year' : '/month'}`}
+            </button>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={handleManualActivation}
+                disabled={manualLoading}
+                className="w-full inline-flex items-center justify-center px-7 py-3.5 rounded-full
+                  bg-white text-black text-[14.5px] font-medium hover:bg-gray-200
+                  transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {manualLoading ? 'Activating…' : 'Activate subscription (testing)'}
+              </button>
+              <p className="text-[11.5px] text-center text-gray-500">
+                This will activate a 30-day subscription for testing purposes.
+              </p>
+            </>
+          )}
+
+          <p className="text-center text-[11.5px] text-gray-500">
+            14-day money back guarantee &middot; Cancel anytime
+          </p>
+        </div>
+
+            </div>
+
+            {/* The supporting column. Everything here is for somebody who has
+                not decided yet; the decision itself is already made possible
+                on the left. */}
+            <div className="mt-8 lg:mt-0">
           {/* ---------------------------------------------------------- */}
           {/*
             The guarantee, given real weight.
@@ -569,80 +673,9 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
               <NOVAScore breakdown={EXAMPLE_SCORE} size="sm" showBreakdown periodLabel="Last 30 days" />
             </Frame>
           </div>
+            </div>
+          </div>
         </motion.div>
-
-        {/*
-          The button is pinned to the bottom of a phone screen. Measured
-          before this change: it sat 1079px down an 844px screen, so nobody
-          reached it without scrolling past both plans. Static from sm up,
-          where it has always been in view.
-        */}
-        <div
-          className="fixed inset-x-0 bottom-0 z-40 max-w-md mx-auto p-4 space-y-3
-            bg-black/95 backdrop-blur-sm border-t border-white/10
-            sm:static sm:z-auto sm:max-w-none sm:p-0 sm:space-y-4 sm:bg-transparent
-            sm:backdrop-blur-none sm:border-0"
-        >
-          {!stripeConfigured && (
-            <div className="p-4 rounded-xl bg-brand-blue/10 border border-brand-blue-light/20 flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-brand-blue-light flex-shrink-0 mt-0.5" />
-              <div className="text-[13px]">
-                <p className="font-medium text-brand-blue-light mb-1">Development mode</p>
-                <p className="text-gray-400">Stripe is not configured. Use manual activation for testing.</p>
-              </div>
-            </div>
-          )}
-
-          {error && (
-            <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
-              <div className="text-[13px] leading-relaxed text-red-300">{error}</div>
-            </div>
-          )}
-
-          {success && (
-            <div className="p-4 rounded-xl bg-brand-blue/10 border border-brand-blue-light/20 flex items-start gap-3">
-              <CheckCircle2 className="w-5 h-5 text-brand-blue-light flex-shrink-0 mt-0.5" />
-              <div className="text-[13px] leading-relaxed text-gray-300">{success}</div>
-            </div>
-          )}
-
-          {/* The white pill every other CTA on the site uses. */}
-          {stripeConfigured ? (
-            <button
-              type="button"
-              onClick={handleSubscribe}
-              disabled={loading}
-              className="w-full inline-flex items-center justify-center px-7 py-3.5 rounded-full
-                bg-white text-black text-[14.5px] font-medium hover:bg-gray-200
-                transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {loading
-                ? 'Processing…'
-                : `Start journaling — ${chargeAmount}${selectedPlan === 'annual' ? '/year' : '/month'}`}
-            </button>
-          ) : (
-            <>
-              <button
-                type="button"
-                onClick={handleManualActivation}
-                disabled={manualLoading}
-                className="w-full inline-flex items-center justify-center px-7 py-3.5 rounded-full
-                  bg-white text-black text-[14.5px] font-medium hover:bg-gray-200
-                  transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {manualLoading ? 'Activating…' : 'Activate subscription (testing)'}
-              </button>
-              <p className="text-[11.5px] text-center text-gray-500">
-                This will activate a 30-day subscription for testing purposes.
-              </p>
-            </>
-          )}
-
-          <p className="text-center text-[11.5px] text-gray-500">
-            14-day money back guarantee &middot; Cancel anytime
-          </p>
-        </div>
 
         {/*
           Terms. inline-block with vertical padding gives these a 44px tap
