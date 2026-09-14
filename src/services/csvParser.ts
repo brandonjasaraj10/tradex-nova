@@ -500,13 +500,61 @@ export class CSVParser {
     });
   }
 
-  static async importTrades(trades: CSVTrade[], connectionId?: string): Promise<{ imported: number, updated: number, errors: string[] }> {
+  static async importTrades(trades: CSVTrade[], connectionId: string): Promise<{ imported: number, updated: number, skipped: number, errors: string[] }> {
     const user = await getCurrentUser();
     if (!user) throw new Error('Not authenticated');
 
+    /*
+      No account, no import. This used to be `connectionId?` and the insert
+      wrote `broker_id: connectionId || null`, so a caller that forgot to pass
+      one silently produced trades belonging to no account - invisible to the
+      balance calculation, but still counted in Total P&L. Failing loudly here
+      is the difference between a bug someone reports and a bug nobody
+      notices for a month.
+    */
+    if (!connectionId) {
+      throw new Error('Choose an account to import these trades into.');
+    }
+
     let imported = 0;
     let updated = 0;
+    let skipped = 0;
     const errors: string[] = [];
+
+    /*
+      What this account already has, so the same statement imported twice does
+      not double the numbers.
+
+      There is no database constraint to lean on: the only unique index is
+      (user_id, external_id), and a CSV trade has no external_id - Postgres
+      treats every NULL as distinct, so it will happily store the same row
+      forever. One real user imported the same file four times in nine
+      minutes and ended up with 48 rows for 12 trades.
+
+      Matched on the fields that identify a fill: symbol, direction, both
+      prices, size and the entry timestamp. Two genuinely separate trades
+      agreeing on all six to the second is not something that happens.
+    */
+    const { data: existing } = await supabase
+      .from('trades')
+      .select('symbol, direction, entry_price, exit_price, quantity, entry_date')
+      .eq('user_id', user.id)
+      .eq('broker_id', connectionId);
+
+    const fingerprint = (t: {
+      symbol: string; direction: string;
+      entry_price: number | string; exit_price: number | string;
+      quantity: number | string; entry_date: string;
+    }) => [
+      t.symbol,
+      t.direction,
+      Number(t.entry_price),
+      Number(t.exit_price),
+      Number(t.quantity),
+      new Date(t.entry_date).getTime(),
+    ].join('|');
+
+    const alreadyHave = new Set((existing ?? []).map(fingerprint));
 
     for (const trade of trades) {
       try {
@@ -527,7 +575,7 @@ export class CSVParser {
 
         const tradeData: any = {
           user_id: user.id,
-          broker_id: connectionId || null,
+          broker_id: connectionId,
           symbol: trade.symbol,
           direction: trade.type === 'buy' ? 'LONG' : 'SHORT',
           quantity: trade.volume,
@@ -540,6 +588,11 @@ export class CSVParser {
           notes: trade.comment || null,
         };
 
+        if (alreadyHave.has(fingerprint(tradeData))) {
+          skipped++;
+          continue;
+        }
+
         const { error } = await supabase
           .from('trades')
           .insert(tradeData);
@@ -547,6 +600,9 @@ export class CSVParser {
         if (error) {
           errors.push(`Failed to import ${trade.symbol}: ${error.message}`);
         } else {
+          /* Added to the set as well as the table, so a file containing the
+             same row twice does not import it twice either. */
+          alreadyHave.add(fingerprint(tradeData));
           imported++;
         }
       } catch (error) {
@@ -554,7 +610,7 @@ export class CSVParser {
       }
     }
 
-    return { imported, updated, errors };
+    return { imported, updated, skipped, errors };
   }
 }
 
