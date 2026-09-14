@@ -773,9 +773,9 @@ Return ONLY valid JSON (no markdown code blocks, no backticks, no explanations):
   "confluences_status": [{ "id": "the confluence's id from the list above", "present": true }],
   "rules_status": [{ "id": "the rule's id from the list above", "followed": false }],
   "psychology_status": [{ "id": "the psychology check's id from the list above", "confirmed": true }],
-  "pre_trade_emotional_state": number 1-10 - OMIT unless the trader described how they felt,
-  "pre_trade_focus": number 1-10 - OMIT unless the trader described their focus,
-  "pre_trade_confidence": number 1-10 - OMIT unless the trader described their confidence
+  "pre_trade_emotional_state": number 1-5 - OMIT unless the trader described how they felt,
+  "pre_trade_focus": number 1-5 - OMIT unless the trader described their focus,
+  "pre_trade_confidence": number 1-5 - OMIT unless the trader described their confidence
 }
 
 CRITICAL RULES:
@@ -976,6 +976,27 @@ CRITICAL RULES:
       converts the 1-5 rating to the 1-10 scale the journal uses. Only ever
       fills a gap: a rating Nova did return is left exactly as it came.
     */
+    /*
+      Clamped, because the model's output is not a trusted number.
+
+      This prompt used to state two different scales for the same three
+      fields: "1-5, how steady they were" in the guidance, and "number 1-10"
+      in the JSON spec a few hundred lines below. Nova followed the second
+      one, returned a 7, and the x2 conversion below turned that into a
+      mood_rating of 14 on a scale that stops at 10 - which then flowed into
+      the psychology score as 14 * 10 * 0.25 and produced a score of 108.
+
+      The spec is corrected above, but a prompt is a request, not a
+      guarantee. Clamping is what actually holds: any value outside the real
+      range is pulled back to it before it reaches the form or the score.
+    */
+    const clampScale = (n: number | null | undefined, max: number): number | null =>
+      n == null || Number.isNaN(n) ? null : Math.max(1, Math.min(max, Math.round(n)));
+
+    parsedData.pre_trade_emotional_state = clampScale(parsedData.pre_trade_emotional_state, 5);
+    parsedData.pre_trade_focus = clampScale(parsedData.pre_trade_focus, 5);
+    parsedData.pre_trade_confidence = clampScale(parsedData.pre_trade_confidence, 5);
+
     if (
       parsedData.pre_trade_emotional_state != null &&
       parsedData.template_data?.pre_trade_mindset?.mood_rating == null
@@ -987,6 +1008,22 @@ CRITICAL RULES:
           mood_rating: parsedData.pre_trade_emotional_state * 2,
         },
       };
+    }
+
+    /* A mood_rating Nova returned directly gets the same treatment - it is
+       the field that actually feeds the score. */
+    const directMood = parsedData.template_data?.pre_trade_mindset?.mood_rating;
+    if (directMood != null) {
+      const safeMood = clampScale(directMood, 10);
+      if (safeMood !== directMood) {
+        parsedData.template_data = {
+          ...parsedData.template_data,
+          pre_trade_mindset: {
+            ...parsedData.template_data?.pre_trade_mindset,
+            mood_rating: safeMood ?? undefined,
+          },
+        };
+      }
     }
 
     return parsedData;
