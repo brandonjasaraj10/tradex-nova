@@ -171,7 +171,7 @@ export default function Pricing() {
           items={[
             {
               q: 'Is there a free trial?',
-              a: 'There is a 14-day money back guarantee instead, which does the same job without the part where a card gets charged on a day you forgot about. Use it properly for two weeks; if it is not for you, say so and you get your money back.',
+              a: 'There is a 14-day money back guarantee instead, which does the same job without the part where a card gets charged on a day you forgot about. Give it two proper weeks. If you are still not journaling, or it has not shown you something about how you trade that you did not already know, ask for your money back.',
             },
             {
               q: 'How do I cancel?',

@@ -505,11 +505,23 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
                 <h2 className="text-[17px] sm:text-[19px] font-semibold tracking-[-0.02em] text-white mb-2">
                   Fourteen days to change your mind
                 </h2>
+                {/*
+                  The same words the abandoned-signup email uses, deliberately.
+                  Somebody who gets that email and clicks through should land on
+                  the promise they were just made, not a reworded cousin of it.
+
+                  It also no longer rests on Nova. The old version - "see
+                  whether it tells you something you did not already know" -
+                  staked the whole guarantee on one feature. TradeX makes two
+                  promises: that you keep journaling at all, which is the reason
+                  it was built, and that it shows you something. The guarantee
+                  should fail if either does.
+                */}
                 <p className="text-[13.5px] sm:text-[14px] leading-relaxed text-gray-300">
-                  Use it properly for two weeks. Log your trades, ask Nova what
-                  you keep doing, and see whether it tells you something you did
-                  not already know. If it does not, say so and you get your money
-                  back &mdash; no questions, no retention call, no form asking why.
+                  Give it two proper weeks. If you are still not journaling, or
+                  it has not shown you something about how you trade that you did
+                  not already know, ask for your money back. No questions, no
+                  retention call, no form asking why.
                 </p>
                 {/*
                   Cancelling and refunding are two different things and the

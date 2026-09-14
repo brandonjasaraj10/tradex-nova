@@ -896,7 +896,7 @@ export default function Sales() {
               },
               {
                 q: 'What if it is not for me?',
-                a: '14-day money back guarantee, no questions asked. Cancel any time from Settings in two clicks \u2014 no email, no retention call.',
+                a: 'Give it two proper weeks. If you are still not journaling, or it has not shown you something about how you trade that you did not already know, ask for your money back. Cancelling is separate and needs no email at all \u2014 two clicks in Settings, any time.',
               },
             ].map((item) => (
               <details
