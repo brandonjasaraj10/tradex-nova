@@ -39,6 +39,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const SITE = 'https://www.tradexnova.com';
 const FROM = 'TradeX <noreply@tradexnova.com>';
+const LOGO_URL = 'https://www.tradexnova.com/tradex_logo.png';
 
 /* Total sends per run. ~12 new signups a day at current volume, so this
    leaves room for roughly 13 backlog messages and drains 250 in ~19 days. */
