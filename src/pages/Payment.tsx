@@ -464,6 +464,59 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
           </div>
 
           {/* ---------------------------------------------------------- */}
+          {/*
+            The guarantee, given real weight.
+
+            It used to be nine grey words under the button. It is the single
+            most important thing on this screen: TradeX has no free trial -
+            deliberately, the first cohort converted 1 in 11 and half of them
+            never logged a trade - so this IS the trial, and it is the only
+            thing standing between a stranger and their card.
+
+            Worth the space on the evidence: guarantee messaging on a pricing
+            page lifts conversion around 21% (Conversion Rate Experts'
+            meta-analysis), and refunds do not rise proportionally - one
+            measured case doubled conversion against a 3% rise in refunds,
+            for about 6.5% more revenue net of them.
+
+            "Both plans" is stated plainly because it is the part that is
+            genuinely unusual here. The nearest competitor's equivalent
+            guarantee applies to annual billing only, so paying monthly with
+            them buys no way out at all. No competitor is named - that is a
+            claim that would need checking and maintaining - but the fact
+            about TradeX is worth saying out loud.
+          */}
+          <div className="rounded-2xl border border-brand-blue-light/25 bg-brand-blue/[0.06] p-5 sm:p-6 mb-8">
+            <div className="flex items-start gap-3.5">
+              <Shield className="w-5 h-5 text-brand-blue-light flex-shrink-0 mt-0.5" />
+              <div>
+                <h2 className="text-[17px] sm:text-[19px] font-semibold tracking-[-0.02em] text-white mb-2">
+                  Fourteen days to change your mind
+                </h2>
+                <p className="text-[13.5px] sm:text-[14px] leading-relaxed text-gray-300">
+                  Use it properly for two weeks. Log your trades, ask Nova what
+                  you keep doing, and see whether it tells you something you did
+                  not already know. If it does not, email us and you get your
+                  money back &mdash; no questions, no retention call, no form
+                  asking why.
+                </p>
+                <ul className="mt-4 flex flex-col gap-2">
+                  {[
+                    'Applies to monthly as well as annual, not just the yearly plan',
+                    'Cancelling is two clicks in Settings, any time',
+                    'Your journal stays yours — export it or delete it whenever',
+                  ].map((item) => (
+                    <li key={item} className="flex items-start gap-2.5 text-[13px] leading-relaxed text-gray-400">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-brand-blue-light flex-shrink-0 mt-[3px]" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* ---------------------------------------------------------- */}
           {/* Everything included, in the same list and the same order as
               /pricing, so the page someone compared before signing up and
               the page they pay on cannot disagree. */}
