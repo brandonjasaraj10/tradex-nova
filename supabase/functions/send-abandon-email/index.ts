@@ -7,7 +7,22 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
   with the same X-Cron-Secret the reconciliation job uses, so it cannot be
   triggered from the outside.
 
-  The design points that matter:
+  Shaped by the abandonment research rather than guesswork:
+
+  - The subject carries the first name (worth ~22% on open rate) and names
+    the thing that was abandoned (~10-15%). 98% of these people have a
+    usable first name; the rest get a name-free version rather than "Hi
+    there", which reads worse than no name at all.
+  - One call to action, not three.
+  - No discount. It teaches the next person to abandon and undercuts
+    everyone paying full price. The guarantee is the offer instead.
+  - No fabricated social proof. The research says testimonials help here;
+    there are none real to use, and inventing them for an email to people
+    who have not bought yet is exactly what cannot be defended later.
+  - Sent 16:00 UTC - mid-morning in Denver, the 8-10am local window that
+    performs best for the timezone most of this audience is in.
+
+  Operationally:
 
   - It is capped per run. tradexnova.com has little sending history and the
     backlog is 250 people; posting that in one night is how a young domain
@@ -38,7 +53,21 @@ const cors = {
   'Access-Control-Allow-Headers': 'content-type, x-cron-secret',
 };
 
-type Candidate = { id: string; email: string; created_at: string };
+type Candidate = { id: string; email: string; created_at: string; first_name: string | null };
+
+/* Guard against a name that would embarrass the send - a pasted email
+   address, a blank, or something long enough to wrap the subject line. */
+function usableName(raw: string | null): string | null {
+  const name = (raw ?? '').trim();
+  if (!name || name.length > 20 || name.includes('@')) return null;
+  return name.charAt(0).toUpperCase() + name.slice(1);
+}
+
+function subjectFor(name: string | null): string {
+  return name
+    ? `${name}, you signed up for TradeX but never got in`
+    : 'You signed up for TradeX but never got in';
+}
 
 function buildHtml(unsubscribeUrl: string): string {
   /*
