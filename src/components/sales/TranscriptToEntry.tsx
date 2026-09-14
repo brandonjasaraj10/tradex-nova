@@ -126,13 +126,28 @@ export default function TranscriptToEntry() {
         <span className="mt-[3px] text-[10px] uppercase tracking-[0.12em] text-gray-600 flex-shrink-0">
           You
         </span>
-        {/* min-h holds the full transcript's lines so nothing below jumps. */}
-        <p className="text-[12.5px] leading-relaxed text-gray-300 min-h-[5.2em] sm:min-h-[3.4em]">
-          {TRANSCRIPT.slice(0, typed)}
-          {isTyping && (
-            <span className="inline-block w-[2px] h-[1em] -mb-[2px] ml-[1px] bg-brand-blue-light align-middle animate-pulse" />
-          )}
-        </p>
+        {/*
+          The full transcript is rendered invisibly underneath and the typed
+          copy painted on top of it, in the same grid cell, so the box is
+          already the height it will end at.
+
+          The min-h this replaces was 5.2em, a guess - measured at 375px it
+          reserved 65px for text that wanted 81px, so the last line pushed
+          everything below it down on every loop. A guess in em cannot track
+          how many lines the text wraps to at an arbitrary width; the text
+          itself can.
+        */}
+        <div className="grid flex-1">
+          <p className="col-start-1 row-start-1 text-[12.5px] leading-relaxed invisible" aria-hidden="true">
+            {TRANSCRIPT}
+          </p>
+          <p className="col-start-1 row-start-1 text-[12.5px] leading-relaxed text-gray-300">
+            {TRANSCRIPT.slice(0, typed)}
+            {isTyping && (
+              <span className="inline-block w-[2px] h-[1em] -mb-[2px] ml-[1px] bg-brand-blue-light align-middle animate-pulse" />
+            )}
+          </p>
+        </div>
       </div>
 
       <div

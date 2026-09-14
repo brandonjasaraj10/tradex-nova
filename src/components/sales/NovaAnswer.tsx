@@ -94,25 +94,39 @@ export default function NovaAnswer() {
         N
       </span>
       {/*
-        min-h reserves the full answer's height so the section below never
-        shifts as the text grows - layout jump is the thing that makes a
-        typing effect feel cheap.
+        The finished answer is rendered invisibly underneath, in normal flow,
+        and the animated copy is painted on top of it in the same grid cell.
+
+        That reserves exactly the right height at every width, which a min-h
+        cannot: the reserved value was 7.5em, and the answer needs four lines
+        on a 320px phone and two on a desktop. Measured, it reserved 98px
+        where the text actually wanted 214px at 320px wide and 172px at
+        375px - so on a phone every loop shoved a hundred pixels of page up
+        and down under someone trying to read it.
+
+        aria-hidden on the spacer and aria-live on the visible copy, so a
+        screen reader gets the answer once rather than twice.
       */}
-      <div className="rounded-2xl rounded-tl-sm bg-brand-blue/[0.06] border border-brand-blue-light/20
-        px-4 py-3 text-[13px] sm:text-sm text-gray-300 leading-relaxed min-h-[7.5em] sm:min-h-[5.5em]">
-        {thinking ? (
-          <span className="inline-flex gap-1 items-center" aria-label="Nova is thinking">
-            {[0, 1, 2].map((i) => (
-              <span
-                key={i}
-                className="w-1.5 h-1.5 rounded-full bg-brand-blue-light/60 animate-pulse"
-                style={{ animationDelay: `${i * 160}ms` }}
-              />
-            ))}
-          </span>
-        ) : (
-          ANSWER.slice(0, shown)
-        )}
+      <div className="grid rounded-2xl rounded-tl-sm bg-brand-blue/[0.06] border border-brand-blue-light/20
+        px-4 py-3 text-[13px] sm:text-sm text-gray-300 leading-relaxed">
+        <p className="col-start-1 row-start-1 invisible" aria-hidden="true">
+          {ANSWER}
+        </p>
+        <p className="col-start-1 row-start-1">
+          {thinking ? (
+            <span className="inline-flex gap-1 items-center" aria-label="Nova is thinking">
+              {[0, 1, 2].map((i) => (
+                <span
+                  key={i}
+                  className="w-1.5 h-1.5 rounded-full bg-brand-blue-light/60 animate-pulse"
+                  style={{ animationDelay: `${i * 160}ms` }}
+                />
+              ))}
+            </span>
+          ) : (
+            ANSWER.slice(0, shown)
+          )}
+        </p>
       </div>
     </div>
   );
