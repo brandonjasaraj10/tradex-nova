@@ -114,10 +114,36 @@ const PANELS: Panel[] = [
           </div>
         </div>
 
-        <p className="text-[12.5px] text-gray-400 leading-relaxed">
-          Moved my stop twice chasing the retest. Same thing I did Tuesday.
-          Should have been flat after the first one.
-        </p>
+        {/*
+          Organised, because that is the whole claim.
+
+          This was a paragraph of raw prose, which quietly contradicted the
+          section two above it: step 02 says Nova turns rambling into a
+          filed entry, and then this panel showed exactly the unorganised
+          blob that every trader already has in Notes.
+
+          What Nova really writes is <h2> sections of <ul><li> bullets - the
+          template in voiceJournal.ts lists nine of them, Trade Overview
+          through Behavioral Notes. "Post-Trade Review" is the real heading
+          for this content, not one invented for the panel.
+        */}
+        <div>
+          <p className="text-[9.5px] uppercase tracking-[0.1em] text-gray-600 mb-1.5">
+            Post-trade review
+          </p>
+          <ul className="flex flex-col gap-1">
+            {[
+              'Entered on the retest without waiting for confirmation',
+              'Stop moved twice, both times against the plan',
+              'Repeat of Tuesday — same setup, same mistake',
+            ].map((line) => (
+              <li key={line} className="flex gap-2 text-[12px] text-gray-400 leading-relaxed">
+                <span className="text-gray-600 flex-shrink-0">&bull;</span>
+                {line}
+              </li>
+            ))}
+          </ul>
+        </div>
 
         <div className="flex flex-wrap gap-1.5">
           {['Moved stop', 'Revenge entry', 'London'].map((t) => (
