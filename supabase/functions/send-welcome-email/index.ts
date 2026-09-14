@@ -20,6 +20,14 @@ const corsHeaders = {
 const APP_URL = "https://tradexnova.com";
 const SUPPORT_EMAIL = "tradenovaai@gmail.com";
 
+/* The one brand blue, #3B82F6. Every blue in this email is this value - the
+   numbered badges and the Getting started label both. The label was briefly
+   #2563eb, a darker blue picked for contrast on a white card, and Gmail's
+   inversion lightened it into a periwinkle that visibly did not match the
+   badges sitting right underneath it. Same input colour is the only way two
+   elements stay the same colour through a transform nobody controls. */
+const BRAND_BLUE = "#3B82F6";
+
 /*
   Light, and that is a reversal.
 
@@ -34,7 +42,7 @@ const SUPPORT_EMAIL = "tradenovaai@gmail.com";
   some clients strip styles from body and table elements. No text is near-
   white or near-black on a background of the same kind. The logo is the solid
   tile, which brings its own contrast. The two colours that stay white are
-  both on the blue #3B82F6, where white is correct.
+  both on the brand blue, where white is correct.
 
   It is served from www because the bare domain 308-redirects there and some
   clients will not follow a redirect for an image.
@@ -60,7 +68,7 @@ function buildWelcomeHtml(): string {
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
           <tr>
             <td valign="top" width="30" style="padding-right: 12px;">
-              <div style="width: 26px; height: 26px; background-color: #3B82F6; border-radius: 13px; text-align: center; font-size: 13px; line-height: 26px; color: #ffffff; font-weight: 700;">${n}</div>
+              <div style="width: 26px; height: 26px; background-color: ${BRAND_BLUE}; border-radius: 13px; text-align: center; font-size: 13px; line-height: 26px; color: #ffffff; font-weight: 700;">${n}</div>
             </td>
             <td valign="top">
               <p style="margin: 0 0 3px 0; font-size: 15px; font-weight: 600; color: #111111;">${title}</p>
@@ -101,7 +109,7 @@ function buildWelcomeHtml(): string {
                     <h1 style="margin: 0 0 12px 0; font-size: 21px; font-weight: 700; color: #111111; letter-spacing: -0.3px;">Welcome to TradeX</h1>
                     <p style="margin: 0 0 28px 0; font-size: 15px; line-height: 1.6; color: #555555;">Your account is ready. TradeX is a trading journal with an AI analyst attached &mdash; you log your trades, and Nova tells you what your own numbers actually say.</p>
 
-                    <p style="margin: 0 0 16px 0; font-size: 13px; font-weight: 700; color: #2563eb; letter-spacing: 0.4px; text-transform: uppercase;">Getting started</p>
+                    <p style="margin: 0 0 16px 0; font-size: 13px; font-weight: 700; color: ${BRAND_BLUE}; letter-spacing: 0.4px; text-transform: uppercase;">Getting started</p>
 
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                       ${step("1", "Log a few trades", "Add them by hand or import a CSV from your broker. Nova needs about ten before it can say anything useful about patterns.")}
@@ -111,7 +119,7 @@ function buildWelcomeHtml(): string {
 
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-top: 12px;">
                       <tr>
-                        <td align="center" bgcolor="#3B82F6" style="background-color: #3B82F6; border-radius: 10px;">
+                        <td align="center" bgcolor="${BRAND_BLUE}" style="background-color: ${BRAND_BLUE}; border-radius: 10px;">
                           <a href="${APP_URL}/dashboard" style="display: block; padding: 15px 24px; font-size: 15px; font-weight: 600; color: #ffffff; text-decoration: none;">Open your dashboard</a>
                         </td>
                       </tr>
