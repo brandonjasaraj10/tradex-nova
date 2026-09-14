@@ -59,7 +59,7 @@ another trader, not like a SaaS company talking to a market.
 | "Never touches your money." | "Bank-grade security." |
 | "No, and anyone telling you otherwise is selling something." | Dodging the question. |
 
-### Five specific habits
+### Six specific habits
 
 1. **Concrete beats abstract.** Name the thing a person does, not the
    category it belongs to. "Talk through the trade" works; "bridges the gap
@@ -78,7 +78,13 @@ another trader, not like a SaaS company talking to a market.
 4. **Objections, not features.** Every headline should answer a reason
    somebody does not buy. "No spreadsheets." "Never touches your money."
 
-5. **Sentence case, always.** Headings and buttons are sentence case, not
+5. **Name what breaks, not what you call it.** "Not tied to an account" is
+   internal vocabulary and tells the reader nothing about why to care. "This
+   P&L won't count toward any account balance" says the consequence. Every
+   warning, error and empty state should pass this test: does it name the
+   thing the reader actually loses?
+
+6. **Sentence case, always.** Headings and buttons are sentence case, not
    Title Case. "What you actually get", not "Everything You Need To Succeed".
 
 ### Things that must never appear
@@ -119,6 +125,17 @@ Blue is **the accent, spent sparingly, where it means something.** The hero is
 deliberately monochrome so that the first blue on the page is the product
 panel. Inside the product, blue marks what TradeX worked out — a tag Nova
 assigned, a winning day, a score.
+
+### Warnings are blue as well
+
+There is no amber, no orange, no "alert yellow". The Risk Disclaimer's warning
+box is blue; so is the notice telling someone their P&L is not attached to an
+account. A warning painted in a colour that appears nowhere else becomes the
+loudest thing on a page that is deliberately quiet everywhere — which is a
+bigger problem than whatever it was warning about.
+
+The temptation is real and it has been given in to once already, so it is
+worth stating plainly: **one accent means one accent.**
 
 ### Profit and loss are blue and grey, not green and red
 
@@ -218,6 +235,11 @@ Restrained. Motion earns its place by explaining something.
   it never animates.
 - **Swipes follow the finger.** A gesture that only acts on release reads as a
   glitch.
+- **Reserve the space before animating into it.** A `min-height` guess in `em`
+  cannot know how many lines text wraps to on a given phone; render the
+  finished content invisibly and paint the animation over it. One guess
+  reserved 98px for text that needed 214px on a 320px screen, so every loop
+  shoved a hundred pixels of page up and down under whoever was reading.
 - Standard easing: `cubic-bezier(0.22, 0.61, 0.36, 1)` at 320–420ms.
 - **Always honour `prefers-reduced-motion`**, and always leave the resting
   state as the finished state, so a reader who never sees the animation still
@@ -225,7 +247,46 @@ Restrained. Motion earns its place by explaining something.
 
 ---
 
-## 8. The proof points that are true
+## 8. Email
+
+Email is not the website and the rules are different, because a mail client
+will rewrite what you send.
+
+**Design light, not dark.** Gmail's mobile app inverts whatever it is given: a
+dark email arrives as a white card, and a light one arrives dark. The
+direction cannot be controlled from the sending side. What *can* be controlled
+is whether the result reads either way, so nothing is near-white on white or
+near-black on black, and every background carries a `bgcolor` attribute as
+well as an inline style — some clients strip styles from `body` and `table`.
+
+**Use the solid logo, never the transparent one.** `trade_x_logo.png` is the
+mark on a black tile and brings its own contrast. `tradex_logo.png` is a pure
+white mark on transparency — it vanishes the moment a client inverts the
+card, which is exactly what happened to every welcome email sent before this
+was noticed.
+
+**One blue, same as everywhere.** `#3B82F6` for both the accents and the
+button. A darker blue picked for contrast on white gets lightened by the
+inversion into a periwinkle that visibly does not match the elements beside
+it.
+
+**Every non-transactional email needs a real unsubscribe** — the visible link
+and the `List-Unsubscribe` headers Gmail and Apple Mail turn into a native
+button. That button is the best protection a sender has, because it gives
+people an alternative to pressing spam.
+
+**Expect Promotions, and accept it.** The `List-Unsubscribe` header is itself
+one of Gmail's strongest bulk signals. Removing it to chase the Primary tab
+trades a small placement gain for the thing that actually protects the
+domain. Promotions is not the spam folder.
+
+**The sender avatar needs BIMI**, which means DMARC at enforcement plus a
+certificate at $650–1,688 a year, and a CMC additionally wants the logo in
+continuous public use for twelve months. Not worth it yet.
+
+---
+
+## 9. The proof points that are true
 
 Use these freely. They are all verifiable today.
 
@@ -244,7 +305,27 @@ certification, any profitability outcome.
 
 ---
 
-## 9. Quick reference for an ad
+## 10. The pages, and one route trap
+
+`/` landing · `/features` · `/nova-ai` · `/pricing` · `/security` ·
+`/for-prop-firm-traders` · `/about` · `/faq` · `/affiliates` · `/privacy` ·
+`/terms` · `/risk-disclaimer`
+
+**The marketing Nova page is `/nova-ai`, not `/nova`.** `/nova` belongs to the
+in-app Nova Assistant and has done since long before the marketing page
+existed. Putting a public page on an app route does not merely collide — the
+public path list decides which layout renders, so the app page became
+unreachable for signed-in users until it was caught. Any new public route gets
+checked against the app's routes first.
+
+Link previews come from `og:image` = `trade_x_logo.png`. Keep that asset's
+background a true `#000000`: iMessage samples a preview image's dominant
+colour and amplifies it, so a blue-black (it was RGB 5,6,13) renders as a navy
+caption bar.
+
+---
+
+## 11. Quick reference for an ad
 
 - **Hook:** the failure, named precisely. *"You did not fail the challenge on
   strategy. You failed it on a rule you already knew."*
