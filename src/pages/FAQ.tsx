@@ -171,7 +171,7 @@ const GROUPS: {
     items: [
       {
         q: 'What if it is not for me?',
-        a: '14-day money back guarantee, no questions asked. Cancel any time from Settings in two clicks — no email, no retention call.',
+        a: 'Two different things, and it is worth being precise. Cancelling is two clicks in Settings, no email and no retention call. Asking for your money back inside 14 days does need an email — there is no self-serve refund button — but that is the only step, and the answer is yes.',
       },
       {
         q: 'Is there a free trial?',

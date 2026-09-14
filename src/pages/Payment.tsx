@@ -348,20 +348,32 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
         >
           <div className="text-center mb-8 sm:mb-10">
             <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
-              {isFounder ? 'Founding member pricing' : 'One plan. Everything in it.'}
+              {isFounder ? 'Founding member pricing' : 'Choose your plan'}
             </p>
-            {/* Solid white, semibold, tight tracking - the landing page's
-                treatment. "Elevate Your Trading" said nothing; this names
-                what the money buys. */}
+            {/*
+              The offer, not the pitch.
+
+              This said "Find out what you keep doing" - the landing page's
+              promise, which is the right headline for a stranger and the
+              wrong one here. Anybody reading this has already signed up;
+              they know what TradeX does and they are deciding what it costs.
+              The eyebrow and the headline were also making two different
+              arguments stacked on each other, one about pricing and one
+              about value.
+
+              It is now the same headline as /pricing, word for word, so the
+              page someone compared on and the page they pay on say the same
+              thing.
+            */}
             <h1 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em]
               text-white text-balance">
-              Find out what you keep doing
+              One plan. Everything in it.
             </h1>
             <p className="mt-4 text-[14.5px] sm:text-base leading-relaxed text-gray-400
               max-w-sm mx-auto text-balance">
               {isFounder
                 ? 'Your founding member rate is applied below, and it never rises.'
-                : 'Same plan either way. Annual just costs less.'}
+                : 'No tiers, no add-ons, no trade limits. Annual just costs less.'}
             </p>
           </div>
 
@@ -496,14 +508,22 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
                 <p className="text-[13.5px] sm:text-[14px] leading-relaxed text-gray-300">
                   Use it properly for two weeks. Log your trades, ask Nova what
                   you keep doing, and see whether it tells you something you did
-                  not already know. If it does not, email us and you get your
-                  money back &mdash; no questions, no retention call, no form
-                  asking why.
+                  not already know. If it does not, say so and you get your money
+                  back &mdash; no questions, no retention call, no form asking why.
                 </p>
+                {/*
+                  Cancelling and refunding are two different things and the
+                  site was blurring them. Cancelling really is two clicks in
+                  Settings with no email. A refund has no self-serve button,
+                  so it genuinely needs one message - which is worth stating
+                  plainly here rather than letting someone discover it after
+                  they have read "no email" somewhere else.
+                */}
                 <ul className="mt-4 flex flex-col gap-2">
                   {[
                     'Applies to monthly as well as annual, not just the yearly plan',
-                    'Cancelling is two clicks in Settings, any time',
+                    'Cancelling is two clicks in Settings — no email, any time',
+                    'For a refund, one email to us is the only step',
                     'Your journal stays yours — export it or delete it whenever',
                   ].map((item) => (
                     <li key={item} className="flex items-start gap-2.5 text-[13px] leading-relaxed text-gray-400">
