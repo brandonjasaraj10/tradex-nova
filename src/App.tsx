@@ -52,7 +52,7 @@ const NotFound = lazyWithReload('NotFound', () => import('./pages/NotFound'));
 
 const PUBLIC_PATHS = [
   '/', '/auth', '/sales', '/terms', '/privacy', '/risk-disclaimer', '/payment', '/affiliates',
-  '/pricing', '/features', '/security', '/nova', '/for-prop-firm-traders', '/about', '/faq',
+  '/pricing', '/features', '/security', '/nova-ai', '/for-prop-firm-traders', '/about', '/faq',
 ];
 
 function PublicLayout() {
@@ -72,7 +72,17 @@ function PublicLayout() {
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/features" element={<Features />} />
             <Route path="/security" element={<Security />} />
-            <Route path="/nova" element={<Nova />} />
+            {/*
+              /nova-ai, not /nova.
+
+              /nova has been the in-app Nova Assistant's route since long
+              before this page existed - it is what the sidebar links to and
+              what the product tour steps through. Adding a marketing page at
+              the same path, and listing it in PUBLIC_PATHS, made AppContent
+              render the public layout for it and put the real Nova page out
+              of reach entirely for signed-in users.
+            */}
+            <Route path="/nova-ai" element={<Nova />} />
             <Route path="/for-prop-firm-traders" element={<PropFirmTraders />} />
             <Route path="/about" element={<About />} />
             <Route path="/faq" element={<FAQ />} />

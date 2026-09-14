@@ -52,7 +52,7 @@ export default function Footer() {
             <ul className="mt-4 space-y-2">
               {[
                 ['/features', 'Features'],
-                ['/nova', 'Nova AI'],
+                ['/nova-ai', 'Nova AI'],
                 ['/pricing', 'Pricing'],
                 ['/security', 'Security'],
               ].map(([to, label]) => (

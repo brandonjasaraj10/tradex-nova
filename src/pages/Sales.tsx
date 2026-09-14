@@ -586,7 +586,7 @@ export default function Sales() {
           </div>
 
           <p className="mt-7 text-center">
-            <Link to="/nova" className="inline-flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-white transition-colors underline underline-offset-[3px] decoration-white/20 hover:decoration-white/50">
+            <Link to="/nova-ai" className="inline-flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-white transition-colors underline underline-offset-[3px] decoration-white/20 hover:decoration-white/50">
               More on how Nova works
             </Link>
           </p>
