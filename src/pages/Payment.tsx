@@ -10,7 +10,7 @@ import PaymentFailedGate from '../components/billing/PaymentFailedGate';
 
 const FloatingParticle = ({ delay, duration, x, size }: { delay: number; duration: number; x: number; size: number }) => (
   <motion.div
-    className="absolute rounded-full bg-gold-400/30"
+    className="absolute rounded-full bg-brand-blue-light/30"
     style={{ width: size, height: size, left: `${x}%` }}
     initial={{ y: '100vh', opacity: 0 }}
     animate={{
@@ -318,9 +318,9 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-4 py-12 pb-44 sm:pb-12 overflow-hidden">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gold-400/5 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gold-400/3 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-radial from-gold-400/5 to-transparent rounded-full" />
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-brand-blue/5 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-brand-blue/[0.03] rounded-full blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-radial from-brand-blue/5 to-transparent rounded-full" />
         {particles.map((p) => (
           <FloatingParticle key={p.id} {...p} />
         ))}
@@ -374,28 +374,33 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-gold-400/10 border border-gold-400/20 rounded-full mb-6"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-brand-blue/10 border border-brand-blue-light/20 rounded-full mb-6"
           >
             <motion.div
               animate={{ rotate: [0, 15, -15, 0] }}
               transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
             >
-              <Gift className="w-4 h-4 text-gold-400" />
+              <Gift className="w-4 h-4 text-brand-blue-light" />
             </motion.div>
-            <span className="text-sm text-gold-400 font-medium">Full access from the moment you join</span>
+            <span className="text-sm text-brand-blue-light font-medium">Full access from the moment you join</span>
             <motion.div
               animate={{ scale: [1, 1.2, 1] }}
               transition={{ duration: 1.5, repeat: Infinity }}
-              className="w-2 h-2 bg-gold-400 rounded-full"
+              className="w-2 h-2 bg-brand-blue-light rounded-full"
             />
           </motion.div>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 bg-gradient-to-r from-white via-white to-gray-400 bg-clip-text text-transparent">
-            Elevate Your Trading
+          {/* Solid white, semibold, tight tracking - the landing page's
+              treatment. The white-to-grey gradient this carried is the one
+              the landing page dropped: it reads as the headline dimming out
+              rather than being emphasised. "Elevate Your Trading" also said
+              nothing; this names what the money buys. */}
+          <h1 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance mb-3">
+            Find out what you keep doing
           </h1>
-          <p className="text-gray-400 text-lg mb-6">
+          <p className="text-[14.5px] sm:text-base leading-relaxed text-gray-400 mb-6">
             {isFounder
               ? 'Your founding member pricing is applied below.'
-              : 'Choose the plan that fits your journey'}
+              : 'Same plan either way. Annual just costs less.'}
           </p>
 
           {isFounder && (
@@ -426,17 +431,21 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
             transition={{ delay: 0.4 }}
             className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-gray-400"
           >
+            {/* Three different reassurances. Two of these read "Cancel
+                anytime" verbatim, one behind a gift icon and one behind a
+                padlock - a copy-paste that left the row saying the same
+                thing twice on the screen where someone decides to pay. */}
             <span className="inline-flex items-center gap-1.5">
-              <Gift className="w-4 h-4 text-blue-400" />
-              Cancel anytime
+              <Shield className="w-4 h-4 text-brand-blue-light" />
+              14-day money back
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <Lock className="w-4 h-4 text-blue-400" />
-              Cancel anytime
+              <Lock className="w-4 h-4 text-brand-blue-light" />
+              Card handled by Stripe
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <Shield className="w-4 h-4 text-blue-400" />
-              No charge today
+              <Gift className="w-4 h-4 text-brand-blue-light" />
+              Cancel anytime
             </span>
           </motion.div>
 
@@ -464,7 +473,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
             >
               {plan.highlight && (
                 <motion.div
-                  className="absolute -inset-[1px] rounded-2xl bg-gradient-to-r from-gold-400 via-amber-500 to-gold-400 opacity-75"
+                  className="absolute -inset-[1px] rounded-2xl bg-gradient-to-r from-brand-blue via-brand-blue-light to-brand-blue opacity-75"
                   animate={{
                     backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
                   }}
@@ -475,12 +484,12 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
               <div
                 className={`relative rounded-2xl p-4 sm:p-6 transition-all duration-300 ${
                   selectedPlan === plan.id
-                    ? 'bg-[#0A0A0A] border-2 border-gold-400'
+                    ? 'bg-[#0A0A0A] border-2 border-brand-blue-light'
                     : 'bg-[#0A0A0A] border border-white/10 hover:border-white/20'
                 }`}
               >
                 {plan.highlight && (
-                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-gold-400/10 via-transparent to-gold-400/5 pointer-events-none" />
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-brand-blue/10 via-transparent to-brand-blue/[0.04] pointer-events-none" />
                 )}
 
                 {/*
@@ -491,7 +500,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
                 */}
                 <div className="flex items-center sm:items-start justify-between gap-3 mb-0 sm:mb-4 mt-0 sm:mt-2">
                   <div className="flex items-center gap-3 min-w-0">
-                    <plan.icon className="w-6 h-6 text-gold-400 flex-shrink-0" />
+                    <plan.icon className="w-6 h-6 text-brand-blue-light flex-shrink-0" />
                     <div className="min-w-0">
                       {/*
                         Name above badge on a phone. Side by side the pair
@@ -532,7 +541,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
                   */}
                   <div className="sm:hidden text-right ml-auto flex-shrink-0">
                     <div className="flex items-baseline gap-1 justify-end">
-                      <span className={`text-xl font-bold ${plan.highlight ? 'text-gold-400' : 'text-white'}`}>
+                      <span className={`text-xl font-bold ${plan.highlight ? 'text-brand-blue-light' : 'text-white'}`}>
                         {plan.price}
                       </span>
                       <span className="text-xs text-gray-400">{plan.period}</span>
@@ -554,7 +563,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
 
                   <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
                     selectedPlan === plan.id
-                      ? 'border-gold-400'
+                      ? 'border-brand-blue-light'
                       : 'border-gray-600'
                   }`}>
                     {selectedPlan === plan.id && (
@@ -572,7 +581,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
                     {plan.originalPrice && (
                       <span className="text-lg text-gray-500 line-through">{plan.originalPrice}</span>
                     )}
-                    <span className={`text-4xl font-bold ${plan.highlight ? 'text-gold-400' : 'text-white'}`}>
+                    <span className={`text-4xl font-bold ${plan.highlight ? 'text-brand-blue-light' : 'text-white'}`}>
                       {plan.price}
                     </span>
                     <span className="text-gray-400">{plan.period}</span>
@@ -613,7 +622,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
                 <div className="hidden sm:block space-y-2">
                   {plan.features.map((feature, i) => (
                     <div key={i} className="flex items-center gap-2">
-                      <CheckCircle2 className={`w-4 h-4 ${plan.highlight ? 'text-gold-400' : 'text-gray-500'}`} />
+                      <CheckCircle2 className={`w-4 h-4 ${plan.highlight ? 'text-brand-blue-light' : 'text-gray-500'}`} />
                       <span className="text-sm text-gray-300">{feature}</span>
                     </div>
                   ))}
@@ -708,23 +717,32 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
 
         <motion.div variants={fadeInUp} className="mt-12 space-y-6">
           <div className="bg-[#0A0A0A] border border-white/10 rounded-2xl p-6">
-            <h3 className="font-semibold mb-6 text-center text-lg">Everything You Need to Succeed</h3>
+            <h3 className="text-[17px] font-semibold tracking-[-0.02em] text-white mb-6 text-center">What you actually get</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[
-                {
-                  icon: TrendingUp,
-                  title: 'Advanced Analytics',
-                  description: 'Real-time performance metrics and insights'
-                },
+                /*
+                  What the subscription actually buys, in the same words the
+                  marketing pages use. The third of these used to be "Risk
+                  Management - protect your capital with advanced risk tools",
+                  which TradeX does not have: there is a risk-management
+                  component inside the NOVA Score, not a set of capital
+                  protection tools. Promising one on the payment screen is the
+                  worst place on the site to overstate anything.
+                */
                 {
                   icon: Sparkles,
-                  title: 'NOVA AI Assistant',
-                  description: 'AI-powered trading insights and recommendations'
+                  title: 'Voice journaling',
+                  description: 'Talk through the trade. TradeX writes the entry.'
+                },
+                {
+                  icon: TrendingUp,
+                  title: 'Nova reads all of it',
+                  description: 'Every entry together, and the habit costing you money.'
                 },
                 {
                   icon: Shield,
-                  title: 'Risk Management',
-                  description: 'Protect your capital with advanced risk tools'
+                  title: 'Psychology scoring',
+                  description: 'How you were going in, matched against what happened.'
                 },
               ].map((feature, index) => (
                 <motion.div
@@ -738,9 +756,9 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
                   <motion.div
                     whileHover={{ rotate: [0, -10, 10, 0] }}
                     transition={{ duration: 0.5 }}
-                    className="w-12 h-12 rounded-xl bg-gold-400/10 flex items-center justify-center mx-auto mb-3"
+                    className="w-12 h-12 rounded-xl bg-brand-blue/10 flex items-center justify-center mx-auto mb-3"
                   >
-                    <feature.icon className="w-6 h-6 text-gold-400" />
+                    <feature.icon className="w-6 h-6 text-brand-blue-light" />
                   </motion.div>
                   <h4 className="font-medium mb-1">{feature.title}</h4>
                   <p className="text-sm text-gray-400">{feature.description}</p>
@@ -749,10 +767,10 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
             </div>
           </div>
 
-          <div className="bg-gradient-to-r from-gold-400/5 via-transparent to-gold-400/5 border border-white/10 rounded-2xl p-6">
+          <div className="bg-gradient-to-r from-brand-blue/[0.06] via-transparent to-brand-blue/[0.06] border border-white/10 rounded-2xl p-6">
             <div className="flex items-center justify-center gap-2 mb-6">
               <Star className="w-5 h-5 text-blue-500 fill-blue-500" />
-              <h3 className="font-semibold text-lg">What Traders Say</h3>
+              <h3 className="text-[17px] font-semibold tracking-[-0.02em] text-white">What traders say</h3>
               <Star className="w-5 h-5 text-blue-500 fill-blue-500" />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -766,15 +784,15 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
                   className="bg-black/50 border border-white/10 rounded-xl p-4 relative overflow-hidden"
                 >
                   <div className="absolute top-2 right-2 opacity-10">
-                    <svg className="w-8 h-8 text-gold-400" fill="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-8 h-8 text-brand-blue-light" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
                     </svg>
                   </div>
                   <p className="text-sm text-gray-300 mb-3 italic">"{testimonial.text}"</p>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gold-400/40 to-gold-400/10 flex items-center justify-center">
-                        <span className="text-xs font-bold text-gold-400">{testimonial.name[0]}</span>
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-blue/40 to-brand-blue/10 flex items-center justify-center">
+                        <span className="text-xs font-bold text-brand-blue-light">{testimonial.name[0]}</span>
                       </div>
                       <div>
                         <p className="text-sm font-medium">{testimonial.name}</p>
@@ -801,14 +819,14 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
             */}
             <button
               onClick={() => navigate('/terms')}
-              className="text-gold-400 hover:underline inline-block py-3 sm:py-0 align-middle"
+              className="text-brand-blue-light hover:underline inline-block py-3 sm:py-0 align-middle"
             >
               Terms of Service
             </button>
             {' '}and{' '}
             <button
               onClick={() => navigate('/privacy')}
-              className="text-gold-400 hover:underline inline-block py-3 sm:py-0 align-middle"
+              className="text-brand-blue-light hover:underline inline-block py-3 sm:py-0 align-middle"
             >
               Privacy Policy
             </button>
