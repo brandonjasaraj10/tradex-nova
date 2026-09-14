@@ -679,15 +679,23 @@ export default function Sales() {
 
             {/*
               The actual reason, in his words: the competition is not missing
-              features, it is missing the only one that matters. It also sets
-              up the psychology sections above and below rather than sitting
-              apart from them.
+              features, it has too many, and none of them is the one that
+              matters. It also sets up the psychology sections above and below
+              rather than sitting apart from them.
+
+              No em-dash. The clause it used to hang off read as an aside when
+              it is the whole point, so "My trading psychology." is its own
+              sentence now - a two-word fragment after a long sentence lands
+              the way a dash never does. The close moves from "I" to "you",
+              which is where the paragraph is actually aimed.
             */}
             <p className="mt-4 text-[14.5px] sm:text-base leading-relaxed text-gray-400 text-balance">
               Every one I tried had a hundred features and not one of them tracked
-              the thing that actually decided whether I made money &mdash; what was
-              going on in my head when I clicked buy. Everything else is just
-              tidier arithmetic on a loss you have already taken.
+              the thing that actually decides whether I make money. My trading
+              psychology. What was going on in my head when I clicked buy, when I
+              clicked sell, when I closed a position early. Everything else is
+              tidier arithmetic on a loss you have already taken and can learn
+              nothing from.
             </p>
 
             <Link
