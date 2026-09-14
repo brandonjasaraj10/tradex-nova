@@ -39,7 +39,11 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const SITE = 'https://www.tradexnova.com';
 const FROM = 'TradeX <noreply@tradexnova.com>';
-const LOGO_URL = 'https://www.tradexnova.com/tradex_logo.png';
+/* The SOLID logo - white mark on a black tile. Carries its own contrast, so
+   it survives a client deciding the background should be the other colour.
+   tradex_logo.png is the transparent one: a pure white mark (measured at
+   254/255 luminance) that vanishes the moment a client inverts the card. */
+const LOGO_URL = 'https://www.tradexnova.com/trade_x_logo.png';
 
 /* Total sends per run. ~12 new signups a day at current volume, so this
    leaves room for roughly 13 backlog messages and drains 250 in ~19 days. */
