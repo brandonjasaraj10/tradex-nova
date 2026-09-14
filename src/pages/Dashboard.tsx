@@ -942,8 +942,20 @@ export default function Dashboard() {
           </Card>
 
           <Card variant="gradient" className="bg-[#111]/80 p-3 sm:p-4">
-            <div className="flex items-center justify-between mb-1">
+            {/*
+              Names its window, the way the NOVA Score card beside it does.
+
+              This figure follows the date picker; the Account Balance above
+              it cannot, because a balance is just what is in the account.
+              With a range selected the two legitimately differ, and with
+              neither labelled the only available conclusion was that the
+              data was broken.
+            */}
+            <div className="flex items-center justify-between mb-1 gap-2">
               <h3 className="text-xs sm:text-sm text-gray-400">Total P&L</h3>
+              <span className="text-[10px] text-gray-600 whitespace-nowrap">
+                {formatPeriodLabel(dateRange.startDate, dateRange.endDate)}
+              </span>
             </div>
             <div className="flex items-center gap-1 sm:gap-2 mb-3 flex-wrap">
               <span className="text-base sm:text-lg lg:text-xl xl:text-2xl font-bold">

@@ -153,8 +153,23 @@ export default function BalanceCard() {
             </div>
             <div>
               <p className="text-sm text-gray-400">Account Balance</p>
+              {/*
+                "All time" matters more than it looks.
+
+                A balance has no date range - it is simply what is in the
+                account, every trade since it opened. The Total P&L card
+                directly below it DOES follow the date picker. So with a range
+                selected the two legitimately differ, and nothing on screen
+                said why: a balance of $50,400 against a Total P&L of $23,900,
+                where the $26,500 gap was entries from outside the chosen
+                window. Both numbers were right and it still read as corrupted
+                data.
+
+                The NOVA Score card already prints its period underneath for
+                exactly this reason. This says the other half.
+              */}
               <p className="text-xs text-gray-500">
-                {!selectedAccount ? 'All Accounts' : 'Selected Account'}
+                {!selectedAccount ? 'All accounts' : 'Selected account'} &middot; All time
               </p>
             </div>
           </div>
@@ -189,7 +204,7 @@ export default function BalanceCard() {
             <div className="p-3 rounded-lg bg-black/20 border border-white/5">
               <div className="flex items-center gap-2 mb-1">
                 <DollarSign className="w-4 h-4 text-gray-400" />
-                <p className="text-xs text-gray-400">Net P&L</p>
+                <p className="text-xs text-gray-400">Net P&L, all time</p>
               </div>
               <p className={`text-lg font-semibold ${isProfitable ? 'text-blue-400' : 'text-gray-400'}`}>
                 {isProfitable ? '+' : ''}{formatCurrency(balanceData.net_pnl, balanceData.currency)}
