@@ -1909,10 +1909,16 @@ export default function Journal() {
                         And it says what actually breaks rather than "not
                         tied to an account", which is our word for it and
                         tells the reader nothing about why they should care.
+
+                        Blue, not amber. The palette is black, white, grey and
+                        one blue - the Risk Disclaimer's warning box is blue
+                        for the same reason, because a second accent colour
+                        introduced for one notice makes it the loudest thing
+                        on a page that is deliberately quiet everywhere else.
                       */}
                       {entryForm.manual_pnl.trim() !== '' && !selectedAccount && (
-                        <div className="mt-2 rounded-lg border border-amber-400/25 bg-amber-400/[0.07] px-3 py-2.5">
-                          <p className="text-[12.5px] leading-relaxed text-amber-200/90">
+                        <div className="mt-2 rounded-lg border border-brand-blue-light/25 bg-brand-blue/[0.07] px-3 py-2.5">
+                          <p className="text-[12.5px] leading-relaxed text-gray-300">
                             This P&amp;L won&rsquo;t count toward any account balance.
                           </p>
                           {/* One tap when there is an account to attach to,
@@ -1921,14 +1927,14 @@ export default function Journal() {
                             <button
                               type="button"
                               onClick={() => setSelectedAccount(accounts[0])}
-                              className="mt-1.5 text-[12.5px] font-medium text-amber-300 hover:text-amber-200 underline underline-offset-2 transition-colors"
+                              className="mt-1.5 text-[12.5px] font-medium text-brand-blue-light hover:text-white underline underline-offset-2 transition-colors"
                             >
                               Attach it to {accounts[0].account_name || accounts[0].broker_type}
                             </button>
                           ) : (
                             <Link
                               to="/settings"
-                              className="mt-1.5 inline-block text-[12.5px] font-medium text-amber-300 hover:text-amber-200 underline underline-offset-2 transition-colors"
+                              className="mt-1.5 inline-block text-[12.5px] font-medium text-brand-blue-light hover:text-white underline underline-offset-2 transition-colors"
                             >
                               Create an account to track it
                             </Link>
