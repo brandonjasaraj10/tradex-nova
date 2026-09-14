@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Check, Plus, FileUp, X, Info, ShieldCheck, RefreshCw } from 'lucide-react';
 import Button from './Button';
 import CSVUpload from '../broker/CSVUpload';
-import { supabase } from '../../lib/supabase';
+import { supabase, getCurrentUser } from '../../lib/supabase';
 import { brokerService, type BrokerFromAPI } from '../../services/brokerService';
 import { useToast } from '../../lib/toastContext';
 import { useDateRange, allTimeRange } from '../../lib/dateRangeContext';
@@ -206,7 +206,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
 
     setIsCreating(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) throw new Error('Not authenticated');
 
       const isOther = selectedBrokerId === '__other__';
@@ -463,16 +463,35 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
               )}
 
               <div className="mt-2 pt-2 border-t border-white/10 space-y-1">
+                {/*
+                  Only offered when a specific account is selected, because an
+                  import has to land somewhere. This used to open regardless -
+                  including on "All Accounts" - and the trades were written
+                  with no account at all, which makes them invisible to every
+                  balance on the site while still counting in Total P&L.
+
+                  Disabled rather than hidden, with the reason on the button,
+                  so somebody looking for the feature finds it and learns what
+                  to do instead of concluding it does not exist.
+                */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
+                    if (!selectedAccount) return;
                     setIsOpen(false);
                     setShowCSVUpload(true);
                   }}
-                  className="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-2 bg-gradient-to-r from-gold-400/10 to-blue-500/10 hover:from-gold-400/20 hover:to-blue-500/20 text-gold-400 border border-gold-400/20"
+                  disabled={!selectedAccount}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-2 border ${
+                    selectedAccount
+                      ? 'bg-brand-blue/10 hover:bg-brand-blue/20 text-brand-blue-light border-brand-blue-light/20'
+                      : 'text-gray-500 border-white/10 cursor-not-allowed'
+                  }`}
                 >
                   <FileUp size={16} />
-                  <span>Import CSV File</span>
+                  <span>
+                    {selectedAccount ? 'Import CSV File' : 'Pick an account to import into'}
+                  </span>
                 </button>
                 <button
                   onClick={(e) => {
@@ -841,9 +860,10 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
         document.body
       )}
 
-      {showCSVUpload && createPortal(
+      {showCSVUpload && selectedAccount && createPortal(
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <CSVUpload
+            connectionId={selectedAccount.id}
             onClose={() => setShowCSVUpload(false)}
             onSuccess={() => {
               setShowCSVUpload(false);

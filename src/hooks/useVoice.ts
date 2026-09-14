@@ -29,6 +29,21 @@ export function useVoice({ onTranscript, autoSpeak = false }: UseVoiceOptions = 
     onTranscriptRef.current = onTranscript;
   }, [onTranscript]);
 
+  /*
+    How long a pause has to be before we decide the sentence is finished.
+
+    This was 1500ms, and 1.5 seconds is not a pause - it is a thought.
+    Describing a trade out loud means stopping to remember the entry, or the
+    number, or what you were actually feeling at the time, and every one of
+    those gaps ended the recording mid-sentence and sent half a sentence to
+    Nova. Reported as "if I took a little break of speaking, she'd process
+    the voice already".
+
+    3 seconds is long enough to think and short enough that a genuinely
+    finished sentence does not sit there waiting.
+  */
+  const SILENCE_BEFORE_PROCESSING_MS = 3000;
+
   useEffect(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
@@ -93,7 +108,7 @@ export function useVoice({ onTranscript, autoSpeak = false }: UseVoiceOptions = 
                 }
               }
             }
-          }, 1500);
+          }, SILENCE_BEFORE_PROCESSING_MS);
         }
       };
 

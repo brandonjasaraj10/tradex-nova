@@ -97,6 +97,16 @@ body {
   animation: text-shimmer 8s linear infinite;
 }
 
+/*
+  The product tabs' caption cross-fade. Defined here because an animate-[...]
+  arbitrary value referencing a keyframe that does not exist renders as
+  nothing at all - silently, which is the worst kind of missing.
+*/
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(3px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 @keyframes float {
   0%, 100% {
     transform: translateY(0px) translateX(0px);
@@ -146,6 +156,20 @@ body {
 .custom-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+/*
+  A scroller with no visible scrollbar - the FAQ's jump nav, which scrolls
+  sideways on a phone and would otherwise carry a 4px bar under the chips.
+  The row is short enough that its ends are obvious without one.
+*/
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
 /* Date picker styling */

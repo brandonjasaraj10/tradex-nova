@@ -1,25 +1,16 @@
-import { Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
-import Footer from '../components/layout/Footer';
+import PageShell from '../components/layout/PageShell';
+import LegalProse from '../components/layout/LegalProse';
 
 export default function TermsOfService() {
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-        <Link
-          to="/"
-          className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors mb-8"
-        >
-          <ArrowLeft size={16} />
-          Back to Home
-        </Link>
-
-        <h1 className="text-4xl sm:text-5xl font-bold mb-4">Terms of Service</h1>
-        <p className="text-gray-400 mb-8">Last Updated: September 11, 2026</p>
-
-        <div className="space-y-8 text-gray-300 leading-relaxed">
+    <PageShell
+      eyebrow="Legal"
+      title="Terms of Service"
+      meta="Last updated 11 September 2026"
+    >
+      <LegalProse>
           <section>
-            <h2 className="text-2xl font-bold text-white mb-4">1. Acceptance of Terms</h2>
+            <h2>1. Acceptance of Terms</h2>
             <p>
               By accessing and using TradeX ("Service"), you accept and agree to be bound by the terms and provision of this agreement.
               If you do not agree to abide by the above, please do not use this service.
@@ -27,7 +18,7 @@ export default function TermsOfService() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold text-white mb-4">2. Description of Service</h2>
+            <h2>2. Description of Service</h2>
             <p className="mb-4">
               TradeX provides a trading journal and analytics platform with AI-powered insights. The Service allows users to:
             </p>
@@ -41,7 +32,7 @@ export default function TermsOfService() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold text-white mb-4">3. Trading Disclaimer</h2>
+            <h2>3. Trading Disclaimer</h2>
             <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-6 mb-4">
               <p className="font-semibold text-blue-400 mb-2">IMPORTANT NOTICE:</p>
               <p className="mb-4">
@@ -59,7 +50,7 @@ export default function TermsOfService() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold text-white mb-4">4. User Account and Security</h2>
+            <h2>4. User Account and Security</h2>
             <p className="mb-4">
               You are responsible for maintaining the confidentiality of your account and password. You agree to:
             </p>
@@ -73,7 +64,7 @@ export default function TermsOfService() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold text-white mb-4">5. Subscription and Payment Terms</h2>
+            <h2>5. Subscription and Payment Terms</h2>
             <p className="mb-4">
               TradeX offers subscription-based access to the Service:
             </p>
@@ -88,7 +79,7 @@ export default function TermsOfService() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold text-white mb-4">6. Data Ownership and Usage</h2>
+            <h2>6. Data Ownership and Usage</h2>
             <p className="mb-4">
               You retain all rights to your trading data. By using the Service, you grant us permission to:
             </p>
@@ -105,18 +96,18 @@ export default function TermsOfService() {
 
 
           <section>
-            <h2 className="text-2xl font-bold text-white mb-4">7. Broker Connections and Automatic Syncing</h2>
-            <p className="mb-4">
+            <h2>7. Broker Connections and Automatic Syncing</h2>
+            <p>
               You may connect a MetaTrader 4 or MetaTrader 5 trading account so that your closed
               trades and account balance are imported automatically. This is optional; TradeX works
               without it.
             </p>
-            <p className="mb-4">
-              <strong className="text-white">The connection is read-only.</strong> We ask for your
+            <p>
+              <strong>The connection is read-only.</strong> We ask for your
               investor password, which grants permission to view an account but not to place, modify
               or close trades, and not to withdraw funds. TradeX cannot trade on your behalf.
             </p>
-            <ul className="list-disc pl-6 space-y-2">
+            <ul>
               <li>
                 Your investor password is passed to MetaApi (Agiliumtrade AI Ltd), the service that
                 maintains the connection to your broker, and is not stored on TradeX&rsquo;s systems
@@ -144,8 +135,8 @@ export default function TermsOfService() {
                 does not delete trades you have already imported
               </li>
             </ul>
-            <p className="mt-4">
-              <strong className="text-white">You are responsible for ensuring you are permitted to
+            <p>
+              <strong>You are responsible for ensuring you are permitted to
               connect the account.</strong> Some brokers and proprietary trading firms restrict
               sharing account credentials with third-party services, including read-only access.
               Check the rules of your broker or funding programme before connecting, as we cannot
@@ -154,7 +145,7 @@ export default function TermsOfService() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold text-white mb-4">8. Prohibited Uses</h2>
+            <h2>8. Prohibited Uses</h2>
             <p className="mb-4">You agree not to:</p>
             <ul className="list-disc pl-6 space-y-2">
               <li>Use the Service for any illegal purpose</li>
@@ -169,7 +160,7 @@ export default function TermsOfService() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold text-white mb-4">9. Intellectual Property</h2>
+            <h2>9. Intellectual Property</h2>
             <p className="mb-4">
               The Service, including all content, features, and functionality, is owned by TradeX and protected by
               international copyright, trademark, and other intellectual property laws.
@@ -180,7 +171,7 @@ export default function TermsOfService() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold text-white mb-4">10. Service Availability</h2>
+            <h2>10. Service Availability</h2>
             <p className="mb-4">
               We strive to provide continuous service availability, but we do not guarantee:
             </p>
@@ -196,7 +187,7 @@ export default function TermsOfService() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold text-white mb-4">11. Limitation of Liability</h2>
+            <h2>11. Limitation of Liability</h2>
             <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-6">
               <p className="mb-4">
                 TO THE MAXIMUM EXTENT PERMITTED BY LAW, TRADEX SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL,
@@ -217,7 +208,7 @@ export default function TermsOfService() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold text-white mb-4">12. Indemnification</h2>
+            <h2>12. Indemnification</h2>
             <p>
               You agree to indemnify and hold TradeX harmless from any claims, losses, liability, damages, and expenses
               arising from your use of the Service, violation of these Terms, or violation of any rights of another party.
@@ -225,7 +216,7 @@ export default function TermsOfService() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold text-white mb-4">13. Termination</h2>
+            <h2>13. Termination</h2>
             <p className="mb-4">
               We may terminate or suspend your account and access to the Service immediately, without prior notice, for any reason, including:
             </p>
@@ -242,7 +233,7 @@ export default function TermsOfService() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold text-white mb-4">14. Changes to Terms</h2>
+            <h2>14. Changes to Terms</h2>
             <p>
               We reserve the right to modify these Terms at any time. We will notify users of material changes via
               email or through the Service. Your continued use of the Service after changes constitutes acceptance
@@ -251,7 +242,7 @@ export default function TermsOfService() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold text-white mb-4">15. Governing Law</h2>
+            <h2>15. Governing Law</h2>
             <p>
               These Terms shall be governed by and construed in accordance with the laws of the jurisdiction in which
               TradeX operates, without regard to its conflict of law provisions.
@@ -259,7 +250,7 @@ export default function TermsOfService() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold text-white mb-4">16. Dispute Resolution</h2>
+            <h2>16. Dispute Resolution</h2>
             <p className="mb-4">
               Any disputes arising from these Terms or the Service shall be resolved through:
             </p>
@@ -271,7 +262,7 @@ export default function TermsOfService() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold text-white mb-4">17. Severability</h2>
+            <h2>17. Severability</h2>
             <p>
               If any provision of these Terms is found to be unenforceable or invalid, that provision shall be limited
               or eliminated to the minimum extent necessary, and the remaining provisions shall remain in full force and effect.
@@ -279,7 +270,7 @@ export default function TermsOfService() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold text-white mb-4">18. Contact Information</h2>
+            <h2>18. Contact Information</h2>
             <p className="mb-4">
               For questions about these Terms, please contact us at:
             </p>
@@ -289,7 +280,7 @@ export default function TermsOfService() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold text-white mb-4">19. Entire Agreement</h2>
+            <h2>19. Entire Agreement</h2>
             <p>
               These Terms, together with our Privacy Policy, constitute the entire agreement between you and TradeX
               regarding the use of the Service.
@@ -301,9 +292,7 @@ export default function TermsOfService() {
               By using TradeX, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service.
             </p>
           </div>
-        </div>
-      </div>
-      <Footer />
-    </div>
+      </LegalProse>
+    </PageShell>
   );
 }

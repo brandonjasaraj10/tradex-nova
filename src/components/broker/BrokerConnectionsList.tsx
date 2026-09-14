@@ -1,13 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { motion } from 'framer-motion';
-import { Link2, CheckCircle2, AlertCircle, Trash2, Clock, Upload, Plus, X, RefreshCw, FileUp, DollarSign, Pencil } from 'lucide-react';
+import { Link2, CheckCircle2, AlertCircle, Trash2, Clock, Upload, Plus, X, RefreshCw, DollarSign, Pencil } from 'lucide-react';
 import Button from '../shared/Button';
 import ConfirmModal from '../shared/ConfirmModal';
 import { brokerService, type BrokerConnection, type BrokerFromAPI } from '../../services/brokerService';
-import { supabase } from '../../lib/supabase';
+import { supabase, getCurrentUser } from '../../lib/supabase';
 import { useToast } from '../../lib/toastContext';
-import CSVUpload from './CSVUpload';
 import EditBalanceModal from './EditBalanceModal';
 import { useAccount } from '../../lib/accountContext';
 
@@ -20,8 +19,7 @@ export default function BrokerConnectionsList() {
   const [uploadingIds, setUploadingIds] = useState<Set<string>>(new Set());
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const [showAddAccount, setShowAddAccount] = useState(false);
-  const [showCSVUpload, setShowCSVUpload] = useState(false);
-  useBodyScrollLock(showAddAccount || showCSVUpload);
+  useBodyScrollLock(showAddAccount);
   const [brokers, setBrokers] = useState<BrokerFromAPI[]>([]);
   const [isCreating, setIsCreating] = useState(false);
   const [newAccountName, setNewAccountName] = useState('');
@@ -120,7 +118,7 @@ export default function BrokerConnectionsList() {
 
     setIsCreating(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) throw new Error('Not authenticated');
 
       const isOther = selectedBrokerId === '__other__';
@@ -291,7 +289,7 @@ export default function BrokerConnectionsList() {
     );
   }
 
-  if (connections.length === 0 && !showAddAccount && !showCSVUpload) {
+  if (connections.length === 0 && !showAddAccount) {
     return (
       <>
         <div className="text-center py-12">
@@ -306,13 +304,19 @@ export default function BrokerConnectionsList() {
             Broker auto-sync is coming soon. For now, you can manually import your trade history.
           </p>
           <div className="flex items-center justify-center gap-3">
-            <button
-              onClick={() => setShowCSVUpload(true)}
-              className="px-6 py-3 bg-gradient-to-r from-gold-400 to-blue-500 hover:from-gold-500 hover:to-blue-600 text-white rounded-lg text-sm font-medium transition-all inline-flex items-center gap-2 shadow-lg"
-            >
-              <FileUp size={16} />
-              Upload CSV File
-            </button>
+            {/*
+              The "Upload CSV File" button that stood here is gone.
+
+              It was shown to people with no accounts, and there is nowhere
+              for those trades to go: an imported trade must belong to an
+              account or it is invisible to every balance on the site. What
+              actually happened is that one user imported, saw nothing appear,
+              and imported again - four times in nine minutes - turning twelve
+              real trades into forty-eight rows.
+
+              Create the account first, then import into it. The per-account
+              upload on each card below already does this correctly.
+            */}
             <button
               onClick={() => setShowAddAccount(true)}
               className="px-6 py-3 bg-gradient-to-r from-gold-400/20 to-blue-500/20 hover:from-gold-400/30 hover:to-blue-500/30 text-gold-400 rounded-lg text-sm font-medium transition-all inline-flex items-center gap-2 border border-gold-400/30"
@@ -322,14 +326,6 @@ export default function BrokerConnectionsList() {
             </button>
           </div>
         </div>
-        {showCSVUpload && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <CSVUpload
-              onClose={() => setShowCSVUpload(false)}
-              onSuccess={() => loadConnections()}
-            />
-          </div>
-        )}
       </>
     );
   }
@@ -494,13 +490,13 @@ export default function BrokerConnectionsList() {
       ))}
 
       <div className="flex justify-center gap-3 pt-4">
-        <button
-          onClick={() => setShowCSVUpload(true)}
-          className="px-6 py-3 bg-gradient-to-r from-gold-400 to-blue-500 hover:from-gold-500 hover:to-blue-600 text-white rounded-lg text-sm font-medium transition-all flex items-center gap-2 shadow-lg"
-        >
-          <FileUp size={16} />
-          Upload CSV File
-        </button>
+        {/*
+          Also removed, and this one was pure duplication: every account card
+          above already carries its own upload control, which passes that
+          account through and imports correctly. This button did the same job
+          without knowing which account it meant, which is precisely how the
+          trades ended up belonging to none.
+        */}
         <button
           onClick={() => setShowAddAccount(true)}
           className="px-6 py-3 bg-gradient-to-r from-gold-400/20 to-blue-500/20 hover:from-gold-400/30 hover:to-blue-500/30 text-gold-400 rounded-lg text-sm font-medium transition-all flex items-center gap-2 border border-gold-400/30"
@@ -666,15 +662,6 @@ export default function BrokerConnectionsList() {
               </Button>
             </div>
           </motion.div>
-        </div>
-      )}
-
-      {showCSVUpload && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <CSVUpload
-            onClose={() => setShowCSVUpload(false)}
-            onSuccess={() => loadConnections()}
-          />
         </div>
       )}
 

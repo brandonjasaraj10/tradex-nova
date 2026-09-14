@@ -11,7 +11,7 @@ import BalanceCard from '../components/dashboard/BalanceCard';
 import { useAccount } from '../lib/accountContext';
 import { useDateRange } from '../lib/dateRangeContext';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase, getCurrentUser } from '../lib/supabase';
 import NOVAScore from '../components/shared/NOVAScore';
 import { calculateNOVAScore, type NOVAScoreBreakdown } from '../services/novaScore';
 import { getPsychologyAggregate } from '../services/psychologyChecks';
@@ -98,7 +98,12 @@ function WinningDaysCard({ winningDays }: { winningDays: number }) {
 export default function Dashboard() {
   const navigate = useNavigate();
   const { accounts, selectedAccount, setSelectedAccount, refreshAccounts } = useAccount();
-  const { refreshTrigger } = useDataSync();
+  /*
+    Everything this page loads comes from these four. Notably not
+    user_profiles - completing the tour or editing a profile used to re-run
+    all eight loaders below.
+  */
+  const { refreshTrigger } = useDataSync(['trades', 'journal_entries', 'trading_confluences', 'trading_rules']);
   const [activeTab, setActiveTab] = useState('trades');
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [calendarData, setCalendarData] = useState(() =>
@@ -146,7 +151,7 @@ export default function Dashboard() {
   const reportMenuRef = useRef<HTMLDivElement>(null);
 
   const handleGenerateReport = async (reportType: 'weekly' | 'monthly' | 'quarterly' | 'yearly') => {
-    const user = (await supabase.auth.getUser()).data.user;
+    const user = await getCurrentUser();
     if (!user) return;
 
     setLoadingReport(true);
@@ -235,7 +240,7 @@ export default function Dashboard() {
 
   const loadRecentTrades = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) return;
 
       let tradesQuery = supabase
@@ -364,7 +369,7 @@ export default function Dashboard() {
 
   const loadPsychologyChecks = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) return;
 
       const checks = await getPsychologyChecks(user.id);
@@ -383,19 +388,29 @@ export default function Dashboard() {
         distinct, and folding blanks into the denominator would report a
         collapsing score for someone who simply has not filled it in yet.
       */
-      const rates = await Promise.all(
-        enabled.map(async (check) => {
-          const { data, error } = await supabase
-            .from('journal_entry_psychology_checks')
-            .select('confirmed')
-            .eq('check_id', check.id)
-            .not('confirmed', 'is', null);
+      const { data: checkRows, error: checkError } = await supabase
+        .from('journal_entry_psychology_checks')
+        .select('check_id, confirmed')
+        .in('check_id', enabled.map(c => c.id))
+        .not('confirmed', 'is', null);
 
-          if (error || !data || data.length === 0) return null;
-          const yes = data.filter(r => r.confirmed === true).length;
-          return Math.round((yes / data.length) * 100);
-        })
-      );
+      if (checkError) throw checkError;
+
+      const byCheck = new Map<string, { total: number; yes: number }>();
+      for (const row of (checkRows ?? []) as { check_id: string; confirmed: boolean | null }[]) {
+        const bucket = byCheck.get(row.check_id) ?? { total: 0, yes: 0 };
+        bucket.total += 1;
+        if (row.confirmed === true) bucket.yes += 1;
+        byCheck.set(row.check_id, bucket);
+      }
+
+      // null, not 0, for a check with nothing answered - it is dropped from
+      // the average below rather than dragging it down.
+      const rates = enabled.map(check => {
+        const bucket = byCheck.get(check.id);
+        if (!bucket || bucket.total === 0) return null;
+        return Math.round((bucket.yes / bucket.total) * 100);
+      });
 
       const answered = rates.filter((r): r is number => r !== null);
       setAveragePsychAdherence(
@@ -410,28 +425,44 @@ export default function Dashboard() {
 
   const loadTradingRules = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) return;
 
       const rules = await getTradingRules(user.id);
       setTradingRules(rules);
 
-      // Calculate average adherence for enabled rules
+      /*
+        One request for every rule, not one request per rule.
+
+        This used to fire a separate query inside a map, so a trader with ten
+        rules made ten round trips to work out a single percentage - and the
+        dashboard runs this on every load and on every realtime refresh.
+        `in` asks the same question once and the rates are grouped here.
+      */
       const enabledRules = rules.filter(r => r.enabled);
       if (enabledRules.length > 0) {
-        const adherenceRates = await Promise.all(
-          enabledRules.map(async (rule) => {
-            const { data, error } = await supabase
-              .from('journal_entry_rules')
-              .select('followed')
-              .eq('rule_id', rule.id);
+        const { data: ruleRows, error: ruleError } = await supabase
+          .from('journal_entry_rules')
+          .select('rule_id, followed')
+          .in('rule_id', enabledRules.map(r => r.id));
 
-            if (error || !data || data.length === 0) return 0;
+        if (ruleError) throw ruleError;
 
-            const followedCount = data.filter(entry => entry.followed === true).length;
-            return Math.round((followedCount / data.length) * 100);
-          })
-        );
+        const byRule = new Map<string, { total: number; followed: number }>();
+        for (const row of (ruleRows ?? []) as { rule_id: string; followed: boolean | null }[]) {
+          const bucket = byRule.get(row.rule_id) ?? { total: 0, followed: 0 };
+          bucket.total += 1;
+          if (row.followed === true) bucket.followed += 1;
+          byRule.set(row.rule_id, bucket);
+        }
+
+        // A rule nobody has logged against still counts as 0, exactly as it
+        // did when its own query came back empty.
+        const adherenceRates = enabledRules.map(rule => {
+          const bucket = byRule.get(rule.id);
+          if (!bucket || bucket.total === 0) return 0;
+          return Math.round((bucket.followed / bucket.total) * 100);
+        });
 
         const avgAdherence = Math.round(
           adherenceRates.reduce((sum, rate) => sum + rate, 0) / adherenceRates.length
@@ -456,7 +487,7 @@ export default function Dashboard() {
     if (!newRule.name.trim()) return;
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) return;
 
       const maxOrder = Math.max(...tradingRules.map(r => r.order_index), -1);
@@ -524,7 +555,7 @@ export default function Dashboard() {
 
   const calculateAndSetNovaScore = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) return;
 
       /*
@@ -921,8 +952,20 @@ export default function Dashboard() {
           </Card>
 
           <Card variant="gradient" className="bg-[#111]/80 p-3 sm:p-4">
-            <div className="flex items-center justify-between mb-1">
+            {/*
+              Names its window, the way the NOVA Score card beside it does.
+
+              This figure follows the date picker; the Account Balance above
+              it cannot, because a balance is just what is in the account.
+              With a range selected the two legitimately differ, and with
+              neither labelled the only available conclusion was that the
+              data was broken.
+            */}
+            <div className="flex items-center justify-between mb-1 gap-2">
               <h3 className="text-xs sm:text-sm text-gray-400">Total P&L</h3>
+              <span className="text-[10px] text-gray-600 whitespace-nowrap">
+                {formatPeriodLabel(dateRange.startDate, dateRange.endDate)}
+              </span>
             </div>
             <div className="flex items-center gap-1 sm:gap-2 mb-3 flex-wrap">
               <span className="text-base sm:text-lg lg:text-xl xl:text-2xl font-bold">

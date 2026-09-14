@@ -85,6 +85,64 @@ color if it's representing a gain or a loss.
 - Card/section titles: `text-lg font-medium`
 - Body text: `text-sm`, with `text-gray-400` for secondary/muted text
 
+## The public-page design language (added 2026-09-13)
+
+Everything above describes the **logged-in app**. The marketing side —
+the landing page, `/features`, `/nova`, `/pricing`, `/security`,
+`/for-prop-firm-traders`, `/about`, `/faq`, `/affiliates`, the legal
+pages and the paywall — was rebuilt on a tighter system that differs in
+three specific ways. New public-facing work should follow it.
+
+**See [TRADEX_BRAND_KIT.md](TRADEX_BRAND_KIT.md)** for the full version,
+including voice and copy rules. That file is deliberately self-contained
+so it can be handed to a designer or pasted into a chat with no repo
+access. The short version for engineers:
+
+1. **Type is semibold with negative tracking, never bold.**
+   `font-semibold` + `tracking-[-0.035em]` on headings; the tracking
+   tightens as the size grows (-0.04em on a hero, -0.02em on a card
+   heading). Bold at default tracking is what made the old pages read as
+   generic. **No gradient text** — a white-to-grey headline reads as
+   dimming out, not emphasis.
+
+2. **The primary CTA is a white pill with black text**, `rounded-full`.
+   Secondary is a transparent pill with a `white/15` border. Blue
+   rectangular buttons are the previous language.
+
+3. **Sections are separated by a `white/[0.06]` rule and vertical
+   space, not by stacking cards.** Four bordered boxes in a row read as
+   one undifferentiated block, especially on a phone. Break the rhythm
+   with a real interface panel beside its explanation (sides
+   alternating), a full-width band of numbers, or a pull quote.
+
+Shared building blocks, so this does not get reinvented per page:
+
+- `src/components/layout/PageShell.tsx` — header, measure, footer for
+  every public page outside the landing page
+- `src/components/layout/LegalProse.tsx` — one type treatment for the
+  three legal pages
+- `src/components/marketing/blocks.tsx` — `Section`, `Split`, `Card`,
+  `TickList`, `QA`, `Steps`, `ClosingCta`
+- `src/components/marketing/product.tsx` — `Frame`, `StatBand`,
+  `PullQuote`, and the product panels (calendar, checklist, permissions,
+  accounts, weekly report, timeline)
+- `src/components/marketing/exampleScore.ts` — the one example NOVA
+  Score breakdown every page shares, so no two pages quote different
+  numbers for the same screenshot
+
+**Two rules that are easy to get wrong:**
+
+- **Use the real component where one exists.** `/features` and
+  `/pricing` import the actual `NOVAScore` and `PreTradeScales` rather
+  than redrawing them, so a marketing page cannot drift from the product
+  it is selling.
+- **Looping animations must not move the page.** Reserve the finished
+  size before the animation starts by rendering the final content
+  invisibly in normal flow and painting the animated copy on top (see
+  `NovaAnswer.tsx`). A `min-height` guess in `em` cannot know how many
+  lines text wraps to at an arbitrary width — the one that was there
+  reserved 98px for text that needed 214px on a 320px phone.
+
 ## Known inconsistencies not fixed by this guide
 
 These exist in the app today. They're not urgent, but worth knowing
@@ -95,7 +153,11 @@ about so nobody assumes they're intentional:
   button style, inconsistent with the blue-accented, `#0A0A0A`-card
   look the actual pages use. Some older code may still reference these.
 
-- **[Measured 2026-08-19] `gold-*` is still undefined, in 149 places.**
+- **[Measured 2026-08-19, partly fixed since] `gold-*` is still undefined.**
+  Payment.tsx's 29 usages were converted to real brand tokens on
+  2026-09-13 as part of bringing the paywall on brand, and Footer.tsx's
+  were fixed earlier. The remaining usages across twelve other files are
+  still there and still deliberately deferred.
   The `Button.tsx` fix below only covered that one component. `gold-400`
   /`gold-500` are *not* defined in `tailwind.config.js` or `index.css`,
   yet 149 usages remain across 14 files (Sales, Payment, Settings,

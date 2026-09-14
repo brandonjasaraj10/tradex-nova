@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Instagram, Lock } from 'lucide-react';
-import Logo from '../shared/Logo';
+import Wordmark from '../shared/Wordmark';
 import EarlyAccessModal from '../shared/EarlyAccessModal';
 import { useHasLaunched } from '../../lib/launch';
 
@@ -16,23 +16,30 @@ export default function Footer() {
   };
 
   return (
-    <footer className="bg-dark-700 border-t border-dark-300">
+    <footer className="bg-black border-t border-white/[0.06]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="col-span-1">
-            <Link to="/" className="flex items-center">
-              <Logo className="h-8 w-auto" />
-              <span className="ml-2 text-xl font-bold text-white">TradeX</span>
+        {/*
+          Four columns now, not two. The credibility pages live here rather
+          than in the top nav on purpose: a nav link on a landing page is an
+          exit taken before anything has been read, but somebody who has
+          scrolled all the way to the footer is deciding, and this is exactly
+          where they go looking for the security and pricing pages.
+        */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          <div className="col-span-2 md:col-span-1">
+            <Link to="/" className="inline-flex items-center">
+              <Wordmark className="text-xl" />
             </Link>
-            <p className="mt-4 text-sm text-gray-400">
-              AI-powered trading journal for the modern trader. Track, analyze, and improve your performance.
+            <p className="mt-4 text-[13px] text-gray-500 max-w-xs leading-relaxed">
+              A trading journal built around psychology. Talk through the trade,
+              and TradeX finds the pattern costing you money.
             </p>
             <div className="mt-6 flex space-x-6">
               <a
                 href="https://www.instagram.com/tradexnova/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-gray-400 hover:text-gold-400 transition-colors"
+                className="text-gray-500 hover:text-white transition-colors"
               >
                 <span className="sr-only">Instagram</span>
                 <Instagram size={20} />
@@ -41,23 +48,55 @@ export default function Footer() {
           </div>
 
           <div className="col-span-1">
-            <h3 className="text-sm font-bold text-gold-400 uppercase tracking-wider">Legal</h3>
+            <h3 className="text-[10px] font-medium text-gray-500 uppercase tracking-[0.18em]">Product</h3>
+            <ul className="mt-4 space-y-2">
+              {[
+                ['/features', 'Features'],
+                ['/nova-ai', 'Nova AI'],
+                ['/pricing', 'Pricing'],
+                ['/security', 'Security'],
+              ].map(([to, label]) => (
+                <li key={to}>
+                  <Link to={to} className="text-[13px] text-gray-400 hover:text-white transition-colors">{label}</Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="col-span-1">
+            <h3 className="text-[10px] font-medium text-gray-500 uppercase tracking-[0.18em]">Company</h3>
+            <ul className="mt-4 space-y-2">
+              {[
+                ['/about', 'About'],
+                ['/faq', 'FAQ'],
+                ['/for-prop-firm-traders', 'For prop traders'],
+                ['/affiliates', 'Affiliates'],
+              ].map(([to, label]) => (
+                <li key={to}>
+                  <Link to={to} className="text-[13px] text-gray-400 hover:text-white transition-colors">{label}</Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="col-span-1">
+            <h3 className="text-[10px] font-medium text-gray-500 uppercase tracking-[0.18em]">Legal</h3>
             <ul className="mt-4 space-y-2">
               <li>
-                <Link to="/privacy" className="text-gray-300 hover:text-gold-300 transition-colors">Privacy Policy</Link>
+                <Link to="/privacy" className="text-[13px] text-gray-400 hover:text-white transition-colors">Privacy Policy</Link>
               </li>
               <li>
-                <Link to="/terms" className="text-gray-300 hover:text-gold-300 transition-colors">Terms of Service</Link>
+                <Link to="/terms" className="text-[13px] text-gray-400 hover:text-white transition-colors">Terms of Service</Link>
               </li>
               <li>
-                <Link to="/risk-disclaimer" className="text-gray-300 hover:text-gold-300 transition-colors">Risk Disclaimer</Link>
+                <Link to="/risk-disclaimer" className="text-[13px] text-gray-400 hover:text-white transition-colors">Risk Disclaimer</Link>
               </li>
             </ul>
           </div>
         </div>
       </div>
 
-      <div className="border-t border-dark-300">
+      <div className="border-t border-white/[0.06]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-sm text-gray-400">

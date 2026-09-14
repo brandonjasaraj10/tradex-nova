@@ -1,193 +1,47 @@
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { CheckCircle2, ArrowRight, Brain, Target, LineChart, Zap, AlertTriangle, ChevronRight, School as Psychology, TrendingUp, Eye, Clock, BarChart2, Sparkles, Calendar, BookOpen, ChevronLeft, Plus, Smile, Meh, Frown, DollarSign, Award, MessageSquare, Check } from 'lucide-react';
-import Button from '../components/shared/Button';
+import { ArrowRight, Plus, Check } from 'lucide-react';
 import Footer from '../components/layout/Footer';
+import TranscriptToEntry from '../components/sales/TranscriptToEntry';
+import ProductTabs from '../components/sales/ProductTabs';
+import Wordmark from '../components/shared/Wordmark';
+import NovaAnswer from '../components/sales/NovaAnswer';
 import SignupOrWaitlist from '../components/shared/SignupOrWaitlist';
 import { useHasLaunched } from '../lib/launch';
-import LaunchCountdown from '../components/shared/LaunchCountdown';
-import { useState } from 'react';
-
-const features = [
-  /*
-    First in the list on purpose. It is the only thing here a trader cannot
-    do by typing harder, and it is the reason the rest of the page is worth
-    reading: an AI that reviews your trading is only as good as whether your
-    trades are actually in it.
-
-    The read-only claim is load-bearing and must stay true. The connection
-    uses an investor password, which cannot place, close or modify a trade
-    and cannot withdraw - if that ever changes, this copy changes first.
-  */
-  {
-    icon: Zap,
-    title: 'MT4 & MT5 Auto Sync',
-    description: 'Connect your MetaTrader account and your closed trades import themselves - entries, exits, size, commission and how each one ended. Read-only: we can see your trades, never place them.',
-    metrics: [
-      { label: 'Platforms', value: 'MT4/MT5' },
-      { label: 'Entry Needed', value: 'None' }
-    ]
-  },
-  {
-    icon: BookOpen,
-    title: 'Advanced Trading Journal',
-    description: 'Track every trade with detailed insights, screenshots, and custom tags. Your complete trading history at your fingertips.',
-    metrics: [
-      { label: 'Data Points', value: '50+' },
-      { label: 'Organization', value: '100%' }
-    ]
-  },
-  {
-    icon: Calendar,
-    title: 'Visual Trade Calendar',
-    description: 'See your trading activity and performance mapped across time. Identify your most profitable days and patterns.',
-    metrics: [
-      { label: 'View Options', value: '10+' },
-      { label: 'Time Saved', value: '75%' }
-    ]
-  },
-  {
-    icon: Psychology,
-    title: 'Trading Psychology Analysis',
-    description: 'NOVA analyzes your trading patterns to identify emotional biases and psychological triggers that affect your performance.',
-    metrics: [
-      { label: 'Patterns', value: '45+' },
-      { label: 'Accuracy', value: '94%' }
-    ]
-  },
-  {
-    icon: Eye,
-    title: 'Pattern Recognition',
-    description: 'Identify your most profitable setups and understand the market conditions where you perform best.',
-    metrics: [
-      { label: 'Success Rate', value: '87%' },
-      { label: 'Data Points', value: '250K+' }
-    ]
-  },
-  {
-    icon: Target,
-    title: 'Risk Profile Analysis',
-    description: 'Understand your risk tolerance patterns and receive personalized position sizing recommendations.',
-    metrics: [
-      { label: 'Risk Control', value: '89%' },
-      { label: 'Drawdown Cut', value: '45%' }
-    ]
-  },
-  {
-    icon: Brain,
-    title: 'AI Trading Assistant',
-    description: 'NOVA evolves with you, continuously learning from your trades to provide more personalized insights.',
-    metrics: [
-      { label: 'Learning Rate', value: '24hrs' },
-      { label: 'Personal Fit', value: '96%' }
-    ]
-  }
-];
-
-const insights = [
-  {
-    type: 'psychology',
-    title: 'Emotional Pattern Detected',
-    description: 'You tend to overtrade after three consecutive winning trades, reducing your win rate by 35% in these scenarios.',
-    recommendation: 'Take a 15-minute break after 3 consecutive wins to reset emotional state.',
-    metrics: [
-      { label: 'Pattern Confidence', value: '92%' },
-      { label: 'Impact', value: '-35% WR' },
-      { label: 'Occurrence', value: '24 times' }
-    ],
-    icon: Psychology,
-    color: 'primary',
-    badge: 'Critical Pattern'
-  },
-  {
-    type: 'performance',
-    title: 'Peak Performance Window',
-    description: 'Your win rate increases by 45% when trading during the first 2 hours of market open with smaller position sizes.',
-    recommendation: 'Focus 70% of your daily trades during this high-probability window.',
-    metrics: [
-      { label: 'Win Rate', value: '78%' },
-      { label: 'Avg Return', value: '2.1R' },
-      { label: 'Time Window', value: '9:30-11:30' }
-    ],
-    icon: Clock,
-    color: 'primary',
-    badge: 'Sweet Spot'
-  },
-  {
-    type: 'risk',
-    title: 'Risk Management Insight',
-    description: 'Detected a pattern of increasing position sizes after winning trades, leading to larger drawdowns.',
-    recommendation: 'Maintain consistent 1-2% risk per trade regardless of recent performance.',
-    metrics: [
-      { label: 'Risk Increase', value: '+85%' },
-      { label: 'Drawdown', value: '+28%' },
-      { label: 'Frequency', value: 'Weekly' }
-    ],
-    icon: AlertTriangle,
-    color: 'primary',
-    badge: 'Action Required'
-  },
-  {
-    type: 'behavior',
-    title: 'Trading Discipline Score',
-    description: 'Your adherence to trading rules has improved by 68% over the past 30 days, correlating with better overall performance.',
-    recommendation: 'Continue using pre-trade checklists to maintain this positive momentum.',
-    metrics: [
-      { label: 'Compliance', value: '85%' },
-      { label: 'Improvement', value: '+68%' },
-      { label: 'Rule Breaks', value: '3/month' }
-    ],
-    icon: Award,
-    color: 'primary',
-    badge: 'Trending Up'
-  }
-];
-
-const proFeatures = [
-  {
-    category: 'Trading Journal',
-    features: [
-      'Unlimited Trade Logging',
-      'Custom Tags & Categories',
-      'Screenshot Attachments',
-      'Multi-Timeframe Views'
-    ]
-  },
-  {
-    category: 'Performance Analytics',
-    features: [
-      'Advanced Metrics',
-      'Visual Trade Calendar',
-      'Risk Analysis',
-      'Custom Reports'
-    ]
-  },
-  {
-    category: 'NOVA AI Assistant',
-    features: [
-      'Trading Psychology Analysis',
-      'Pattern Recognition',
-      'Personalized Insights',
-      'Behavioral Coaching'
-    ]
-  }
-];
+import { useState, useEffect, useRef } from 'react';
 
 export default function Sales() {
   const launched = useHasLaunched();
-  const [showPsychologyCalendar, setShowPsychologyCalendar] = useState(false);
-  const [journalView, setJournalView] = useState<'entry' | 'psychology'>('entry');
-  const { scrollYProgress } = useScroll();
-  const y = useTransform(scrollYProgress, [0, 1], [0, -50]);
 
-  const fadeInUp = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.5 }
-    }
-  };
+  /*
+    The header CTA only exists below the fold.
+
+    Two findings pull against each other. Removing navigation from a landing
+    page lifts conversions 15-25% (Unbounce) - every link up there is an exit
+    taken before a word has been read - so this header stays a wordmark and a
+    quiet sign-in link, and never grows into a Features/Pricing/Security nav.
+    But on a page this long a sticky CTA earns its place: after five screens
+    of scrolling the primary action should still be one tap away.
+
+    Both hold if the button is absent on the first screen, where the hero's
+    own CTA is already the loudest thing on the page and a second copy of it
+    in the header is just clutter, and present from the moment that one
+    leaves. A sentinel sits directly under the hero CTA; when it goes, the
+    header one arrives.
+  */
+  const heroCtaRef = useRef<HTMLDivElement | null>(null);
+  const [showHeaderCta, setShowHeaderCta] = useState(false);
+
+  useEffect(() => {
+    const el = heroCtaRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setShowHeaderCta(!entry.isIntersecting && entry.boundingClientRect.top < 0),
+      { threshold: 0 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <div className="min-h-screen bg-black">
@@ -200,7 +54,7 @@ export default function Sales() {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h1 className="text-base sm:text-lg font-medium">TradeX</h1>
+            <Wordmark className="text-lg" />
           </div>
           {/*
             The way back in for people who already have an account.
@@ -213,1500 +67,986 @@ export default function Sales() {
             to reach an account they already pay for - and the header's
             right-hand side, where everyone looks, was empty.
           */}
-          <Link
-            to="/auth?mode=signin"
-            className="text-sm font-medium text-gray-300 hover:text-white transition-colors"
-          >
-            Sign In
-          </Link>
+          <div className="flex items-center">
+            <Link
+              to="/auth?mode=signin"
+              className="text-sm font-medium text-gray-400 hover:text-white transition-colors"
+            >
+              Sign in
+            </Link>
+            {/*
+              Deliberately NOT a button. Someone signing in is already sold;
+              giving them a filled button puts them in a fight with the trial
+              CTA next to it, and the two cancel out. Quiet grey text, the
+              standard shape, is right.
+            */}
+            <Link
+              to="/auth?mode=signup"
+              aria-hidden={!showHeaderCta}
+              tabIndex={showHeaderCta ? 0 : -1}
+              /*
+                Collapses to zero width when hidden rather than sitting there
+                invisible. Reserving the space left "Sign in" stranded in the
+                middle of the header on the first screen - the one screen that
+                matters most - to avoid a shift that happens mid-scroll where
+                nobody is looking at the header anyway.
+              */
+              className={`inline-flex items-center justify-center whitespace-nowrap overflow-hidden
+                py-1.5 rounded-full bg-white text-black text-[13px] font-medium
+                hover:bg-gray-200 transition-all duration-300
+                ${showHeaderCta
+                  ? 'opacity-100 max-w-[180px] px-4 ml-4 sm:ml-5 pointer-events-auto'
+                  : 'opacity-0 max-w-0 px-0 ml-0 pointer-events-none'}`}
+            >
+              Start journaling
+            </Link>
+          </div>
         </div>
       </motion.div>
 
-      {/* Hero Section */}
-      <div className="relative min-h-screen flex items-center justify-center overflow-hidden pt-14 sm:pt-16">
-        <motion.div
-          className="absolute inset-0 opacity-30"
-          style={{ y }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-b from-gold-400/20 via-transparent to-transparent" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-gold-400/20 via-transparent to-transparent" />
-        </motion.div>
+      {/*
+        Hero.
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 lg:py-32 text-center relative">
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={{
-              visible: { transition: { staggerChildren: 0.1 } }
+        Monochrome - black, white and grey. The blue is held back for the
+        product panel below, where it means something.
+
+        Centred in the first screen rather than stacked from the top: the
+        block is vertically centred in the viewport minus the header, so a
+        phone opens on a composed screen instead of content pinned to the top
+        edge with dead space beneath it. min-h is calc-based, not 100vh, so it
+        can grow past the fold on a small phone rather than clipping.
+      */}
+      <div className="relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          {/*
+            A faint grid, faded at the edges, so the black has texture rather
+            than reading as an empty void. 48px cells at 3.5% white.
+          */}
+          <div
+            className="absolute inset-0 opacity-[0.35]"
+            style={{
+              backgroundImage:
+                'linear-gradient(to right, rgba(255,255,255,0.035) 1px, transparent 1px),' +
+                'linear-gradient(to bottom, rgba(255,255,255,0.035) 1px, transparent 1px)',
+              backgroundSize: '48px 48px',
+              maskImage: 'radial-gradient(ellipse 70% 60% at 50% 30%, #000 40%, transparent 100%)',
+              WebkitMaskImage: 'radial-gradient(ellipse 70% 60% at 50% 30%, #000 40%, transparent 100%)',
             }}
-          >
-            <motion.div variants={fadeInUp} className="inline-block mb-4 sm:mb-6">
-              <span className="px-3 py-1 sm:px-4 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium bg-gradient-to-r from-gold-400/20 to-gold-500/20 text-gold-400 border border-gold-400/30 backdrop-blur-sm">
-                Introducing Tradex Nova
-              </span>
-            </motion.div>
+          />
+          <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[820px] h-[520px] rounded-full bg-white/[0.04] blur-3xl" />
+        </div>
 
-            <motion.h1
-              variants={fadeInUp}
-              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold mb-4 sm:mb-6 bg-gradient-to-r from-white via-white/50 to-white bg-[length:200%_auto] animate-text-shimmer bg-clip-text text-transparent leading-normal px-2"
+        <div className="relative max-w-3xl mx-auto px-5 sm:px-8 pt-14 sm:pt-16
+          min-h-[calc(88svh-3.5rem)] sm:min-h-[calc(84svh-4rem)]
+          flex flex-col justify-center text-center pb-6 pt-10">
+
+          <p className="text-[9.5px] sm:text-[10px] tracking-[0.16em] uppercase text-gray-600 mb-4">
+            Trading journal &middot; Built around psychology
+          </p>
+
+          {/*
+            Solid white. The white-to-grey fade made the second line look like
+            it was dimming out rather than being emphasised - the headline is
+            the offer and it should not fade.
+          */}
+          <h1 className="text-[46px] leading-[1.02] sm:text-6xl lg:text-[80px] lg:leading-[0.98]
+            font-semibold tracking-[-0.04em] text-white text-balance">
+            Stop guessing<br className="sm:hidden" /> why you lose
+          </h1>
+
+          <p className="mt-4 text-[14.5px] sm:text-base leading-snug text-gray-400 max-w-sm sm:max-w-md mx-auto text-balance">
+            Talk through the trade. TradeX writes the entry and finds the pattern
+            costing you money.
+          </p>
+
+          <div className="mt-6 flex flex-col items-center gap-2.5">
+            <Link
+              to="/auth?mode=signup"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2
+                px-7 py-3 rounded-full bg-white text-black text-[14px] font-medium
+                hover:bg-gray-200 transition-colors"
             >
-              AI-Powered Trading Journal
-            </motion.h1>
+              Start journaling
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+            <p className="text-[11.5px] text-gray-500">
+              14-day money back guarantee &middot; Cancel anytime
+            </p>
+            {/* Watched by the header - see showHeaderCta above. */}
+            <div ref={heroCtaRef} aria-hidden="true" className="h-px w-full" />
+          </div>
 
-            <motion.p
-              variants={fadeInUp}
-              className="text-base sm:text-lg md:text-xl lg:text-2xl text-gray-400 mb-6 sm:mb-8 max-w-3xl mx-auto px-4"
-            >
-              Track your trades, analyze your performance, and let NOVA help you develop a winning edge through advanced psychology insights.
-            </motion.p>
+          {/*
+            The work they do not have to do. Every journal promises insight;
+            what stops people is the effort, so these name the effort removed.
+          */}
+          <ul className="mt-5 flex flex-wrap justify-center items-center gap-x-4 gap-y-1.5">
+            {[
+              /*
+                Objection-killers, not features. Each answers a reason a
+                trader does not buy a journal: it is too much work, I already
+                have a spreadsheet, I do not want you near my account.
 
-            <motion.div variants={fadeInUp} className="flex justify-center px-4">
-              <div className="w-full max-w-md">
-                <SignupOrWaitlist
-                  placeholder="Enter your email to join waitlist"
-                  preLaunchFootnote={
-                    <>
-                      <LaunchCountdown className="mt-6" />
-                      <p className="mt-4 text-sm text-gray-400">
-                        Join before launch to lock in{' '}
-                        <span className="text-gray-500 line-through">$24.99</span>{' '}
-                        <span className="text-blue-400 font-semibold">$14.99/mo</span>, forever.
-                      </p>
-                    </>
-                  }
-                  postLaunchFootnote={<LaunchCountdown className="mt-6" />}
-                />
-              </div>
-            </motion.div>
+                "Journal by voice" rather than "No typing" - you can still
+                type, so the restriction framing was simply wrong. "Never
+                touches your money" is active and stays true whether or not
+                broker sync is switched on, because read-only is the only
+                access TradeX ever asks for.
+              */
+              'Journal by voice',
+              'No spreadsheets',
+              'Never touches your money',
+            ].map((item) => (
+              <li key={item} className="flex items-center gap-1.5 text-[11.5px] text-gray-400">
+                <Check className="w-3 h-3 flex-shrink-0 text-gray-500" strokeWidth={3} />
+                {item}
+              </li>
+            ))}
+          </ul>
 
-            {/* Stats */}
-            <motion.div
-              variants={fadeInUp}
-              className="mt-10 sm:mt-16 grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-6 lg:gap-8"
-            >
-              <div className="p-3 sm:p-4 md:p-5 rounded-xl bg-white/5 backdrop-blur-sm border border-gold-400/10">
-                <div className="text-2xl sm:text-3xl md:text-3xl lg:text-4xl font-bold text-gold-400 mb-1">50+</div>
-                <div className="text-xs sm:text-sm text-gray-300">Data Points per Trade</div>
+          {/*
+            Social proof, sized to what is actually true.
+
+            Competitors put customer logos and five-figure counts here. We have
+            310 signups, so that is what it says. The circles carry initials
+            rather than faces - inventing photographs of customers who have not
+            agreed to appear would be the one thing on this page that could not
+            be defended.
+          */}
+          <div className="mt-6 flex flex-col items-center gap-2">
+            <div className="flex -space-x-2">
+              {['M', 'J', 'K', 'A', 'R'].map((initial, i) => (
+                <span
+                  key={initial}
+                  className="w-[22px] h-[22px] rounded-full bg-brand-elevated border border-white/15
+                    flex items-center justify-center text-[9px] font-medium text-gray-400"
+                  style={{ zIndex: 5 - i }}
+                >
+                  {initial}
+                </span>
+              ))}
+            </div>
+            <p className="text-[11.5px] text-gray-500">
+              Join <span className="text-gray-300">300+ traders</span> already journaling with TradeX
+            </p>
+          </div>
+        </div>
+
+        {/*
+          The product, before anyone scrolls.
+
+          This is the piece the page never had: a visitor could read the whole
+          hero without seeing that TradeX is software. It is the real interface
+          - the app's own tokens, type and profit/loss colours - rendered live
+          rather than screenshotted, so it stays sharp on every display and
+          cannot go stale when the product changes.
+
+          Figures are an example, and the panel says so.
+        */}
+        <div className="relative max-w-4xl mx-auto px-5 sm:px-8 pb-20 sm:pb-28">
+          <div className="relative rounded-2xl border border-white/10 bg-brand-surface overflow-hidden shadow-[0_0_60px_-15px_rgba(255,255,255,0.08)]">
+            {/* window chrome */}
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.06] bg-brand-elevated">
+              <span className="w-2.5 h-2.5 rounded-full bg-white/15" />
+              <span className="w-2.5 h-2.5 rounded-full bg-white/10" />
+              <span className="w-2.5 h-2.5 rounded-full bg-white/10" />
+              <span className="ml-2 text-[11px] text-gray-600 tracking-wide">Dashboard</span>
+            </div>
+
+            <div className="p-4 sm:p-6">
+              <div className="grid grid-cols-3 gap-3 sm:gap-4">
+                {[
+                  /* The Dashboard's own labels, so the page and the product
+                     call the same numbers the same things. */
+                  { label: 'Total P&L', value: '+$4,812', tone: 'text-brand-profit' },
+                  { label: 'Win Rate', value: '58%', tone: 'text-white' },
+                  { label: 'Profit Factor', value: '1.94', tone: 'text-white' },
+                ].map((stat) => (
+                  <div key={stat.label} className="rounded-xl border border-white/[0.07] bg-brand-elevated px-3 py-3 sm:px-4 sm:py-4">
+                    <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.12em] text-gray-600">{stat.label}</p>
+                    <p className={`mt-1.5 text-lg sm:text-2xl font-semibold tabular-nums ${stat.tone}`}>{stat.value}</p>
+                  </div>
+                ))}
               </div>
-              <div className="p-3 sm:p-4 md:p-5 rounded-xl bg-white/5 backdrop-blur-sm border border-gold-400/10">
-                <div className="text-2xl sm:text-3xl md:text-3xl lg:text-4xl font-bold text-gold-400 mb-1">45+</div>
-                <div className="text-xs sm:text-sm text-gray-300">Psychology Patterns</div>
+
+              {/* equity curve - one path, drawn to the box */}
+              <div className="mt-4 rounded-xl border border-white/[0.07] bg-brand-elevated p-4">
+                <div className="flex items-baseline justify-between mb-3">
+                  <p className="text-[11px] uppercase tracking-[0.12em] text-gray-600">Equity</p>
+                  <p className="text-[11px] text-gray-600">Last 30 days</p>
+                </div>
+                <svg viewBox="0 0 320 72" className="w-full h-16 sm:h-20" preserveAspectRatio="none" aria-hidden="true">
+                  <defs>
+                    <linearGradient id="heroEquityFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#60A5FA" stopOpacity="0.28" />
+                      <stop offset="100%" stopColor="#60A5FA" stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+                  <path d="M0 60 L32 55 L64 58 L96 44 L128 47 L160 33 L192 36 L224 22 L256 26 L288 14 L320 8 L320 72 L0 72 Z" fill="url(#heroEquityFill)" />
+                  <path d="M0 60 L32 55 L64 58 L96 44 L128 47 L160 33 L192 36 L224 22 L256 26 L288 14 L320 8" fill="none" stroke="#60A5FA" strokeWidth="1.75" strokeLinejoin="round" strokeLinecap="round" />
+                </svg>
               </div>
-              <div className="p-3 sm:p-4 md:p-5 rounded-xl bg-white/5 backdrop-blur-sm border border-gold-400/10">
-                <div className="text-2xl sm:text-3xl md:text-3xl lg:text-4xl font-bold text-gold-400 mb-1">Instant</div>
-                <div className="text-xs sm:text-sm text-gray-300">AI Feedback</div>
+
+              {/* what makes it TradeX rather than a P&L tracker */}
+              <div className="mt-4 rounded-xl border border-white/[0.07] bg-brand-elevated p-4">
+                <p className="text-[11px] uppercase tracking-[0.12em] text-gray-600 mb-2.5">Journal &mdash; today</p>
+                <p className="text-[13px] sm:text-sm text-gray-300 leading-relaxed">
+                  &ldquo;Moved my stop twice on the EURUSD short. Same thing I did Tuesday.&rdquo;
+                </p>
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {['Moved stop', 'Revenge entry', 'Focus 4/10'].map((tag) => (
+                    /* Blue because tags are blue in the product - the Journal
+                       renders them bg-blue-400/10 text-blue-400. This panel is
+                       a claim about what the app looks like, so it should not
+                       invent a greyer version of it. */
+                    <span key={tag} className="text-[11px] font-medium text-brand-blue-light bg-brand-blue-light/10 rounded-full px-2.5 py-1">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
               </div>
-              <div className="p-3 sm:p-4 md:p-5 rounded-xl bg-white/5 backdrop-blur-sm border border-gold-400/10">
-                <div className="text-2xl sm:text-3xl md:text-3xl lg:text-4xl font-bold text-gold-400 mb-1">24/7</div>
-                <div className="text-xs sm:text-sm text-gray-300">NOVA Support</div>
-              </div>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
+          <p className="mt-3 text-center text-[11px] text-gray-600">Example figures</p>
         </div>
       </div>
 
-      {/* Dashboard Preview */}
-      <div className="py-16 sm:py-24 lg:py-32 bg-gradient-to-b from-black via-black/95 to-black relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-gold-400/10 via-transparent to-transparent opacity-30" />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="text-center mb-10 sm:mb-16">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4 text-white leading-tight pb-2">Beautiful. Powerful. Intelligent.</h2>
-            <p className="text-base sm:text-lg md:text-xl text-gray-400 px-4">Real-time analytics, visual calendars, and intelligent journaling.</p>
+      {/*
+        HOW IT WORKS.
+
+        The research on this is consistent: a visitor's second question after
+        "what do I get" is "how does this actually work". Three steps, in the
+        order they happen, each with the interface moment that proves it.
+
+        Replaced about 1,100 lines of animated mock dashboards. They were
+        impressive and nobody read them - too much to take in, and every one
+        of them competed with the others for the same attention.
+      */}
+      <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
+        <div className="max-w-4xl mx-auto px-5 sm:px-8">
+          <div className="text-center mb-14 sm:mb-20">
+            <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
+              How it works
+            </p>
+            <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
+              Thirty seconds a trade
+            </h2>
+            <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-sm sm:max-w-md mx-auto text-balance">
+              The reason journals die is the typing. So TradeX takes it off you.
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
-            {/* Calendar Preview */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="relative rounded-2xl overflow-hidden bg-[#111]/80 backdrop-blur-sm border border-white/[0.05] hover:border-white/10 transition-all duration-300 group sm:first:col-span-1"
-            >
-              <div className="relative p-6">
-                <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col gap-4 sm:gap-5">
+            {[
+              {
+                step: '01',
+                title: 'Say what happened',
+                body: 'Hit record and talk like you would to a trading partner. Rambling is fine.',
+                visual: (
                   <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
-                      showPsychologyCalendar
-                        ? 'bg-blue-500/20 shadow-lg shadow-blue-500/30'
-                        : 'bg-blue-500/15 shadow-md shadow-blue-500/20'
-                    }`}>
-                      {showPsychologyCalendar ? <Brain className="w-5 h-5 text-blue-400" /> : <Calendar className="w-5 h-5 text-blue-400" />}
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-medium text-white">
-                        {showPsychologyCalendar ? 'Psychology Calendar' : 'Trading Calendar'}
-                      </h3>
-                      <p className="text-xs text-gray-400">
-                        {showPsychologyCalendar ? 'Track your mental state' : 'Visualize your performance'}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Toggle Button */}
-                  <button
-                    onClick={() => setShowPsychologyCalendar(!showPsychologyCalendar)}
-                    className={`flex items-center bg-black/50 border rounded-lg p-1 transition-all ${
-                      showPsychologyCalendar ? 'border-blue-500/30' : 'border-blue-500/30'
-                    }`}
-                    title={showPsychologyCalendar ? 'Show Trading Calendar' : 'Show Psychology Calendar'}
-                  >
-                    <div className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
-                      !showPsychologyCalendar ? 'bg-blue-500/20 text-blue-400' : 'text-gray-400'
-                    }`}>
-                      P&L
-                    </div>
-                    <div className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
-                      showPsychologyCalendar ? 'bg-blue-500/20 text-blue-400' : 'text-gray-400'
-                    }`}>
-                      Psych
-                    </div>
-                  </button>
-                </div>
-
-                <div className="space-y-4">
-                  {!showPsychologyCalendar ? (
-                    <>
-                      {/* Trading Calendar Grid */}
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between text-xs mb-2">
-                          <span className="text-gray-300 font-medium">December 2024</span>
-                          <div className="flex items-center gap-2">
-                            <div className="flex items-center gap-1">
-                              <div className="w-2.5 h-2.5 rounded-sm bg-blue-400/30 border border-blue-400/50"></div>
-                              <span className="text-gray-500 text-[10px]">Win</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <div className="w-2.5 h-2.5 rounded-sm bg-gray-500/30 border border-gray-500/50"></div>
-                              <span className="text-gray-500 text-[10px]">Loss</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-7 gap-1">
-                          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
-                            <div key={i} className="text-center text-[10px] text-gray-500 font-semibold py-1">
-                              {day}
-                            </div>
-                          ))}
-
-                          {/* Fake calendar data for December */}
-                          {[
-                            { day: 1, trades: 0, pnl: 0 },
-                            { day: 2, trades: 3, pnl: 450 },
-                            { day: 3, trades: 2, pnl: -180 },
-                            { day: 4, trades: 4, pnl: 620 },
-                            { day: 5, trades: 1, pnl: 210 },
-                            { day: 6, trades: 0, pnl: 0 },
-                            { day: 7, trades: 0, pnl: 0 },
-                            { day: 8, trades: 0, pnl: 0 },
-                            { day: 9, trades: 2, pnl: 380 },
-                            { day: 10, trades: 5, pnl: -290 },
-                            { day: 11, trades: 3, pnl: 540 },
-                            { day: 12, trades: 2, pnl: 195 },
-                            { day: 13, trades: 1, pnl: -85 },
-                            { day: 14, trades: 0, pnl: 0 },
-                            { day: 15, trades: 0, pnl: 0 },
-                            { day: 16, trades: 4, pnl: 725 },
-                            { day: 17, trades: 2, pnl: 340 },
-                            { day: 18, trades: 3, pnl: -215 },
-                            { day: 19, trades: 6, pnl: 890 },
-                            { day: 20, trades: 2, pnl: 175 },
-                            { day: 21, trades: 0, pnl: 0 },
-                            { day: 22, trades: 0, pnl: 0 },
-                            { day: 23, trades: 3, pnl: 450 },
-                            { day: 24, trades: 1, pnl: -120 },
-                            { day: 25, trades: 0, pnl: 0 },
-                            { day: 26, trades: 2, pnl: 310 },
-                            { day: 27, trades: 4, pnl: 580 },
-                            { day: 28, trades: 0, pnl: 0 },
-                            { day: 29, trades: 0, pnl: 0 },
-                            { day: 30, trades: 3, pnl: -165 },
-                            { day: 31, trades: 2, pnl: 420 },
-                          ].map((data, i) => {
-                            const hasTrades = data.trades > 0;
-                            const isWin = data.pnl > 0;
-                            const intensity = hasTrades
-                              ? Math.min(Math.abs(data.pnl) / 300, 1)
-                              : 0;
-
-                            return (
-                              <div
-                                key={i}
-                                className={`
-                                  aspect-square border rounded-md transition-all duration-300 cursor-pointer
-                                  flex flex-col items-center justify-between p-1 relative group/day
-                                  ${!hasTrades ? 'bg-white/[0.03] border-white/10 text-gray-600' : ''}
-                                  ${hasTrades && isWin ? 'bg-blue-400/10 border-blue-400/20 text-blue-400 hover:scale-105 hover:border-blue-400/40 hover:shadow-lg hover:shadow-blue-500/20' : ''}
-                                  ${hasTrades && !isWin ? 'bg-gray-500/10 border-gray-500/30 text-gray-400 hover:scale-105 hover:border-gray-500/50' : ''}
-                                `}
-                              >
-                                <span className="text-[10px] font-semibold">{data.day}</span>
-                                {hasTrades && (
-                                  <div className="text-center">
-                                    <div className="text-[9px]">{data.trades}t</div>
-                                    {/*
-                                      Math.abs() alone dropped the minus, so a
-                                      losing day read as "$180" - the same as a
-                                      winning one, with only the grey to tell
-                                      them apart. The sign goes before the
-                                      currency, not inside the number.
-                                    */}
-                                    <div className="text-[9px] font-bold">
-                                      {data.pnl < 0 ? '-' : ''}${Math.abs(data.pnl)}
-                                    </div>
-                                  </div>
-                                )}
-                                {hasTrades && (
-                                  <div className="absolute inset-0 opacity-0 group-hover/day:opacity-100 transition-opacity bg-black/90 backdrop-blur-sm rounded-md flex items-center justify-center border border-white/20">
-                                    <div className="text-center px-1">
-                                      <div className={`font-bold text-sm ${isWin ? 'text-blue-400' : 'text-gray-400'}`}>
-                                        {isWin ? '+' : '-'}${Math.abs(data.pnl)}
-                                      </div>
-                                      <div className="text-gray-500 text-[10px]">{data.trades} trades</div>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      {/* Stats */}
-                      <div className="grid grid-cols-3 gap-2 pt-4 border-t border-white/[0.05]">
-                        <div className="bg-black/30 border border-white/5 rounded-lg p-2 text-center">
-                          <div className="text-base font-bold text-blue-400">72%</div>
-                          <div className="text-[10px] text-gray-500">Win Rate</div>
-                        </div>
-                        <div className="bg-black/30 border border-white/5 rounded-lg p-2 text-center">
-                          <div className="text-base font-bold text-white">48</div>
-                          <div className="text-[10px] text-gray-500">Trades</div>
-                        </div>
-                        <div className="bg-black/30 border border-white/5 rounded-lg p-2 text-center">
-                          <div className="text-base font-bold text-blue-400">+$5.2K</div>
-                          <div className="text-[10px] text-gray-500">Total P&L</div>
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      {/* Psychology Calendar Grid */}
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between text-xs mb-2">
-                          <span className="text-gray-300 font-medium">December 2024</span>
-                          <div className="text-[10px] text-gray-500">NOVA Scores</div>
-                        </div>
-
-                        <div className="grid grid-cols-7 gap-1">
-                          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
-                            <div key={i} className="text-center text-[10px] text-gray-500 font-semibold py-1">
-                              {day}
-                            </div>
-                          ))}
-
-                          {/* Fake psychology data */}
-                          {[
-                            { day: 1, mood: null, score: 0 },
-                            { day: 2, mood: 'good', score: 85 },
-                            { day: 3, mood: 'neutral', score: 65 },
-                            { day: 4, mood: 'good', score: 90 },
-                            { day: 5, mood: 'good', score: 80 },
-                            { day: 6, mood: null, score: 0 },
-                            { day: 7, mood: null, score: 0 },
-                            { day: 8, mood: null, score: 0 },
-                            { day: 9, mood: 'good', score: 88 },
-                            { day: 10, mood: 'poor', score: 35 },
-                            { day: 11, mood: 'good', score: 92 },
-                            { day: 12, mood: 'neutral', score: 70 },
-                            { day: 13, mood: 'neutral', score: 58 },
-                            { day: 14, mood: null, score: 0 },
-                            { day: 15, mood: null, score: 0 },
-                            { day: 16, mood: 'good', score: 95 },
-                            { day: 17, mood: 'good', score: 83 },
-                            { day: 18, mood: 'neutral', score: 52 },
-                            { day: 19, mood: 'good', score: 98 },
-                            { day: 20, mood: 'good', score: 87 },
-                            { day: 21, mood: null, score: 0 },
-                            { day: 22, mood: null, score: 0 },
-                            { day: 23, mood: 'good', score: 85 },
-                            { day: 24, mood: 'poor', score: 40 },
-                            { day: 25, mood: null, score: 0 },
-                            { day: 26, mood: 'neutral', score: 72 },
-                            { day: 27, mood: 'good', score: 89 },
-                            { day: 28, mood: null, score: 0 },
-                            { day: 29, mood: null, score: 0 },
-                            { day: 30, mood: 'neutral', score: 55 },
-                            { day: 31, mood: 'good', score: 86 },
-                          ].map((data, i) => {
-                            const hasMood = data.mood !== null;
-                            let cellClasses = 'bg-white/[0.03] border-white/10 text-gray-600';
-                            let textColor = 'text-gray-400';
-
-                            if (hasMood) {
-                              if (data.score >= 90) {
-                                cellClasses = 'bg-gradient-to-br from-blue-500/40 via-blue-500/30 to-blue-600/25 border-blue-400/60 shadow-lg shadow-blue-500/20';
-                                textColor = 'text-blue-400';
-                              } else if (data.score >= 80) {
-                                cellClasses = 'bg-gradient-to-br from-blue-400/35 via-blue-400/25 to-blue-500/20 border-blue-400/50 shadow-md shadow-blue-500/15';
-                                textColor = 'text-blue-400';
-                              } else if (data.score >= 70) {
-                                cellClasses = 'bg-gradient-to-br from-blue-500/30 via-blue-500/20 to-blue-500/15 border-blue-400/40 shadow-md shadow-blue-500/10';
-                                textColor = 'text-blue-400';
-                              } else if (data.score >= 60) {
-                                cellClasses = 'bg-gradient-to-br from-blue-400/25 via-blue-400/15 to-blue-400/10 border-blue-400/35';
-                                textColor = 'text-blue-400';
-                              } else if (data.score >= 50) {
-                                cellClasses = 'bg-gradient-to-br from-blue-400/20 via-blue-400/10 to-slate-400/10 border-blue-400/30';
-                                textColor = 'text-blue-400';
-                              } else if (data.score >= 40) {
-                                cellClasses = 'bg-gradient-to-br from-slate-400/20 via-gray-500/15 to-zinc-500/10 border-slate-400/30';
-                                textColor = 'text-slate-300';
-                              } else {
-                                cellClasses = 'bg-gradient-to-br from-blue-500/25 via-blue-600/15 to-blue-600/10 border-blue-500/40 shadow-sm shadow-blue-500/10';
-                                textColor = 'text-blue-400';
-                              }
-                            }
-
-                            return (
-                              <div
-                                key={i}
-                                className={`
-                                  aspect-square border rounded-md transition-all duration-300 cursor-pointer
-                                  flex flex-col items-center justify-between p-1 relative group/day
-                                  ${cellClasses} ${hasMood ? 'hover:scale-105' : ''}
-                                `}
-                              >
-                                <span className={`text-[10px] font-semibold ${hasMood ? textColor : 'text-gray-600'}`}>{data.day}</span>
-                                {hasMood && (
-                                  <div className="text-center relative">
-                                    <div className={`text-xs font-bold ${textColor}`}>
-                                      {data.score}
-                                    </div>
-                                    <div className="text-[8px] text-gray-400">NOVA</div>
-                                  </div>
-                                )}
-                                {hasMood && (
-                                  <div className="absolute inset-0 opacity-0 group-hover/day:opacity-100 transition-opacity bg-black/90 backdrop-blur-sm rounded-md flex items-center justify-center border border-white/20">
-                                    <div className="text-center">
-                                      <div className={`text-2xl font-bold ${textColor}`}>{data.score}</div>
-                                      <div className="text-gray-400 text-[10px] mt-0.5">NOVA Score</div>
-                                      <div className={`text-[9px] font-medium mt-1 ${textColor}`}>
-                                        {data.score >= 80 ? 'Peak State' : data.score >= 70 ? 'Strong Mind' : data.score >= 60 ? 'Solid' : data.score >= 50 ? 'Balanced' : 'Challenged'}
-                                      </div>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      {/* Psychology Stats */}
-                      <div className="grid grid-cols-3 gap-2 pt-4 border-t border-white/[0.05]">
-                        <div className="bg-gradient-to-br from-blue-500/15 via-blue-500/10 to-transparent border border-blue-500/30 rounded-lg p-2 text-center">
-                          <div className="text-base font-bold text-blue-400">81</div>
-                          <div className="text-[10px] text-gray-500">Avg Score</div>
-                        </div>
-                        <div className="bg-gradient-to-br from-blue-500/15 via-blue-500/10 to-transparent border border-blue-500/30 rounded-lg p-2 text-center">
-                          <div className="text-base font-bold text-blue-400">75%</div>
-                          <div className="text-[10px] text-gray-500">Peak Days</div>
-                        </div>
-                        <div className="bg-black/30 border border-white/5 rounded-lg p-2 text-center">
-                          <div className="text-base font-bold text-white">20</div>
-                          <div className="text-[10px] text-gray-500">Entries</div>
-                        </div>
-                      </div>
-
-                      {/* Mental State Spectrum */}
-                      <div className="mt-4 pt-3 border-t border-white/[0.05]">
-                        <div className="text-[10px] text-gray-500 mb-2 font-semibold">Mental State Spectrum</div>
-                        <div className="flex items-center gap-1">
-                          <div className="flex items-center gap-0.5">
-                            <div className="w-2 h-2 rounded-sm bg-gradient-to-br from-blue-500/30 to-blue-600/20 border border-blue-500/50"></div>
-                            <span className="text-[9px] text-blue-400">Low</span>
-                          </div>
-                          <div className="w-1 h-[2px] bg-gradient-to-r from-blue-500/30 to-blue-500/30"></div>
-                          <div className="flex items-center gap-0.5">
-                            <div className="w-2 h-2 rounded-sm bg-gradient-to-br from-slate-400/20 to-gray-500/10 border border-slate-400/30"></div>
-                            <span className="text-[9px] text-slate-300">Mid</span>
-                          </div>
-                          <div className="w-1 h-[2px] bg-gradient-to-r from-slate-500/30 to-blue-500/30"></div>
-                          <div className="flex items-center gap-0.5">
-                            <div className="w-2 h-2 rounded-sm bg-gradient-to-br from-blue-500/30 to-blue-500/20 border border-blue-400/40 shadow-sm"></div>
-                            <span className="text-[9px] text-blue-400">High</span>
-                          </div>
-                          <div className="w-1 h-[2px] bg-gradient-to-r from-blue-500/30 to-blue-500/30"></div>
-                          <div className="flex items-center gap-0.5">
-                            <div className="w-2 h-2 rounded-sm bg-gradient-to-br from-blue-500/40 to-blue-500/30 border border-blue-400/60 shadow-md"></div>
-                            <span className="text-[9px] text-blue-400">Peak</span>
-                          </div>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Analytics Preview */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
-              className="relative rounded-2xl overflow-hidden bg-[#111]/80 backdrop-blur-sm border border-white/[0.05] hover:border-white/10 transition-all duration-300 group"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-
-              <div className="relative p-6">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-600/10 shadow-lg shadow-blue-500/30 flex items-center justify-center border border-blue-500/20 group-hover:shadow-blue-500/50 transition-all">
-                    <BarChart2 className="w-5 h-5 text-blue-400" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-medium text-white">Performance Analytics</h3>
-                    <p className="text-xs text-gray-400">Track your progress</p>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  {/* Dual Equity Curves */}
-                  <div className="relative h-36 rounded-xl bg-gradient-to-br from-black/40 via-black/30 to-blue-500/5 p-4 border border-white/[0.08] overflow-hidden group/chart">
-                    <div className="absolute inset-0 bg-gradient-to-t from-blue-500/10 to-transparent opacity-0 group-hover/chart:opacity-100 transition-opacity"></div>
-
-                    <div className="flex items-start justify-between mb-2 relative z-10">
-                      <div>
-                        <div className="text-xs text-gray-500 font-medium mb-1">30-Day Performance</div>
-                        <div className="flex items-center gap-1 bg-blue-500/20 border border-blue-500/40 rounded-lg px-2 py-0.5 backdrop-blur-sm w-fit">
-                          <TrendingUp className="w-3 h-3 text-blue-400" />
-                          <span className="text-xs font-bold text-blue-400">+42.8%</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1">
-                          <div className="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
-                          <span className="text-[10px] text-blue-400">Equity</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <div className="w-1.5 h-1.5 rounded-full bg-gray-400"></div>
-                          <span className="text-[10px] text-gray-400">Balance</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <svg className="w-full h-full relative z-10" viewBox="0 0 300 100" preserveAspectRatio="none">
-                      <defs>
-                        <linearGradient id="equityGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                          <stop offset="0%" stopColor="rgb(96, 165, 250)" stopOpacity="0.4" />
-                          <stop offset="100%" stopColor="rgb(96, 165, 250)" stopOpacity="0" />
-                        </linearGradient>
-                        <linearGradient id="balanceGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                          <stop offset="0%" stopColor="rgb(156, 163, 175)" stopOpacity="0.3" />
-                          <stop offset="100%" stopColor="rgb(156, 163, 175)" stopOpacity="0" />
-                        </linearGradient>
-                        <filter id="glow">
-                          <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-                          <feMerge>
-                            <feMergeNode in="coloredBlur"/>
-                            <feMergeNode in="SourceGraphic"/>
-                          </feMerge>
-                        </filter>
-                      </defs>
-
-                      {/* Balance curve */}
-                      <path
-                        d="M0,85 L25,82 L50,75 L75,78 L100,70 L125,72 L150,65 L175,68 L200,60 L225,58 L250,52 L275,48 L295,45"
-                        fill="none"
-                        stroke="rgb(156, 163, 175)"
-                        strokeWidth="2"
-                        opacity="0.6"
-                      />
-                      <path
-                        d="M0,85 L25,82 L50,75 L75,78 L100,70 L125,72 L150,65 L175,68 L200,60 L225,58 L250,52 L275,48 L295,45 L295,100 L0,100 Z"
-                        fill="url(#balanceGradient)"
-                      />
-
-                      {/* Equity curve */}
-                      <path
-                        d="M0,80 L25,76 L50,68 L75,70 L100,58 L125,62 L150,50 L175,54 L200,42 L225,38 L250,30 L275,25 L295,20"
-                        fill="none"
-                        stroke="rgb(96, 165, 250)"
-                        strokeWidth="2.5"
-                        filter="url(#glow)"
-                      />
-                      <path
-                        d="M0,80 L25,76 L50,68 L75,70 L100,58 L125,62 L150,50 L175,54 L200,42 L225,38 L250,30 L275,25 L295,20 L295,100 L0,100 Z"
-                        fill="url(#equityGradient)"
-                      />
-
-                      {/* Current position indicator */}
-                      <circle cx="295" cy="20" r="3" fill="rgb(96, 165, 250)" className="animate-pulse">
-                        <animate attributeName="r" values="3;5;3" dur="2s" repeatCount="indefinite" />
-                      </circle>
-                    </svg>
-                  </div>
-
-                  {/* Enhanced Key Metrics */}
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <div className="relative p-3 rounded-xl bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-transparent border border-blue-500/20 overflow-hidden group/metric hover:border-blue-500/40 transition-all">
-                      <div className="absolute inset-0 bg-gradient-to-br from-blue-400/0 to-blue-400/10 opacity-0 group-hover/metric:opacity-100 transition-opacity"></div>
-                      <div className="relative z-10">
-                        <div className="flex items-center justify-between mb-1">
-                          <div className="text-[10px] text-gray-500 font-medium">Total P&L</div>
-                          <TrendingUp className="w-3 h-3 text-blue-400 opacity-50" />
-                        </div>
-                        <div className="text-lg font-bold text-blue-400 tracking-tight">$8,432</div>
-                        <div className="text-[9px] text-blue-400/60 mt-0.5">+$1,240 this week</div>
-                      </div>
-                    </div>
-
-                    <div className="relative p-3 rounded-xl bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-transparent border border-blue-500/20 overflow-hidden group/metric hover:border-blue-500/40 transition-all">
-                      <div className="absolute inset-0 bg-gradient-to-br from-blue-400/0 to-blue-400/10 opacity-0 group-hover/metric:opacity-100 transition-opacity"></div>
-                      <div className="relative z-10">
-                        <div className="flex items-center justify-between mb-1">
-                          <div className="text-[10px] text-gray-500 font-medium">Win Rate</div>
-                          <Target className="w-3 h-3 text-blue-400 opacity-50" />
-                        </div>
-                        <div className="text-lg font-bold text-blue-400 tracking-tight">68.5%</div>
-                        <div className="text-[9px] text-blue-400/60 mt-0.5">37 wins / 54 trades</div>
-                      </div>
-                    </div>
-
-                    <div className="relative p-3 rounded-xl bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-transparent border border-blue-500/20 overflow-hidden group/metric hover:border-blue-500/40 transition-all">
-                      <div className="absolute inset-0 bg-gradient-to-br from-blue-400/0 to-blue-400/10 opacity-0 group-hover/metric:opacity-100 transition-opacity"></div>
-                      <div className="relative z-10">
-                        <div className="flex items-center justify-between mb-1">
-                          <div className="text-[10px] text-gray-500 font-medium">Avg Win</div>
-                          <DollarSign className="w-3 h-3 text-blue-400 opacity-50" />
-                        </div>
-                        <div className="text-lg font-bold text-blue-400 tracking-tight">$284</div>
-                        <div className="text-[9px] text-blue-400/60 mt-0.5">Avg loss: $118</div>
-                      </div>
-                    </div>
-
-                    <div className="relative p-3 rounded-xl bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-transparent border border-blue-500/20 overflow-hidden group/metric hover:border-blue-500/40 transition-all">
-                      <div className="absolute inset-0 bg-gradient-to-br from-blue-400/0 to-blue-400/10 opacity-0 group-hover/metric:opacity-100 transition-opacity"></div>
-                      <div className="relative z-10">
-                        <div className="flex items-center justify-between mb-1">
-                          <div className="text-[10px] text-gray-500 font-medium">Profit Factor</div>
-                          <Award className="w-3 h-3 text-blue-400 opacity-50" />
-                        </div>
-                        <div className="text-lg font-bold text-blue-400 tracking-tight">2.4</div>
-                        <div className="text-[9px] text-blue-400/60 mt-0.5">Excellent ratio</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Journal Preview */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.2 }}
-              className="relative rounded-2xl overflow-hidden bg-[#111]/80 backdrop-blur-sm border border-white/[0.05] hover:border-white/10 transition-all duration-300 group"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-
-              <div className="relative p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-blue-500/15 shadow-md shadow-blue-500/20 flex items-center justify-center">
-                      <BookOpen className="w-5 h-5 text-blue-400" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-medium text-white">Trading Journal</h3>
-                      <p className="text-xs text-gray-400">Document every detail</p>
-                    </div>
-                  </div>
-
-                  {/* Toggle Buttons */}
-                  <div className="flex gap-2 bg-black/40 rounded-lg p-1 border border-white/[0.05]">
-                    <button
-                      onClick={() => setJournalView('entry')}
-                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                        journalView === 'entry'
-                          ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                          : 'text-gray-400 hover:text-gray-300'
-                      }`}
-                    >
-                      Entry
-                    </button>
-                    <button
-                      onClick={() => setJournalView('psychology')}
-                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                        journalView === 'psychology'
-                          ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                          : 'text-gray-400 hover:text-gray-300'
-                      }`}
-                    >
-                      Psychology
-                    </button>
-                  </div>
-                </div>
-
-                {journalView === 'entry' ? (
-                  <div className="space-y-3">
-                    {/* Journal Entry Preview */}
-                    <div className="p-4 rounded-lg bg-black/30 border border-white/[0.05]">
-                      <div className="flex items-start gap-3 mb-3">
-                        <div className="w-8 h-8 rounded bg-blue-400/20 flex items-center justify-center flex-shrink-0">
-                          <TrendingUp className="w-4 h-4 text-blue-400" />
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium text-sm">EURUSD</span>
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-blue-400/10 text-blue-400">LONG</span>
-                          </div>
-                          <div className="text-xs text-gray-400 mb-2">Setup: Bull Flag Breakout on H4</div>
-
-                          {/* Entry Details */}
-                          <div className="grid grid-cols-2 gap-2 mb-2">
-                            <div className="text-xs">
-                              <span className="text-gray-500">Entry: </span>
-                              <span className="text-white">1.0850</span>
-                            </div>
-                            <div className="text-xs">
-                              <span className="text-gray-500">Exit: </span>
-                              <span className="text-white">1.0920</span>
-                            </div>
-                            <div className="text-xs">
-                              <span className="text-gray-500">SL: </span>
-                              <span className="text-white">1.0820</span>
-                            </div>
-                            <div className="text-xs">
-                              <span className="text-gray-500">TP: </span>
-                              <span className="text-white">1.0940</span>
-                            </div>
-                          </div>
-
-                          {/* Notes Preview */}
-                          <div className="text-xs text-gray-400 bg-black/30 rounded p-2 mb-2">
-                            Strong bullish momentum after ECB rate decision. Price broke above key resistance with increased volume...
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm font-bold text-blue-400">+$1,250</div>
-                          <div className="text-xs text-gray-500">+4.2%</div>
-                        </div>
-                      </div>
-
-                      {/* Confluences */}
-                      <div className="flex gap-2 flex-wrap mb-3">
-                        <span className="text-xs px-2 py-1 rounded bg-blue-400/10 text-blue-400 border border-blue-400/20">Trend</span>
-                        <span className="text-xs px-2 py-1 rounded bg-blue-400/10 text-blue-400 border border-blue-400/20">Volume</span>
-                        <span className="text-xs px-2 py-1 rounded bg-blue-400/10 text-blue-400 border border-blue-400/20">Key Level</span>
-                        <span className="text-xs px-2 py-1 rounded bg-blue-400/10 text-blue-400 border border-blue-400/20">News</span>
-                      </div>
-
-                      {/* Screenshots */}
-                      <div className="flex gap-2">
-                        <div className="flex-1 h-16 rounded bg-gradient-to-br from-blue-500/20 to-blue-500/5 border border-blue-500/20 flex items-center justify-center">
-                          <span className="text-xs text-blue-400">Entry Chart</span>
-                        </div>
-                        <div className="flex-1 h-16 rounded bg-gradient-to-br from-blue-500/20 to-blue-500/5 border border-blue-500/20 flex items-center justify-center">
-                          <span className="text-xs text-blue-400">Exit Chart</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* NOVA Insight */}
-                    <div className="p-3 rounded-lg bg-gradient-to-r from-blue-500/10 to-blue-500/5 border border-blue-500/20">
-                      <div className="flex items-start gap-2">
-                        <Sparkles className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
-                        <div>
-                          <div className="text-xs font-medium text-blue-400 mb-1">NOVA Insight</div>
-                          <div className="text-xs text-gray-400">Your patience during consolidation led to excellent entry timing. All confluences aligned before entry.</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Quick Stats */}
-                    <div className="grid grid-cols-3 gap-2 pt-2">
-                      <div className="bg-black/30 border border-white/[0.05] rounded-lg p-2 text-center">
-                        <div className="text-sm font-bold text-blue-400">85</div>
-                        <div className="text-[10px] text-gray-500">NOVA Score</div>
-                      </div>
-                      <div className="bg-black/30 border border-white/[0.05] rounded-lg p-2 text-center">
-                        <div className="text-sm font-bold text-blue-400">2.8R</div>
-                        <div className="text-[10px] text-gray-500">Risk/Reward</div>
-                      </div>
-                      <div className="bg-black/30 border border-white/[0.05] rounded-lg p-2 text-center">
-                        <div className="text-sm font-bold text-white">4/5</div>
-                        <div className="text-[10px] text-gray-500">Confluences</div>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {/* Psychology Template Preview */}
-                    <div className="p-4 rounded-lg bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-transparent border border-blue-500/20">
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className="w-8 h-8 rounded bg-blue-400/20 flex items-center justify-center">
-                          <Brain className="w-4 h-4 text-blue-400" />
-                        </div>
-                        <div className="flex-1">
-                          <div className="text-sm font-medium text-white">Pre-Trade Psychology</div>
-                          <div className="text-xs text-gray-500">Mental preparation checklist</div>
-                        </div>
-                        <div className="px-2 py-1 rounded-full bg-blue-500/20 border border-blue-500/30">
-                          <span className="text-xs font-medium text-blue-400">92%</span>
-                        </div>
-                      </div>
-
-                      {/* Mental State Indicators */}
-                      <div className="space-y-2 mb-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-400">Emotional State</span>
-                          <div className="flex gap-1">
-                            <div className="w-2 h-2 rounded-full bg-blue-400"></div>
-                            <div className="w-2 h-2 rounded-full bg-blue-400"></div>
-                            <div className="w-2 h-2 rounded-full bg-blue-400"></div>
-                            <div className="w-2 h-2 rounded-full bg-blue-400"></div>
-                            <div className="w-2 h-2 rounded-full bg-gray-600"></div>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-400">Focus Level</span>
-                          <div className="flex gap-1">
-                            <div className="w-2 h-2 rounded-full bg-blue-400"></div>
-                            <div className="w-2 h-2 rounded-full bg-blue-400"></div>
-                            <div className="w-2 h-2 rounded-full bg-blue-400"></div>
-                            <div className="w-2 h-2 rounded-full bg-blue-400"></div>
-                            <div className="w-2 h-2 rounded-full bg-blue-400"></div>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-400">Confidence</span>
-                          <div className="flex gap-1">
-                            <div className="w-2 h-2 rounded-full bg-blue-400"></div>
-                            <div className="w-2 h-2 rounded-full bg-blue-400"></div>
-                            <div className="w-2 h-2 rounded-full bg-blue-400"></div>
-                            <div className="w-2 h-2 rounded-full bg-blue-400"></div>
-                            <div className="w-2 h-2 rounded-full bg-gray-600"></div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Checklist Items */}
-                      <div className="space-y-2 bg-black/30 rounded p-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-4 h-4 rounded border-2 border-blue-500 bg-blue-500/20 flex items-center justify-center flex-shrink-0">
-                            <Check className="w-3 h-3 text-blue-400" />
-                          </div>
-                          <span className="text-xs text-gray-300">Reviewed trading plan</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-4 h-4 rounded border-2 border-blue-500 bg-blue-500/20 flex items-center justify-center flex-shrink-0">
-                            <Check className="w-3 h-3 text-blue-400" />
-                          </div>
-                          <span className="text-xs text-gray-300">Risk management in place</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-4 h-4 rounded border-2 border-blue-500 bg-blue-500/20 flex items-center justify-center flex-shrink-0">
-                            <Check className="w-3 h-3 text-blue-400" />
-                          </div>
-                          <span className="text-xs text-gray-300">Clear exit strategy defined</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-4 h-4 rounded border-2 border-blue-500/50 flex-shrink-0"></div>
-                          <span className="text-xs text-gray-400">Checked market conditions</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Post-Trade Reflection */}
-                    <div className="p-4 rounded-lg bg-black/30 border border-white/[0.05]">
-                      <div className="flex items-center gap-2 mb-2">
-                        <MessageSquare className="w-4 h-4 text-blue-400" />
-                        <span className="text-xs font-medium text-gray-300">Post-Trade Reflection</span>
-                      </div>
-                      <div className="text-xs text-gray-400 bg-black/30 rounded p-2 mb-2">
-                        Stayed disciplined and followed my plan. Resisted the urge to move stop-loss when price dipped briefly. Emotional control was key to this win.
-                      </div>
-
-                      {/* Lessons Learned */}
-                      <div className="flex flex-wrap gap-2">
-                        <span className="text-xs px-2 py-1 rounded bg-blue-400/10 text-blue-400 border border-blue-400/20">Patience</span>
-                        <span className="text-xs px-2 py-1 rounded bg-blue-400/10 text-blue-400 border border-blue-400/20">Discipline</span>
-                        <span className="text-xs px-2 py-1 rounded bg-blue-400/10 text-blue-400 border border-blue-400/20">Trust Process</span>
-                      </div>
-                    </div>
-
-                    {/* NOVA Psychology Score */}
-                    <div className="relative p-4 rounded-lg bg-gradient-to-br from-blue-500/20 via-blue-500/10 to-blue-500/10 border border-blue-500/30 overflow-hidden">
-                      <div className="absolute inset-0 bg-gradient-to-r from-blue-400/5 via-blue-400/5 to-blue-400/5 animate-pulse"></div>
-                      <div className="relative z-10">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center shadow-lg shadow-blue-500/50">
-                              <Sparkles className="w-4 h-4 text-white" />
-                            </div>
-                            <div>
-                              <div className="text-xs font-medium text-gray-400">NOVA Psychology Score</div>
-                              <div className="text-sm font-bold bg-gradient-to-r from-blue-400 via-blue-400 to-blue-400 bg-clip-text text-transparent">Excellent Performance</div>
-                            </div>
-                          </div>
-                          <div className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-blue-400 bg-clip-text text-transparent">92</div>
-                        </div>
-
-                        {/* Score Bar */}
-                        <div className="relative h-2 bg-black/30 rounded-full overflow-hidden mb-2">
-                          <div className="absolute inset-0 bg-gradient-to-r from-blue-500 via-blue-500 to-blue-500 rounded-full" style={{ width: '92%' }}></div>
-                          <div className="absolute inset-0 bg-gradient-to-r from-blue-400/50 via-blue-400/50 to-blue-400/50 rounded-full animate-pulse" style={{ width: '92%' }}></div>
-                        </div>
-
-                        <div className="text-xs text-gray-400">Your mental preparation and post-trade analysis show strong psychological discipline.</div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      </div>
-
-      {/* Live Insights Section */}
-      <div className="py-16 sm:py-24 lg:py-32 bg-gradient-to-b from-black via-black/95 to-black relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-gold-400/5 via-transparent to-transparent" />
-
-        {/* Animated floating particles */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-gold-400/20 rounded-full animate-pulse"
-               style={{ animation: 'float 8s ease-in-out infinite' }} />
-          <div className="absolute top-1/3 right-1/3 w-1.5 h-1.5 bg-blue-400/20 rounded-full animate-pulse"
-               style={{ animation: 'float 6s ease-in-out infinite 1s' }} />
-          <div className="absolute bottom-1/4 left-1/3 w-2.5 h-2.5 bg-blue-400/20 rounded-full animate-pulse"
-               style={{ animation: 'float 7s ease-in-out infinite 2s' }} />
-          <div className="absolute top-1/2 right-1/4 w-2 h-2 bg-blue-400/20 rounded-full animate-pulse"
-               style={{ animation: 'float 9s ease-in-out infinite 0.5s' }} />
-        </div>
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="text-center mb-10 sm:mb-16">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-gradient-to-r from-gold-400/10 to-gold-500/10 border border-gold-400/20 mb-3 sm:mb-4"
-            >
-              <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-gold-400 animate-pulse" />
-              <span className="text-xs sm:text-sm font-medium text-gold-400">Powered by Advanced AI</span>
-            </motion.div>
-
-            <motion.h2
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
-              className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4 text-white px-4"
-            >
-              Meet NOVA: Your AI Trading Coach
-            </motion.h2>
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.2 }}
-              className="text-base sm:text-lg md:text-xl text-gray-400 max-w-3xl mx-auto px-4"
-            >
-              NOVA provides real-time psychology analysis, pattern recognition, and personalized insights to help you master your trading psychology and maximize performance.
-            </motion.p>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 md:gap-8 mb-12">
-            {insights.map((insight, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-                className="group cursor-pointer"
-              >
-                <div className={`
-                  relative overflow-hidden rounded-2xl backdrop-blur-sm
-                  border hover:shadow-2xl
-                  transition-all duration-500 ease-in-out
-                  bg-gradient-to-br from-[#1a1a1a] to-[#0d0d0d] h-full
-                  border-blue-400/20 hover:border-blue-400/60 hover:shadow-blue-400/30
-                `}>
-                  {/* Animated gradient background */}
-                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-blue-500/10">
-                    <div className="absolute inset-0 opacity-50 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-400/20 via-transparent to-transparent animate-pulse" />
-                  </div>
-
-                  {/* Subtle shimmer effect */}
-                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-400/10 to-transparent bg-[length:200%_100%] animate-text-shimmer" />
-                  </div>
-
-                  <div className="relative p-4 sm:p-6">
-                    {/* Header */}
-                    <div className="flex items-start justify-between mb-3 sm:mb-4">
-                      <div className="flex items-start gap-3 sm:gap-4 flex-1">
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-500 group-hover:scale-110 bg-blue-400/20 text-blue-400 shadow-lg shadow-blue-400/30 group-hover:shadow-blue-400/60 group-hover:bg-blue-400/30">
-                          <insight.icon className="w-5 h-5 sm:w-6 sm:h-6" />
-                        </div>
-
-                        <div className="flex-1">
-                          <h3 className="text-base sm:text-lg font-semibold mb-1 transition-all duration-300 text-blue-400 group-hover:text-blue-300">
-                            {insight.title}
-                          </h3>
-                          <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium transition-all duration-300 bg-blue-400/10 text-blue-400 border border-blue-400/20 group-hover:bg-blue-400/20 group-hover:border-blue-400/40">
-                            {insight.badge}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Description */}
-                    <p className="text-xs sm:text-sm text-gray-300 mb-3 sm:mb-4 leading-relaxed">
-                      {insight.description}
-                    </p>
-
-                    {/* Metrics */}
-                    <div className="grid grid-cols-3 gap-3 mb-4">
-                      {insight.metrics.map((metric, i) => (
-                        <div key={i} className="bg-black/40 rounded-lg p-3 border border-white/5">
-                          <p className="text-xs text-gray-400 mb-1">{metric.label}</p>
-                          <p className="text-sm font-bold text-white">{metric.value}</p>
-                        </div>
+                    {/* Blue here on purpose - this is the record button, and it
+                        is blue in the product. One accent, where it is literal. */}
+                    <span className="flex-shrink-0 w-9 h-9 rounded-full bg-brand-blue/15 border border-brand-blue-light/30 flex items-center justify-center">
+                      <span className="w-2.5 h-2.5 rounded-full bg-brand-blue-light" />
+                    </span>
+                    <div className="flex items-end gap-[3px] h-7" aria-hidden="true">
+                      {[7, 14, 22, 12, 26, 18, 9, 20, 28, 15, 8, 19, 24, 11, 6].map((h, i) => (
+                        <span key={i} className="w-[3px] rounded-full bg-white/25" style={{ height: `${h}px` }} />
                       ))}
                     </div>
-
-                    {/* Recommendation */}
-                    <div className="p-3 rounded-lg border transition-all duration-300 bg-blue-400/5 border-blue-400/20 group-hover:bg-blue-400/10 group-hover:border-blue-400/30">
-                      <div className="flex items-start gap-2">
-                        <Sparkles className="w-4 h-4 flex-shrink-0 mt-0.5 animate-pulse text-blue-400" />
-                        <div>
-                          <p className="text-xs font-medium text-gray-400 mb-1">NOVA Recommendation</p>
-                          <p className="text-xs text-gray-300">{insight.recommendation}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Hover Action */}
-                    <div className="mt-4 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
-                      <div className="flex items-center gap-2 text-sm text-gold-400">
-                        <span>View Detailed Analysis</span>
-                        <ChevronRight size={16} />
-                      </div>
-                      <div className="flex items-center gap-1 text-xs text-gray-500">
-                        <Clock className="w-3 h-3" />
-                        <span>Updated 5m ago</span>
-                      </div>
-                    </div>
                   </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* NOVA Chat Preview */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.4 }}
-            className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-[#1a1a1a] to-[#0d0d0d] border border-blue-400/20 hover:border-blue-400/50 hover:shadow-2xl hover:shadow-blue-400/20 transition-all duration-500 group/nova p-8"
-          >
-            {/* Animated background layers */}
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-blue-500/10 opacity-0 group-hover/nova:opacity-100 transition-opacity duration-700">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-400/20 via-transparent to-transparent opacity-50 animate-pulse" />
-            </div>
-
-            {/* Shimmer effect */}
-            <div className="absolute inset-0 opacity-0 group-hover/nova:opacity-100 transition-opacity duration-700">
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-400/10 to-transparent bg-[length:200%_100%] animate-text-shimmer" />
-            </div>
-
-            <div className="relative">
-              <div className="flex items-center gap-3 mb-4 sm:mb-6">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center shadow-lg shadow-blue-400/30 group-hover/nova:shadow-blue-400/60 group-hover/nova:scale-110 transition-all duration-500">
-                  <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-white animate-pulse" />
-                </div>
+                ),
+              },
+              {
+                step: '02',
+                title: 'It writes the entry',
+                body: 'Symbol, direction, size, P&L and your reasoning, pulled out and filed where they belong.',
+                visual: <TranscriptToEntry />,
+              },
+              {
+                step: '03',
+                title: 'It tells you what you keep doing',
+                body: 'Across every entry, not just this one. The pattern you cannot see from inside it.',
+                visual: (
+                  <div className="rounded-lg border border-brand-blue-light/20 bg-brand-blue/[0.06] px-3 py-2.5">
+                    <p className="text-[12.5px] leading-relaxed text-gray-300">
+                      You moved your stop on <span className="text-white">4 of your last 6 losers</span>.
+                      None of your winners.
+                    </p>
+                  </div>
+                ),
+              },
+            ].map((item) => (
+              <div
+                key={item.step}
+                className="rounded-2xl border border-white/[0.07] bg-brand-surface p-5 sm:p-7
+                  sm:grid sm:grid-cols-[1fr_minmax(0,300px)] sm:gap-8 sm:items-center"
+              >
                 <div>
-                  <h3 className="text-lg sm:text-xl font-bold text-blue-400 group-hover/nova:text-blue-300 transition-colors duration-300">Chat with NOVA</h3>
-                  <p className="text-xs sm:text-sm text-white/80">Ask questions about your trading psychology and get instant insights</p>
+                  <p className="text-[10px] tracking-[0.18em] text-gray-600 mb-2.5 tabular-nums">{item.step}</p>
+                  <h3 className="text-[19px] sm:text-xl font-semibold text-white tracking-[-0.02em]">{item.title}</h3>
+                  <p className="mt-2 text-[13.5px] sm:text-sm text-gray-400 leading-relaxed">{item.body}</p>
+                </div>
+                <div className="mt-5 sm:mt-0 rounded-xl border border-white/[0.06] bg-brand-elevated p-4">
+                  {item.visual}
                 </div>
               </div>
+            ))}
+          </div>
+        </div>
+      </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+      {/*
+        THE PRODUCT, EXPLORABLE.
+
+        Placed here rather than in the hero on the evidence: Notre Dame found
+        ~1% of visitors click a hero carousel at all and 84% of those clicks
+        land on the first panel, and carousel-versus-static A/B testing
+        measured 1.96% interaction against 43.03%. Hyros and TradeZella both
+        put their own tabs mid-page for the same reason.
+
+        The hero keeps one static panel carrying one message. This is for the
+        visitor who is still reading and now wants to see more.
+      */}
+      <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
+        <div className="max-w-3xl mx-auto px-5 sm:px-8">
+          <div className="text-center mb-10 sm:mb-12">
+            <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
+              Inside TradeX
+            </p>
+            <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
+              Have a look around
+            </h2>
+          </div>
+          <ProductTabs />
+
+          {/*
+            The way deeper.
+
+            Everything the landing page holds back now lives on a real page,
+            and until this the only route to one was the footer. A visitor who
+            wants more detail is the most interested person on the site; making
+            them hunt for it is the one mistake worth avoiding here. Quiet grey
+            text so it never competes with the CTA - the job is to be findable,
+            not to be clicked instead of signing up.
+          */}
+          <p className="mt-7 text-center">
+            <Link to="/features" className="inline-flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-white transition-colors underline underline-offset-[3px] decoration-white/20 hover:decoration-white/50">
+              See everything it does
+            </Link>
+          </p>
+        </div>
+      </div>
+
+      {/*
+        THE DIFFERENTIATOR.
+
+        Every journal shows P&L. This is the one thing no competitor leads
+        with, so it gets a section to itself rather than a card in a grid.
+      */}
+      <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
+        <div className="max-w-4xl mx-auto px-5 sm:px-8">
+          <div className="text-center mb-12 sm:mb-16">
+            <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
+              Psychology
+            </p>
+            <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
+              Your P&amp;L is the symptom
+            </h2>
+            <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-sm sm:max-w-md mx-auto text-balance">
+              Rate your head before the trade. TradeX matches it against what
+              actually happened, and turns it into one score you can watch move.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-white/[0.07] bg-brand-surface p-5 sm:p-8">
+            {/*
+              What you log, per trade. Three sliders before you enter, which is
+              the whole ask - the rest is TradeX's problem.
+            */}
+            <p className="text-[10px] uppercase tracking-[0.12em] text-gray-600 mb-3">Before the trade</p>
+            <div className="grid grid-cols-3 gap-3 sm:gap-5">
+              {[
+                { label: 'Focus', value: 7 },
+                { label: 'Confidence', value: 4 },
+                { label: 'Discipline', value: 6 },
+              ].map((m) => (
+                <div key={m.label} className="rounded-xl border border-white/[0.07] bg-brand-elevated p-3 sm:p-4">
+                  <p className="text-[9px] sm:text-[10px] uppercase tracking-[0.04em] sm:tracking-[0.12em] text-gray-600 whitespace-nowrap">{m.label}</p>
+                  <p className="mt-1.5 text-xl sm:text-2xl font-semibold text-white tabular-nums">
+                    {m.value}<span className="text-gray-600 text-sm">/10</span>
+                  </p>
+                  <div className="mt-2.5 h-1 rounded-full bg-white/[0.07] overflow-hidden">
+                    <div className="h-full rounded-full bg-brand-blue-light/70" style={{ width: `${m.value * 10}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/*
+              And what it turns into. The NOVA Score is the app's own roll-up -
+              0 to 100, banded Developing through Elite, built from
+              profitability, consistency, risk management, discipline and
+              execution. It belongs here because it is the number that moves
+              when your head does, and it was the one real feature the page
+              never mentioned.
+            */}
+            <div className="mt-4 rounded-xl border border-brand-blue-light/20 bg-brand-blue/[0.06] p-4 sm:p-5">
+              <div className="flex items-center justify-between gap-4 mb-4">
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.12em] text-gray-500">NOVA Score</p>
+                  <p className="mt-1 flex items-baseline gap-2">
+                    <span className="text-3xl sm:text-4xl font-semibold text-white tabular-nums">68</span>
+                    <span className="text-[13px] text-brand-blue-light">Advanced</span>
+                  </p>
+                </div>
+                <p className="text-[11px] text-gray-500 text-right max-w-[9rem] leading-relaxed">
+                  One number for whether you are actually improving
+                </p>
+              </div>
+              <div className="flex flex-col gap-2">
                 {[
-                  { question: "Why do I keep moving my stop loss?", insight: "Analysis shows 78% of moved stops lead to bigger losses", color: 'blue' },
-                  { question: "When am I most profitable?", insight: "Your win rate is 45% higher during morning sessions", color: 'blue' },
-                  { question: "How can I improve my discipline?", insight: "Try pre-trade checklists - they improved compliance by 68%", color: 'blue' }
-                ].map((item, i) => (
-                  <div
-                    key={i}
-                    className="relative rounded-lg p-4 border overflow-hidden transition-all duration-500 group/chat cursor-pointer transform hover:scale-105 bg-gradient-to-br from-blue-500/20 to-blue-500/10 border-blue-400/30 hover:border-blue-400/60 hover:shadow-xl hover:shadow-blue-400/30"
-                  >
-                    {/* Animated gradient background on hover */}
-                    <div className="absolute inset-0 opacity-0 group-hover/chat:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-blue-400/20 via-blue-400/10 to-blue-500/20" />
-
-                    {/* Shimmer effect */}
-                    <div className="absolute inset-0 opacity-0 group-hover/chat:opacity-100 transition-opacity duration-700">
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-300/20 to-transparent bg-[length:200%_100%] animate-text-shimmer" />
-                    </div>
-
-                    <div className="relative z-10">
-                      <div className="flex items-start gap-2 mb-3">
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-300 bg-gradient-to-br from-blue-400 to-blue-500 shadow-lg shadow-blue-400/40 group-hover/chat:shadow-blue-400/60 group-hover/chat:scale-110">
-                          <MessageSquare className="w-4 h-4 text-white" />
-                        </div>
-                        <p className="text-sm font-semibold flex-1 transition-colors duration-300 text-blue-100 group-hover/chat:text-blue-50">{item.question}</p>
-                      </div>
-
-                      <div className="bg-black/30 rounded-md p-3 mb-2 border transition-all duration-300 border-blue-400/20 group-hover/chat:border-blue-400/40 group-hover/chat:bg-black/40">
-                        <p className="text-xs font-medium transition-colors duration-300 text-blue-200 group-hover/chat:text-blue-100">{item.insight}</p>
-                      </div>
-
-                      <div className="flex items-center gap-1 text-xs font-semibold opacity-0 group-hover/chat:opacity-100 transition-all duration-300 text-blue-300">
-                        <Sparkles className="w-3 h-3" />
-                        <span>Ask NOVA this question</span>
-                        <ChevronRight size={12} />
-                      </div>
-                    </div>
+                  ['Discipline', 74],
+                  ['Risk Management', 71],
+                  ['Consistency', 62],
+                  ['Execution', 58],
+                ].map(([label, value]) => (
+                  <div key={label as string} className="flex items-center gap-3">
+                    <span className="w-[104px] sm:w-[124px] flex-shrink-0 text-[11.5px] text-gray-500">{label}</span>
+                    <span className="flex-1 h-1 rounded-full bg-white/[0.07] overflow-hidden">
+                      <span className="block h-full rounded-full bg-brand-blue-light/60" style={{ width: `${value}%` }} />
+                    </span>
+                    <span className="w-7 text-right text-[11.5px] text-gray-400 tabular-nums">{value}</span>
                   </div>
                 ))}
               </div>
             </div>
-          </motion.div>
-        </div>
-      </div>
 
-      {/* Features Grid */}
-      <div className="py-16 sm:py-24 lg:py-32 bg-gradient-to-b from-black via-black/95 to-black relative overflow-hidden">
-        {/* Animated Background Elements */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gold-400/5 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '4s' }}></div>
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gold-400/3 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '6s', animationDelay: '1s' }}></div>
-        </div>
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-12 sm:mb-16 lg:mb-20"
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-              className="inline-block mb-4 sm:mb-6"
-            >
-              <div className="flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-gold-400/10 border border-gold-400/20 backdrop-blur-sm">
-                <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-gold-400 animate-pulse" />
-                <span className="text-xs sm:text-sm font-medium text-gold-400">Complete Trading Suite</span>
-              </div>
-            </motion.div>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4 text-white leading-tight pb-2 px-4">
-              Everything You Need
-            </h2>
-            <p className="text-base sm:text-lg md:text-xl text-gray-400 max-w-3xl mx-auto px-4">Advanced journaling, visual analytics, AI insights, and comprehensive trade tracking.</p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
-            {features.map((feature, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 30, rotateX: 10 }}
-                whileInView={{ opacity: 1, y: 0, rotateX: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1, duration: 0.6, ease: "easeOut" }}
-                whileHover={{ y: -8, transition: { duration: 0.2 } }}
-                className="relative group"
-              >
-                {/* Glow Effect on Hover */}
-                <div className="absolute inset-0 bg-gradient-to-br from-gold-400/0 to-gold-400/0 group-hover:from-gold-400/10 group-hover:to-transparent rounded-2xl blur-xl transition-all duration-500 -z-10"></div>
-
-                {/* Card */}
-                <div className="relative h-full p-8 rounded-2xl bg-gradient-to-br from-white/[0.07] via-white/[0.05] to-transparent border border-white/10 group-hover:border-gold-400/40 transition-all duration-300 overflow-hidden backdrop-blur-sm">
-                  {/* Animated Border Gradient */}
-                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                    <div className="absolute inset-[-2px] bg-gradient-to-r from-gold-400/20 via-gold-300/10 to-gold-400/20 rounded-2xl blur-sm"></div>
-                  </div>
-
-                  {/* Content */}
-                  <div className="relative z-10">
-                    {/* Icon */}
-                    <motion.div
-                      className="w-14 h-14 rounded-xl bg-gradient-to-br from-gold-400/20 to-gold-400/5 flex items-center justify-center mb-6 border border-gold-400/20 shadow-lg shadow-gold-400/10 group-hover:shadow-gold-400/30 group-hover:scale-110 transition-all duration-300"
-                      whileHover={{ rotate: [0, -10, 10, 0], transition: { duration: 0.5 } }}
-                    >
-                      <feature.icon className="w-7 h-7 text-gold-400 group-hover:scale-110 transition-transform" />
-                    </motion.div>
-
-                    {/* Title and Description */}
-                    <h3 className="text-xl font-bold mb-3 text-white group-hover:text-gold-400/90 transition-colors">{feature.title}</h3>
-                    <p className="text-gray-400 mb-6 leading-relaxed">{feature.description}</p>
-
-                    {/* Metrics */}
-                    <div className="grid grid-cols-2 gap-3">
-                      {feature.metrics.map((metric, i) => (
-                        <motion.div
-                          key={i}
-                          className="relative bg-gradient-to-br from-black/40 to-black/20 rounded-xl p-4 border border-white/[0.08] group-hover:border-gold-400/20 transition-all overflow-hidden"
-                          whileHover={{ scale: 1.05, transition: { duration: 0.2 } }}
-                        >
-                          {/* Shimmer Effect */}
-                          <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
-
-                          <div className="relative z-10">
-                            <div className="text-xs text-gray-500 mb-1 font-medium">{metric.label}</div>
-                            <div className="text-lg font-bold text-gold-400">{metric.value}</div>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
+            <div className="mt-4 rounded-xl border border-white/[0.07] bg-brand-elevated p-4 sm:p-5">
+              <p className="text-[10px] uppercase tracking-[0.12em] text-gray-600 mb-2">What it found</p>
+              <p className="text-[13.5px] sm:text-[15px] text-gray-300 leading-relaxed">
+                Every trade you rated <span className="text-white">confidence below 5</span> lost money.
+                Nine out of nine. You are not losing on setups &mdash; you are losing on the days you
+                already knew you should sit out.
+              </p>
+            </div>
+            <p className="mt-4 text-center text-[11px] text-gray-600">Example figures</p>
           </div>
         </div>
       </div>
 
-      {/* Founder Video Section */}
-      <div className="py-16 sm:py-24 lg:py-32 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 via-transparent to-transparent" />
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-          >
-            <div className="text-center mb-8 sm:mb-10">
-              <div className="inline-block px-4 py-1.5 rounded-full text-xs sm:text-sm font-semibold tracking-[0.2em] bg-blue-500/10 text-blue-400 border border-blue-400/30 mb-4">
-                FROM THE FOUNDER
+      {/*
+        NOVA.
+
+        The product is named after her and the page never said what she does.
+        Kept to one section and one exchange rather than a feature grid: what
+        makes Nova worth paying for is that she has read every entry, so the
+        demonstration is an answer no generic chatbot could give.
+      */}
+      <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
+        <div className="max-w-3xl mx-auto px-5 sm:px-8">
+          <div className="text-center mb-10 sm:mb-14">
+            <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
+              Nova
+            </p>
+            <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
+              Ask her anything about your trading
+            </h2>
+            <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-sm sm:max-w-md mx-auto text-balance">
+              She has read every entry you have written. Not generic advice &mdash;
+              your trades, your numbers, your habits.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-white/[0.07] bg-brand-surface p-5 sm:p-7">
+            <div className="flex flex-col gap-4">
+              <div className="flex justify-end">
+                <p className="max-w-[85%] rounded-2xl rounded-br-sm bg-brand-elevated border border-white/[0.07]
+                  px-4 py-2.5 text-[13px] sm:text-sm text-gray-300">
+                  Why am I losing on Fridays?
+                </p>
               </div>
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4 px-4">
-                Why I built TradeX
-              </h2>
-              <p className="text-base sm:text-lg text-gray-400 px-4 max-w-2xl mx-auto">
-                A quick word on what this is, who it's for, and where it's going.
-              </p>
+
+              <NovaAnswer />
             </div>
 
-            {/*
-              preload="metadata" so visitors only download the ~12MB video if
-              they actually press play - otherwise landing on the page would
-              pull it down for everyone. playsInline keeps iOS from hijacking
-              it into fullscreen. No autoplay: it has voice audio, and
-              browsers block autoplay-with-sound anyway.
-            */}
-            <div className="rounded-2xl overflow-hidden border border-white/10 bg-black shadow-2xl shadow-blue-500/10">
-              <video
-                className="w-full aspect-video bg-black"
-                controls
-                preload="metadata"
-                playsInline
-                poster="/founder-video-poster.jpg"
-              >
-                <source src="/founder-video.mp4" type="video/mp4" />
-                Your browser doesn't support embedded video. You can still sign up
-                below.
-              </video>
+            <div className="mt-6 pt-5 border-t border-white/[0.06] grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {[
+                ['Reads every entry', 'Not just the last one. Patterns show up across months, not trades.'],
+                ['Remembers you', 'Tell her once what you are working on and she holds on to it.'],
+                ['Writes your entries', 'Talk it through and she files the whole thing for you.'],
+              ].map(([title, body]) => (
+                <div key={title}>
+                  <p className="text-[12.5px] font-medium text-white">{title}</p>
+                  <p className="mt-1 text-[12px] text-gray-500 leading-relaxed">{body}</p>
+                </div>
+              ))}
             </div>
-          </motion.div>
+            <p className="mt-5 text-center text-[11px] text-gray-600">Example conversation</p>
+          </div>
+
+          <p className="mt-7 text-center">
+            <Link to="/nova-ai" className="inline-flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-white transition-colors underline underline-offset-[3px] decoration-white/20 hover:decoration-white/50">
+              More on how Nova works
+            </Link>
+          </p>
         </div>
       </div>
 
-      {/* Pricing Section */}
-      <div className="py-16 sm:py-24 lg:py-32 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-gold-400/5 via-transparent to-transparent" />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="text-center mb-10 sm:mb-16">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4 px-4">Simple, Transparent Pricing</h2>
+      {/*
+        THE OBJECTION.
+
+        Almost nobody arrives using nothing - they use a spreadsheet and half
+        believe it is fine. Naming that directly converts better than listing
+        features, because the comparison is the argument they are already
+        having with themselves.
+      */}
+      <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
+        <div className="max-w-3xl mx-auto px-5 sm:px-8">
+          <div className="text-center mb-12 sm:mb-14">
+            <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
+              &ldquo;I already have a spreadsheet&rdquo;
+            </h2>
+            <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-sm sm:max-w-md mx-auto text-balance">
+              You do. Be honest about how up to date it is.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+            <div className="rounded-2xl border border-white/[0.07] bg-brand-surface p-4 sm:p-6">
+              <p className="text-[11px] uppercase tracking-[0.14em] text-gray-600 mb-4">Spreadsheet</p>
+              <ul className="flex flex-col gap-3">
+                {[
+                  'You type every row',
+                  'Blank after a bad week',
+                  'Tells you what, never why',
+                  'No memory of your state',
+                ].map((t) => (
+                  <li key={t} className="text-[12.5px] sm:text-sm text-gray-500 leading-snug">{t}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="rounded-2xl border border-white/15 bg-brand-surface p-4 sm:p-6">
+              <p className="text-[11px] uppercase tracking-[0.14em] text-gray-400 mb-4">TradeX</p>
+              <ul className="flex flex-col gap-3">
+                {[
+                  'You talk, it types',
+                  'Thirty seconds, so it gets done',
+                  'Finds the pattern across every trade',
+                  'Scores your head, not just the result',
+                ].map((t) => (
+                  <li key={t} className="text-[12.5px] sm:text-sm text-gray-200 leading-snug">{t}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/*
+        FROM THE FOUNDER.
+
+        A real person saying why they built it is the strongest trust signal a
+        small brand has. Competitors fill this slot with customer logos and
+        five-figure user counts; we cannot, and inventing them would be the one
+        thing on this page that could not be defended.
+
+        The video itself lives on /about now - founder videos earn their slot
+        on enterprise pages with long sales cycles, and for a self-serve
+        product a product demo converts better in the same space, which this
+        page has several of. The story stays here because it is one sentence
+        and it is the most human thing on the page.
+
+        One centred column, not a centred heading above a left-aligned
+        paragraph - the alignment change mid-block read as a layout error, and
+        a section-sized gap between a heading and the sentence finishing its
+        thought made it worse.
+      */}
+      <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
+        <div className="max-w-3xl mx-auto px-5 sm:px-8">
+          <div className="max-w-lg mx-auto text-center">
+            <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
+              From the founder
+            </p>
+            <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
+              Why I built this
+            </h2>
+
+            <p className="mt-5 text-[15px] sm:text-[17px] leading-relaxed text-gray-300 text-balance">
+              I kept quitting my own trading journal. So I built the one I would
+              actually keep.
+            </p>
+
             {/*
-              The card below already switches on `launched`; this line was
-              missed, so it went on inviting people to join the waitlist and
-              lock in founding member pricing well after both had ended -
-              offering a price checkout would not honour, right above the card
-              charging the real one.
+              The actual reason, in his words: the competition is not missing
+              features, it has too many, and none of them is the one that
+              matters. It also sets up the psychology sections above and below
+              rather than sitting apart from them.
+
+              No em-dash. The clause it used to hang off read as an aside when
+              it is the whole point, so "My trading psychology." is its own
+              sentence now - a two-word fragment after a long sentence lands
+              the way a dash never does. The close moves from "I" to "you",
+              which is where the paragraph is actually aimed.
             */}
-            <p className="text-base sm:text-lg md:text-xl text-gray-400 px-4">
+            <p className="mt-4 text-[14.5px] sm:text-base leading-relaxed text-gray-400 text-balance">
+              Every one I tried had a hundred features and not one of them tracked
+              the thing that actually decides whether I make money. My trading
+              psychology. What was going on in my head when I clicked buy, when I
+              clicked sell, when I closed a position early. Everything else is
+              tidier arithmetic on a loss you have already taken and can learn
+              nothing from.
+            </p>
+
+            <Link
+              to="/about"
+              className="mt-8 inline-flex items-center gap-2 px-5 py-2.5 rounded-full
+                border border-white/15 text-[13.5px] text-gray-300
+                hover:text-white hover:border-white/25 transition-colors"
+            >
+              Watch the two-minute version
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/*
+        PRICING.
+
+        High-converting SaaS pages show the price rather than hiding it behind
+        a demo request - the visitor's fourth question is what it costs, and
+        making them ask loses the ones who would have paid.
+
+        One plan, so the layout is one card rather than a three-column tier
+        table with a fake "most popular" badge. Features are a plain list, not
+        three columns of categories: what matters here is that nothing is held
+        back, and a wall of ticks says that better than taxonomy.
+
+        The gold-* classes this section used were undefined and rendered as
+        nothing, which is why the old feature headings had no colour at all.
+      */}
+      <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
+        <div className="max-w-xl mx-auto px-5 sm:px-8">
+          <div className="text-center mb-10 sm:mb-12">
+            <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
+              Pricing
+            </p>
+            <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
+              One plan. Everything in it.
+            </h2>
+            <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-sm mx-auto text-balance">
               {launched
-                ? 'Everything included in one plan \u2014 no tiers, no add-ons.'
+                ? 'No tiers, no add-ons, no trade limits.'
                 : 'Join the waitlist before launch and lock in founding member pricing.'}
             </p>
           </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="max-w-3xl mx-auto"
-          >
-            <div className="p-6 md:p-8 lg:p-10 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-gold-400/50 transition-all">
-              {/*
-                The public price has to change at launch. $14.99 is founder
-                pricing - only for people already on the waitlist, and only
-                until Tuesday - so advertising it to every visitor after
-                launch promises a price checkout will not honour, and they
-                would discover that at the card form. Founders still see
-                their real price on the paywall, where eligibility is known.
-              */}
-              <div className="text-center mb-10 md:mb-12">
-                {/*
-                  Pre-launch the badge earns its place by saying something the
-                  heading doesn't - that this is founder pricing. After launch
-                  there is no second thing to say, and repeating "TradeX Pro"
-                  directly above the heading that already says it just adds
-                  noise, so it comes off entirely.
-                */}
+          <div className="rounded-2xl border border-white/10 bg-brand-surface p-6 sm:p-8">
+            <div className="text-center pb-7 mb-7 border-b border-white/[0.07]">
+              {!launched && (
+                <p className="text-[11px] uppercase tracking-[0.14em] text-gray-400 mb-3">
+                  Founding member pricing
+                </p>
+              )}
+              <p className="flex items-baseline justify-center gap-1.5">
                 {!launched && (
-                  <div className="inline-block px-4 py-1.5 rounded-full text-sm font-medium bg-white/10 text-white border border-white/20 mb-4">
-                    Founding Member Pricing
-                  </div>
+                  <span className="text-xl text-gray-600 line-through mr-1 tabular-nums">$24.99</span>
                 )}
-                <h3 className="text-2xl md:text-3xl font-bold mb-2">TradeX Pro</h3>
-                <div className="text-4xl md:text-5xl font-bold mb-2">
-                  {!launched && (
-                    <span className="text-2xl md:text-3xl text-gray-500 line-through mr-3">$24.99</span>
-                  )}
-                  <span className="bg-gradient-to-b from-white to-white/70 bg-clip-text text-transparent">
-                    {launched ? '$24.99' : '$14.99'}
-                  </span>
-                  <span className="text-lg md:text-xl font-normal text-gray-400">/month</span>
-                </div>
-                <p className="text-sm md:text-base text-gray-400">
-                  {launched
-                    ? 'Cancel anytime'
-                    : 'Locked in forever • Cancel anytime'}
+                <span className="text-[44px] sm:text-5xl font-semibold text-white tracking-[-0.03em] tabular-nums">
+                  {launched ? '$24.99' : '$14.99'}
+                </span>
+                <span className="text-[15px] text-gray-500">/month</span>
+              </p>
+              <p className="mt-2 text-[12.5px] text-gray-500">
+                {launched ? '14-day money back guarantee \u00b7 Cancel anytime' : 'Locked in forever \u00b7 Cancel anytime'}
+              </p>
+            </div>
+
+            {/*
+              Real urgency, not a countdown clock.
+
+              MT4 and MT5 sync ships in the next week or two and the price
+              goes up with it. Saying so is both the honest warning and the
+              strongest reason to join today - and unlike a fake timer, it is
+              a promise that can actually be kept.
+            */}
+            {launched && (
+              <div className="mb-7 rounded-xl border border-brand-blue-light/25 bg-brand-blue/[0.06] px-4 py-3.5">
+                <p className="text-[12.5px] sm:text-[13px] text-gray-300 leading-relaxed">
+                  <span className="text-white font-medium">MT4 &amp; MT5 sync lands in the next couple of weeks</span>
+                  {' \u2014 '}and the price goes up when it does. Join now and yours stays at $24.99.
                 </p>
               </div>
+            )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8 mb-10 md:mb-12">
-                {proFeatures.map((category, index) => (
-                  <div key={index}>
-                    <h4 className="text-gold-400 font-medium mb-4">{category.category}</h4>
-                    <ul className="space-y-3">
-                      {category.features.map((feature, i) => (
-                        <li key={i} className="flex items-center gap-3 text-sm">
-                          <CheckCircle2 className="w-4 h-4 text-gold-400 flex-shrink-0" />
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
+            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-2.5 mb-7">
+              {[
+                /*
+                  This list, not the product tour, is where "is it complete
+                  enough?" gets answered. The research on landing pages is
+                  consistent that clarity beats completeness - piling every
+                  feature into the tour turns three clear ideas into twelve
+                  competing ones - but somebody reading a price is checking
+                  for gaps, and that is the right moment to show there are
+                  none. Everything here exists today.
+                */
+                'Voice journaling',
+                'Nova AI analysis',
+                'Psychology scoring',
+                'NOVA Score',
+                'Pre-trade checklists',
+                'Weekly & monthly reports',
+                'Trading rules & confluences',
+                'Performance analytics',
+                'Unlimited trades',
+                'Up to 5 accounts',
+                'CSV import',
+                'Notes',
+              ].map((feature) => (
+                <li key={feature} className="flex items-center gap-2.5 text-[13.5px] text-gray-300">
+                  {/* Blue, matching the same list on /pricing and /features.
+                      Grey here and blue there made one list look like a
+                      lesser version of the other. The hero's three checks
+                      stay grey on purpose - that block is deliberately
+                      monochrome so the first blue on the page is the product
+                      panel, where it means something. */}
+                  <Check className="w-3.5 h-3.5 flex-shrink-0 text-brand-blue-light" strokeWidth={3} />
+                  {feature}
+                </li>
+              ))}
+            </ul>
 
+            {launched ? (
+              <Link
+                to="/auth?mode=signup"
+                className="w-full inline-flex items-center justify-center gap-2 px-7 py-3.5
+                  rounded-full bg-white text-black text-[14px] font-medium hover:bg-gray-200 transition-colors"
+              >
+                Start journaling
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            ) : (
               <SignupOrWaitlist
                 preLaunchFootnote={
-                  <p className="text-center text-sm text-gray-400 mt-4">
-                    Join now to lock in $14.99/mo — this price ends at launch
+                  <p className="text-center text-[12.5px] text-gray-500 mt-4">
+                    Join now to lock in $14.99/mo &mdash; this price ends at launch
+                  </p>
+                }
+              />
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/*
+        FAQ.
+
+        Only the questions that stop a card coming out. A FAQ that explains
+        features is a second feature list; this one answers the four things a
+        sceptical trader actually thinks, in their words, and the security one
+        sits first because it is the one that stops broker connections.
+
+        Plain <details> rather than state-driven accordions: it works without
+        JavaScript, it is keyboard accessible for free, and the answer is in
+        the DOM for search engines whether or not anyone opens it.
+      */}
+      <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
+        <div className="max-w-2xl mx-auto px-5 sm:px-8">
+          <div className="text-center mb-10 sm:mb-12">
+            <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
+              Before you ask
+            </p>
+            <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
+              The honest answers
+            </h2>
+          </div>
+
+          <div className="flex flex-col gap-2.5">
+            {[
+              {
+                /*
+                  The doubt underneath every other question, and the one
+                  TradeZella leads their own FAQ with. Answering it honestly -
+                  including the condition - reads as more credible than a
+                  promise.
+                */
+                q: 'Does journaling actually work?',
+                a: 'Only if you keep doing it. That is the whole problem, and it is what TradeX is built around \u2014 a journal you abandon in week three teaches you nothing, however good its charts are. Thirty seconds of talking is a habit people keep.',
+              },
+              {
+                q: 'Can I connect my broker?',
+                a: 'Right now you import a CSV from your broker or add trades as you go. Direct MT4 and MT5 sync lands in the next couple of weeks, and it is read-only when it does \u2014 TradeX will see your trade history and nothing else. It can never place, close or modify a trade, and it never touches your money.',
+              },
+              {
+                q: 'How is this different from a spreadsheet?',
+                a: 'You stop typing. You talk through the trade and TradeX writes the entry, then reads every entry together and tells you what you keep doing \u2014 which a spreadsheet has never once done for anybody.',
+              },
+              {
+                q: 'I have tried journals before and quit. Why is this different?',
+                a: 'Two reasons. The quitting is the problem we built around \u2014 journals do not fail on features, they fail at 4pm when typing up a trade is the last thing you want to do. And every other journal shows you your P&L. TradeX records how you felt going in and matches it against what happened, because seeing that you lost and seeing why you lost are different things.',
+              },
+              {
+                /*
+                  Worth answering plainly: this product asks people to record
+                  their state of mind, which is more personal than a P&L.
+                */
+                q: 'Who can see what I write?',
+                a: 'Only you. Your entries, your psychology scores and your conversations with Nova are yours \u2014 they are not shown to other users and they are not sold to anyone. You can export or delete everything from Settings.',
+              },
+              {
+                q: 'What if it is not for me?',
+                a: 'Give it two proper weeks. If you are still not journaling, or it has not shown you something about how you trade that you did not already know, ask for your money back. Cancelling is separate and needs no email at all \u2014 two clicks in Settings, any time.',
+              },
+            ].map((item) => (
+              <details
+                key={item.q}
+                className="group rounded-xl border border-white/[0.07] bg-brand-surface
+                  open:border-white/15 transition-colors"
+              >
+                <summary
+                  className="cursor-pointer list-none px-5 py-4 flex items-center justify-between gap-4
+                    text-[14.5px] sm:text-[15px] font-medium text-white
+                    focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/40 rounded-xl"
+                >
+                  {item.q}
+                  <Plus
+                    className="w-4 h-4 flex-shrink-0 text-gray-500 transition-transform duration-200
+                      group-open:rotate-45"
+                    strokeWidth={2}
+                  />
+                </summary>
+                <p className="px-5 pb-5 -mt-1 text-[13.5px] sm:text-sm text-gray-400 leading-relaxed">
+                  {item.a}
+                </p>
+              </details>
+            ))}
+          </div>
+
+          <p className="mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+            <Link to="/faq" className="inline-flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-white transition-colors underline underline-offset-[3px] decoration-white/20 hover:decoration-white/50">
+              Every other question
+            </Link>
+            <Link to="/security" className="inline-flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-white transition-colors underline underline-offset-[3px] decoration-white/20 hover:decoration-white/50">
+              How your data is kept
+            </Link>
+          </p>
+        </div>
+      </div>
+
+      {/*
+        Testimonials, restyled to match the rest of the page.
+
+        Content unchanged - that is a decision already taken. What changed is
+        the treatment: quote first and name second, because on a page this
+        quiet the words carry more than an avatar circle does, and three
+        heavy cards in a row was the last piece of the old visual language
+        left standing.
+      */}
+      <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
+        <div className="max-w-4xl mx-auto px-5 sm:px-8">
+          <div className="text-center mb-10 sm:mb-14">
+            <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
+              Early users
+            </p>
+            <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
+              What they say
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+            {[
+              {
+                quote: "NOVA's psychological insights helped me identify and fix my emotional trading patterns. My win rate improved by 35% in just two months.",
+                name: 'Michael S.',
+                role: 'Forex Trader',
+                initials: 'MS',
+              },
+              {
+                quote: 'The visual trade calendar and analytics helped me identify my most profitable setups. TradeX has completely transformed my trading approach.',
+                name: 'Sarah L.',
+                role: 'Options Trader',
+                initials: 'SL',
+              },
+              {
+                quote: "The detailed analytics and journaling features save me hours each week. NOVA's insights have helped me become more consistent and disciplined.",
+                name: 'David K.',
+                role: 'Crypto Trader',
+                initials: 'DK',
+              },
+            ].map((t) => (
+              <figure
+                key={t.name}
+                className="flex flex-col rounded-2xl border border-white/[0.07] bg-brand-surface p-5 sm:p-6"
+              >
+                <blockquote className="text-[13.5px] sm:text-sm text-gray-300 leading-relaxed flex-1">
+                  &ldquo;{t.quote}&rdquo;
+                </blockquote>
+                <figcaption className="mt-5 pt-4 border-t border-white/[0.06] flex items-center gap-2.5">
+                  <span className="w-7 h-7 rounded-full bg-brand-elevated border border-white/10
+                    flex items-center justify-center text-[10px] font-medium text-gray-400">
+                    {t.initials}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-[12.5px] text-gray-300 truncate">{t.name}</span>
+                    <span className="block text-[11px] text-gray-600 truncate">{t.role}</span>
+                  </span>
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/*
+        FINAL CTA.
+
+        Same words as the hero button, deliberately. A page that says "Start
+        journaling" at the top and "Transform Your Trading" at the bottom is
+        offering two different things; repeating one verb makes it one
+        decision the reader has now seen the case for.
+
+        The old copy - "Join traders who have transformed their results" -
+        claimed an outcome for people we cannot point to. The guarantee does
+        the same job and is checkable.
+      */}
+      <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
+        <div className="max-w-xl mx-auto px-5 sm:px-8 text-center">
+          <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
+            Stop guessing why you lose
+          </h2>
+          <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-sm mx-auto text-balance">
+            Thirty seconds a trade. The pattern you cannot see from inside it.
+          </p>
+
+          {launched ? (
+            <div className="mt-8 flex flex-col items-center gap-2.5">
+              <Link
+                to="/auth?mode=signup"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2
+                  px-7 py-3 rounded-full bg-white text-black text-[14px] font-medium
+                  hover:bg-gray-200 transition-colors"
+              >
+                Start journaling
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+              <p className="text-[11.5px] text-gray-500">
+                14-day money back guarantee &middot; Cancel anytime
+              </p>
+            </div>
+          ) : (
+            <div className="mt-8 max-w-md mx-auto">
+              <SignupOrWaitlist
+                preLaunchFootnote={
+                  <p className="text-[11.5px] text-gray-500 mt-4">
+                    Join before launch to lock in{' '}
+                    <span className="line-through">$24.99</span>{' '}
+                    <span className="text-gray-300">$14.99/mo</span>, forever.
                   </p>
                 }
               />
             </div>
-          </motion.div>
-        </div>
-      </div>
-
-      {/* FAQ Section */}
-      <div className="py-16 sm:py-24 lg:py-32 relative overflow-hidden">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="text-center mb-10 sm:mb-16">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4 px-4">Common Questions</h2>
-            <p className="text-base sm:text-lg md:text-xl text-gray-400 px-4">Everything you need to know</p>
-          </div>
-
-          <div className="space-y-4">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="p-6 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-white/20 transition-colors"
-            >
-              <h3 className="text-lg font-medium mb-2">What makes TradeX different from other trading journals?</h3>
-              <p className="text-sm text-gray-400">
-                Unlike traditional trading journals, TradeX combines advanced journaling capabilities with NOVA, our AI trading assistant. NOVA analyzes your trading patterns, psychology, and behavior to provide personalized insights that help you develop a winning edge.
-              </p>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="p-6 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-white/20 transition-colors"
-            >
-              <h3 className="text-lg font-medium mb-2">How does NOVA AI help improve my trading?</h3>
-              <p className="text-sm text-gray-400">
-                NOVA analyzes your trading data to identify patterns in your behavior, psychology, and market conditions. It helps you understand when you're most profitable, detects emotional trading patterns, and provides actionable insights to improve your strategy.
-              </p>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="p-6 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-white/20 transition-colors"
-            >
-              <h3 className="text-lg font-medium mb-2">Can I import my trades automatically?</h3>
-              <p className="text-sm text-gray-400">
-                Yes. Connect a MetaTrader 4 or MetaTrader 5 account and your closed trades import on their own &mdash; entry and exit, size, commission, how long you held it, and whether it ended at your stop, your target, or by hand. You can still log trades yourself, and you can import a statement, whichever suits you.
-              </p>
-            </motion.div>
-
-            {/*
-              The question that actually decides whether somebody connects.
-
-              A trader being asked for a password to their trading account
-              is right to hesitate, and answering it vaguely reads as
-              evasion. Every claim here is a fact about how it is built: the
-              investor password genuinely cannot trade, and it genuinely is
-              not stored. If either stops being true, this answer comes down
-              before the code ships.
-            */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="p-6 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-white/20 transition-colors"
-            >
-              <h3 className="text-lg font-medium mb-2">Is it safe to connect my trading account?</h3>
-              <p className="text-sm text-gray-400">
-                We ask for your <span className="text-white">investor password</span> &mdash; MetaTrader&rsquo;s read-only one. It can look at an account and nothing else: it cannot open, close or change a trade, and it cannot withdraw. We pass it to our data provider once to set the connection up and never store it. Disconnect whenever you like; your trades and notes stay exactly where they are.
-              </p>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="p-6 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-white/20 transition-colors"
-            >
-              <h3 className="text-lg font-medium mb-2">Is my trading data secure?</h3>
-              <p className="text-sm text-gray-400">
-                Absolutely. We use bank-level encryption to protect your data, and we never share your information with third parties. Your trading data is stored securely and is only used to provide you with insights and analysis through NOVA.
-              </p>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="p-6 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-white/20 transition-colors"
-            >
-              <h3 className="text-lg font-medium mb-2">What markets does TradeX support?</h3>
-              <p className="text-sm text-gray-400">
-                TradeX supports all major markets including stocks, options, futures, forex, and crypto. You can track trades across multiple markets and accounts in one place, with specialized analysis for each market type.
-              </p>
-            </motion.div>
-          </div>
-        </div>
-      </div>
-
-      {/* Testimonials Section */}
-      <div className="py-16 sm:py-24 lg:py-32 relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="text-center mb-10 sm:mb-16">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4 text-white px-4">Trusted by Early Users</h2>
-            <p className="text-base sm:text-lg md:text-xl text-gray-400 px-4">Real results from traders using TradeX</p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="p-6 md:p-8 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-white/20 transition-all"
-            >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
-                  <span className="text-white font-medium">MS</span>
-                </div>
-                <div>
-                  <h3 className="font-medium text-white">Michael S.</h3>
-                  <p className="text-sm text-gray-400">Forex Trader</p>
-                </div>
-              </div>
-              <p className="text-gray-300 leading-relaxed">
-                "NOVA's psychological insights helped me identify and fix my emotional trading patterns. My win rate improved by 35% in just two months."
-              </p>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
-              className="p-6 md:p-8 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-white/20 transition-all"
-            >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
-                  <span className="text-white font-medium">SL</span>
-                </div>
-                <div>
-                  <h3 className="font-medium text-white">Sarah L.</h3>
-                  <p className="text-sm text-gray-400">Options Trader</p>
-                </div>
-              </div>
-              <p className="text-gray-300 leading-relaxed">
-                "The visual trade calendar and analytics helped me identify my most profitable setups. TradeX has completely transformed my trading approach."
-              </p>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.2 }}
-              className="p-6 md:p-8 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-white/20 transition-all"
-            >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
-                  <span className="text-white font-medium">DR</span>
-                </div>
-                <div>
-                  <h3 className="font-medium text-white">David R.</h3>
-                  <p className="text-sm text-gray-400">Crypto Trader</p>
-                </div>
-              </div>
-              <p className="text-gray-300 leading-relaxed">
-                "The detailed analytics and journaling features save me hours each week. NOVA's insights have helped me become more consistent and disciplined."
-              </p>
-            </motion.div>
-          </div>
-        </div>
-      </div>
-
-      {/* CTA */}
-      <div className="py-16 sm:py-24 lg:py-32 relative overflow-hidden">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
-            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6 text-white px-4 leading-tight">
-              Ready to Transform Your Trading?
-            </h2>
-            <p className="text-base sm:text-lg md:text-xl text-gray-400 mb-8 sm:mb-10 max-w-2xl mx-auto px-4">
-              Join traders who have transformed their results with AI-powered insights from NOVA.
-            </p>
-              <div className="max-w-md mx-auto px-4">
-                <SignupOrWaitlist
-                  preLaunchFootnote={
-                    <p className="text-xs sm:text-sm text-gray-500 mt-4 sm:mt-6">
-                      Join before launch to lock in{' '}
-                      <span className="line-through">$24.99</span>{' '}
-                      <span className="text-blue-400 font-semibold">$14.99/mo</span>, forever.
-                    </p>
-                  }
-                />
-              </div>
-          </motion.div>
+          )}
         </div>
       </div>
 

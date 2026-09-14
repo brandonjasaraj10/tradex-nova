@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { combinePsychologyScores } from '../../services/psychologyScore';
 import { createPortal } from 'react-dom';
 import { Brain, Heart, Target, TrendingUp, Zap, AlertCircle, Award, Smile, Frown, Meh, X, Maximize2, Minimize2, Sparkles } from 'lucide-react';
-import { RichTextEditor } from './RichTextEditor';
 import { AnimatePresence, motion } from 'framer-motion';
 
 interface PsychologyTemplateData {
@@ -250,7 +249,22 @@ export function PsychologyTemplate({ data, onChange, checklistScore = null }: Ps
     // of the threshold depending on which two fields they picked (e.g.
     // mood + reflection = 40%, blocked; mood + emotions = 50%, allowed).
     if (fieldsFilled >= Math.ceil(TOTAL_FIELDS / 2) && weightFilled > 0) {
-      return Math.round(totalScore / weightFilled);
+      /*
+        Bounded to 0-100, which it was not.
+
+        Every component here is meant to contribute at most its own weight,
+        but each is computed from a value this file does not own - mood_rating
+        arrives from Nova, not only from the slider beside it - so one
+        out-of-range input carried straight through. A mood_rating of 14 on a
+        0-10 scale contributed 14 * 10 * 0.25 = 35 against a 25 cap and the
+        score came out at 108.
+
+        The value is clamped at ingest now as well, but a score labelled
+        "out of 100" should be incapable of printing 108 whatever is fed to
+        it. Two independent guards, because this one is the one the user
+        actually reads.
+      */
+      return Math.max(0, Math.min(100, Math.round(totalScore / weightFilled)));
     }
     return null;
   };
@@ -337,7 +351,22 @@ export function PsychologyTemplate({ data, onChange, checklistScore = null }: Ps
     // which ones - see the same fix in calculateSimpleScore() above for why
     // gating on combined *weight* instead of a field *count* was wrong.
     if (fieldsFilled >= Math.ceil(TOTAL_FIELDS / 2) && weightFilled > 0) {
-      return Math.round(totalScore / weightFilled);
+      /*
+        Bounded to 0-100, which it was not.
+
+        Every component here is meant to contribute at most its own weight,
+        but each is computed from a value this file does not own - mood_rating
+        arrives from Nova, not only from the slider beside it - so one
+        out-of-range input carried straight through. A mood_rating of 14 on a
+        0-10 scale contributed 14 * 10 * 0.25 = 35 against a 25 cap and the
+        score came out at 108.
+
+        The value is clamped at ingest now as well, but a score labelled
+        "out of 100" should be incapable of printing 108 whatever is fed to
+        it. Two independent guards, because this one is the one the user
+        actually reads.
+      */
+      return Math.max(0, Math.min(100, Math.round(totalScore / weightFilled)));
     }
     return null;
   };

@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabase, getCurrentUser } from '../lib/supabase';
 
 export interface Confluence {
   id: string;
@@ -93,7 +93,7 @@ export async function getTradingPlanSettings(): Promise<TradingPlanSettings | nu
 }
 
 export async function createConfluence(confluence: Partial<Confluence>): Promise<Confluence> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) throw new Error('Not authenticated');
 
   const { data, error } = await supabase
@@ -135,7 +135,7 @@ export async function deleteConfluence(id: string): Promise<void> {
 }
 
 export async function updateTradingPlanSettings(settings: Partial<TradingPlanSettings>): Promise<TradingPlanSettings> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) throw new Error('Not authenticated');
 
   const { data: existing } = await supabase
@@ -170,7 +170,7 @@ export async function updateTradingPlanSettings(settings: Partial<TradingPlanSet
 }
 
 export async function initializeDefaultConfluences(): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) throw new Error('Not authenticated');
 
   const { data: existing } = await supabase

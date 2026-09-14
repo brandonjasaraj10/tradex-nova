@@ -5,7 +5,7 @@ import { useAuth } from '../lib/auth';
 import Button from '../components/shared/Button';
 import PasswordStrengthIndicator, { isPasswordValid } from '../components/auth/PasswordStrengthIndicator';
 import EarlyAccessModal from '../components/shared/EarlyAccessModal';
-import Logo from '../components/shared/Logo';
+import Wordmark from '../components/shared/Wordmark';
 import { useHasLaunched } from '../lib/launch';
 import { LogIn, UserPlus, Eye, EyeOff, Lock } from 'lucide-react';
 
@@ -712,8 +712,10 @@ export default function Auth() {
         aria-label="Back to TradeX home"
         className="absolute top-5 left-5 sm:top-6 sm:left-6 inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
       >
-        <Logo className="h-7 w-7" />
-        <span className="font-semibold text-lg">TradeX</span>
+        {/* The wordmark, same as the landing page header and footer. This
+            was the old Logo - three vertical bars beside the word - which is
+            not the brand mark and appears nowhere else. */}
+        <Wordmark className="text-lg" />
       </Link>
 
       <motion.div

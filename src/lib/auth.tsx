@@ -219,21 +219,84 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       })();
     });
 
-    // Refresh session every 30 minutes to prevent JWT expiration
-    const refreshInterval = setInterval(async () => {
+    /*
+      Refresh every 30 minutes so the access token never expires mid-session.
+
+      The important part is what happens when the refresh FAILS. This used to
+      catch the error, log it, and carry on - which left a session in
+      localStorage that the server had already forgotten. getSession() reads
+      that store without asking anybody, so the app went on believing it was
+      signed in and handing a dead token to edge functions, which rejected it.
+
+      Seen in production on 2026-09-13: signing in as a second account in the
+      same browser retired the first session, and "Organize with Nova"
+      answered "Nova could not organize that note" for half an hour. The auth
+      log told the real story - /token returning refresh_token_not_found, then
+      /user returning session_not_found - while the app showed no sign of
+      being logged out at all.
+
+      A refresh token the server does not recognise means the session is over.
+      The only honest response is to end it here too, which puts the user on
+      the sign-in screen instead of leaving them in a broken one.
+    */
+    const SESSION_IS_GONE = ['refresh_token_not_found', 'session_not_found', 'refresh_token_already_used'];
+
+    const refreshNow = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          await supabase.auth.refreshSession();
+        if (!session) return;
+
+        const { error } = await supabase.auth.refreshSession();
+        if (!error) return;
+
+        const code = (error as { code?: string }).code ?? '';
+        if (SESSION_IS_GONE.includes(code) || error.status === 400 || error.status === 403) {
+          console.warn('Session is no longer valid on the server; signing out.', code || error.message);
+          await supabase.auth.signOut();
+          return;
         }
+        // Anything else - a network blip, the auth service having a moment -
+        // is not evidence the session is dead, so leave it alone and try
+        // again on the next tick.
+        console.error('Could not refresh the session:', error.message);
       } catch (error) {
         console.error('Error refreshing session:', error);
       }
-    }, 30 * 60 * 1000); // 30 minutes
+    };
+
+    const refreshInterval = setInterval(refreshNow, 30 * 60 * 1000); // 30 minutes
+
+    /*
+      And again whenever the tab comes back, which the interval alone cannot
+      cover.
+
+      Browsers throttle timers in background tabs and stop them entirely while
+      the machine sleeps, so a 30-minute interval does not run on a laptop
+      that was shut overnight. What happens next is that the first thing the
+      user does on returning goes out carrying a token that expired hours ago,
+      fails, and then works a few minutes later once the interval finally
+      catches up.
+
+      Reported exactly that way: Nova refusing to organise a voice note first
+      thing in the morning, then behaving normally a couple of minutes later,
+      on a tab that had been open since the night before.
+
+      visibilitychange covers switching back to the tab; focus covers
+      returning to the window with the tab already frontmost. Both are cheap -
+      refreshSession is a no-op when the token is still fresh.
+    */
+    const refreshIfVisible = () => {
+      if (document.visibilityState === 'visible') void refreshNow();
+    };
+
+    document.addEventListener('visibilitychange', refreshIfVisible);
+    window.addEventListener('focus', refreshIfVisible);
 
     return () => {
       subscription.unsubscribe();
       clearInterval(refreshInterval);
+      document.removeEventListener('visibilitychange', refreshIfVisible);
+      window.removeEventListener('focus', refreshIfVisible);
     };
   }, []);
 

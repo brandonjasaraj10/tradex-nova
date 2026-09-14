@@ -78,7 +78,7 @@ export const TOUR_STEPS: TourStep[] = [
     id: 'calendar-page',
     targetSelector: '[data-tour="calendar-page"]',
     title: 'Your month at a glance',
-    content: 'Every day coloured by P&L, or switch it to psychology score to see how your state of mind tracked your results. Click any day to open that entry.',
+    content: 'Every day colored by P&L, or switch it to psychology score to see how your state of mind tracked your results. Click any day to open that entry.',
     position: 'top',
     route: '/calendar',
   },

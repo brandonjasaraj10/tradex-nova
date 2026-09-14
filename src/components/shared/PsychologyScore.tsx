@@ -5,7 +5,7 @@ import Card from './Card';
 import { getPsychologyScores, type PsychologyScoreAggregates, type TimeFrame } from '../../services/psychologyScore';
 import { useNavigate } from 'react-router-dom';
 import { useDataSync } from '../../lib/dataSync';
-import { supabase } from '../../lib/supabase';
+import { supabase, getCurrentUser } from '../../lib/supabase';
 
 const TIMEFRAMES: { value: TimeFrame; label: string }[] = [
   { value: 'daily', label: 'Today' },
@@ -38,7 +38,8 @@ const EMPTY_COPY: Record<TimeFrame, { title: string; body: string }> = {
 
 export default function PsychologyScore() {
   const navigate = useNavigate();
-  const { refreshTrigger } = useDataSync();
+  // Psychology comes entirely from journal entries' template data.
+  const { refreshTrigger } = useDataSync(['journal_entries']);
   const [timeFrame, setTimeFrame] = useState<TimeFrame>('weekly');
   const [data, setData] = useState<PsychologyScoreAggregates | null>(null);
   const [loading, setLoading] = useState(true);
@@ -66,7 +67,7 @@ export default function PsychologyScore() {
         setHasAnyEntries(allTime.totalEntries > 0);
 
         if (allTime.totalEntries === 0) {
-          const { data: { user } } = await supabase.auth.getUser();
+          const user = await getCurrentUser();
           if (user) {
             const { data: trades } = await supabase
               .from('trades')

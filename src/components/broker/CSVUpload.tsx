@@ -1,16 +1,34 @@
 import { useState, useRef } from 'react';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
-import { motion } from 'framer-motion';
 import { Upload, FileText, CheckCircle2, AlertCircle, X, Download } from 'lucide-react';
 import Button from '../shared/Button';
 import { csvParser, type CSVTrade } from '../../services/csvParser';
 
+/*
+  connectionId is REQUIRED, and that is the whole point of this change.
+
+  It used to be absent, and importTrades writes `broker_id: connectionId ||
+  null`, so every trade imported through this component landed attached to no
+  account at all. A trade with no account is invisible to the balance
+  calculation - which sums trades WHERE broker_id = the account - while still
+  counting toward Total P&L and analytics. That is what made the two figures
+  disagree.
+
+  It also produced the worse bug downstream. One real user imported, saw
+  nothing appear against his account, and imported again. Four times, one
+  minute apart. Twelve real trades became forty-eight rows and his P&L read
+  four times what he had actually made.
+
+  Making it required means the compiler catches the next call site that
+  forgets, instead of the database quietly accepting a null.
+*/
 interface CSVUploadProps {
+  connectionId: string;
   onClose: () => void;
   onSuccess?: () => void;
 }
 
-export default function CSVUpload({ onClose, onSuccess }: CSVUploadProps) {
+export default function CSVUpload({ connectionId, onClose, onSuccess }: CSVUploadProps) {
   // Mounted only while showing, by both of its parents.
   useBodyScrollLock(true);
   const [file, setFile] = useState<File | null>(null);
@@ -19,7 +37,7 @@ export default function CSVUpload({ onClose, onSuccess }: CSVUploadProps) {
   const [errors, setErrors] = useState<string[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
-  const [importResult, setImportResult] = useState<{ imported: number; errors: string[] } | null>(null);
+  const [importResult, setImportResult] = useState<{ imported: number; skipped: number; errors: string[] } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = async (selectedFile: File) => {
@@ -46,7 +64,7 @@ export default function CSVUpload({ onClose, onSuccess }: CSVUploadProps) {
 
     setIsImporting(true);
     try {
-      const result = await csvParser.importTrades(trades);
+      const result = await csvParser.importTrades(trades, connectionId);
       setImportResult(result);
 
       if (result.imported > 0) {
@@ -236,12 +254,30 @@ export default function CSVUpload({ onClose, onSuccess }: CSVUploadProps) {
 
                 {importResult && (
                   <div className={`p-4 rounded-lg ${importResult.imported > 0 ? 'bg-blue-500/10 border border-blue-500/20' : 'bg-red-500/10 border border-red-500/20'}`}>
+                    {/*
+                      "Already imported" is its own outcome, not a failure.
+
+                      Re-importing a statement you have already imported used
+                      to add every row again, silently. It now skips them and
+                      says so - because the alternative, a screen that reports
+                      nothing happened, is exactly what made one user press
+                      import four times and quadruple his own P&L.
+                    */}
                     <div className="flex items-center gap-2 mb-2">
                       {importResult.imported > 0 ? (
                         <>
                           <CheckCircle2 className="w-5 h-5 text-blue-400" />
                           <span className="text-blue-400 font-medium">
-                            Successfully imported {importResult.imported} trades!
+                            Imported {importResult.imported} {importResult.imported === 1 ? 'trade' : 'trades'}
+                            {importResult.skipped > 0 && `, skipped ${importResult.skipped} already in this account`}
+                          </span>
+                        </>
+                      ) : importResult.skipped > 0 ? (
+                        <>
+                          <CheckCircle2 className="w-5 h-5 text-blue-400" />
+                          <span className="text-blue-400 font-medium">
+                            Already imported &mdash; all {importResult.skipped}{' '}
+                            {importResult.skipped === 1 ? 'trade is' : 'trades are'} already in this account.
                           </span>
                         </>
                       ) : (

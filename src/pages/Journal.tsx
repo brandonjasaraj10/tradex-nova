@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { calculateChecklistScore } from '../services/psychologyScore';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, CreditCard as Edit, Trash, Folder, Calendar, Save, X, ChevronLeft, ChevronRight, Settings, BookOpen, LineChart, Image, Tag as TagIcon, DollarSign, TrendingUp, TrendingDown, Maximize2, CheckSquare, Square, Upload, Brain, Check, FileText, Mic, MicOff } from 'lucide-react';
 import Card from '../components/shared/Card';
 import Button from '../components/shared/Button';
 import ConfirmModal from '../components/shared/ConfirmModal';
 import MiniCalendar from '../components/journal/MiniCalendar';
-import { RichTextEditor } from '../components/journal/RichTextEditor';
+import { LazyRichTextEditor as RichTextEditor } from '../components/journal/LazyRichTextEditor';
 import { PsychologyTemplate } from '../components/journal/PsychologyTemplate';
 import NovaJournalAssistant from '../components/journal/NovaJournalAssistant';
 import AccountSelector from '../components/shared/AccountSelector';
@@ -30,7 +30,7 @@ import {
 import { getTrades, updateTradePnl, getTradePnl} from '../services/trades';
 import type { Trade } from '../types/trade';
 import { getUserConfluences, type Confluence } from '../services/confluences';
-import { supabase } from '../lib/supabase';
+import { supabase, getCurrentUser } from '../lib/supabase';
 import { uploadScreenshot, deleteScreenshot } from '../lib/screenshots';
 import ScreenshotImage from '../components/shared/ScreenshotImage';
 import {
@@ -116,7 +116,8 @@ const formatLocalDate = (date: Date) => {
 export default function Journal() {
   const { showToast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { refreshTrigger } = useDataSync();
+  // Entries, the trades they link to, and the plan items ticked against them.
+  const { refreshTrigger } = useDataSync(['journal_entries', 'trades', 'trading_confluences', 'trading_rules']);
 
   const { accounts, selectedAccount, setSelectedAccount, refreshAccounts } = useAccount();
   const [folders, setFolders] = useState<JournalFolder[]>([]);
@@ -328,7 +329,7 @@ export default function Journal() {
 
   const loadConfluencesAndRules = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) return;
 
       const [confluences, rules] = await Promise.all([
@@ -1077,6 +1078,23 @@ export default function Journal() {
       }
     } catch (error) {
       console.error('Error processing voice input:', error);
+      /*
+        Keep what was said - losing a spoken paragraph because a request
+        failed would be worse than any error message - but SAY that it
+        happened.
+
+        Silently dropping the raw transcript into the box is what made this
+        read as "Nova just did voice-to-text and nothing else". It was
+        reported exactly that way, and the person had no reason to think
+        anything had failed, so they had no reason to retry either. The
+        common cause is a session that went stale while the tab sat open
+        overnight, which needs a different action from the user than trying
+        the button again.
+      */
+      const message = error instanceof Error && error.message.includes('session has expired')
+        ? error.message
+        : 'Nova could not organize that. Your words are saved below - try again in a moment.';
+      showToast(message, 'error');
       setEntryForm(prev => ({
         ...prev,
         content: prev.content ? `${prev.content}\n\n${text}` : text
@@ -1119,7 +1137,15 @@ export default function Journal() {
       }));
     } catch (error) {
       console.error('Error organizing notes:', error);
-      showToast('Nova could not organize that note. Please try again.', 'error');
+      /*
+        Pass the real reason through when there is one. A dead session is the
+        common failure here and it needs a different action from the user -
+        sign in again, not press the button again.
+      */
+      const message = error instanceof Error && error.message.includes('session has expired')
+        ? error.message
+        : 'Nova could not organize that note. Please try again.';
+      showToast(message, 'error');
     } finally {
       setIsAutoFilling(false);
     }
@@ -1285,6 +1311,15 @@ export default function Journal() {
       }
     } catch (error) {
       console.error('Error auto-filling from text:', error);
+      /*
+        This one showed nothing at all - not even a fallback. The entry simply
+        did not change and there was no way to tell whether Nova had decided
+        there was nothing to add or the request had failed.
+      */
+      const message = error instanceof Error && error.message.includes('session has expired')
+        ? error.message
+        : 'Nova could not read that. Please try again in a moment.';
+      showToast(message, 'error');
     } finally {
       setIsAutoFilling(false);
     }
@@ -1479,7 +1514,7 @@ export default function Journal() {
 
     setUploadingScreenshot(type);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) throw new Error('Not authenticated');
 
       /*
@@ -2067,6 +2102,59 @@ export default function Journal() {
                           </div>
                         )}
                       </div>
+
+                      {/*
+                        Fires on exactly one condition: a P&L has been entered
+                        and there is no account to attach it to.
+
+                        Not on every entry. A journal entry that is notes and
+                        psychology has nothing to reconcile against a balance,
+                        and nagging somebody writing reflections would be pure
+                        noise. It is the P&L specifically that goes missing.
+
+                        Persistent, not a toast. This whole class of problem
+                        survived because nothing visible ever said anything -
+                        56 trades and 17 journal entries reached production
+                        attached to no account, and one user re-imported the
+                        same file four times because the screen gave him no
+                        reason to think otherwise. A notice that vanishes in
+                        three seconds is barely better than silence.
+
+                        And it says what actually breaks rather than "not
+                        tied to an account", which is our word for it and
+                        tells the reader nothing about why they should care.
+
+                        Blue, not amber. The palette is black, white, grey and
+                        one blue - the Risk Disclaimer's warning box is blue
+                        for the same reason, because a second accent colour
+                        introduced for one notice makes it the loudest thing
+                        on a page that is deliberately quiet everywhere else.
+                      */}
+                      {entryForm.manual_pnl.trim() !== '' && !selectedAccount && (
+                        <div className="mt-2 rounded-lg border border-brand-blue-light/25 bg-brand-blue/[0.07] px-3 py-2.5">
+                          <p className="text-[12.5px] leading-relaxed text-gray-300">
+                            This P&amp;L won&rsquo;t count toward any account balance.
+                          </p>
+                          {/* One tap when there is an account to attach to,
+                              and a route to making one when there is not. */}
+                          {accounts.length > 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => setSelectedAccount(accounts[0])}
+                              className="mt-1.5 text-[12.5px] font-medium text-brand-blue-light hover:text-white underline underline-offset-2 transition-colors"
+                            >
+                              Attach it to {accounts[0].account_name || accounts[0].broker_type}
+                            </button>
+                          ) : (
+                            <Link
+                              to="/settings"
+                              className="mt-1.5 inline-block text-[12.5px] font-medium text-brand-blue-light hover:text-white underline underline-offset-2 transition-colors"
+                            >
+                              Create an account to track it
+                            </Link>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     <div>

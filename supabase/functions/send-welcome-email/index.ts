@@ -20,18 +20,47 @@ const corsHeaders = {
 const APP_URL = "https://tradexnova.com";
 const SUPPORT_EMAIL = "tradenovaai@gmail.com";
 
+/* The one brand blue, #3B82F6. Every blue in this email is this value - the
+   numbered badges and the Getting started label both. The label was briefly
+   #2563eb, a darker blue picked for contrast on a white card, and Gmail's
+   inversion lightened it into a periwinkle that visibly did not match the
+   badges sitting right underneath it. Same input colour is the only way two
+   elements stay the same colour through a transform nobody controls. */
+const BRAND_BLUE = "#3B82F6";
+
 /*
-  Built so BOTH renderings look like TradeX.
+  Light, and that is a reversal.
 
-  Gmail's mobile app inverts on its own heuristics and ignores colour-scheme
-  and prefers-color-scheme alike, so this does not try to control the theme.
-  Every colour is a mid-tone that stays itself when flipped - brand blue
-  #3B82F6 survives inversion, where a darker #1D4ED8 lightens into purple.
+  The comment that used to sit here said the dark version had been "checked
+  in a real Gmail inbox on a phone and holds". It had not held. Checking it
+  properly showed Gmail's mobile app inverting the whole email to a white
+  card - and doing the same in reverse to a light one, so the direction
+  cannot be controlled from here at all.
 
-  The logo is drawn with table cells rather than an <img>, because most
-  clients block remote images by default and a branded email that arrives
-  unbranded defeats the point. Same three bars as the in-app mark.
+  What can be controlled is whether the result is readable either way. Every
+  background carries a bgcolor attribute as well as an inline style, because
+  some clients strip styles from body and table elements. No text is near-
+  white or near-black on a background of the same kind. The logo is the solid
+  tile, which brings its own contrast. The two colours that stay white are
+  both on the brand blue, where white is correct.
+
+  It is served from www because the bare domain 308-redirects there and some
+  clients will not follow a redirect for an image.
 */
+/*
+  The SOLID logo, not the transparent one.
+
+  tradex_logo.png is a pure white mark on transparency - measured off the
+  PNG's own pixels at 254/255 luminance. Gmail's mobile app inverts an email
+  designed dark into a white card, and on that card a white mark is
+  invisible. Confirmed in a real inbox, not theorised.
+
+  trade_x_logo.png is the same mark on a black tile. It brings its own
+  contrast, so it reads whichever way a client decides to flip the
+  background.
+*/
+const LOGO_URL = "https://www.tradexnova.com/trade_x_logo.png";
+
 function buildWelcomeHtml(): string {
   const step = (n: string, title: string, body: string) => `
     <tr>
@@ -39,7 +68,7 @@ function buildWelcomeHtml(): string {
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
           <tr>
             <td valign="top" width="30" style="padding-right: 12px;">
-              <div style="width: 26px; height: 26px; background-color: #3B82F6; border-radius: 13px; text-align: center; font-size: 13px; line-height: 26px; color: #ffffff; font-weight: 700;">${n}</div>
+              <div style="width: 26px; height: 26px; background-color: ${BRAND_BLUE}; border-radius: 13px; text-align: center; font-size: 13px; line-height: 26px; color: #ffffff; font-weight: 700;">${n}</div>
             </td>
             <td valign="top">
               <p style="margin: 0 0 3px 0; font-size: 15px; font-weight: 600; color: #111111;">${title}</p>
@@ -56,45 +85,31 @@ function buildWelcomeHtml(): string {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
+  <meta name="supported-color-schemes" content="light">
 </head>
-<body style="margin: 0; padding: 0; background-color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #ffffff;">
+<body bgcolor="#ffffff" style="margin: 0; padding: 0; background-color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#ffffff" style="background-color: #ffffff;">
     <tr>
       <td align="center" style="padding: 40px 16px;">
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 560px;">
 
-          <!-- Logo: three bars + wordmark -->
           <tr>
             <td align="center" style="padding-bottom: 32px;">
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0">
-                <tr>
-                  <td valign="middle" style="padding-right: 4px;">
-                    <div style="width: 4px; height: 22px; background-color: #3B82F6; border-radius: 2px; font-size: 0; line-height: 22px;">&nbsp;</div>
-                  </td>
-                  <td valign="middle" style="padding-right: 4px;">
-                    <div style="width: 4px; height: 30px; background-color: #3B82F6; border-radius: 2px; font-size: 0; line-height: 30px;">&nbsp;</div>
-                  </td>
-                  <td valign="middle" style="padding-right: 12px;">
-                    <div style="width: 4px; height: 14px; background-color: #3B82F6; border-radius: 2px; font-size: 0; line-height: 14px;">&nbsp;</div>
-                  </td>
-                  <td valign="middle">
-                    <span style="font-size: 26px; font-weight: 700; letter-spacing: -0.5px; color: #111111;">TradeX</span>
-                  </td>
-                </tr>
-              </table>
+              <img src="${LOGO_URL}" width="72" height="72" alt="TradeX"
+               style="display:block;border:0;outline:none;text-decoration:none;color:#ffffff;font-size:22px;font-weight:700;">
             </td>
           </tr>
 
-          <!-- Card -->
           <tr>
             <td>
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #ffffff; border: 1px solid #e2e2e2; border-radius: 14px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#ffffff" style="background-color: #ffffff; border: 1px solid #e6e6e6; border-radius: 14px;">
                 <tr>
                   <td style="padding: 36px 32px;">
                     <h1 style="margin: 0 0 12px 0; font-size: 21px; font-weight: 700; color: #111111; letter-spacing: -0.3px;">Welcome to TradeX</h1>
                     <p style="margin: 0 0 28px 0; font-size: 15px; line-height: 1.6; color: #555555;">Your account is ready. TradeX is a trading journal with an AI analyst attached &mdash; you log your trades, and Nova tells you what your own numbers actually say.</p>
 
-                    <p style="margin: 0 0 16px 0; font-size: 13px; font-weight: 700; color: #111111; letter-spacing: 0.4px; text-transform: uppercase;">Getting started</p>
+                    <p style="margin: 0 0 16px 0; font-size: 13px; font-weight: 700; color: ${BRAND_BLUE}; letter-spacing: 0.4px; text-transform: uppercase;">Getting started</p>
 
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                       ${step("1", "Log a few trades", "Add them by hand or import a CSV from your broker. Nova needs about ten before it can say anything useful about patterns.")}
@@ -102,10 +117,9 @@ function buildWelcomeHtml(): string {
                       ${step("3", "Write down your rules", "Set your trading rules and confluences, then tick them off per trade. That is what turns a journal into an edge.")}
                     </table>
 
-                    <!-- CTA -->
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-top: 12px;">
                       <tr>
-                        <td align="center" style="background-color: #3B82F6; border-radius: 10px;">
+                        <td align="center" bgcolor="${BRAND_BLUE}" style="background-color: ${BRAND_BLUE}; border-radius: 10px;">
                           <a href="${APP_URL}/dashboard" style="display: block; padding: 15px 24px; font-size: 15px; font-weight: 600; color: #ffffff; text-decoration: none;">Open your dashboard</a>
                         </td>
                       </tr>
@@ -118,11 +132,10 @@ function buildWelcomeHtml(): string {
             </td>
           </tr>
 
-          <!-- Footer -->
           <tr>
             <td align="center" style="padding: 28px 0 0 0;">
-              <p style="margin: 0 0 6px 0; font-size: 13px; color: #555555;">TradeX &mdash; your AI trading journal</p>
-              <p style="margin: 0; font-size: 12px; color: #777777;">You&rsquo;re getting this because you created a TradeX account.</p>
+              <p style="margin: 0 0 6px 0; font-size: 13px; color: #777777;">TradeX &mdash; your AI trading journal</p>
+              <p style="margin: 0; font-size: 12px; color: #999999;">You&rsquo;re getting this because you created a TradeX account.</p>
             </td>
           </tr>
 

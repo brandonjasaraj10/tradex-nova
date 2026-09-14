@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabase, getCurrentUser } from '../lib/supabase';
 
 export interface ChatMessage {
   id: string;
@@ -17,7 +17,7 @@ export class NovaAIService {
   }
 
   async initialize() {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
     this.userId = user?.id || null;
   }
 
@@ -119,7 +119,21 @@ export class NovaAIService {
       .single();
 
     if (error) {
-      console.error('Error saving message:', error);
+      /*
+        23505 is not logged, because it is not a fault.
+
+        A unique index allows one welcome message per conversation
+        (20260815070500). When two loads race to create it, one is refused -
+        which is the index doing its job - and novaContext catches that case
+        and re-reads whichever message won. Logging it painted the console
+        red on every page load with something expected, which is how a real
+        error ends up overlooked.
+
+        Still thrown, because the caller decides what it means.
+      */
+      if (error.code !== '23505') {
+        console.error('Error saving message:', error);
+      }
       throw error;
     }
 
@@ -297,7 +311,7 @@ export class NovaAIService {
 
   private async getPerformanceInsights(): Promise<string> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) return 'Please log in to view your performance metrics.';
 
       const { data: trades } = await supabase
@@ -327,7 +341,7 @@ export class NovaAIService {
 
   private async getConfluences(): Promise<string> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) return 'Please log in to view your confluences.';
 
       const { data: confluences } = await supabase
@@ -353,7 +367,7 @@ export class NovaAIService {
 
   private async getRecentTrades(): Promise<string> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) return 'Please log in to view your trades.';
 
       const { data: trades } = await supabase
@@ -382,7 +396,7 @@ export class NovaAIService {
 
   private async getNovaScore(): Promise<string> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) return 'Please log in to view your NOVA Score.';
 
       const { data: scoreData } = await supabase
@@ -411,7 +425,7 @@ export class NovaAIService {
 
   private async getPsychologyInsights(): Promise<string> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) return 'Please log in to view your psychology insights.';
 
       const { data: entries } = await supabase

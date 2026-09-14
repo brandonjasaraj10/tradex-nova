@@ -168,55 +168,61 @@ const SUPPORT_EMAIL = 'tradenovaai@gmail.com';
   back, and it is still unread. Email is the only channel that reaches a
   person who has stopped visiting.
 
-  Built like the welcome email deliberately - mid-tone colours that survive
-  Gmail's dark-mode inversion, a table-drawn logo because most clients block
-  remote images, and a real reply-to so a confused customer reaches a human.
+  Dark, matching the app and the other TradeX emails. Every background carries
+  a bgcolor attribute as well as an inline style, because some clients strip
+  styles and would otherwise render light text on white.
+
+  The logo is the real mark, served from www because the bare domain
+  308-redirects there and some clients will not follow a redirect for an
+  image. Alt text is white so a reader who blocks images still sees the word.
 */
-function buildPaymentFailedHtml(amountLabel: string): string {
+const LOGO_URL = 'https://www.tradexnova.com/tradex_logo.png';
+function buildPaymentFailedHtml(): string {
   return `
 <!DOCTYPE html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="margin:0;padding:0;background-color:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
+  <meta name="supported-color-schemes" content="dark">
+</head>
+<body bgcolor="#000000" style="margin:0;padding:0;background-color:#000000;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#000000" style="background-color:#000000;">
     <tr><td align="center" style="padding:40px 16px;">
       <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:560px;">
 
         <tr><td align="center" style="padding-bottom:32px;">
-          <table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr>
-            <td valign="middle" style="padding-right:4px;"><div style="width:4px;height:22px;background-color:#3B82F6;border-radius:2px;font-size:0;line-height:22px;">&nbsp;</div></td>
-            <td valign="middle" style="padding-right:4px;"><div style="width:4px;height:30px;background-color:#3B82F6;border-radius:2px;font-size:0;line-height:30px;">&nbsp;</div></td>
-            <td valign="middle" style="padding-right:12px;"><div style="width:4px;height:14px;background-color:#3B82F6;border-radius:2px;font-size:0;line-height:14px;">&nbsp;</div></td>
-            <td valign="middle"><span style="font-size:26px;font-weight:700;letter-spacing:-0.5px;color:#111111;">TradeX</span></td>
-          </tr></table>
+          <img src="${LOGO_URL}" width="72" height="72" alt="TradeX"
+               style="display:block;border:0;outline:none;text-decoration:none;color:#ffffff;font-size:22px;font-weight:700;">
         </td></tr>
 
         <tr><td>
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#ffffff;border:1px solid #e2e2e2;border-radius:14px;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#0A0A0A" style="background-color:#0A0A0A;border:1px solid #1f1f1f;border-radius:14px;">
             <tr><td style="padding:36px 32px;">
-              <h1 style="margin:0 0 12px 0;font-size:21px;font-weight:700;color:#111111;letter-spacing:-0.3px;">Your last payment didn&rsquo;t go through</h1>
-              <p style="margin:0 0 24px 0;font-size:15px;line-height:1.6;color:#555555;">We tried to charge ${amountLabel} and your bank declined it. This happens most often with an expired card or a new card number &mdash; it usually is not a problem with your account.</p>
+              <h1 style="margin:0 0 12px 0;font-size:21px;font-weight:700;color:#ffffff;letter-spacing:-0.3px;">Your last payment didn&rsquo;t go through</h1>
+              <p style="margin:0 0 24px 0;font-size:15px;line-height:1.6;color:#8b8b8b;">Your bank declined the charge. This happens most often with an expired card or a new card number &mdash; it usually is not a problem with your account.</p>
 
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#F5F8FF;border:1px solid #D6E4FF;border-radius:10px;margin-bottom:24px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#0d1a2f" style="background-color:#0d1a2f;border:1px solid #1e3a5f;border-radius:10px;margin-bottom:24px;">
                 <tr><td style="padding:16px 18px;">
-                  <p style="margin:0;font-size:15px;line-height:1.6;color:#111111;"><strong>Your access is paused until your card is updated.</strong></p>
-                  <p style="margin:6px 0 0 0;font-size:14px;line-height:1.6;color:#555555;">Nothing is deleted. Update your card and everything comes straight back.</p>
+                  <p style="margin:0;font-size:15px;line-height:1.6;color:#ffffff;"><strong>Your access is paused until your card is updated.</strong></p>
+                  <p style="margin:6px 0 0 0;font-size:14px;line-height:1.6;color:#8b8b8b;">Nothing is deleted. Update your card and everything comes straight back.</p>
                 </td></tr>
               </table>
 
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-                <tr><td align="center" style="background-color:#3B82F6;border-radius:10px;">
+                <tr><td align="center" bgcolor="#3B82F6" style="background-color:#3B82F6;border-radius:10px;">
                   <a href="${APP_URL}/settings" style="display:block;padding:15px 24px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;">Update your payment method</a>
                 </td></tr>
               </table>
 
-              <p style="margin:24px 0 0 0;font-size:14px;line-height:1.6;color:#555555;">Already fixed it, or think this is a mistake? Reply to this email and a human will look.</p>
+              <p style="margin:24px 0 0 0;font-size:14px;line-height:1.6;color:#8b8b8b;">Already fixed it, or think this is a mistake? Reply to this email and a human will look.</p>
             </td></tr>
           </table>
         </td></tr>
 
         <tr><td align="center" style="padding:28px 0 0 0;">
-          <p style="margin:0;font-size:12px;color:#777777;">You&rsquo;re getting this because your TradeX subscription payment failed.</p>
+          <p style="margin:0;font-size:12px;color:#6b6b6b;">You&rsquo;re getting this because your TradeX subscription payment failed.</p>
         </td></tr>
 
       </table>
@@ -237,7 +243,6 @@ function buildPaymentFailedHtml(amountLabel: string): string {
 async function sendPaymentFailedEmail(
   supabase: SupabaseClient,
   userId: string,
-  subscription: Stripe.Subscription,
 ) {
   try {
     const resendApiKey = Deno.env.get('RESEND_API_KEY');
@@ -253,12 +258,21 @@ async function sendPaymentFailedEmail(
       return;
     }
 
-    const amount = subscription.items.data[0]?.price?.unit_amount;
-    const currency = (subscription.items.data[0]?.price?.currency ?? 'usd').toUpperCase();
-    // Falls back to wording that is true whatever the plan, rather than
-    // inventing a figure - a wrong amount in a billing email is worse than none.
-    const amountLabel = amount != null ? `$${(amount / 100).toFixed(2)} ${currency}` : 'your subscription';
+    /*
+      No figure in the email, on purpose.
 
+      This used to print price.unit_amount off the subscription, which is the
+      list price of the plan and not what Stripe actually tried to take. A
+      proration, a partial credit, tax, or any discount makes the two differ,
+      and it read "$24.99" to an annual subscriber whose real charge was
+      $249.90. A wrong number in a billing email is worse than no number - it
+      is the thing a worried customer checks first, and getting it wrong is
+      how a real charge starts looking like a scam.
+
+      Fetching the true figure means pulling the latest invoice, which this
+      handler does not have. The card is what needs attention either way, and
+      the exact amount is one click away in the billing portal.
+    */
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { Authorization: `Bearer ${resendApiKey}`, 'Content-Type': 'application/json' },
@@ -267,7 +281,7 @@ async function sendPaymentFailedEmail(
         to: [email],
         reply_to: [SUPPORT_EMAIL],
         subject: 'Your TradeX payment failed - update your card to restore access',
-        html: buildPaymentFailedHtml(amountLabel),
+        html: buildPaymentFailedHtml(),
       }),
     });
 
@@ -360,7 +374,7 @@ export async function syncSubscription(supabase: SupabaseClient, userId: string,
       the same decline is how a useful warning becomes spam.
     */
     if (subscription.status === 'past_due') {
-      await sendPaymentFailedEmail(supabase, userId, subscription);
+      await sendPaymentFailedEmail(supabase, userId);
     }
 
     await applyBrokerSyncPolicy(supabase, userId, subscription.status);

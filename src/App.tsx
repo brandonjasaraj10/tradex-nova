@@ -16,6 +16,8 @@ import WelcomeAnimation from './components/shared/WelcomeAnimation';
 import ProfileSetup from './components/auth/ProfileSetup';
 import TourOverlay from './components/tour/TourOverlay';
 import PageLoader from './components/shared/PageLoader';
+import CookieConsent from './components/shared/CookieConsent';
+import ScrollToTop from './components/layout/ScrollToTop';
 import { trackPageView, setAuthState } from './lib/analytics';
 import { captureAppPageView, identifyUser, resetUser } from './lib/productAnalytics';
 
@@ -26,6 +28,7 @@ import { captureAppPageView, identifyUser, resetUser } from './lib/productAnalyt
 const Sales = lazyWithReload('Sales', () => import('./pages/Sales'));
 const Auth = lazyWithReload('Auth', () => import('./pages/Auth'));
 const Payment = lazyWithReload('Payment', () => import('./pages/Payment'));
+const Affiliates = lazyWithReload('Affiliates', () => import('./pages/Affiliates'));
 const Dashboard = lazyWithReload('Dashboard', () => import('./pages/Dashboard'));
 const Journal = lazyWithReload('Journal', () => import('./pages/Journal'));
 const Analytics = lazyWithReload('Analytics', () => import('./pages/Analytics'));
@@ -38,9 +41,19 @@ const Checklists = lazyWithReload('Checklists', () => import('./pages/Checklists
 const TermsOfService = lazyWithReload('TermsOfService', () => import('./pages/TermsOfService'));
 const PrivacyPolicy = lazyWithReload('PrivacyPolicy', () => import('./pages/PrivacyPolicy'));
 const RiskDisclaimer = lazyWithReload('RiskDisclaimer', () => import('./pages/RiskDisclaimer'));
+const Pricing = lazyWithReload('Pricing', () => import('./pages/Pricing'));
+const Features = lazyWithReload('Features', () => import('./pages/Features'));
+const Security = lazyWithReload('Security', () => import('./pages/Security'));
+const Nova = lazyWithReload('Nova', () => import('./pages/Nova'));
+const PropFirmTraders = lazyWithReload('PropFirmTraders', () => import('./pages/PropFirmTraders'));
+const About = lazyWithReload('About', () => import('./pages/About'));
+const FAQ = lazyWithReload('FAQ', () => import('./pages/FAQ'));
 const NotFound = lazyWithReload('NotFound', () => import('./pages/NotFound'));
 
-const PUBLIC_PATHS = ['/', '/auth', '/sales', '/terms', '/privacy', '/risk-disclaimer', '/payment'];
+const PUBLIC_PATHS = [
+  '/', '/auth', '/sales', '/terms', '/privacy', '/risk-disclaimer', '/payment', '/affiliates',
+  '/pricing', '/features', '/security', '/nova-ai', '/for-prop-firm-traders', '/about', '/faq',
+];
 
 function PublicLayout() {
   return (
@@ -52,9 +65,27 @@ function PublicLayout() {
             <Route path="/sales" element={<Sales />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/payment" element={<Payment />} />
+            <Route path="/affiliates" element={<Affiliates />} />
             <Route path="/terms" element={<TermsOfService />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/risk-disclaimer" element={<RiskDisclaimer />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/features" element={<Features />} />
+            <Route path="/security" element={<Security />} />
+            {/*
+              /nova-ai, not /nova.
+
+              /nova has been the in-app Nova Assistant's route since long
+              before this page existed - it is what the sidebar links to and
+              what the product tour steps through. Adding a marketing page at
+              the same path, and listing it in PUBLIC_PATHS, made AppContent
+              render the public layout for it and put the real Nova page out
+              of reach entirely for signed-in users.
+            */}
+            <Route path="/nova-ai" element={<Nova />} />
+            <Route path="/for-prop-firm-traders" element={<PropFirmTraders />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/faq" element={<FAQ />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
@@ -245,11 +276,18 @@ function AppContent() {
     captureAppPageView(location.pathname + location.search, pageType);
   }, [location.pathname, location.search, isPublicPage]);
 
-  if (isPublicPage) {
-    return <PublicLayout />;
-  }
-
-  return <PrivateLayout />;
+  /*
+    Mounted here rather than inside a layout so it shows on every route -
+    somebody can land on /privacy or /auth first, and the rule applies there
+    exactly as it does on the landing page.
+  */
+  return (
+    <>
+      <ScrollToTop />
+      {isPublicPage ? <PublicLayout /> : <PrivateLayout />}
+      <CookieConsent />
+    </>
+  );
 }
 
 function App() {
