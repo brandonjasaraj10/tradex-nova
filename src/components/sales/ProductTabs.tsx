@@ -40,21 +40,91 @@ const PANELS: Panel[] = [
     id: 'journal',
     label: 'Journal',
     caption: 'Every entry, written for you from what you said.',
+    /*
+      This used to be a symbol, a P&L and a paragraph with three tags - which
+      is a note, not a journal entry, and it undersold the product badly
+      enough to be misleading. A real entry carries a title, the folder it is
+      filed in, symbol, direction, size, duration, P&L, the three pre-trade
+      self-ratings, the write-up and tags. The structure IS the feature; a
+      free-text blob is exactly what every trader already has in Notes.
+
+      Kept deliberately small. Everything below is a real field from
+      Journal.tsx's entryForm, nothing invented to fill the box.
+    */
     body: (
-      <div className="flex flex-col gap-2.5">
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-[13px] text-white">EURUSD &middot; Short</span>
-          <span className="text-[13px] text-brand-loss tabular-nums">-$180</span>
+      <div className="flex flex-col gap-3">
+        {/* Filed, not floating. The default folders really are Daily Journal
+            and Notes - see DEFAULT_FOLDERS in Journal.tsx. */}
+        <div className="flex items-center justify-between gap-3 text-[10px] uppercase tracking-[0.12em] text-gray-600">
+          <span className="inline-flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-brand-blue-light" />
+            Daily Journal
+          </span>
+          <span>Thu 11 Sep</span>
         </div>
+
+        <div className="flex items-baseline justify-between gap-3">
+          <span className="text-[13.5px] font-medium text-white">EURUSD &middot; Short</span>
+          <span className="text-[13.5px] text-brand-loss tabular-nums">-$180</span>
+        </div>
+
+        {/* The fields Nova fills in from the recording. */}
+        <div className="grid grid-cols-3 gap-1.5">
+          {[
+            ['Size', '0.5 lots'],
+            ['Held', '34m'],
+            ['Session', 'London'],
+          ].map(([k, v]) => (
+            <div key={k} className={cell}>
+              <p className="text-[9.5px] uppercase tracking-[0.1em] text-gray-600">{k}</p>
+              <p className="text-[12px] text-gray-300 mt-0.5">{v}</p>
+            </div>
+          ))}
+        </div>
+
+        {/*
+          The part no spreadsheet has. Ratings taken BEFORE the trade, which
+          is what makes them evidence rather than hindsight - and the reason
+          rattled-but-confident shows up as a pattern later.
+        */}
+        <div className="rounded-lg border border-brand-blue-light/20 bg-brand-blue/[0.06] px-3 py-2.5">
+          <p className="text-[9.5px] uppercase tracking-[0.1em] text-brand-blue-light mb-2">
+            Before you entered
+          </p>
+          <div className="flex flex-col gap-1.5">
+            {[
+              ['Emotional state', 2],
+              ['Focus', 2],
+              ['Confidence', 4],
+            ].map(([label, score]) => (
+              <div key={label as string} className="flex items-center justify-between gap-3">
+                <span className="text-[11.5px] text-gray-400">{label as string}</span>
+                <span className="flex gap-1" aria-label={`${score} out of 5`}>
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <span
+                      key={i}
+                      className={`w-[7px] h-[7px] rounded-full ${
+                        i <= (score as number) ? 'bg-brand-blue-light' : 'bg-white/10'
+                      }`}
+                    />
+                  ))}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
         <p className="text-[12.5px] text-gray-400 leading-relaxed">
           Moved my stop twice chasing the retest. Same thing I did Tuesday.
           Should have been flat after the first one.
         </p>
-        <div className="flex flex-wrap gap-1.5 pt-1">
+
+        <div className="flex flex-wrap gap-1.5">
           {['Moved stop', 'Revenge entry', 'London'].map((t) => (
-            /* Blue outline: these are the tags Nova assigns, and the accent
-               is what marks something TradeX worked out rather than recorded. */
-            <span key={t} className="text-[11px] text-brand-blue-light/90 border border-brand-blue-light/30 bg-brand-blue/[0.07] rounded-full px-2.5 py-1">
+            /* Solid blue, the way the Journal renders tags - bg-blue-400/10
+               text-blue-400. The outlined version here was a third treatment
+               that existed nowhere in the product. */
+            <span key={t} className="text-[11px] font-medium text-brand-blue-light bg-brand-blue-light/10 rounded-full px-2.5 py-1">
               {t}
             </span>
           ))}
