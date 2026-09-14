@@ -21,23 +21,37 @@ const APP_URL = "https://tradexnova.com";
 const SUPPORT_EMAIL = "tradenovaai@gmail.com";
 
 /*
-  Dark, matching the app rather than sitting against it.
+  Light, and that is a reversal.
 
-  This was built light on purpose, on the reasoning that Gmail's mobile app
-  inverts colours on its own heuristics - so a mid-tone palette that survived
-  inversion was safer than a dark one that might be mangled. That was a fair
-  bet, but it was only ever a bet: the dark version has now been checked in a
-  real Gmail inbox on a phone and holds.
+  The comment that used to sit here said the dark version had been "checked
+  in a real Gmail inbox on a phone and holds". It had not held. Checking it
+  properly showed Gmail's mobile app inverting the whole email to a white
+  card - and doing the same in reverse to a light one, so the direction
+  cannot be controlled from here at all.
 
-  Two things keep it safe there. Every background carries a bgcolor attribute
-  as well as an inline style, because some clients strip styles from body and
-  table elements and would otherwise render light text on white. And the logo
-  is a real image with white alt text, so a client that blocks remote images
-  shows the word TradeX rather than nothing at all. It is served from www
-  because the bare domain 308-redirects there and some clients will not
-  follow a redirect for an image.
+  What can be controlled is whether the result is readable either way. Every
+  background carries a bgcolor attribute as well as an inline style, because
+  some clients strip styles from body and table elements. No text is near-
+  white or near-black on a background of the same kind. The logo is the solid
+  tile, which brings its own contrast. The two colours that stay white are
+  both on the blue #3B82F6, where white is correct.
+
+  It is served from www because the bare domain 308-redirects there and some
+  clients will not follow a redirect for an image.
 */
-const LOGO_URL = "https://www.tradexnova.com/tradex_logo.png";
+/*
+  The SOLID logo, not the transparent one.
+
+  tradex_logo.png is a pure white mark on transparency - measured off the
+  PNG's own pixels at 254/255 luminance. Gmail's mobile app inverts an email
+  designed dark into a white card, and on that card a white mark is
+  invisible. Confirmed in a real inbox, not theorised.
+
+  trade_x_logo.png is the same mark on a black tile. It brings its own
+  contrast, so it reads whichever way a client decides to flip the
+  background.
+*/
+const LOGO_URL = "https://www.tradexnova.com/trade_x_logo.png";
 
 function buildWelcomeHtml(): string {
   const step = (n: string, title: string, body: string) => `
@@ -49,8 +63,8 @@ function buildWelcomeHtml(): string {
               <div style="width: 26px; height: 26px; background-color: #3B82F6; border-radius: 13px; text-align: center; font-size: 13px; line-height: 26px; color: #ffffff; font-weight: 700;">${n}</div>
             </td>
             <td valign="top">
-              <p style="margin: 0 0 3px 0; font-size: 15px; font-weight: 600; color: #ffffff;">${title}</p>
-              <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #8b8b8b;">${body}</p>
+              <p style="margin: 0 0 3px 0; font-size: 15px; font-weight: 600; color: #111111;">${title}</p>
+              <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #555555;">${body}</p>
             </td>
           </tr>
         </table>
@@ -63,11 +77,11 @@ function buildWelcomeHtml(): string {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="color-scheme" content="dark">
-  <meta name="supported-color-schemes" content="dark">
+  <meta name="color-scheme" content="light">
+  <meta name="supported-color-schemes" content="light">
 </head>
-<body bgcolor="#000000" style="margin: 0; padding: 0; background-color: #000000; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#000000" style="background-color: #000000;">
+<body bgcolor="#ffffff" style="margin: 0; padding: 0; background-color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#ffffff" style="background-color: #ffffff;">
     <tr>
       <td align="center" style="padding: 40px 16px;">
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 560px;">
@@ -81,13 +95,13 @@ function buildWelcomeHtml(): string {
 
           <tr>
             <td>
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#0A0A0A" style="background-color: #0A0A0A; border: 1px solid #1f1f1f; border-radius: 14px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#ffffff" style="background-color: #ffffff; border: 1px solid #e6e6e6; border-radius: 14px;">
                 <tr>
                   <td style="padding: 36px 32px;">
-                    <h1 style="margin: 0 0 12px 0; font-size: 21px; font-weight: 700; color: #ffffff; letter-spacing: -0.3px;">Welcome to TradeX</h1>
-                    <p style="margin: 0 0 28px 0; font-size: 15px; line-height: 1.6; color: #8b8b8b;">Your account is ready. TradeX is a trading journal with an AI analyst attached &mdash; you log your trades, and Nova tells you what your own numbers actually say.</p>
+                    <h1 style="margin: 0 0 12px 0; font-size: 21px; font-weight: 700; color: #111111; letter-spacing: -0.3px;">Welcome to TradeX</h1>
+                    <p style="margin: 0 0 28px 0; font-size: 15px; line-height: 1.6; color: #555555;">Your account is ready. TradeX is a trading journal with an AI analyst attached &mdash; you log your trades, and Nova tells you what your own numbers actually say.</p>
 
-                    <p style="margin: 0 0 16px 0; font-size: 13px; font-weight: 700; color: #60A5FA; letter-spacing: 0.4px; text-transform: uppercase;">Getting started</p>
+                    <p style="margin: 0 0 16px 0; font-size: 13px; font-weight: 700; color: #2563eb; letter-spacing: 0.4px; text-transform: uppercase;">Getting started</p>
 
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                       ${step("1", "Log a few trades", "Add them by hand or import a CSV from your broker. Nova needs about ten before it can say anything useful about patterns.")}
@@ -103,7 +117,7 @@ function buildWelcomeHtml(): string {
                       </tr>
                     </table>
 
-                    <p style="margin: 24px 0 0 0; font-size: 14px; line-height: 1.6; color: #8b8b8b;">Something not working, or not making sense? Reply to this email, or use <span style="color: #ffffff; font-weight: 600;">Settings &rarr; Contact Us</span> inside the app to send us a bug report with a screenshot.</p>
+                    <p style="margin: 24px 0 0 0; font-size: 14px; line-height: 1.6; color: #555555;">Something not working, or not making sense? Reply to this email, or use <span style="color: #111111; font-weight: 600;">Settings &rarr; Contact Us</span> inside the app to send us a bug report with a screenshot.</p>
                   </td>
                 </tr>
               </table>
@@ -112,8 +126,8 @@ function buildWelcomeHtml(): string {
 
           <tr>
             <td align="center" style="padding: 28px 0 0 0;">
-              <p style="margin: 0 0 6px 0; font-size: 13px; color: #8b8b8b;">TradeX &mdash; your AI trading journal</p>
-              <p style="margin: 0; font-size: 12px; color: #6b6b6b;">You&rsquo;re getting this because you created a TradeX account.</p>
+              <p style="margin: 0 0 6px 0; font-size: 13px; color: #777777;">TradeX &mdash; your AI trading journal</p>
+              <p style="margin: 0; font-size: 12px; color: #999999;">You&rsquo;re getting this because you created a TradeX account.</p>
             </td>
           </tr>
 
