@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { calculateChecklistScore } from '../services/psychologyScore';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, CreditCard as Edit, Trash, Folder, Calendar, Save, X, ChevronLeft, ChevronRight, Settings, BookOpen, LineChart, Image, Tag as TagIcon, DollarSign, TrendingUp, TrendingDown, Maximize2, CheckSquare, Square, Upload, Brain, Check, FileText, Mic, MicOff } from 'lucide-react';
 import Card from '../components/shared/Card';
@@ -1888,6 +1888,53 @@ export default function Journal() {
                           </div>
                         )}
                       </div>
+
+                      {/*
+                        Fires on exactly one condition: a P&L has been entered
+                        and there is no account to attach it to.
+
+                        Not on every entry. A journal entry that is notes and
+                        psychology has nothing to reconcile against a balance,
+                        and nagging somebody writing reflections would be pure
+                        noise. It is the P&L specifically that goes missing.
+
+                        Persistent, not a toast. This whole class of problem
+                        survived because nothing visible ever said anything -
+                        56 trades and 17 journal entries reached production
+                        attached to no account, and one user re-imported the
+                        same file four times because the screen gave him no
+                        reason to think otherwise. A notice that vanishes in
+                        three seconds is barely better than silence.
+
+                        And it says what actually breaks rather than "not
+                        tied to an account", which is our word for it and
+                        tells the reader nothing about why they should care.
+                      */}
+                      {entryForm.manual_pnl.trim() !== '' && !selectedAccount && (
+                        <div className="mt-2 rounded-lg border border-amber-400/25 bg-amber-400/[0.07] px-3 py-2.5">
+                          <p className="text-[12.5px] leading-relaxed text-amber-200/90">
+                            This P&amp;L won&rsquo;t count toward any account balance.
+                          </p>
+                          {/* One tap when there is an account to attach to,
+                              and a route to making one when there is not. */}
+                          {accounts.length > 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => setSelectedAccount(accounts[0])}
+                              className="mt-1.5 text-[12.5px] font-medium text-amber-300 hover:text-amber-200 underline underline-offset-2 transition-colors"
+                            >
+                              Attach it to {accounts[0].account_name || accounts[0].broker_type}
+                            </button>
+                          ) : (
+                            <Link
+                              to="/settings"
+                              className="mt-1.5 inline-block text-[12.5px] font-medium text-amber-300 hover:text-amber-200 underline underline-offset-2 transition-colors"
+                            >
+                              Create an account to track it
+                            </Link>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     <div>
