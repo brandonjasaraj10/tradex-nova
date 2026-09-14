@@ -972,6 +972,23 @@ export default function Journal() {
       }
     } catch (error) {
       console.error('Error processing voice input:', error);
+      /*
+        Keep what was said - losing a spoken paragraph because a request
+        failed would be worse than any error message - but SAY that it
+        happened.
+
+        Silently dropping the raw transcript into the box is what made this
+        read as "Nova just did voice-to-text and nothing else". It was
+        reported exactly that way, and the person had no reason to think
+        anything had failed, so they had no reason to retry either. The
+        common cause is a session that went stale while the tab sat open
+        overnight, which needs a different action from the user than trying
+        the button again.
+      */
+      const message = error instanceof Error && error.message.includes('session has expired')
+        ? error.message
+        : 'Nova could not organize that. Your words are saved below - try again in a moment.';
+      showToast(message, 'error');
       setEntryForm(prev => ({
         ...prev,
         content: prev.content ? `${prev.content}\n\n${text}` : text
@@ -1188,6 +1205,15 @@ export default function Journal() {
       }
     } catch (error) {
       console.error('Error auto-filling from text:', error);
+      /*
+        This one showed nothing at all - not even a fallback. The entry simply
+        did not change and there was no way to tell whether Nova had decided
+        there was nothing to add or the request had failed.
+      */
+      const message = error instanceof Error && error.message.includes('session has expired')
+        ? error.message
+        : 'Nova could not read that. Please try again in a moment.';
+      showToast(message, 'error');
     } finally {
       setIsAutoFilling(false);
     }

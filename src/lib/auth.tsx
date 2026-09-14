@@ -241,7 +241,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     */
     const SESSION_IS_GONE = ['refresh_token_not_found', 'session_not_found', 'refresh_token_already_used'];
 
-    const refreshInterval = setInterval(async () => {
+    const refreshNow = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
@@ -262,11 +262,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (error) {
         console.error('Error refreshing session:', error);
       }
-    }, 30 * 60 * 1000); // 30 minutes
+    };
+
+    const refreshInterval = setInterval(refreshNow, 30 * 60 * 1000); // 30 minutes
+
+    /*
+      And again whenever the tab comes back, which the interval alone cannot
+      cover.
+
+      Browsers throttle timers in background tabs and stop them entirely while
+      the machine sleeps, so a 30-minute interval does not run on a laptop
+      that was shut overnight. What happens next is that the first thing the
+      user does on returning goes out carrying a token that expired hours ago,
+      fails, and then works a few minutes later once the interval finally
+      catches up.
+
+      Reported exactly that way: Nova refusing to organise a voice note first
+      thing in the morning, then behaving normally a couple of minutes later,
+      on a tab that had been open since the night before.
+
+      visibilitychange covers switching back to the tab; focus covers
+      returning to the window with the tab already frontmost. Both are cheap -
+      refreshSession is a no-op when the token is still fresh.
+    */
+    const refreshIfVisible = () => {
+      if (document.visibilityState === 'visible') void refreshNow();
+    };
+
+    document.addEventListener('visibilitychange', refreshIfVisible);
+    window.addEventListener('focus', refreshIfVisible);
 
     return () => {
       subscription.unsubscribe();
       clearInterval(refreshInterval);
+      document.removeEventListener('visibilitychange', refreshIfVisible);
+      window.removeEventListener('focus', refreshIfVisible);
     };
   }, []);
 
