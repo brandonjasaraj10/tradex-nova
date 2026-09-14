@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import NOVAScore from '../shared/NOVAScore';
 import { CalendarGrid } from '../marketing/product';
 import { EXAMPLE_SCORE } from '../marketing/exampleScore';
@@ -117,20 +117,115 @@ const PANELS: Panel[] = [
   carousels infuriating. The horizontal movement also has to beat the vertical
   movement, so a scroll is never mistaken for a swipe however far it drifts.
 */
-const SWIPE_THRESHOLD = 48;
+/*
+  Swipe tuning.
+
+  The first version was a gesture detector, not a swipe: nothing moved until
+  you let go, and then the content was simply replaced. That reads as a
+  glitch, because the one thing a swipe promises is that the panel is
+  attached to your thumb.
+
+  Now the three panels sit side by side on a track that follows the finger
+  and snaps on release. Two ways to commit, because people swipe two
+  different ways: drag a fifth of the width, or flick fast and short. Only
+  requiring distance makes quick flicks fail; only requiring velocity makes
+  slow deliberate drags fail.
+*/
+const COMMIT_RATIO = 0.2;          // of panel width
+const COMMIT_VELOCITY = 0.4;       // px per ms
+const AXIS_LOCK = 8;               // px before we decide scroll vs swipe
+const EDGE_RESISTANCE = 0.35;      // rubber band past the first/last panel
+const SNAP = 'transform 420ms cubic-bezier(0.22, 0.61, 0.36, 1)';
 
 export default function ProductTabs() {
-  const [active, setActive] = useState(PANELS[0].id);
-  const index = Math.max(0, PANELS.findIndex((p) => p.id === active));
+  const [index, setIndex] = useState(0);
+  const [drag, setDrag] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const [heights, setHeights] = useState<number[]>([]);
+
+  const viewportRef = useRef<HTMLDivElement | null>(null);
+  const panelRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const gesture = useRef<{ x: number; y: number; t: number; axis: 'x' | 'y' | null } | null>(null);
+
   const panel = PANELS[index];
+  const reduced =
+    typeof window !== 'undefined' &&
+    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
-  const touch = useRef<{ x: number; y: number } | null>(null);
+  /*
+    The viewport is only as tall as the panel on screen, animated between
+    them. Sizing it to the tallest instead would leave the Journal panel
+    sitting in half a screen of empty box, and letting it jump instantly
+    undoes the smoothness the swipe just bought.
+  */
+  useEffect(() => {
+    const measure = () =>
+      setHeights(panelRefs.current.map((el) => el?.offsetHeight ?? 0));
+    measure();
+    const observers = panelRefs.current.map((el) => {
+      if (!el || typeof ResizeObserver === 'undefined') return null;
+      const ro = new ResizeObserver(measure);
+      ro.observe(el);
+      return ro;
+    });
+    window.addEventListener('resize', measure);
+    return () => {
+      observers.forEach((ro) => ro?.disconnect());
+      window.removeEventListener('resize', measure);
+    };
+  }, []);
 
-  const go = (delta: number) => {
-    const next = index + delta;
-    if (next < 0 || next >= PANELS.length) return;
-    setActive(PANELS[next].id);
+  const go = useCallback((delta: number) => {
+    setIndex((i) => Math.min(PANELS.length - 1, Math.max(0, i + delta)));
+  }, []);
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    gesture.current = { x: t.clientX, y: t.clientY, t: Date.now(), axis: null };
   };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    const g = gesture.current;
+    if (!g) return;
+    const t = e.touches[0];
+    const dx = t.clientX - g.x;
+    const dy = t.clientY - g.y;
+
+    /*
+      Decide once, on the first meaningful movement, whether this is a scroll
+      or a swipe - and then stick with it. Re-deciding every frame is what
+      makes a carousel fight the page: a vertical scroll that drifts sideways
+      starts dragging the panel halfway down the screen.
+    */
+    if (g.axis === null) {
+      if (Math.abs(dx) < AXIS_LOCK && Math.abs(dy) < AXIS_LOCK) return;
+      g.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+      if (g.axis === 'x') setDragging(true);
+    }
+    if (g.axis !== 'x') return;
+
+    const atStart = index === 0 && dx > 0;
+    const atEnd = index === PANELS.length - 1 && dx < 0;
+    setDrag(atStart || atEnd ? dx * EDGE_RESISTANCE : dx);
+  };
+
+  const endGesture = () => {
+    const g = gesture.current;
+    gesture.current = null;
+    setDragging(false);
+    setDrag(0);
+    if (!g || g.axis !== 'x') return;
+
+    const width = viewportRef.current?.offsetWidth ?? 1;
+    const elapsed = Math.max(1, Date.now() - g.t);
+    const velocity = Math.abs(drag) / elapsed;
+
+    if (Math.abs(drag) > width * COMMIT_RATIO || velocity > COMMIT_VELOCITY) {
+      go(drag < 0 ? 1 : -1);
+    }
+  };
+
+  const height = heights[index];
 
   return (
     <div>
@@ -140,8 +235,8 @@ export default function ProductTabs() {
         aria-label="What TradeX looks like"
         className="flex gap-1.5 justify-center"
       >
-        {PANELS.map((p) => {
-          const isActive = p.id === active;
+        {PANELS.map((p, i) => {
+          const isActive = i === index;
           return (
             <button
               key={p.id}
@@ -149,11 +244,7 @@ export default function ProductTabs() {
               type="button"
               aria-selected={isActive}
               aria-controls={`panel-${p.id}`}
-              onClick={() => setActive(p.id)}
-              /*
-                Arrow keys move between tabs, which is what a tablist is
-                expected to do and costs one handler.
-              */
+              onClick={() => setIndex(i)}
               onKeyDown={(e) => {
                 if (e.key === 'ArrowRight') { e.preventDefault(); go(1); }
                 if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1); }
@@ -171,34 +262,60 @@ export default function ProductTabs() {
         })}
       </div>
 
-      <div
-        id={`panel-${panel.id}`}
-        role="tabpanel"
-        /*
-          Swipeable on a phone. The tabs are still the control and still the
-          indicator - this only adds the gesture someone on a touchscreen
-          already expects from a row of panels. touchAction stays default so
-          vertical scrolling through the page is never captured.
-        */
-        onTouchStart={(e) => {
-          const t = e.touches[0];
-          touch.current = { x: t.clientX, y: t.clientY };
-        }}
-        onTouchEnd={(e) => {
-          const start = touch.current;
-          touch.current = null;
-          if (!start) return;
-          const t = e.changedTouches[0];
-          const dx = t.clientX - start.x;
-          const dy = t.clientY - start.y;
-          if (Math.abs(dx) < SWIPE_THRESHOLD || Math.abs(dx) <= Math.abs(dy)) return;
-          go(dx < 0 ? 1 : -1);
-        }}
-        className="mt-5 rounded-2xl border border-white/[0.07] bg-brand-surface p-5 sm:p-7"
-      >
-        <p className="text-[12.5px] sm:text-sm text-gray-400 mb-5">{panel.caption}</p>
-        <div className="rounded-xl border border-white/[0.06] bg-brand-elevated p-4 sm:p-5">
-          {panel.body}
+      <div className="mt-5 rounded-2xl border border-white/[0.07] bg-brand-surface p-5 sm:p-7">
+        {/*
+          The caption belongs to the active panel, so it cross-fades rather
+          than sliding with the track - sliding it would double the motion
+          for something only a few words long.
+        */}
+        <p
+          key={panel.id}
+          className="text-[12.5px] sm:text-sm text-gray-400 mb-5 motion-safe:animate-[fadeIn_260ms_ease-out]"
+        >
+          {panel.caption}
+        </p>
+
+        <div
+          ref={viewportRef}
+          className="overflow-hidden"
+          /*
+            pan-y hands vertical scrolling to the browser, which is what keeps
+            the page itself smooth while a horizontal drag is in progress -
+            far better than intercepting touchmove and calling preventDefault.
+          */
+          style={{
+            touchAction: 'pan-y',
+            height: height ? `${height}px` : undefined,
+            transition: dragging || reduced ? 'none' : 'height 420ms cubic-bezier(0.22, 0.61, 0.36, 1)',
+          }}
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={endGesture}
+          onTouchCancel={endGesture}
+        >
+          <div
+            className="flex items-start"
+            style={{
+              transform: `translate3d(calc(${-index * 100}% + ${drag}px), 0, 0)`,
+              transition: dragging || reduced ? 'none' : SNAP,
+              willChange: 'transform',
+            }}
+          >
+            {PANELS.map((p, i) => (
+              <div
+                key={p.id}
+                id={`panel-${p.id}`}
+                role="tabpanel"
+                aria-hidden={i !== index}
+                ref={(el) => { panelRefs.current[i] = el; }}
+                className="w-full flex-shrink-0"
+              >
+                <div className="rounded-xl border border-white/[0.06] bg-brand-elevated p-4 sm:p-5">
+                  {p.body}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="mt-4 flex items-center justify-center gap-2">
