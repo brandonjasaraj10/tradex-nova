@@ -651,6 +651,21 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
               </div>
             </div>
           </div>
+            </div>
+          </div>
+
+          {/* ----------------------------------------------------------
+            Below the fold, full width, in its own pair.
+
+            These two used to sit in the right-hand column alongside the
+            guarantee, which made that column roughly three times the height
+            of the left one - so scrolling past the plans showed a tall stack
+            on the right and a completely empty black half on the left. A
+            two-column grid only works when the columns are roughly the same
+            height, so the page is split where its content actually divides:
+            decision beside reassurance, then detail beside proof.
+          */}
+          <div className="lg:grid lg:grid-cols-2 lg:gap-10 lg:items-start">
 
           {/* ---------------------------------------------------------- */}
           {/* Everything included, in the same list and the same order as
@@ -673,7 +688,6 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
               <NOVAScore breakdown={EXAMPLE_SCORE} size="sm" showBreakdown periodLabel="Last 30 days" />
             </Frame>
           </div>
-            </div>
           </div>
         </motion.div>
 
