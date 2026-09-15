@@ -284,3 +284,93 @@ export function toTradeRow(
     swap: enrichment?.swap ?? null,
   };
 }
+
+export const METASTATS_URL = "https://metastats-api-v1.london.agiliumtrade.ai";
+
+/* MetaStats wants "YYYY-MM-DD HH:mm:ss.SSS", not an ISO string. */
+export const metaStatsTime = (d: Date) =>
+  d.toISOString().replace("T", " ").replace("Z", "");
+
+/*
+  How far back a first sync reaches.
+
+  It used to be one year, which quietly decided that a trader's history
+  began twelve months ago. For somebody who has traded the same account
+  for five years, importing the last twelve months of it is not a
+  shortened import - it is a wrong one, because every statistic TradeX
+  then shows is computed over an arbitrary slice they did not choose.
+
+  The date matters less than the fact that it predates the platforms
+  themselves: MT4 shipped in 2005 and MT5 in 2010, so nothing on either
+  can have closed a trade before this and no history is cut off by it.
+
+  This applies only to the first sync of an account. Afterwards the
+  window is the last sync minus a day, which is the cheap incremental
+  case and stays that way.
+*/
+export const FULL_HISTORY_START = new Date("2000-01-01T00:00:00Z");
+
+/*
+  MetaStats returns at most 1000 trades per call - that is the documented
+  ceiling on `limit`, not a default worth raising - so anything longer
+  than a busy year needs paging through with `offset`.
+
+  Without this, a deeper window silently returned the first 1000 trades
+  and nothing said so. That is the failure worth designing against here:
+  not an error, but a quietly incomplete import that looks exactly like a
+  complete one.
+*/
+const PAGE_SIZE = 1000;
+
+/*
+  A stop, so a broken account cannot loop forever. 50 pages is 50,000
+  trades - far past any human trading record, and reached only by a bot
+  account or a bug. Hitting it is reported rather than swallowed.
+*/
+const MAX_PAGES = 50;
+
+export async function fetchHistoricalTrades(
+  token: string,
+  metaapiAccountId: string,
+  since: Date,
+  until: Date,
+): Promise<{ trades: MetaStatsTrade[]; truncated: boolean; pages: number }> {
+  const all: MetaStatsTrade[] = [];
+  let page = 0;
+
+  for (; page < MAX_PAGES; page++) {
+    /*
+      updateHistory only on the first page. It is what makes MetaStats go
+      and refresh from the broker, and asking it to do that again for
+      every page of the same window is work nobody reads.
+    */
+    const url =
+      `${METASTATS_URL}/users/current/accounts/${metaapiAccountId}` +
+      `/historical-trades/${encodeURIComponent(metaStatsTime(since))}` +
+      `/${encodeURIComponent(metaStatsTime(until))}` +
+      `?limit=${PAGE_SIZE}&offset=${page * PAGE_SIZE}` +
+      (page === 0 ? "&updateHistory=true" : "");
+
+    const res = await fetch(url, { headers: { "auth-token": token } });
+    if (!res.ok) throw new Error(`MetaApi returned ${res.status}`);
+
+    const payload = await res.json().catch(() => null) as
+      | { trades?: MetaStatsTrade[] }
+      | MetaStatsTrade[]
+      | null;
+    const batch: MetaStatsTrade[] = Array.isArray(payload)
+      ? payload
+      : Array.isArray(payload?.trades)
+      ? payload!.trades!
+      : [];
+
+    all.push(...batch);
+
+    // A short page is the last page.
+    if (batch.length < PAGE_SIZE) {
+      return { trades: all, truncated: false, pages: page + 1 };
+    }
+  }
+
+  return { trades: all, truncated: true, pages: page };
+}

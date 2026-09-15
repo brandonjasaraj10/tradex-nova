@@ -26,6 +26,8 @@ import {
   isBalanceMovement,
   summariseDeals,
   toTradeRow,
+  FULL_HISTORY_START,
+  fetchHistoricalTrades,
 } from "../_shared/metaStatsTrade.ts";
 
 const METASTATS_URL = "https://metastats-api-v1.london.agiliumtrade.ai";
@@ -83,7 +85,6 @@ Deno.serve(async (req: Request) => {
       we hoped it sent. Never on by default - it returns raw trade data.
     */
     const debug = body?.debug === true;
-    const sinceDays = Number(body?.sinceDays) > 0 ? Number(body.sinceDays) : 365;
 
     const { data: connection, error: readError } = await supabase
       .from("user_broker_connections")
@@ -99,27 +100,30 @@ Deno.serve(async (req: Request) => {
     }
 
     /*
-      First sync reaches back a year; later ones only need what's happened
-      since, minus a day of overlap for the timezone reasons above.
+      A first sync takes the account's whole history; later ones only need
+      what has happened since, minus a day of overlap for the timezone
+      reasons above. An explicit sinceDays overrides both - that is the
+      re-import path, for pulling a window again on purpose.
     */
     const now = new Date();
     const explicitWindow = Number(body?.sinceDays) > 0;
-    const since = (connection.last_sync && !explicitWindow)
+    const since = explicitWindow
+      ? new Date(now.getTime() - Number(body.sinceDays) * 24 * 60 * 60 * 1000)
+      : connection.last_sync
       ? new Date(new Date(connection.last_sync).getTime() - 24 * 60 * 60 * 1000)
-      : new Date(now.getTime() - sinceDays * 24 * 60 * 60 * 1000);
-
-    const url =
-      `${METASTATS_URL}/users/current/accounts/${connection.metaapi_account_id}` +
-      `/historical-trades/${encodeURIComponent(metaStatsTime(since))}` +
-      `/${encodeURIComponent(metaStatsTime(now))}?updateHistory=true&limit=1000`;
-
-    const res = await fetch(url, { headers: { "auth-token": token } });
-    if (!res.ok) {
-      const detail = await res.text().catch(() => "");
-      return json({ error: `Couldn't read your trade history. ${detail}`.trim() }, 400);
-    }
+      : FULL_HISTORY_START;
 
     if (debug) {
+      /*
+        The diagnostic deliberately keeps its own single, unpaged request:
+        what it exists to show is the raw shape of one MetaStats response,
+        which paging through and merging would destroy.
+      */
+      const url =
+        `${METASTATS_URL}/users/current/accounts/${connection.metaapi_account_id}` +
+        `/historical-trades/${encodeURIComponent(metaStatsTime(since))}` +
+        `/${encodeURIComponent(metaStatsTime(now))}?updateHistory=true&limit=1000`;
+      const res = await fetch(url, { headers: { "auth-token": token } });
       const text = await res.text().catch(() => "");
 
       /*
@@ -191,15 +195,24 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const payload = await res.json().catch(() => null) as
-      | { trades?: MetaStatsTrade[] }
-      | MetaStatsTrade[]
-      | null;
-    const raw: MetaStatsTrade[] = Array.isArray(payload)
-      ? payload
-      : Array.isArray(payload?.trades)
-      ? payload!.trades!
-      : [];
+    let raw: MetaStatsTrade[];
+    let truncated = false;
+    try {
+      const fetched = await fetchHistoricalTrades(
+        token,
+        connection.metaapi_account_id,
+        since,
+        now,
+      );
+      raw = fetched.trades;
+      truncated = fetched.truncated;
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : "";
+      return json(
+        { error: `Couldn't read your trade history. ${detail}`.trim() },
+        400,
+      );
+    }
 
 
     /*
@@ -339,6 +352,8 @@ Deno.serve(async (req: Request) => {
       skippedStillOpen: stillOpen,
       skippedNotTrades: notTrades,
       startingBalance: sawDeposit ? netDeposits : null,
+      /* True only if the account has more history than the page cap fetched. */
+      truncated,
     });
   } catch (error) {
     return json(

@@ -23,18 +23,15 @@ import {
   isBalanceMovement,
   summariseDeals,
   toTradeRow,
+  FULL_HISTORY_START,
+  fetchHistoricalTrades,
 } from "../_shared/metaStatsTrade.ts";
-
-const METASTATS_URL = "https://metastats-api-v1.london.agiliumtrade.ai";
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
     headers: { "Content-Type": "application/json" },
   });
-
-const metaStatsTime = (d: Date) =>
-  d.toISOString().replace("T", " ").replace("Z", "");
 
 async function syncOne(
   admin: ReturnType<typeof createClient>,
@@ -46,31 +43,37 @@ async function syncOne(
     last_sync: string | null;
     starting_balance: number | null;
   },
-): Promise<{ id: string; imported?: number; error?: string }> {
+): Promise<
+  { id: string; imported?: number; error?: string; truncated?: boolean }
+> {
   const now = new Date();
+  /*
+    A first sync takes the whole account; every sync after it takes the
+    day around the last one. The deep window is the expensive case and it
+    happens once, which is why it is worth doing properly rather than
+    cutting it to a year and hoping nobody traded before that.
+  */
   const since = connection.last_sync
     ? new Date(new Date(connection.last_sync).getTime() - 24 * 60 * 60 * 1000)
-    : new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+    : FULL_HISTORY_START;
 
-  const url =
-    `${METASTATS_URL}/users/current/accounts/${connection.metaapi_account_id}` +
-    `/historical-trades/${encodeURIComponent(metaStatsTime(since))}` +
-    `/${encodeURIComponent(metaStatsTime(now))}?updateHistory=true&limit=1000`;
-
-  const res = await fetch(url, { headers: { "auth-token": token } });
-  if (!res.ok) {
-    return { id: connection.id, error: `MetaApi returned ${res.status}` };
+  let raw: MetaStatsTrade[];
+  let truncated = false;
+  try {
+    const fetched = await fetchHistoricalTrades(
+      token,
+      connection.metaapi_account_id,
+      since,
+      now,
+    );
+    raw = fetched.trades;
+    truncated = fetched.truncated;
+  } catch (err) {
+    return {
+      id: connection.id,
+      error: err instanceof Error ? err.message : "MetaApi request failed",
+    };
   }
-
-  const payload = await res.json().catch(() => null) as
-    | { trades?: MetaStatsTrade[] }
-    | MetaStatsTrade[]
-    | null;
-  const raw: MetaStatsTrade[] = Array.isArray(payload)
-    ? payload
-    : Array.isArray(payload?.trades)
-    ? payload!.trades!
-    : [];
 
 
   /*
@@ -151,7 +154,15 @@ async function syncOne(
 
   await admin.from("broker_connections").update(update).eq("id", connection.id);
 
-  return { id: connection.id, imported: rows.length };
+  /*
+    truncated means the 50-page ceiling was hit and this account has more
+    history than was fetched. Reported rather than hidden: a partial
+    import that reads as a complete one is the thing this is here to
+    prevent.
+  */
+  return truncated
+    ? { id: connection.id, imported: rows.length, truncated: true }
+    : { id: connection.id, imported: rows.length };
 }
 
 Deno.serve(async (req: Request) => {
@@ -231,6 +242,7 @@ Deno.serve(async (req: Request) => {
     accounts: results.length,
     imported: results.reduce((n, r) => n + (r.imported ?? 0), 0),
     failed: results.filter((r) => r.error).length,
+    truncated: results.filter((r) => r.truncated).length,
     results,
   });
 });
