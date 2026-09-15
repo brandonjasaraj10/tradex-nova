@@ -382,15 +382,25 @@ export default function Auth() {
         </div>
       )}
 
-      <Button
+      {/*
+        White, not blue. The brand uses exactly one blue and spends it on
+        accents - every primary action on the marketing side is a white pill,
+        and this button is the same decision as "Start journaling" on
+        /pricing. The shared Button's primary variant is blue and is used
+        throughout the app, so this is written out here rather than changing
+        it for every screen.
+      */}
+      <button
         type="submit"
-        variant="primary"
-        fullWidth
-        isLoading={loading}
-        icon={<UserPlus size={16} />}
+        disabled={loading}
+        className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full
+          bg-white text-black text-[14.5px] font-medium
+          hover:bg-gray-200 active:bg-gray-300 transition-colors
+          disabled:opacity-60 disabled:cursor-not-allowed"
       >
-        Create Account
-      </Button>
+        <UserPlus size={16} />
+        {loading ? 'Creating your account…' : 'Create Account'}
+      </button>
 
       {/*
         The same promise the pricing page makes, said at the moment somebody
@@ -721,12 +731,33 @@ export default function Auth() {
         className="w-full max-w-md"
         key={authMode}
       >
+        {/*
+          Set like the marketing pages rather than like a form label - the
+          tighter tracking and heavier weight are the same treatment /pricing
+          uses, and this screen is the first thing somebody sees after
+          reading that one. It looked unfinished beside it.
+        */}
         <div className="text-center mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold mb-2">{getTitle()}</h1>
-          <p className="text-sm sm:text-base text-gray-400">{getSubtitle()}</p>
+          <h1 className="text-[28px] sm:text-[34px] leading-[1.1] font-semibold
+            tracking-[-0.035em] text-white text-balance mb-2.5">
+            {getTitle()}
+          </h1>
+          <p className="text-[14.5px] sm:text-[15px] leading-relaxed text-gray-400 text-balance
+            max-w-sm mx-auto">
+            {getSubtitle()}
+          </p>
         </div>
 
-        <div className="bg-[#0A0A0A] border border-white/5 rounded-2xl p-4 sm:p-6">
+        {/*
+          The blue glow is the app's existing one, copied from the Nova
+          panels rather than invented here, so this reads as the same product
+          and not a login screen bolted on. Subtle on purpose: it lifts the
+          card off the black without turning a form into a light show.
+        */}
+        <div
+          className="bg-brand-surface border border-white/10 rounded-2xl p-5 sm:p-7"
+          style={{ boxShadow: '0 0 20px rgba(59, 130, 246, 0.15), inset 0 0 40px rgba(59, 130, 246, 0.05)' }}
+        >
           {authMode === 'login' && renderLoginForm()}
           {authMode === 'signup' && renderSignupForm()}
           {authMode === 'forgot-password' && renderForgotPasswordForm()}
