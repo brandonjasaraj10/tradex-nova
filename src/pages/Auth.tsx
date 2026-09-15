@@ -713,17 +713,6 @@ export default function Auth() {
         mode so login, signup, and the whole password-reset flow all have a
         way out.
       */}
-      <Link
-        to="/"
-        aria-label="Back to TradeX home"
-        className="absolute top-5 left-5 sm:top-6 sm:left-6 inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
-      >
-        {/* The wordmark, same as the landing page header and footer. This
-            was the old Logo - three vertical bars beside the word - which is
-            not the brand mark and appears nowhere else. */}
-        <Wordmark className="text-lg" />
-      </Link>
-
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -731,6 +720,36 @@ export default function Auth() {
         className="w-full max-w-md"
         key={authMode}
       >
+        {/*
+          Centred above the heading rather than tucked in the top-left
+          corner.
+
+          This is the screen where somebody types a password, and a mark
+          sitting over the form is the reassurance that they are where they
+          think they are - which a corner logo does not give, because nobody
+          checks the corner. It is also what the form itself is centred on,
+          so the page finally has one axis instead of two.
+
+          Still a link, and that part is not decoration. Signing out lands
+          here, and before this existed there was no logo, no nav and no way
+          back to the public site except editing the URL. Moving it must not
+          quietly remove the only exit.
+
+          Drawn inline via Wordmark, not an <img>. vite.config sets
+          publicDir to false, so nothing in public/ is served in dev - a PNG
+          here would render in production and break locally, which is the
+          worst of both.
+        */}
+        <div className="flex justify-center mb-5 sm:mb-6">
+          <Link
+            to="/"
+            aria-label="Back to TradeX home"
+            className="inline-flex text-white/90 hover:text-white transition-colors"
+          >
+            <Wordmark className="text-[26px] sm:text-[28px]" />
+          </Link>
+        </div>
+
         {/*
           Set like the marketing pages rather than like a form label - the
           tighter tracking and heavier weight are the same treatment /pricing
