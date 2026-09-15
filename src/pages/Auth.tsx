@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../lib/auth';
-import Button from '../components/shared/Button';
 import PasswordStrengthIndicator, { isPasswordValid } from '../components/auth/PasswordStrengthIndicator';
 import EarlyAccessModal from '../components/shared/EarlyAccessModal';
 import Wordmark from '../components/shared/Wordmark';
@@ -10,6 +9,51 @@ import { useHasLaunched } from '../lib/launch';
 import { LogIn, UserPlus, Eye, EyeOff, Lock } from 'lucide-react';
 
 type AuthMode = 'login' | 'signup' | 'forgot-password' | 'verify-code' | 'reset-password';
+
+/*
+  The primary action on an auth screen, in the brand's primary colour.
+
+  The shared Button's primary variant is blue and is right everywhere
+  inside the app - but these screens sit between the marketing site and the
+  product, and every primary action on the marketing side is a white pill.
+  "Create Account" was changed to match /pricing and the other five were
+  not, which left Sign In blue on the page next door to a white Create
+  Account. Inconsistency inside one screen family reads as unfinished, and
+  it was.
+
+  Defined here rather than changed in Button, which would repaint every
+  screen in the app to fix six on two.
+*/
+function AuthSubmit({
+  children,
+  icon,
+  loading = false,
+  disabled = false,
+  onClick,
+  type = 'submit',
+}: {
+  children: React.ReactNode;
+  icon?: React.ReactNode;
+  loading?: boolean;
+  disabled?: boolean;
+  onClick?: () => void;
+  type?: 'submit' | 'button';
+}) {
+  return (
+    <button
+      type={type}
+      onClick={onClick}
+      disabled={disabled || loading}
+      className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full
+        bg-white text-black text-[14.5px] font-medium
+        hover:bg-gray-200 active:bg-gray-300 transition-colors
+        disabled:opacity-60 disabled:cursor-not-allowed"
+    >
+      {icon}
+      {children}
+    </button>
+  );
+}
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
@@ -294,15 +338,9 @@ export default function Auth() {
         </div>
       )}
 
-      <Button
-        type="submit"
-        variant="primary"
-        fullWidth
-        isLoading={loading}
-        icon={<LogIn size={16} />}
-      >
+      <AuthSubmit loading={loading} icon={<LogIn size={16} />}>
         Sign In
-      </Button>
+      </AuthSubmit>
 
       <button
         type="button"
@@ -392,25 +430,9 @@ export default function Auth() {
         </div>
       )}
 
-      {/*
-        White, not blue. The brand uses exactly one blue and spends it on
-        accents - every primary action on the marketing side is a white pill,
-        and this button is the same decision as "Start journaling" on
-        /pricing. The shared Button's primary variant is blue and is used
-        throughout the app, so this is written out here rather than changing
-        it for every screen.
-      */}
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full
-          bg-white text-black text-[14.5px] font-medium
-          hover:bg-gray-200 active:bg-gray-300 transition-colors
-          disabled:opacity-60 disabled:cursor-not-allowed"
-      >
-        <UserPlus size={16} />
+      <AuthSubmit loading={loading} icon={<UserPlus size={16} />}>
         {loading ? 'Creating your account…' : 'Create Account'}
-      </button>
+      </AuthSubmit>
 
       {/*
         The same promise the pricing page makes, said at the moment somebody
@@ -455,14 +477,9 @@ export default function Auth() {
         </div>
       )}
 
-      <Button
-        type="submit"
-        variant="primary"
-        fullWidth
-        isLoading={loading}
-      >
+      <AuthSubmit loading={loading}>
         Send Reset Code
-      </Button>
+      </AuthSubmit>
 
       <button
         type="button"
@@ -511,15 +528,9 @@ export default function Auth() {
         </div>
       )}
 
-      <Button
-        type="submit"
-        variant="primary"
-        fullWidth
-        isLoading={loading}
-        disabled={resetCode.length !== 6}
-      >
+      <AuthSubmit loading={loading} disabled={resetCode.length !== 6}>
         Verify Code
-      </Button>
+      </AuthSubmit>
 
       <div className="flex items-center justify-between">
         <button
@@ -606,14 +617,9 @@ export default function Auth() {
         </div>
       )}
 
-      <Button
-        type="submit"
-        variant="primary"
-        fullWidth
-        isLoading={loading}
-      >
+      <AuthSubmit loading={loading}>
         Reset Password
-      </Button>
+      </AuthSubmit>
     </form>
   );
 
@@ -685,14 +691,13 @@ export default function Auth() {
             </div>
 
             <div className="bg-[#0A0A0A] border border-white/5 rounded-2xl p-4 sm:p-6 text-center">
-              <Button
+              <AuthSubmit
+                type="button"
                 onClick={() => setShowEarlyAccessModal(true)}
-                variant="primary"
-                fullWidth
                 icon={<Lock size={16} />}
               >
                 Enter Access Code
-              </Button>
+              </AuthSubmit>
 
               <p className="mt-6 text-sm text-gray-400">
                 Don't have an access code?{' '}
