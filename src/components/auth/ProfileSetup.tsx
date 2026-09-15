@@ -60,12 +60,44 @@ export default function ProfileSetup({ user, onComplete }: ProfileSetupProps) {
       console.error('Error creating profile:', err);
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
 
-      // Check if it's a JWT error
-      if (errorMessage.includes('JWT') || errorMessage.includes('expired')) {
-        setError('Your session has expired. Redirecting to login...');
+      /*
+        Two ways this screen can be unreachable-but-displayed, and both are
+        the same problem: a token the browser still believes in, for an
+        account the server no longer has.
+
+        An expired JWT was already handled. The other is a foreign key
+        violation on user_profiles.user_id, which means the auth.users row
+        is simply gone - the account was deleted somewhere else, in another
+        tab or by an administrator, while this session stayed open. It is
+        not a save failure and retrying cannot fix it: every attempt writes
+        a user_id that no longer refers to anybody.
+
+        Left alone it is a trap. This screen has no sign-out, so the raw
+        Postgres constraint name sat on screen and the only way forward was
+        clearing site data by hand.
+
+        signOut() before redirecting, which the JWT branch did not do -
+        redirecting alone leaves the dead token in localStorage, so the next
+        load signs straight back in as the same missing user and lands right
+        back here.
+      */
+      const sessionIsDead =
+        errorMessage.includes('JWT') ||
+        errorMessage.includes('expired') ||
+        errorMessage.includes('user_profiles_user_id_fkey') ||
+        errorMessage.includes('foreign key constraint');
+
+      if (sessionIsDead) {
+        setError('Your session is no longer valid. Taking you back to sign in...');
+        try {
+          await supabase.auth.signOut();
+        } catch {
+          /* Signing out of a session the server has forgotten can itself
+             fail; clearing the browser's copy is what actually matters. */
+        }
         setTimeout(() => {
           window.location.href = '/auth';
-        }, 2000);
+        }, 1500);
       } else {
         setError(`Failed to save profile: ${errorMessage}`);
       }
