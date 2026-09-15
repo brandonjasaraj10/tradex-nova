@@ -111,6 +111,23 @@ Deno.serve(async (req: Request) => {
     if (!res.ok) {
       const detail = await res.text().catch(() => "");
       /*
+        Written down, because until now it was not.
+
+        MetaApi says why it refused, and that reason reached the browser in
+        a field nothing rendered - so on screen it was always the same
+        sentence and the actual cause was unrecoverable after the fact. That
+        is the identical blind spot that hid a 403 on MetaStats for an hour
+        while a connected account silently synced nothing.
+
+        Server-side on purpose: it belongs in the logs where it can be read
+        later without the trader having had dev tools open at the moment,
+        and the person on screen still gets plain English.
+      */
+      console.error(
+        `metaapi-positions: MetaApi ${res.status} for connection ${connectionId}`,
+        detail.slice(0, 300),
+      );
+      /*
         A stopped account cannot answer this - live positions need a running
         terminal. Said plainly rather than as a failure, because it is a
         state the trader can do something about.

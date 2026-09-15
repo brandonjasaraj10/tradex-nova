@@ -43,10 +43,34 @@ export default function OpenPositions({ connectionId, accountName }: Props) {
   const [result, setResult] = useState<OpenPositionsResult | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const load = useCallback(async () => {
+  /*
+    Retries before giving up, because the failure is nearly always momentary.
+
+    A MetaTrader terminal drops its connection and picks it up again - while
+    it is down, MetaApi answers this with a 400 and the panel said "couldn't
+    read your open positions" until somebody pressed refresh. Which worked,
+    every time, and that is the whole diagnosis: if one more attempt fixes
+    it, the panel should be making that attempt rather than asking the
+    trader to.
+
+    Three tries roughly two seconds apart. Long enough to cover a reconnect,
+    short enough that a genuinely stopped account still reports itself
+    quickly instead of spinning. The spinner stays up in between, because
+    "still trying" is the truth and a flash of an error that then fixes
+    itself is worse than a moment of waiting.
+  */
+  const load = useCallback(async (attempt = 0) => {
     if (!connectionId) return;
     setLoading(true);
-    setResult(await getOpenPositions(connectionId));
+
+    const next = await getOpenPositions(connectionId);
+
+    if (next.error && attempt < 2) {
+      setTimeout(() => { void load(attempt + 1); }, 2000);
+      return;
+    }
+
+    setResult(next);
     setLoading(false);
   }, [connectionId]);
 
@@ -115,7 +139,7 @@ export default function OpenPositions({ connectionId, accountName }: Props) {
         </h2>
         <button
           type="button"
-          onClick={load}
+          onClick={() => { void load(); }}
           disabled={loading}
           className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-50"
           aria-label="Refresh open positions"
