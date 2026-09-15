@@ -87,18 +87,18 @@ export default function About() {
       </div>
 
       <PullQuote>
-        Journals do not fail on features. They fail at 4pm.
+        Nobody stops journaling. They stop logging the bad days.
       </PullQuote>
 
       <Split
         eyebrow="What everyone got wrong"
         title="Nobody quits a journal over a missing chart"
-        lead="They quit because typing up a trade is the last thing anyone wants to do after taking one. So the first problem TradeX solved was the typing — not the analytics."
+        lead="People do not abandon a journal all at once. They skip the trade they would rather forget, which is the one that had something to teach them. So the journal ends up with a hole exactly where the lesson was."
         points={[
           'Every journal on the market competes on features',
-          'None of them compete on whether you keep using it',
-          'Thirty seconds of talking is a habit people actually keep',
-          'The analytics only matter if there is something in there to analyse',
+          'None of them compete on whether the worst days make it in',
+          'Writing down a bad result makes it hurt more, so it gets skipped',
+          'Talking takes thirty seconds, and Nova does the looking back',
         ]}
         visual={<WhyItDies />}
       />
