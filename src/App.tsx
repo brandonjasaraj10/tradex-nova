@@ -98,7 +98,7 @@ function PublicLayout() {
 function PrivateLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, profile, loading, showWelcome, needsProfile, needsSubscription, isFirstTimeUser, setShowWelcome, setNeedsProfile, setNeedsSubscription, refreshProfile, refreshSubscription } = useAuth();
+  const { user, profile, loading, profileResolved, showWelcome, needsProfile, needsSubscription, isFirstTimeUser, setShowWelcome, setNeedsProfile, setNeedsSubscription, refreshProfile, refreshSubscription } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -108,7 +108,21 @@ function PrivateLayout() {
     return 'User';
   };
 
-  if (loading) {
+  /*
+    Hold the loader until it is actually known where this user belongs.
+
+    `loading` only covers the first page load, where the profile is fetched
+    before it clears. Signing up takes the other path: onAuthStateChange
+    sets the user and then awaits the profile, so for that moment there is a
+    user, no profile, and needsProfile still at its default - which reads as
+    "signed in and complete", and drew the entire dashboard for an instant
+    before the profile screen replaced it.
+
+    A spinner for a fraction of a second is the honest thing to show while
+    the answer is unknown. The alternative is showing the wrong screen
+    confidently.
+  */
+  if (loading || (user && !profileResolved)) {
     return <PageLoader fullScreen />;
   }
 

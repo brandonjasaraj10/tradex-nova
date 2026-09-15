@@ -66,11 +66,21 @@ export default function Auth() {
         }
         await signUp(email, password);
         /*
-          Into the questions, not the dashboard. Signing in still goes
-          straight to the app - only a brand new account is asked anything,
-          and only once.
+          Straight to /dashboard, the same as signing in, and the gates in
+          PrivateLayout take it from there: profile, then the three
+          questions, then the paywall.
+
+          This used to navigate to /onboarding, which was a real route until
+          onboarding became a gate instead - and nothing matched it
+          afterwards. The gates only run once the profile has loaded, so for
+          the moment in between the router fell through to NotFound and a
+          new account saw a 404 flash before "Complete Your Profile".
+
+          Naming no destination at all is the point: where a new account
+          belongs is PrivateLayout's decision, and this screen should not
+          hold a second opinion about it that can rot.
         */
-        setTimeout(() => navigate('/onboarding'), 100);
+        setTimeout(() => navigate('/dashboard'), 100);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');

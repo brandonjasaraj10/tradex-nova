@@ -32,6 +32,7 @@ type AuthContextType = {
   loading: boolean;
   showWelcome: boolean;
   needsProfile: boolean;
+  profileResolved: boolean;
   needsSubscription: boolean;
   /*
     When a failed payment's grace period runs out, or null when there isn't
@@ -75,6 +76,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [showWelcome, setShowWelcome] = useState(false);
   const [needsProfile, setNeedsProfile] = useState(false);
+  /*
+    Whether the profile has been looked up for whoever is signed in now.
+
+    onAuthStateChange sets the user synchronously and then awaits the
+    profile, so between those two there is a user, no profile, and
+    needsProfile still reading its default of false - which is indis-
+    tinguishable from "signed in, profile complete". The layout took that
+    at face value and drew the whole dashboard, so signing up flashed the
+    app shell greeting you by your email prefix before the profile screen
+    appeared.
+
+    Starts false, and is only true once a lookup has actually finished.
+  */
+  const [profileResolved, setProfileResolved] = useState(false);
   const [needsSubscription, setNeedsSubscription] = useState(false);
   const [pastDue, setPastDue] = useState(false);
   const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
@@ -113,6 +128,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('Error fetching profile:', error);
       setProfile(null);
       setNeedsProfile(true);
+    } finally {
+      /* Even a failed lookup is a decision - it means "ask them again". */
+      setProfileResolved(true);
     }
   };
 
@@ -215,6 +233,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const currentUser = session?.user ?? null;
         setUser(currentUser);
         if (currentUser) {
+          /* Whatever was known belongs to the previous session. */
+          setProfileResolved(false);
           await fetchProfile(currentUser.id);
           const hasAccess = await checkSubscription(currentUser.id, currentUser.email);
           setNeedsSubscription(!hasAccess);
@@ -222,6 +242,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setProfile(null);
           setNeedsProfile(false);
           setNeedsSubscription(false);
+          /* Nobody signed in, so there is nothing left to wait for. */
+          setProfileResolved(true);
         }
       })();
     });
@@ -389,7 +411,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, showWelcome, needsProfile, needsSubscription, pastDue, isFirstTimeUser, setShowWelcome, setNeedsProfile, setNeedsSubscription, setIsFirstTimeUser, refreshProfile, refreshSubscription, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, profile, loading, profileResolved, showWelcome, needsProfile, needsSubscription, pastDue, isFirstTimeUser, setShowWelcome, setNeedsProfile, setNeedsSubscription, setIsFirstTimeUser, refreshProfile, refreshSubscription, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );
