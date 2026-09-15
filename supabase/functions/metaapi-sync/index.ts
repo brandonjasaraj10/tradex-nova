@@ -233,7 +233,7 @@ Deno.serve(async (req: Request) => {
         `https://mt-client-api-v1.london.agiliumtrade.ai` +
           `/users/current/accounts/${connection.metaapi_account_id}/history-deals` +
           `/time/${encodeURIComponent(since.toISOString())}` +
-          `/${encodeURIComponent(now.toISOString())}`,
+          `/${encodeURIComponent(new Date(now.getTime() + 60_000).toISOString())}`,
         { headers: { "auth-token": token } },
       );
       if (dealsRes.ok) {

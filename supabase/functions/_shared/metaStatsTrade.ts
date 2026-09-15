@@ -329,6 +329,31 @@ const PAGE_SIZE = 1000;
 */
 const MAX_PAGES = 50;
 
+/*
+  How far past "now" to ask, so a trade that just closed is inside the window.
+
+  MetaStats takes its start and end times in the BROKER's timezone - its own
+  documentation says so - and we have only ever had UTC to give it. On a
+  broker running +3 (which is what the first account tested here runs), a
+  position closed a minute ago is stamped three hours in the future relative
+  to UTC now, so asking for "everything up to UTC now" excludes it. It
+  arrives three hours later, once UTC has caught up.
+
+  That is precisely how this was found: an old trade imported perfectly on
+  the first sync while one closed minutes earlier never appeared, through
+  repeated syncs, with no error anywhere.
+
+  Padding the end rather than converting to broker time is deliberate. The
+  offset is a property of the broker's server, we are not told what it is,
+  and guessing it wrong would silently drop trades again. A window that
+  reaches too far forward cannot: MetaStats has nothing to report from the
+  future, positions still open are skipped for having no close time, and
+  every row is upserted on the broker's own trade id, so re-reading one
+  changes nothing. 24 hours clears every real-world broker offset, which
+  tops out around 14.
+*/
+const BROKER_OFFSET_ALLOWANCE_MS = 24 * 60 * 60 * 1000;
+
 export async function fetchHistoricalTrades(
   token: string,
   metaapiAccountId: string,
@@ -337,6 +362,9 @@ export async function fetchHistoricalTrades(
 ): Promise<{ trades: MetaStatsTrade[]; truncated: boolean; pages: number }> {
   const all: MetaStatsTrade[] = [];
   let page = 0;
+
+  /* See BROKER_OFFSET_ALLOWANCE_MS - the window end is in broker time. */
+  const windowEnd = new Date(until.getTime() + BROKER_OFFSET_ALLOWANCE_MS);
 
   for (; page < MAX_PAGES; page++) {
     /*
@@ -347,7 +375,7 @@ export async function fetchHistoricalTrades(
     const url =
       `${METASTATS_URL}/users/current/accounts/${metaapiAccountId}` +
       `/historical-trades/${encodeURIComponent(metaStatsTime(since))}` +
-      `/${encodeURIComponent(metaStatsTime(until))}` +
+      `/${encodeURIComponent(metaStatsTime(windowEnd))}` +
       `?limit=${PAGE_SIZE}&offset=${page * PAGE_SIZE}` +
       (page === 0 ? "&updateHistory=true" : "");
 
