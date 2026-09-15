@@ -83,7 +83,7 @@ export default function Pricing() {
 
           {/*
             Real urgency rather than a countdown clock. Sync genuinely ships in
-            the next couple of weeks and the price genuinely goes up with it -
+            days and the price genuinely goes up with it -
             which is both the honest warning and, unlike a fake timer, a
             promise that can actually be kept.
           */}
@@ -91,9 +91,9 @@ export default function Pricing() {
             <div className="mb-7 rounded-xl border border-brand-blue-light/25 bg-brand-blue/[0.06] px-4 py-3.5">
               <p className="text-[12.5px] sm:text-[13px] text-gray-300 leading-relaxed">
                 <span className="text-white font-medium">
-                  MT4 &amp; MT5 sync lands in the next couple of weeks
+                  MT4 &amp; MT5 sync is days away
                 </span>
-                {' — '}and the price goes up when it does. Join now and yours stays at{' '}
+                {' — '}and the price goes up when it lands. Join now and yours stays at{' '}
                 {MONTHLY_PRICE}.
               </p>
             </div>

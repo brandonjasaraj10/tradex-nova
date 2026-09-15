@@ -483,7 +483,7 @@ export function ImportPathsPanel() {
                 ${r.now
                   ? 'text-brand-blue-light bg-brand-blue-light/10'
                   : 'text-gray-500 border border-white/10'}`}>
-                {r.now ? 'Available now' : 'A couple of weeks'}
+                {r.now ? 'Available now' : 'Days away'}
               </span>
             </div>
             <p className="text-[12px] leading-relaxed text-gray-500">{r.v}</p>
@@ -543,7 +543,7 @@ const SHIPPED: { date: string; title: string; body: string; shipped: boolean }[]
     shipped: true,
   },
   {
-    date: 'Next couple of weeks',
+    date: 'Days away',
     title: 'MT4 and MT5 sync',
     body: 'Read-only: closed trade history and balance, nothing else. The price goes up when it lands, and not for anyone already subscribed.',
     shipped: false,

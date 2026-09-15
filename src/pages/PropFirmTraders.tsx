@@ -108,7 +108,7 @@ export default function PropFirmTraders() {
             },
             {
               q: 'Can I import from my challenge account?',
-              a: 'Yes — upload the statement your platform exports. Direct MT4 and MT5 sync lands in the next couple of weeks, and it is read-only when it does.',
+              a: 'Yes — upload the statement your platform exports. Direct MT4 and MT5 sync is days away, and it is read-only when it lands.',
             },
             {
               q: 'I am on my fourth challenge. Is this going to help?',

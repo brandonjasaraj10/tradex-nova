@@ -774,8 +774,8 @@ export default function Sales() {
             {launched && (
               <div className="mb-7 rounded-xl border border-brand-blue-light/25 bg-brand-blue/[0.06] px-4 py-3.5">
                 <p className="text-[12.5px] sm:text-[13px] text-gray-300 leading-relaxed">
-                  <span className="text-white font-medium">MT4 &amp; MT5 sync lands in the next couple of weeks</span>
-                  {' \u2014 '}and the price goes up when it does. Join now and yours stays at $24.99.
+                  <span className="text-white font-medium">MT4 &amp; MT5 sync is days away</span>
+                  {' \u2014 '}and the price goes up when it lands. Join now and yours stays at $24.99.
                 </p>
               </div>
             )}
@@ -876,7 +876,7 @@ export default function Sales() {
               },
               {
                 q: 'Can I connect my broker?',
-                a: 'Right now you import a CSV from your broker or add trades as you go. Direct MT4 and MT5 sync lands in the next couple of weeks, and it is read-only when it does \u2014 TradeX will see your trade history and nothing else. It can never place, close or modify a trade, and it never touches your money.',
+                a: 'Right now you import a CSV from your broker or add trades as you go. Direct MT4 and MT5 sync is days away, and it is read-only when it lands \u2014 TradeX will see your trade history and nothing else. It can never place, close or modify a trade, and it never touches your money.',
               },
               {
                 q: 'How is this different from a spreadsheet?',

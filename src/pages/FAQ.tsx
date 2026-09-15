@@ -73,7 +73,7 @@ const GROUPS: {
     items: [
       {
         q: 'Can I connect my broker?',
-        a: 'Right now you import a CSV from your broker or add trades as you go. Direct MT4 and MT5 sync lands in the next couple of weeks, and it is read-only when it does — TradeX will see your trade history and nothing else. It can never place, close or modify a trade, and it never touches your money.',
+        a: 'Right now you import a CSV from your broker or add trades as you go. Direct MT4 and MT5 sync is days away, and it is read-only when it lands — TradeX will see your trade history and nothing else. It can never place, close or modify a trade, and it never touches your money.',
       },
       {
         q: 'Which markets does it handle?',
