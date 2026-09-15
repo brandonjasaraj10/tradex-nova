@@ -20,9 +20,7 @@ export default function Auth() {
   const [showEarlyAccessModal, setShowEarlyAccessModal] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [resetCode, setResetCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -61,17 +59,27 @@ export default function Auth() {
           setLoading(false);
           return;
         }
-        if (password !== confirmPassword) {
-          setError('Passwords do not match');
-          setLoading(false);
-          return;
-        }
         if (!termsAccepted) {
           setError('Please accept the Terms of Service and Privacy Policy');
           setLoading(false);
           return;
         }
         await signUp(email, password);
+        /*
+          Straight to /dashboard, the same as signing in, and the gates in
+          PrivateLayout take it from there: profile, then the three
+          questions, then the paywall.
+
+          This used to navigate to /onboarding, which was a real route until
+          onboarding became a gate instead - and nothing matched it
+          afterwards. The gates only run once the profile has loaded, so for
+          the moment in between the router fell through to NotFound and a
+          new account saw a 404 flash before "Complete Your Profile".
+
+          Naming no destination at all is the point: where a new account
+          belongs is PrivateLayout's decision, and this screen should not
+          hold a second opinion about it that can rot.
+        */
         setTimeout(() => navigate('/dashboard'), 100);
       }
     } catch (err) {
@@ -348,34 +356,16 @@ export default function Auth() {
         <PasswordStrengthIndicator password={password} />
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-300 mb-1">
-          Confirm Password
-        </label>
-        <div className="relative">
-          <input
-            type={showConfirmPassword ? 'text' : 'password'}
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            className="input-field pr-10"
-            required
-          />
-          <button
-            type="button"
-            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
-          >
-            {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-          </button>
-        </div>
-        {confirmPassword && password !== confirmPassword && (
-          <p className="mt-1 text-xs text-red-400">Passwords do not match</p>
-        )}
-        {confirmPassword && password === confirmPassword && (
-          <p className="mt-1 text-xs text-blue-400">Passwords match</p>
-        )}
-      </div>
+      {/*
+        Confirm Password removed deliberately.
 
+        It exists to catch a typo in a field you cannot see - but the eye
+        toggle on the field above already solves that, and better: you can
+        read what you typed rather than type it twice and hope. What it
+        reliably adds is a second chance to mismatch and an error on a
+        signup form, and a password reset already exists for the case it
+        was guarding against.
+      */}
       <div className="flex items-start gap-3">
         <input
           type="checkbox"
@@ -402,15 +392,35 @@ export default function Auth() {
         </div>
       )}
 
-      <Button
+      {/*
+        White, not blue. The brand uses exactly one blue and spends it on
+        accents - every primary action on the marketing side is a white pill,
+        and this button is the same decision as "Start journaling" on
+        /pricing. The shared Button's primary variant is blue and is used
+        throughout the app, so this is written out here rather than changing
+        it for every screen.
+      */}
+      <button
         type="submit"
-        variant="primary"
-        fullWidth
-        isLoading={loading}
-        icon={<UserPlus size={16} />}
+        disabled={loading}
+        className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full
+          bg-white text-black text-[14.5px] font-medium
+          hover:bg-gray-200 active:bg-gray-300 transition-colors
+          disabled:opacity-60 disabled:cursor-not-allowed"
       >
-        Create Account
-      </Button>
+        <UserPlus size={16} />
+        {loading ? 'Creating your account…' : 'Create Account'}
+      </button>
+
+      {/*
+        The same promise the pricing page makes, said at the moment somebody
+        is deciding whether to hand over an email. Guarantee messaging is the
+        single best-measured lift on this kind of page, and it is worth
+        nothing if it only appears after they have already committed.
+      */}
+      <p className="text-center text-[12px] text-gray-500">
+        14-day money-back guarantee &middot; Cancel anytime
+      </p>
     </form>
   );
 
@@ -629,7 +639,13 @@ export default function Auth() {
       case 'login':
         return 'Sign in to access your trading dashboard';
       case 'signup':
-        return 'Start your trading journey with TradeX';
+        /*
+          Was "Start your trading journey with TradeX", which is true of
+          every trading product ever made and says nothing about this one.
+          This is the promise the landing page made to get them here: the
+          journal is built around how you think, not what you traded.
+        */
+        return 'Built around how you think, not just what you trade.';
       case 'forgot-password':
         return 'We\'ll send you a code to reset your password';
       case 'verify-code':
@@ -707,17 +723,6 @@ export default function Auth() {
         mode so login, signup, and the whole password-reset flow all have a
         way out.
       */}
-      <Link
-        to="/"
-        aria-label="Back to TradeX home"
-        className="absolute top-5 left-5 sm:top-6 sm:left-6 inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
-      >
-        {/* The wordmark, same as the landing page header and footer. This
-            was the old Logo - three vertical bars beside the word - which is
-            not the brand mark and appears nowhere else. */}
-        <Wordmark className="text-lg" />
-      </Link>
-
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -725,12 +730,63 @@ export default function Auth() {
         className="w-full max-w-md"
         key={authMode}
       >
-        <div className="text-center mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold mb-2">{getTitle()}</h1>
-          <p className="text-sm sm:text-base text-gray-400">{getSubtitle()}</p>
+        {/*
+          Centred above the heading rather than tucked in the top-left
+          corner.
+
+          This is the screen where somebody types a password, and a mark
+          sitting over the form is the reassurance that they are where they
+          think they are - which a corner logo does not give, because nobody
+          checks the corner. It is also what the form itself is centred on,
+          so the page finally has one axis instead of two.
+
+          Still a link, and that part is not decoration. Signing out lands
+          here, and before this existed there was no logo, no nav and no way
+          back to the public site except editing the URL. Moving it must not
+          quietly remove the only exit.
+
+          Drawn inline via Wordmark, not an <img>. vite.config sets
+          publicDir to false, so nothing in public/ is served in dev - a PNG
+          here would render in production and break locally, which is the
+          worst of both.
+        */}
+        <div className="flex justify-center mb-5 sm:mb-6">
+          <Link
+            to="/"
+            aria-label="Back to TradeX home"
+            className="inline-flex text-white/90 hover:text-white transition-colors"
+          >
+            <Wordmark className="text-[26px] sm:text-[28px]" />
+          </Link>
         </div>
 
-        <div className="bg-[#0A0A0A] border border-white/5 rounded-2xl p-4 sm:p-6">
+        {/*
+          Set like the marketing pages rather than like a form label - the
+          tighter tracking and heavier weight are the same treatment /pricing
+          uses, and this screen is the first thing somebody sees after
+          reading that one. It looked unfinished beside it.
+        */}
+        <div className="text-center mb-6 sm:mb-8">
+          <h1 className="text-[28px] sm:text-[34px] leading-[1.1] font-semibold
+            tracking-[-0.035em] text-white text-balance mb-2.5">
+            {getTitle()}
+          </h1>
+          <p className="text-[14.5px] sm:text-[15px] leading-relaxed text-gray-400 text-balance
+            max-w-sm mx-auto">
+            {getSubtitle()}
+          </p>
+        </div>
+
+        {/*
+          The blue glow is the app's existing one, copied from the Nova
+          panels rather than invented here, so this reads as the same product
+          and not a login screen bolted on. Subtle on purpose: it lifts the
+          card off the black without turning a form into a light show.
+        */}
+        <div
+          className="bg-brand-surface border border-white/10 rounded-2xl p-5 sm:p-7"
+          style={{ boxShadow: '0 0 20px rgba(59, 130, 246, 0.15), inset 0 0 40px rgba(59, 130, 246, 0.05)' }}
+        >
           {authMode === 'login' && renderLoginForm()}
           {authMode === 'signup' && renderSignupForm()}
           {authMode === 'forgot-password' && renderForgotPasswordForm()}
@@ -745,7 +801,6 @@ export default function Auth() {
                   setError('');
                   setSuccess('');
                   setPassword('');
-                  setConfirmPassword('');
                 }}
                 className="text-sm text-gray-400 hover:text-white transition-colors"
               >

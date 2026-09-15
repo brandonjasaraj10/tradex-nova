@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 
@@ -17,6 +17,13 @@ type UserProfile = {
   // Selected by the profile query and used to tell a genuinely new user
   // from a returning one; declaring it keeps the type honest about the row.
   tour_completed?: boolean | null;
+  /*
+    When the three signup questions were answered. Null on every account
+    that predates them, and on anybody who has not reached the end - which
+    is exactly the test the onboarding gate makes, so it is selected with
+    the rest of the profile rather than fetched separately.
+  */
+  onboarding_completed_at?: string | null;
 };
 
 type AuthContextType = {
@@ -25,6 +32,7 @@ type AuthContextType = {
   loading: boolean;
   showWelcome: boolean;
   needsProfile: boolean;
+  profileResolved: boolean;
   needsSubscription: boolean;
   /*
     When a failed payment's grace period runs out, or null when there isn't
@@ -68,6 +76,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [showWelcome, setShowWelcome] = useState(false);
   const [needsProfile, setNeedsProfile] = useState(false);
+  /*
+    Whether the profile has been looked up for whoever is signed in now.
+
+    onAuthStateChange sets the user synchronously and then awaits the
+    profile, so between those two there is a user, no profile, and
+    needsProfile still reading its default of false - which is indis-
+    tinguishable from "signed in, profile complete". The layout took that
+    at face value and drew the whole dashboard, so signing up flashed the
+    app shell greeting you by your email prefix before the profile screen
+    appeared.
+
+    Starts false, and is only true once a lookup has actually finished.
+  */
+  const [profileResolved, setProfileResolved] = useState(false);
+  /*
+    Who the resolved profile belongs to.
+
+    A ref rather than state because it is read inside the auth subscription,
+    which closes over its values once - state here would be permanently
+    stale and the comparison below would never be true.
+  */
+  const resolvedForUser = useRef<string | null>(null);
   const [needsSubscription, setNeedsSubscription] = useState(false);
   const [pastDue, setPastDue] = useState(false);
   const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
@@ -89,7 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { data, error } = await supabase
         .from('user_profiles')
-        .select('first_name, last_name, tour_completed')
+        .select('first_name, last_name, tour_completed, onboarding_completed_at')
         .eq('user_id', userId)
         .maybeSingle();
 
@@ -106,6 +136,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('Error fetching profile:', error);
       setProfile(null);
       setNeedsProfile(true);
+    } finally {
+      /* Even a failed lookup is a decision - it means "ask them again". */
+      setProfileResolved(true);
     }
   };
 
@@ -189,6 +222,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const currentUser = currentSession?.user ?? null;
         setUser(currentUser);
         if (currentUser) {
+          resolvedForUser.current = currentUser.id;
           await fetchProfile(currentUser.id);
           const hasAccess = await checkSubscription(currentUser.id, currentUser.email);
           setNeedsSubscription(!hasAccess);
@@ -208,6 +242,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const currentUser = session?.user ?? null;
         setUser(currentUser);
         if (currentUser) {
+          /*
+            Only a DIFFERENT person invalidates what is already known.
+
+            This used to clear the flag on every auth event, and a token
+            refresh is an auth event - fired by the 30-minute timer and, far
+            more often, by the focus and visibilitychange handlers below. So
+            clicking back into the window dropped the layout to its loader,
+            which unmounted whatever was on screen and remounted it fresh.
+
+            On the onboarding questions that meant answering question one,
+            clicking into the window, and being asked question one again. It
+            was reported as the questions repeating, and it was: the
+            component's step counter had been reset by a token refresh that
+            changed nothing about who was signed in.
+
+            The profile and subscription are still re-read on every event -
+            that is how a subscription bought in another tab gets noticed -
+            but re-reading them no longer tears the screen down.
+          */
+          const isDifferentUser = resolvedForUser.current !== currentUser.id;
+          if (isDifferentUser) setProfileResolved(false);
+          resolvedForUser.current = currentUser.id;
           await fetchProfile(currentUser.id);
           const hasAccess = await checkSubscription(currentUser.id, currentUser.email);
           setNeedsSubscription(!hasAccess);
@@ -215,6 +271,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setProfile(null);
           setNeedsProfile(false);
           setNeedsSubscription(false);
+          /* Nobody signed in, so there is nothing left to wait for. */
+          resolvedForUser.current = null;
+          setProfileResolved(true);
         }
       })();
     });
@@ -382,7 +441,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, showWelcome, needsProfile, needsSubscription, pastDue, isFirstTimeUser, setShowWelcome, setNeedsProfile, setNeedsSubscription, setIsFirstTimeUser, refreshProfile, refreshSubscription, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, profile, loading, profileResolved, showWelcome, needsProfile, needsSubscription, pastDue, isFirstTimeUser, setShowWelcome, setNeedsProfile, setNeedsSubscription, setIsFirstTimeUser, refreshProfile, refreshSubscription, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );
