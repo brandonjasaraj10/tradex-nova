@@ -678,7 +678,21 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
             height, so the page is split where its content actually divides:
             decision beside reassurance, then detail beside proof.
           */}
-          <div className="lg:grid lg:grid-cols-2 lg:gap-10 lg:items-start">
+          {/*
+            Stacked full width rather than side by side, on a second look.
+
+            Pairing them balanced the columns, which was the problem being
+            solved at the time. What it cost is readability: the bullets
+            became whole sentences when the list went from fourteen feature
+            names to six outcomes, and a 444px column wrapped nearly every
+            one of them onto two lines - 305px of block to hold six items.
+
+            Full width lets the six sit two across on one line each, and
+            gives the score panel room to put its dial beside its breakdown
+            instead of under it. The page is taller and reads faster, which
+            is the right trade below a fold nobody has to cross to decide.
+          */}
+          <div>
 
           {/* ---------------------------------------------------------- */}
           {/* Everything included, in the same list and the same order as
@@ -699,7 +713,19 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
               component rather than a picture of one - the same panel
               /pricing shows. A price on its own is a cost; a price next to
               the thing it produces is a trade. */}
-          <div className="mb-8">
+          {/*
+            Full width for the list above, but NOT for this.
+
+            The list gained from the width - six sentences go two across
+            instead of wrapping. The score did not: it is a small dial and a
+            short breakdown, and stretched across 928px it sat marooned in
+            the middle of a wide black panel with nothing either side. A
+            panel should be the size of what is in it.
+
+            Capped and centred, so it keeps the stacked layout without
+            pretending to be wider than its contents.
+          */}
+          <div className="mb-8 max-w-lg mx-auto">
             <Frame label="What you get from it" note="Example figures">
               <NOVAScore breakdown={EXAMPLE_SCORE} size="sm" showBreakdown periodLabel="Last 30 days" />
             </Frame>
