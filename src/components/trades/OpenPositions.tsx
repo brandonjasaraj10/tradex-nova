@@ -77,29 +77,60 @@ export default function OpenPositions({ connectionId, accountName }: Props) {
   */
   if (!result.error && result.count === 0) return null;
 
+  /*
+    Which ones, by name.
+
+    This counted instead: "One of these has no stop loss set" above a list
+    the reader then had to scan to work out which. The warning exists to be
+    acted on, and acting on it means knowing the symbol - so it says
+    "AUDNZD has no stop loss set", and lists them when there is more than
+    one. Counting was easier to write and left the work to the reader.
+  */
+  const unprotected = (result.positions ?? []).filter((p) => p.stop_loss === null);
+  const names = unprotected.map((p) => p.symbol).filter(Boolean);
+  const namesWithoutAStop =
+    names.length <= 1
+      ? names[0] ?? ''
+      : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+
   return (
-    <div className="rounded-2xl border border-white/10 bg-[#0A0A0A] p-4 sm:p-6 mb-6">
-      <div className="flex items-center justify-between gap-3 mb-4">
-        <h2 className="text-lg font-medium flex items-center gap-2">
-          <Activity size={18} className="text-brand-blue-light" />
+    /*
+      mt-6 because every other block on this page has it and this one did
+      not, so it sat flush against the metrics above with no gap at all -
+      reported as "touching the sections above".
+
+      Lighter than those metric cards on purpose. This is a footnote to the
+      account, not a seventh headline statistic, and it was drawn heavier
+      than any of them: a full-weight border and an 18px lead icon under a
+      text-lg heading.
+    */
+    <div className="mt-6 mb-6 rounded-2xl border border-white/[0.07] bg-[#0A0A0A] p-4 sm:p-5">
+      <div className="flex items-center justify-between gap-3 mb-3.5">
+        <h2 className="text-[13px] uppercase tracking-[0.12em] text-gray-400 flex items-center gap-2">
+          <Activity size={14} className="text-brand-blue-light" />
           Open now
           {result && result.count > 0 && (
-            <span className="text-sm text-gray-400">({result.count})</span>
+            <span className="text-gray-500">({result.count})</span>
           )}
         </h2>
         <button
           type="button"
           onClick={load}
           disabled={loading}
-          className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-50"
+          className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-50"
           aria-label="Refresh open positions"
         >
-          <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+          <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
         </button>
       </div>
 
+      {/*
+        One line, not a card's worth of empty space around one grey
+        sentence - which is what it looked like on screen when the account
+        could not answer, and reads as the panel itself being broken.
+      */}
       {result?.error && (
-        <p className="text-sm text-gray-400">
+        <p className="text-[13px] text-gray-500 leading-relaxed">
           {result.accountNotRunning
             ? `Live positions need ${accountName ?? 'this account'} to be running. It starts again on its own when syncing resumes.`
             : result.error}
@@ -113,13 +144,11 @@ export default function OpenPositions({ connectionId, accountName }: Props) {
             money. A position with no stop is not a style choice to report
             neutrally alongside the others.
           */}
-          {result.without_a_stop > 0 && (
-            <div className="flex items-start gap-2 mb-4 p-3 rounded-lg border border-brand-blue-light/30 bg-brand-blue/10">
-              <AlertTriangle size={16} className="text-brand-blue-light flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-white">
-                {result.without_a_stop === 1
-                  ? 'One of these has no stop loss set.'
-                  : `${result.without_a_stop} of these have no stop loss set.`}
+          {unprotected.length > 0 && (
+            <div className="flex items-start gap-2 mb-3.5 p-3 rounded-lg border border-brand-blue-light/30 bg-brand-blue/10">
+              <AlertTriangle size={15} className="text-brand-blue-light flex-shrink-0 mt-0.5" />
+              <p className="text-[13.5px] text-white leading-relaxed">
+                {namesWithoutAStop} {unprotected.length === 1 ? 'has' : 'have'} no stop loss set.
               </p>
             </div>
           )}
