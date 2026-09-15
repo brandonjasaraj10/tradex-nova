@@ -25,6 +25,20 @@ interface Props {
 const fmtPrice = (n: number | null) =>
   n === null ? '--' : n.toLocaleString(undefined, { maximumFractionDigits: 5 });
 
+/*
+  Lots, said out loud.
+
+  The number alone was "10", which is the same slip that had closed trades
+  reading "33.33 shares" for 33.33 lots - and on a currency pair those differ
+  by around a hundred thousand to one. This panel only ever draws MetaTrader
+  accounts, and MetaTrader reports volume in lots, so the word can be stated
+  rather than guessed. The one account type that would break that - an MT5
+  account on a stock exchange, quoting shares or contracts - cannot reach
+  this panel today, and would need the same quantity_unit treatment the
+  closed trades already carry.
+*/
+const fmtVolume = (n: number | null) => (n === null ? '--' : `${n} lots`);
+
 export default function OpenPositions({ connectionId, accountName }: Props) {
   const [result, setResult] = useState<OpenPositionsResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -42,11 +56,26 @@ export default function OpenPositions({ connectionId, accountName }: Props) {
   if (!connectionId) return null;
 
   /*
+    Nothing at all until the answer is known.
+
+    This used to draw the frame while the first request was in flight and
+    then remove it when the answer came back "no positions" - so on every
+    load the panel appeared for about a second and vanished, which reads as
+    a glitch rather than as a deliberately empty state. Reported as exactly
+    that: "it pops up for a second and disappears."
+
+    Waiting costs nothing, because there is nothing worth showing yet. A
+    later refresh does not flicker either: `result` holds the previous
+    answer until the new one replaces it.
+  */
+  if (!result) return null;
+
+  /*
     Hidden entirely when there is nothing open and nothing wrong. An empty
     panel on every dashboard, every day, teaches people to stop looking at
     the spot where a warning will one day appear.
   */
-  if (result && !result.error && result.count === 0) return null;
+  if (!result.error && result.count === 0) return null;
 
   return (
     <div className="rounded-2xl border border-white/10 bg-[#0A0A0A] p-4 sm:p-6 mb-6">
@@ -121,7 +150,7 @@ export default function OpenPositions({ connectionId, accountName }: Props) {
                     ${(p.unrealised_pnl ?? 0).toFixed(2)}
                   </p>
                   <p className="text-xs text-gray-400">
-                    {p.volume ?? '--'} &middot; {p.direction === 'LONG' ? 'Long' : 'Short'}
+                    {fmtVolume(p.volume)} &middot; {p.direction === 'LONG' ? 'Long' : 'Short'}
                   </p>
                 </div>
               </div>
