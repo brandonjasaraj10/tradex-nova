@@ -11,25 +11,38 @@ import { EXAMPLE_SCORE } from '../components/marketing/exampleScore';
 import { useAuth } from '../lib/auth';
 import PaymentFailedGate from '../components/billing/PaymentFailedGate';
 
-/* The same list, in the same order, as /pricing. Two places quoting a
-   different set of features is how somebody ends up paying for something
-   they did not think they were buying. */
+/*
+  Six, not fourteen, and each one an outcome rather than a feature name.
+
+  The research on pricing pages puts the useful range at five to seven
+  bullets, and is specific about why: a bullet should answer "what do I
+  get?", not "what is included?". Fourteen line items is an inventory, and
+  an inventory is read by nobody - a documented case cut its feature list,
+  its tier count and added a Most Popular badge and went from 1.2% to 3.1%
+  conversion without touching the price.
+
+  The old list also repeated itself. "Psychology template & scoring" and
+  "NOVA Score" are the same promise twice; "Performance analytics",
+  "Trading calendar" and "Searchable trade log" are three names for looking
+  at your own trades. Grouping them loses nothing a buyer needed and stops
+  the list arguing with itself about how many things this product does.
+
+  What is NOT dropped is the detail underneath. "Up to 5 accounts" and "CSV
+  import" are facts somebody comparing products will look for, so they stay
+  - as one quiet line rather than four bullets competing with the six that
+  do the selling.
+*/
 const INCLUDED = [
-  'Voice journaling',
-  'Nova AI analysis',
-  'Psychology template & scoring',
-  'NOVA Score',
-  'Pre-trade checklists',
-  'Weekly & monthly reports',
-  'Trading rules & confluences',
-  'Performance analytics',
-  'Trading calendar',
-  'Searchable trade log',
-  'Unlimited trades',
-  'Up to 5 accounts',
-  'CSV import',
-  'Notes',
+  'Talk through a trade \u2014 it writes itself up',
+  'Nova reads every entry and tells you what you keep doing',
+  'Your psychology scored on every trade, not just P&L',
+  'Your own rules and checklists, checked before you enter',
+  'Calendar, analytics and every trade searchable',
+  'Weekly and monthly reviews, written for you',
 ];
+
+/* The specifics a comparison shopper checks, kept but not shouted. */
+const ALSO_INCLUDED = 'Unlimited trades \u00b7 Up to 5 accounts \u00b7 CSV import \u00b7 Notes';
 
 const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
 const stripeMonthlyPriceId = import.meta.env.VITE_STRIPE_PRICE_ID;
@@ -676,6 +689,9 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
               Included, whichever you pick
             </p>
             <TickList items={INCLUDED} />
+            <p className="mt-4 text-[12px] text-gray-500 leading-relaxed">
+              {ALSO_INCLUDED}
+            </p>
           </div>
 
           {/* ---------------------------------------------------------- */}
