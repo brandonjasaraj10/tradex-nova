@@ -26,7 +26,7 @@ const INCLUDED = [
   'Trading calendar',
   'Searchable trade log',
   'Unlimited trades',
-  'Up to 5 accounts',
+  'Unlimited manual & CSV accounts',
   'CSV import',
   'Notes',
 ];
@@ -38,7 +38,91 @@ const stripeFounderMonthlyPriceId = import.meta.env.VITE_STRIPE_FOUNDER_PRICE_ID
 const stripeFounderAnnualPriceId = import.meta.env.VITE_STRIPE_FOUNDER_ANNUAL_PRICE_ID;
 const stripePromise = stripePublicKey ? loadStripe(stripePublicKey) : null;
 
+/* Monthly or annual - the billing interval, and the founder view's two cards. */
 type PlanType = 'monthly' | 'annual';
+
+/* Which plan, for everyone who is not a founding member. */
+type TierId = 'starter' | 'pro' | 'elite';
+
+/*
+  A row in the chooser is either a tier or, for founders, a billing interval,
+  so the id the list is keyed on has to be able to be either.
+*/
+type SelectionId = PlanType | TierId;
+
+/*
+  Six prices: three tiers, monthly and annual each.
+
+  Read once here rather than inline, so a missing one is a visible undefined
+  in a table rather than a silent failure three files away. None of these are
+  configured in Stripe yet - until they are, picking a tier and pressing the
+  button says so plainly instead of throwing the user into a broken checkout.
+*/
+const TIER_PRICE_IDS: Record<TierId, Record<PlanType, string | undefined>> = {
+  starter: {
+    monthly: import.meta.env.VITE_STRIPE_STARTER_PRICE_ID,
+    annual: import.meta.env.VITE_STRIPE_STARTER_ANNUAL_PRICE_ID,
+  },
+  pro: {
+    monthly: import.meta.env.VITE_STRIPE_PRO_PRICE_ID,
+    annual: import.meta.env.VITE_STRIPE_PRO_ANNUAL_PRICE_ID,
+  },
+  elite: {
+    monthly: import.meta.env.VITE_STRIPE_ELITE_PRICE_ID,
+    annual: import.meta.env.VITE_STRIPE_ELITE_ANNUAL_PRICE_ID,
+  },
+};
+
+/*
+  Annual is ten months for twelve, which is the same "2 months free" the
+  single plan already offered - keeping the discount identical across every
+  tier means nobody has to work out whether the deal got worse as they moved
+  up.
+
+  Monthly figure first because that is what people compare against rivals;
+  the annual total is stated underneath rather than hidden, since a plan that
+  advertises $124.99 and charges $1,499.90 is the thing that generates
+  chargebacks.
+*/
+const TIER_CATALOGUE: {
+  id: TierId;
+  name: string;
+  monthly: string;
+  annualPerMonth: string;
+  annualTotal: string;
+  description: string;
+  features: string[];
+  popular?: boolean;
+}[] = [
+  {
+    id: 'starter',
+    name: 'Starter',
+    monthly: '$29.99',
+    annualPerMonth: '$24.99',
+    annualTotal: '$299.90 billed annually',
+    description: 'One account, synced once a day',
+    features: ['1 synced account', 'Unlimited manual & CSV accounts', '25 Nova questions a day'],
+  },
+  {
+    id: 'pro',
+    name: 'Pro',
+    monthly: '$59.99',
+    annualPerMonth: '$49.99',
+    annualTotal: '$599.90 billed annually',
+    description: 'Three accounts, synced as trades close',
+    features: ['3 synced accounts', 'Trades land within minutes', '100 Nova questions a day', 'Extra accounts $15/mo'],
+    popular: true,
+  },
+  {
+    id: 'elite',
+    name: 'Elite',
+    monthly: '$149.99',
+    annualPerMonth: '$124.99',
+    annualTotal: '$1,499.90 billed annually',
+    description: 'Six accounts, and support answered first',
+    features: ['6 synced accounts', 'Trades land within minutes', '300 Nova questions a day', 'Priority support'],
+  },
+];
 
 interface PaymentProps {
   onSubscriptionComplete?: () => void;
@@ -53,7 +137,14 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
   const [stripeConfigured, setStripeConfigured] = useState(false);
   const [manualLoading, setManualLoading] = useState(false);
   const [success, setSuccess] = useState('');
-  const [selectedPlan, setSelectedPlan] = useState<PlanType>('annual');
+  /*
+    Defaults to Pro rather than the cheapest row. A chooser that opens on the
+    entry plan asks people to talk themselves up; opening on the one most
+    will want asks them to confirm.
+  */
+  const [selectedPlan, setSelectedPlan] = useState<SelectionId>('pro');
+  /* Named billing, not interval - setInterval would shadow the global. */
+  const [billing, setBilling] = useState<PlanType>('annual');
   const [isFounder, setIsFounder] = useState(false);
 
   useEffect(() => {
@@ -78,6 +169,13 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
 
       if (!cancelled && !rpcError && data === true) {
         setIsFounder(true);
+        /*
+          A founder's rows are monthly and annual, not Starter/Pro/Elite, so
+          the default tier selection is meaningless to them. Moved onto the
+          annual card - which is the one their view highlights - rather than
+          left pointing at a row that is not on their screen.
+        */
+        setSelectedPlan('annual');
       }
     }
 
@@ -91,12 +189,34 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
       return;
     }
 
-    const priceId = selectedPlan === 'annual'
-      ? (isFounder && stripeFounderAnnualPriceId ? stripeFounderAnnualPriceId : stripeAnnualPriceId)
-      : (isFounder && stripeFounderMonthlyPriceId ? stripeFounderMonthlyPriceId : stripeMonthlyPriceId);
+    /*
+      Two different shapes of choice, deliberately kept apart.
+
+      A founding member is buying the plan they were promised at the rate
+      they were promised, so their selection is still just monthly or annual
+      and resolves exactly as it always did. Nothing about tiers reaches
+      them, which is the whole point of grandfathering.
+
+      Everybody else is choosing a tier, and the interval is a separate
+      toggle, so the price is a lookup on both.
+    */
+    const priceId = isFounder
+      ? (selectedPlan === 'annual'
+          ? (stripeFounderAnnualPriceId ?? stripeAnnualPriceId)
+          : (stripeFounderMonthlyPriceId ?? stripeMonthlyPriceId))
+      : TIER_PRICE_IDS[selectedPlan as TierId]?.[billing];
 
     if (!priceId) {
-      setError('Selected plan is not available. Please try another option.');
+      /*
+        The tier prices do not exist in Stripe yet. Saying so is better than
+        the generic "try another option", which would send somebody round
+        the three tiers pressing a button that cannot work for any of them.
+      */
+      setError(
+        isFounder
+          ? 'Selected plan is not available. Please try another option.'
+          : 'This plan is not open for signups yet. Please contact support and we will sort it out.',
+      );
       return;
     }
 
@@ -245,36 +365,29 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
           popular: true,
         },
       ]
-    : [
-        {
-          id: 'monthly' as PlanType,
-          name: 'Monthly',
-          price: '$24.99',
-          period: '/month',
-          description: 'Perfect for getting started',
-          icon: Zap,
-          features: ['All Pro features', 'Cancel anytime'],
-          highlight: false,
-          savings: null,
-          popular: false,
-        },
-        {
-          id: 'annual' as PlanType,
-          name: 'Annual',
-          price: '$20.83',
-          period: '/month',
-          // Struck against the monthly plan's own price, so the saving being
-          // shown is exactly what switching to annual is worth.
-          originalPrice: '$24.99',
-          description: 'Best value for serious traders',
-          icon: Crown,
-          features: ['All Pro features', '2 months free vs monthly', 'Priority support'],
-          highlight: true,
-          savings: '2 months free',
-          billedAs: '$249.90 billed annually',
-          popular: true,
-        },
-      ];
+    : /*
+        Three tiers, priced against whichever interval is selected. Built
+        from the same catalogue the figures live in, so the chooser and the
+        button underneath can never quote different money.
+
+        The monthly price is struck through on annual rows rather than the
+        saving being summarised in words: "$59.99 -> $49.99" is a comparison
+        somebody can check, where "save 17%" is one they have to trust.
+      */
+      TIER_CATALOGUE.map((tier) => ({
+        id: tier.id as SelectionId,
+        name: tier.name,
+        price: billing === 'annual' ? tier.annualPerMonth : tier.monthly,
+        period: '/month',
+        originalPrice: billing === 'annual' ? tier.monthly : undefined,
+        description: tier.description,
+        icon: tier.id === 'elite' ? Crown : Zap,
+        features: tier.features,
+        highlight: !!tier.popular,
+        savings: billing === 'annual' ? '2 months free' : null,
+        billedAs: billing === 'annual' ? tier.annualTotal : undefined,
+        popular: !!tier.popular,
+      }));
 
   /*
     What the trial actually charges, for whichever plan is selected. Annual
@@ -282,6 +395,13 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
     the timeline has to quote billedAs and not the headline price - saying
     "$20.83 will be charged" would be untrue.
   */
+  /*
+    Whether this purchase is annual, from whichever control actually decides
+    it: a founder picks an interval as their plan, everyone else picks a tier
+    and sets the interval on the toggle. Read from the wrong one and an
+    annual charge gets labelled "/month" on the button that takes the money.
+  */
+  const isAnnual = isFounder ? selectedPlan === 'annual' : billing === 'annual';
   const activePlan = plans.find((pl) => pl.id === selectedPlan) ?? plans[0];
   const activeBilledAs = 'billedAs' in activePlan ? activePlan.billedAs : undefined;
   const chargeAmount = activeBilledAs ? activeBilledAs.split(' ')[0] : activePlan.price;
@@ -366,17 +486,20 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
 
               It is now the same headline as /pricing, word for word, so the
               page someone compared on and the page they pay on say the same
-              thing.
+              thing. A founding member is still buying the single plan they
+              were promised, so they keep the old headline - for them it is
+              still true, and "pick how many accounts" would be offering a
+              choice their view does not contain.
             */}
             <h1 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em]
               text-white text-balance">
-              One plan. Everything in it.
+              {isFounder ? 'One plan. Everything in it.' : 'Pick how many accounts you run.'}
             </h1>
             <p className="mt-4 text-[14.5px] sm:text-base leading-relaxed text-gray-400
               max-w-sm mx-auto text-balance">
               {isFounder
                 ? 'Your founding member rate is applied below, and it never rises.'
-                : 'No tiers, no add-ons, no trade limits. Annual just costs less.'}
+                : 'Every plan has the whole product in it. What changes is how many accounts sync, and how fast.'}
             </p>
           </div>
 
@@ -435,6 +558,52 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
           {/* The plans. Two rows, not two tall cards - the choice here is
               monthly against annual, which is one decision, and a card each
               made it look like two products. */}
+          {/*
+            Monthly against annual, once, above the tiers - not repeated as a
+            pair of cards inside every tier, which would turn one decision
+            into six. Founders do not see it: their two rows already are the
+            interval choice.
+
+            Annual is preselected. It is the better deal in both directions
+            and saying "2 months free" beside it is the argument, but the
+            monthly option sits right there at the same size rather than
+            being buried, because a toggle that hides the cheaper commitment
+            is the kind people notice afterwards.
+          */}
+          {!isFounder && (
+            <div className="flex justify-center mb-7">
+              <div className="inline-flex rounded-full border border-white/10 bg-brand-surface p-1">
+                {([
+                  { id: 'monthly' as PlanType, label: 'Monthly' },
+                  { id: 'annual' as PlanType, label: 'Annual' },
+                ]).map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => setBilling(option.id)}
+                    aria-pressed={billing === option.id}
+                    className={`px-5 py-2 rounded-full text-[13px] font-medium transition-colors ${
+                      billing === option.id
+                        ? 'bg-white text-black'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    {option.label}
+                    {option.id === 'annual' && (
+                      <span
+                        className={`ml-2 text-[11px] ${
+                          billing === 'annual' ? 'text-black/60' : 'text-brand-blue-light'
+                        }`}
+                      >
+                        2 months free
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-col gap-3 mb-8">
             {plans.map((plan) => {
               const isSelected = selectedPlan === plan.id;
@@ -472,7 +641,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
                             </span>
                           )}
                         </div>
-                        {plan.savings && (
+                        {plan.savings && isFounder && (
                           <p className="text-[12px] text-gray-500 mt-0.5">{plan.savings}</p>
                         )}
                       </div>
@@ -548,7 +717,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
             >
               {loading
                 ? 'Processing…'
-                : `Start journaling — ${chargeAmount}${selectedPlan === 'annual' ? '/year' : '/month'}`}
+                : `Start journaling — ${chargeAmount}${isAnnual ? '/year' : '/month'}`}
             </button>
           ) : (
             <>
