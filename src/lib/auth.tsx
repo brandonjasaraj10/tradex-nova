@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 
@@ -90,6 +90,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     Starts false, and is only true once a lookup has actually finished.
   */
   const [profileResolved, setProfileResolved] = useState(false);
+  /*
+    Who the resolved profile belongs to.
+
+    A ref rather than state because it is read inside the auth subscription,
+    which closes over its values once - state here would be permanently
+    stale and the comparison below would never be true.
+  */
+  const resolvedForUser = useRef<string | null>(null);
   const [needsSubscription, setNeedsSubscription] = useState(false);
   const [pastDue, setPastDue] = useState(false);
   const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
@@ -214,6 +222,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const currentUser = currentSession?.user ?? null;
         setUser(currentUser);
         if (currentUser) {
+          resolvedForUser.current = currentUser.id;
           await fetchProfile(currentUser.id);
           const hasAccess = await checkSubscription(currentUser.id, currentUser.email);
           setNeedsSubscription(!hasAccess);
@@ -233,8 +242,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const currentUser = session?.user ?? null;
         setUser(currentUser);
         if (currentUser) {
-          /* Whatever was known belongs to the previous session. */
-          setProfileResolved(false);
+          /*
+            Only a DIFFERENT person invalidates what is already known.
+
+            This used to clear the flag on every auth event, and a token
+            refresh is an auth event - fired by the 30-minute timer and, far
+            more often, by the focus and visibilitychange handlers below. So
+            clicking back into the window dropped the layout to its loader,
+            which unmounted whatever was on screen and remounted it fresh.
+
+            On the onboarding questions that meant answering question one,
+            clicking into the window, and being asked question one again. It
+            was reported as the questions repeating, and it was: the
+            component's step counter had been reset by a token refresh that
+            changed nothing about who was signed in.
+
+            The profile and subscription are still re-read on every event -
+            that is how a subscription bought in another tab gets noticed -
+            but re-reading them no longer tears the screen down.
+          */
+          const isDifferentUser = resolvedForUser.current !== currentUser.id;
+          if (isDifferentUser) setProfileResolved(false);
+          resolvedForUser.current = currentUser.id;
           await fetchProfile(currentUser.id);
           const hasAccess = await checkSubscription(currentUser.id, currentUser.email);
           setNeedsSubscription(!hasAccess);
@@ -243,6 +272,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setNeedsProfile(false);
           setNeedsSubscription(false);
           /* Nobody signed in, so there is nothing left to wait for. */
+          resolvedForUser.current = null;
           setProfileResolved(true);
         }
       })();
