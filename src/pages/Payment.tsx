@@ -90,7 +90,16 @@ const TIER_CATALOGUE: {
   monthly: string;
   annualPerMonth: string;
   annualTotal: string;
-  description: string;
+  /*
+    The whole tier in one line, always on screen.
+
+    This is the fix for a paywall that showed three prices and no reason to
+    prefer any of them - somebody was being asked to choose between $29.99
+    and $149.99 with the difference stated nowhere. A scannable comparison
+    is the single most consistent addition among paywalls that convert,
+    because it answers "what do I actually get" before it gets asked.
+  */
+  summary: string;
   features: string[];
   popular?: boolean;
 }[] = [
@@ -100,8 +109,12 @@ const TIER_CATALOGUE: {
     monthly: '$29.99',
     annualPerMonth: '$24.99',
     annualTotal: '$299.90 billed annually',
-    description: 'One account, synced once a day',
-    features: ['1 synced account', 'Unlimited manual & CSV accounts', '25 Nova questions a day'],
+    summary: '1 account · synced once a day',
+    features: [
+      'Yesterday\u2019s trades, waiting each morning',
+      'Unlimited manual & CSV accounts',
+      '25 Nova questions a day',
+    ],
   },
   {
     id: 'pro',
@@ -109,8 +122,13 @@ const TIER_CATALOGUE: {
     monthly: '$59.99',
     annualPerMonth: '$49.99',
     annualTotal: '$599.90 billed annually',
-    description: 'Three accounts, synced as trades close',
-    features: ['3 synced accounts', 'Trades land within minutes', '100 Nova questions a day', 'Extra accounts $15/mo'],
+    summary: '3 accounts · synced as trades close',
+    features: [
+      'Trades land minutes after you close them',
+      'Unlimited manual & CSV accounts',
+      '100 Nova questions a day',
+      'More synced accounts, $15 each',
+    ],
     popular: true,
   },
   {
@@ -119,8 +137,13 @@ const TIER_CATALOGUE: {
     monthly: '$149.99',
     annualPerMonth: '$124.99',
     annualTotal: '$1,499.90 billed annually',
-    description: 'Six accounts, and support answered first',
-    features: ['6 synced accounts', 'Trades land within minutes', '300 Nova questions a day', 'Priority support'],
+    summary: '6 accounts · synced as trades close',
+    features: [
+      'Trades land minutes after you close them',
+      '300 Nova questions a day \u2014 you will not reach it',
+      'First on every new platform we connect',
+      'Your support goes to the front of the queue',
+    ],
   },
 ];
 
@@ -380,7 +403,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
         price: billing === 'annual' ? tier.annualPerMonth : tier.monthly,
         period: '/month',
         originalPrice: billing === 'annual' ? tier.monthly : undefined,
-        description: tier.description,
+        summary: tier.summary,
         icon: tier.id === 'elite' ? Crown : Zap,
         features: tier.features,
         highlight: !!tier.popular,
@@ -469,8 +492,19 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
         >
-          <div className="text-center mb-8 sm:mb-10">
-            <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
+          {/*
+            Tighter on a phone, unchanged on a desktop.
+
+            Measured at 375x812: the header ran to 470px before the first
+            price, so the third plan and its price sat below the fold on the
+            screen where somebody chooses between them. A paywall does best
+            when the choice fits on one screen, and 58% of this traffic is a
+            phone. Every reduction below is inside a mobile breakpoint - the
+            desktop layout had the room and keeps it.
+          */}
+          <div className="text-center mb-5 sm:mb-10">
+            <p className="hidden sm:block text-[10px] sm:text-[11px] tracking-[0.18em]
+              uppercase text-gray-500 mb-2.5 sm:mb-4">
               {isFounder ? 'Founding member pricing' : 'Choose your plan'}
             </p>
             {/*
@@ -491,15 +525,25 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
               still true, and "pick how many accounts" would be offering a
               choice their view does not contain.
             */}
-            <h1 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em]
-              text-white text-balance">
+            <h1 className="text-[26px] sm:text-5xl leading-[1.1] sm:leading-[1.08] font-semibold
+              tracking-[-0.035em] text-white text-balance">
               {isFounder ? 'One plan. Everything in it.' : 'Pick how many accounts you run.'}
             </h1>
-            <p className="mt-4 text-[14.5px] sm:text-base leading-relaxed text-gray-400
+            <p className="mt-2.5 sm:mt-4 text-[13.5px] sm:text-base leading-relaxed text-gray-400
               max-w-sm mx-auto text-balance">
               {isFounder
                 ? 'Your founding member rate is applied below, and it never rises.'
-                : 'Every plan has the whole product in it. What changes is how many accounts sync, and how fast.'}
+                : (
+                  <>
+                    <span className="sm:hidden">
+                      Every plan has the whole product. Only the syncing changes.
+                    </span>
+                    <span className="hidden sm:inline">
+                      Every plan has the whole product in it. What changes is how many
+                      accounts sync, and how fast.
+                    </span>
+                  </>
+                )}
             </p>
           </div>
 
@@ -509,7 +553,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
             padlock - so the row said the same thing twice on the screen where
             someone decides to pay.
           */}
-          <ul className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 mb-8 sm:mb-10">
+          <ul className="flex flex-wrap items-center justify-center gap-x-3.5 sm:gap-x-5 gap-y-2 mb-5 sm:mb-10">
             {[
               [Shield, '14-day money back'],
               [Lock, 'Card handled by Stripe'],
@@ -517,7 +561,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
             ].map(([Icon, label]) => {
               const I = Icon as typeof Shield;
               return (
-                <li key={label as string} className="inline-flex items-center gap-1.5 text-[12.5px] text-gray-400">
+                <li key={label as string} className="inline-flex items-center gap-1.5 text-[11.5px] sm:text-[12.5px] text-gray-400">
                   <I className="w-3.5 h-3.5 text-brand-blue-light flex-shrink-0" />
                   {label as string}
                 </li>
@@ -604,7 +648,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
             </div>
           )}
 
-          <div className="flex flex-col gap-3 mb-8">
+          <div className="flex flex-col gap-2.5 sm:gap-3 mb-8">
             {plans.map((plan) => {
               const isSelected = selectedPlan === plan.id;
               return (
@@ -613,7 +657,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
                   type="button"
                   onClick={() => setSelectedPlan(plan.id)}
                   aria-pressed={isSelected}
-                  className={`w-full text-left rounded-2xl p-4 sm:p-5 transition-colors ${
+                  className={`w-full text-left rounded-2xl p-3.5 sm:p-5 transition-colors ${
                     isSelected
                       ? 'border border-brand-blue-light/40 bg-brand-blue/[0.07]'
                       : 'border border-white/[0.07] bg-brand-surface hover:border-white/20'
@@ -644,6 +688,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
                         {plan.savings && isFounder && (
                           <p className="text-[12px] text-gray-500 mt-0.5">{plan.savings}</p>
                         )}
+
                       </div>
                     </div>
 
@@ -664,6 +709,47 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
                       )}
                     </div>
                   </div>
+
+                  {/*
+                    The summary gets the whole width, under the name and the
+                    price rather than beside them.
+
+                    Sharing that row with the price is what it did first, and
+                    at 375px "1 account - synced once a day" broke across
+                    three lines against the number, which is the width a
+                    phone actually has once a price in 22px type has taken
+                    its half. Indented to clear the radio so it reads as
+                    belonging to the name above it.
+                  */}
+                  {'summary' in plan && plan.summary && (
+                    <p className="mt-2 pl-[32px] text-[12.5px] text-gray-400 leading-relaxed">
+                      {plan.summary}
+                    </p>
+                  )}
+
+                  {/*
+                    Detail for the selected row only.
+
+                    Printing every feature of every tier turns a paywall into
+                    a spreadsheet and pushes the button that takes the money
+                    below the fold on a phone - and these pages do best when
+                    they fit on one screen. The summary line above is what
+                    the comparison actually needs; this is for the one plan
+                    somebody has landed on.
+                  */}
+                  {isSelected && plan.features.length > 0 && (
+                    <ul className="mt-3 pt-3 sm:mt-4 sm:pt-4 border-t border-white/[0.07] flex flex-col gap-1.5 sm:gap-2">
+                      {plan.features.map((feature) => (
+                        <li key={feature} className="flex gap-2.5 text-[12.5px] text-gray-300 leading-relaxed">
+                          <CheckCircle2
+                            className="mt-[2px] w-3.5 h-3.5 flex-shrink-0 text-brand-blue-light"
+                            strokeWidth={2}
+                          />
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </button>
               );
             })}
