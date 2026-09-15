@@ -133,3 +133,24 @@ export function resetUser(): void {
   if (!productAnalyticsEnabled || !window.posthog?.__loaded) return;
   window.posthog.reset();
 }
+
+/*
+  A named event, for the handful of moments worth counting deliberately.
+
+  Autocapture already records clicks, but it records them as "a button was
+  pressed" with the text stripped out by sanitizeProperties - which is the
+  right default for a page full of P&L and the wrong one for a question
+  whose whole value is which answer was chosen. These few events say what
+  happened in their own properties instead.
+
+  Guarded the same way as everything else here, so it is a no-op when
+  PostHog is not configured, has not loaded, or the visitor has opted out -
+  a caller never has to check first.
+
+  Properties must be non-identifying by the same rule identifyUser follows:
+  a choice from a fixed list of four is a category, not a person.
+*/
+export function trackEvent(event: string, properties?: Record<string, unknown>): void {
+  if (!productAnalyticsEnabled || !window.posthog?.__loaded) return;
+  window.posthog.capture(event, properties);
+}

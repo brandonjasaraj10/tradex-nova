@@ -27,6 +27,7 @@ import { captureAppPageView, identifyUser, resetUser } from './lib/productAnalyt
 // module". Seen for real in production from an Instagram in-app browser.
 const Sales = lazyWithReload('Sales', () => import('./pages/Sales'));
 const Auth = lazyWithReload('Auth', () => import('./pages/Auth'));
+const Onboarding = lazyWithReload('Onboarding', () => import('./pages/Onboarding'));
 const Payment = lazyWithReload('Payment', () => import('./pages/Payment'));
 const Affiliates = lazyWithReload('Affiliates', () => import('./pages/Affiliates'));
 const Dashboard = lazyWithReload('Dashboard', () => import('./pages/Dashboard'));
@@ -120,6 +121,36 @@ function PrivateLayout() {
           setNeedsProfile(false);
         }}
       />
+    );
+  }
+
+  /*
+    The three questions, between having an account and seeing a price.
+
+    A gate rather than a route, because that is how this layout already
+    works: profile setup, then subscription, then the app. Routing to
+    /onboarding after signup put it in the PUBLIC router, which a
+    signed-in user never reaches - so the first thing a new account saw
+    was a 404. The gate also means it cannot be skipped by typing a URL
+    and cannot be seen twice, both of which a route would have allowed.
+
+    Ordered before the paywall deliberately. The questions are what make
+    the price screen land: somebody who has just said revenge trading is
+    costing them money has been shown the cooldown check thirty seconds
+    before being asked to pay for it.
+
+    Conditioned on needsSubscription as well as the answers, which is what
+    keeps this to the funnel it was designed for. Every one of the 360
+    accounts that already exist has no answers recorded, so without that
+    condition the next thing a paying customer saw on login would be three
+    questions they never asked for - an interruption to somebody who has
+    already bought, in service of data about people who have not.
+  */
+  if (user && profile && needsSubscription && !profile.onboarding_completed_at) {
+    return (
+      <Suspense fallback={<PageLoader fullScreen />}>
+        <Onboarding onComplete={refreshProfile} />
+      </Suspense>
     );
   }
 

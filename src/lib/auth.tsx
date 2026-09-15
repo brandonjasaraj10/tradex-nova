@@ -17,6 +17,13 @@ type UserProfile = {
   // Selected by the profile query and used to tell a genuinely new user
   // from a returning one; declaring it keeps the type honest about the row.
   tour_completed?: boolean | null;
+  /*
+    When the three signup questions were answered. Null on every account
+    that predates them, and on anybody who has not reached the end - which
+    is exactly the test the onboarding gate makes, so it is selected with
+    the rest of the profile rather than fetched separately.
+  */
+  onboarding_completed_at?: string | null;
 };
 
 type AuthContextType = {
@@ -89,7 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { data, error } = await supabase
         .from('user_profiles')
-        .select('first_name, last_name, tour_completed')
+        .select('first_name, last_name, tour_completed, onboarding_completed_at')
         .eq('user_id', userId)
         .maybeSingle();
 

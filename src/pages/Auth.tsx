@@ -20,9 +20,7 @@ export default function Auth() {
   const [showEarlyAccessModal, setShowEarlyAccessModal] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [resetCode, setResetCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -61,18 +59,18 @@ export default function Auth() {
           setLoading(false);
           return;
         }
-        if (password !== confirmPassword) {
-          setError('Passwords do not match');
-          setLoading(false);
-          return;
-        }
         if (!termsAccepted) {
           setError('Please accept the Terms of Service and Privacy Policy');
           setLoading(false);
           return;
         }
         await signUp(email, password);
-        setTimeout(() => navigate('/dashboard'), 100);
+        /*
+          Into the questions, not the dashboard. Signing in still goes
+          straight to the app - only a brand new account is asked anything,
+          and only once.
+        */
+        setTimeout(() => navigate('/onboarding'), 100);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -348,34 +346,16 @@ export default function Auth() {
         <PasswordStrengthIndicator password={password} />
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-300 mb-1">
-          Confirm Password
-        </label>
-        <div className="relative">
-          <input
-            type={showConfirmPassword ? 'text' : 'password'}
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            className="input-field pr-10"
-            required
-          />
-          <button
-            type="button"
-            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
-          >
-            {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-          </button>
-        </div>
-        {confirmPassword && password !== confirmPassword && (
-          <p className="mt-1 text-xs text-red-400">Passwords do not match</p>
-        )}
-        {confirmPassword && password === confirmPassword && (
-          <p className="mt-1 text-xs text-blue-400">Passwords match</p>
-        )}
-      </div>
+      {/*
+        Confirm Password removed deliberately.
 
+        It exists to catch a typo in a field you cannot see - but the eye
+        toggle on the field above already solves that, and better: you can
+        read what you typed rather than type it twice and hope. What it
+        reliably adds is a second chance to mismatch and an error on a
+        signup form, and a password reset already exists for the case it
+        was guarding against.
+      */}
       <div className="flex items-start gap-3">
         <input
           type="checkbox"
@@ -411,6 +391,16 @@ export default function Auth() {
       >
         Create Account
       </Button>
+
+      {/*
+        The same promise the pricing page makes, said at the moment somebody
+        is deciding whether to hand over an email. Guarantee messaging is the
+        single best-measured lift on this kind of page, and it is worth
+        nothing if it only appears after they have already committed.
+      */}
+      <p className="text-center text-[12px] text-gray-500">
+        14-day money-back guarantee &middot; Cancel anytime
+      </p>
     </form>
   );
 
@@ -629,7 +619,13 @@ export default function Auth() {
       case 'login':
         return 'Sign in to access your trading dashboard';
       case 'signup':
-        return 'Start your trading journey with TradeX';
+        /*
+          Was "Start your trading journey with TradeX", which is true of
+          every trading product ever made and says nothing about this one.
+          This is the promise the landing page made to get them here: the
+          journal is built around how you think, not what you traded.
+        */
+        return 'Built around how you think, not just what you trade.';
       case 'forgot-password':
         return 'We\'ll send you a code to reset your password';
       case 'verify-code':
@@ -745,7 +741,6 @@ export default function Auth() {
                   setError('');
                   setSuccess('');
                   setPassword('');
-                  setConfirmPassword('');
                 }}
                 className="text-sm text-gray-400 hover:text-white transition-colors"
               >
