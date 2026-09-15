@@ -236,6 +236,21 @@ Deno.serve(async (req: Request) => {
       platform,
       magic: 0,
       region: "london",
+      /*
+        Without this, nothing syncs. Ever.
+
+        metastatsApiEnabled defaults to FALSE, and MetaStats is the only
+        thing either sync path reads - so an account created without it
+        provisions cleanly, reports "connected", and then answers every
+        request for trade history with a 403. The failure is invisible from
+        this end: the connect flow succeeds, the account appears, and the
+        trades simply never arrive.
+
+        Found on the first real account connected through this code. The one
+        account that did work had been created before this path existed, so
+        the default had never been exercised.
+      */
+      metastatsApiEnabled: true,
     };
 
     let created: Response | null = null;
