@@ -18,6 +18,29 @@ import { createContext, useContext, useState, useCallback, ReactNode } from 'rea
 
 const STORAGE_KEY = 'tradex_date_range';
 
+/*
+  The last instant of a day, because a range end is a day and not a moment.
+
+  Every query filters with .lte(endDate), so the end was taken literally: a
+  range built at 07:20 asked for trades up to 07:20, and "All Time" stopped
+  at whenever the picker happened to be clicked. A trade closed at 07:44 the
+  same morning was outside a window labelled "Jan 1 - Sep 15" - it simply did
+  not count, on a dashboard showing the day it happened.
+
+  The presets had the same fault from the other direction: they end at
+  new Date(y, m, d), which is midnight, so "Last 30 Days" excluded every
+  trade taken today.
+
+  This is not the same question as whether a stored range should slide
+  forward day by day - that is deliberate and documented above. A window
+  ending on the 15th should contain the 15th either way.
+*/
+function endOfDay(d: Date): Date {
+  const end = new Date(d);
+  end.setHours(23, 59, 59, 999);
+  return end;
+}
+
 export interface DateRange {
   startDate: Date;
   endDate: Date;
@@ -32,7 +55,7 @@ export interface DateRange {
 export const ALL_TIME_START = new Date(2000, 0, 1);
 
 export function allTimeRange(): DateRange {
-  return { startDate: new Date(ALL_TIME_START), endDate: new Date() };
+  return { startDate: new Date(ALL_TIME_START), endDate: endOfDay(new Date()) };
 }
 
 /*
@@ -45,7 +68,7 @@ export function isAllTime(range: DateRange): boolean {
 }
 
 function defaultRange(): DateRange {
-  const endDate = new Date();
+  const endDate = endOfDay(new Date());
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - 29);
   return { startDate, endDate };
@@ -64,7 +87,8 @@ function loadStoredRange(): DateRange {
     // querying with Invalid Date, which silently returns nothing.
     if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return defaultRange();
 
-    return { startDate, endDate };
+    /* Ranges stored before this was fixed end at an instant. */
+    return { startDate, endDate: endOfDay(endDate) };
   } catch {
     return defaultRange();
   }
@@ -80,7 +104,17 @@ const DateRangeContext = createContext<DateRangeContextType | undefined>(undefin
 export function DateRangeProvider({ children }: { children: ReactNode }) {
   const [dateRange, setDateRangeState] = useState<DateRange>(loadStoredRange);
 
-  const setDateRange = useCallback((range: DateRange) => {
+  const setDateRange = useCallback((incoming: DateRange) => {
+    /*
+      Normalised here rather than in each caller. Every range in the app
+      arrives through this one function - the picker's presets, a custom pair
+      of days, and the "All Time" the account selector sets - so one call
+      covers all of them and none can reintroduce a midday end.
+    */
+    const range: DateRange = {
+      startDate: incoming.startDate,
+      endDate: endOfDay(incoming.endDate),
+    };
     setDateRangeState(range);
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
