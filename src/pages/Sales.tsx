@@ -884,7 +884,7 @@ export default function Sales() {
               },
               {
                 q: 'I have tried journals before and quit. Why is this different?',
-                a: 'Two reasons. The quitting is the problem we built around \u2014 journals do not fail on features, they fail at 4pm when typing up a trade is the last thing you want to do. And every other journal shows you your P&L. TradeX records how you felt going in and matches it against what happened, because seeing that you lost and seeing why you lost are different things.',
+                a: 'Because quitting is not really an effort problem. People do not stop journaling \u2014 they stop logging the bad days. Writing down the trade you would rather forget means admitting what you did, so the trades most worth reviewing are the ones that never make it in, and the journal ends up with a hole exactly where the lesson was. TradeX asks you to talk instead of type, and Nova reads the entries back to you, so reviewing is not something you have to sit and do to yourself. It also records how you felt going in and matches it against what happened, because seeing that you lost and seeing why you lost are different things.',
               },
               {
                 /*
