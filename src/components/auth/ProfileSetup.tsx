@@ -13,7 +13,6 @@ export default function ProfileSetup({ user, onComplete }: ProfileSetupProps) {
   // Mounted only while showing.
   useBodyScrollLock(true);
   const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -46,7 +45,6 @@ export default function ProfileSetup({ user, onComplete }: ProfileSetupProps) {
         .upsert({
           user_id: user.id,
           first_name: firstName.trim(),
-          last_name: lastName.trim(),
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'user_id'
@@ -127,20 +125,16 @@ export default function ProfileSetup({ user, onComplete }: ProfileSetupProps) {
             />
           </div>
 
-          <div>
-            <label htmlFor="lastName" className="block text-sm text-gray-400 mb-2">
-              Last Name
-            </label>
-            <input
-              id="lastName"
-              type="text"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              className="w-full bg-[#0A0A0A] border border-white/10 rounded-2xl px-4 py-3 focus:outline-none focus:border-white/20 transition-colors"
-              placeholder="Optional"
-              disabled={isSubmitting}
-            />
-          </div>
+          {/*
+            Last Name removed.
+
+            It was written to the profile on signup and read back by
+            nothing: the header greets you by first name, the abandoned
+            email personalises on first name, and Settings is the only other
+            place it appeared. A field whose only consumer is its own
+            storage is a field worth not asking for, on the screen where
+            every extra input costs signups.
+          */}
 
           {error && (
             <p className="text-sm text-red-400">{error}</p>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Check, AlertTriangle, Circle, ArrowRight } from 'lucide-react';
 import {
   saveInstrument, saveExperience, saveStruggle,
@@ -163,8 +164,29 @@ export default function Onboarding({ onComplete }: { onComplete: () => void | Pr
   const card = STRUGGLE_CARD[struggle];
 
   return (
-    <div className="min-h-screen bg-black text-white flex items-center justify-center px-5 py-12">
+    <div className="min-h-screen bg-black text-white flex items-center justify-center px-5 py-8 sm:py-12">
+      {/*
+        One step fades out as the next slides in, rather than the screen
+        simply being different.
+
+        Tapping an answer used to swap the content in a single frame, which
+        reads as a page failing to load rather than as progress. 180ms is
+        enough to see the change happen and short enough that three of them
+        cost half a second of a twenty-second flow.
+
+        mode="wait" so the outgoing step finishes before the incoming one
+        starts - overlapping them puts two headings on screen at once, which
+        is worse than the abrupt version it replaces.
+      */}
       <div className={step === 3 ? 'w-full max-w-2xl' : 'w-full max-w-md'}>
+        <AnimatePresence mode="wait">
+        <motion.div
+          key={step}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.18, ease: 'easeOut' }}
+        >
         {step === 0 && (
           <Question
             step={0}
@@ -204,35 +226,49 @@ export default function Onboarding({ onComplete }: { onComplete: () => void | Pr
               what every journal claims - and it is doing the work of showing
               the product full rather than empty.
             */}
-            <div className="mt-7 rounded-2xl border border-white/10 bg-brand-surface overflow-hidden">
+            <div className="mt-5 sm:mt-7 rounded-2xl border border-white/10 bg-brand-surface overflow-hidden">
               <div className="px-4 sm:px-5 py-3 border-b border-white/[0.07] flex items-center justify-between">
                 <p className="text-[11px] uppercase tracking-[0.14em] text-gray-400">Your trades</p>
                 <p className="text-[11px] text-gray-600">Example</p>
               </div>
-              {/* Scrolls on its own so the page never moves sideways. */}
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[520px] text-[13px]">
-                  <tbody>
-                    {trades.map((t) => (
-                      <tr key={t.symbol} className="border-b border-white/[0.05] last:border-0">
-                        <td className="px-4 sm:px-5 py-3.5">
-                          <p className="font-medium text-white">{t.symbol}</p>
-                          <p className="text-[12px] text-gray-500 mt-0.5">{t.note}</p>
-                        </td>
-                        <td className="px-3 py-3.5 text-gray-400 whitespace-nowrap">{t.direction}</td>
-                        <td className="px-3 py-3.5 text-gray-400 whitespace-nowrap tabular-nums">{t.size}</td>
-                        <td className="px-3 py-3.5 text-gray-500 whitespace-nowrap tabular-nums">
-                          {t.entry} &rarr; {t.exit}
-                        </td>
-                        <td className={`px-4 sm:px-5 py-3.5 text-right font-medium whitespace-nowrap tabular-nums
-                          ${t.pnl >= 0 ? 'text-brand-blue-light' : 'text-gray-400'}`}>
-                          {t.pnl >= 0 ? '+' : '−'}${Math.abs(t.pnl).toLocaleString()}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              {/*
+                Stacked rows, not a table.
+
+                It WAS a table, and at 375px it measured 520px wide inside a
+                333px container - so reading the P&L meant dragging the
+                trades sideways, on the screen that is meant to sell the
+                product. A row per trade fits any width and says the same
+                thing: what it was, and what it made.
+              */}
+              <ul>
+                {trades.map((t) => (
+                  <li
+                    key={t.symbol}
+                    className="px-4 sm:px-5 py-3 border-b border-white/[0.05] last:border-0"
+                  >
+                    <div className="flex items-baseline justify-between gap-3">
+                      <p className="font-medium text-white text-[14px]">
+                        {t.symbol}
+                        <span className="ml-2 text-[12px] font-normal text-gray-500">
+                          {t.direction} &middot; {t.size}
+                        </span>
+                      </p>
+                      <p className={`text-[14px] font-medium tabular-nums whitespace-nowrap
+                        ${t.pnl >= 0 ? 'text-brand-blue-light' : 'text-gray-400'}`}>
+                        {t.pnl >= 0 ? '+' : '−'}${Math.abs(t.pnl).toLocaleString()}
+                      </p>
+                    </div>
+                    {/*
+                      The note is the point of the whole product, so it stays
+                      on the small screen where the prices do not.
+                    */}
+                    <p className="mt-1 text-[12px] text-gray-500 leading-snug">{t.note}</p>
+                    <p className="mt-0.5 hidden sm:block text-[12px] text-gray-600 tabular-nums">
+                      {t.entry} &rarr; {t.exit}
+                    </p>
+                  </li>
+                ))}
+              </ul>
             </div>
 
             {/*
@@ -240,7 +276,7 @@ export default function Onboarding({ onComplete }: { onComplete: () => void | Pr
               thirty seconds ago. Given the blue treatment because this is
               the one thing on the screen that no other journal does.
             */}
-            <div className="mt-4 rounded-2xl border border-brand-blue-light/30 bg-brand-blue/[0.06] p-4 sm:p-5">
+            <div className="mt-3 sm:mt-4 rounded-2xl border border-brand-blue-light/30 bg-brand-blue/[0.06] p-3.5 sm:p-5">
               <p className="text-[11px] uppercase tracking-[0.14em] text-brand-blue-light mb-3.5">
                 {card.title}
               </p>
@@ -267,12 +303,12 @@ export default function Onboarding({ onComplete }: { onComplete: () => void | Pr
               </p>
             </div>
 
-            <p className="mt-4 text-center text-[12.5px] text-gray-500 leading-relaxed">
+            <p className="mt-3 text-center text-[12.5px] text-gray-500 leading-relaxed">
               This is what you&rsquo;ll be looking at daily. No broker connection needed to start.
             </p>
 
-            <div className="mt-8 text-center">
-              <p className="text-[15px] text-gray-300 mb-4">
+            <div className="mt-5 sm:mt-8 text-center">
+              <p className="text-[15px] text-gray-300 mb-3.5">
                 Ready to start tracking your own trades?
               </p>
               <button
@@ -290,6 +326,8 @@ export default function Onboarding({ onComplete }: { onComplete: () => void | Pr
             </div>
           </>
         )}
+        </motion.div>
+        </AnimatePresence>
       </div>
     </div>
   );
