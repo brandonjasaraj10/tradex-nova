@@ -224,7 +224,19 @@ Deno.serve(async (req: Request) => {
     (c: { user_id: string }) => paying.has(c.user_id),
   )) {
     try {
-      results.push(await syncOne(admin, token, connection as never));
+      /*
+        Timed, because how long one account takes is what decides how many
+        accounts can share a run. Measured at 4s with one account connected
+        and at 15-30s with two, which moves the ceiling on this serial loop
+        from tens of accounts to a handful - worth knowing from the logs
+        rather than rediscovering it when syncing starts timing out.
+      */
+      const startedAt = Date.now();
+      const result = await syncOne(admin, token, connection as never);
+      console.log(
+        `sync-all-accounts: ${result.id} took ${Date.now() - startedAt}ms`,
+      );
+      results.push(result);
     } catch (err) {
       /*
         One broken account must not stop the rest. A rejected password or a
@@ -235,6 +247,29 @@ Deno.serve(async (req: Request) => {
         id: (connection as { id: string }).id,
         error: err instanceof Error ? err.message : "Unknown error",
       });
+    }
+  }
+
+  /*
+    Per-account failures written to the log, not only into this response.
+
+    Nobody reads this response. It goes back to pg_net, which records it in
+    net._http_response and frequently does not - so an account that failed
+    every cycle looked identical to one with nothing new: last_sync simply
+    stopped moving, with no error anywhere a person would find it.
+
+    That is the third time today the same blind spot has cost an hour. A
+    403 hid behind it while a connected account synced nothing, a 400 hid
+    behind it on the live positions panel, and this one hid whatever went
+    wrong at 08:10 on an account that was working minutes earlier.
+  */
+  for (const r of results) {
+    if (r.error) {
+      console.error(`sync-all-accounts: ${r.id} failed - ${r.error}`);
+    } else if (r.truncated) {
+      console.error(
+        `sync-all-accounts: ${r.id} hit the page cap - more history exists than was fetched`,
+      );
     }
   }
 
