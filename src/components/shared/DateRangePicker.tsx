@@ -2,11 +2,12 @@ import { useState, useRef, useEffect } from 'react';
 import { useClampedPanel } from '../../hooks/useClampedPanel';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
-import { allTimeRange, isAllTime } from '../../lib/dateRangeContext';
+import { isAllTime, presetRange } from '../../lib/dateRangeContext';
 
 interface DateRange {
   startDate: Date;
   endDate: Date;
+  preset?: PresetType;
 }
 
 interface DateRangePickerProps {
@@ -30,7 +31,14 @@ const presets: { label: string; value: PresetType }[] = [
 
 export default function DateRangePicker({ value, onChange }: DateRangePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [activePreset, setActivePreset] = useState<PresetType>('last30days');
+  /*
+    Which row is highlighted, taken from the range actually in force rather
+    than hardcoded. It said 'last30days' regardless, so the dropdown showed
+    "Last 30 Days" ticked while the page was on All Time.
+  */
+  const [activePreset, setActivePreset] = useState<PresetType>(
+    () => value.preset ?? (isAllTime(value) ? 'allTime' : 'custom'),
+  );
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectingStart, setSelectingStart] = useState(true);
   const [tempStartDate, setTempStartDate] = useState<Date | null>(null);
@@ -55,47 +63,12 @@ export default function DateRangePicker({ value, onChange }: DateRangePickerProp
     };
   }, [isOpen]);
 
-  const getPresetRange = (preset: PresetType): DateRange => {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-    switch (preset) {
-      case 'today':
-        return { startDate: today, endDate: today };
-      case 'yesterday': {
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
-        return { startDate: yesterday, endDate: yesterday };
-      }
-      case 'last7days': {
-        const start = new Date(today);
-        start.setDate(start.getDate() - 6);
-        return { startDate: start, endDate: today };
-      }
-      case 'last30days': {
-        const start = new Date(today);
-        start.setDate(start.getDate() - 29);
-        return { startDate: start, endDate: today };
-      }
-      case 'thisMonth': {
-        const start = new Date(now.getFullYear(), now.getMonth(), 1);
-        return { startDate: start, endDate: today };
-      }
-      case 'lastMonth': {
-        const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        const end = new Date(now.getFullYear(), now.getMonth(), 0);
-        return { startDate: start, endDate: end };
-      }
-      case 'thisYear': {
-        const start = new Date(now.getFullYear(), 0, 1);
-        return { startDate: start, endDate: today };
-      }
-      case 'allTime':
-        return allTimeRange();
-      default:
-        return value;
-    }
-  };
+  /*
+    Delegates to the context, which owns what each preset means - the
+    restore path needs to rebuild "Last 30 Days" too, and two copies of that
+    arithmetic would be two chances to disagree.
+  */
+  const getPresetRange = (preset: PresetType): DateRange => presetRange(preset, value);
 
   const handlePresetClick = (preset: PresetType) => {
     setActivePreset(preset);
@@ -116,12 +89,12 @@ export default function DateRangePicker({ value, onChange }: DateRangePickerProp
       setSelectingStart(false);
     } else {
       if (tempStartDate && date >= tempStartDate) {
-        onChange({ startDate: tempStartDate, endDate: date });
+        onChange({ startDate: tempStartDate, endDate: date, preset: 'custom' });
         setIsOpen(false);
         setSelectingStart(true);
         setTempStartDate(null);
       } else if (tempStartDate && date < tempStartDate) {
-        onChange({ startDate: date, endDate: tempStartDate });
+        onChange({ startDate: date, endDate: tempStartDate, preset: 'custom' });
         setIsOpen(false);
         setSelectingStart(true);
         setTempStartDate(null);

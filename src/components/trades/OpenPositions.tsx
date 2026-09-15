@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Activity, AlertTriangle, RefreshCw } from 'lucide-react';
 import { getOpenPositions, type OpenPositionsResult } from '../../services/openPositions';
 import { valueColorClass } from '../../utils/formatMetrics';
@@ -59,14 +59,32 @@ export default function OpenPositions({ connectionId, accountName }: Props) {
     "still trying" is the truth and a flash of an error that then fixes
     itself is worse than a moment of waiting.
   */
+  /*
+    Which account the answer on screen belongs to.
+
+    A retry is a timer holding the account it started with. Switch accounts
+    while one is pending and it still fires, still resolves, and writes its
+    old answer over the new account's - which is how a manual account's
+    "isn't set up for syncing" stayed on screen after the synced one was
+    selected. The result is only accepted if it is still the account being
+    asked about.
+  */
+  const askedFor = useRef<string | null>(null);
+
   const load = useCallback(async (attempt = 0) => {
     if (!connectionId) return;
+    askedFor.current = connectionId;
     setLoading(true);
 
     const next = await getOpenPositions(connectionId);
 
+    /* Somebody changed account while this was in flight. */
+    if (askedFor.current !== connectionId) return;
+
     if (next.error && attempt < 2) {
-      setTimeout(() => { void load(attempt + 1); }, 2000);
+      setTimeout(() => {
+        if (askedFor.current === connectionId) void load(attempt + 1);
+      }, 2000);
       return;
     }
 
@@ -74,7 +92,15 @@ export default function OpenPositions({ connectionId, accountName }: Props) {
     setLoading(false);
   }, [connectionId]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    /*
+      Cleared on the way in, so the panel does not keep drawing the previous
+      account's positions under a new account's name while the first request
+      is still in flight.
+    */
+    setResult(null);
+    load();
+  }, [load]);
 
   /* Nothing to say for a manual account. */
   if (!connectionId) return null;

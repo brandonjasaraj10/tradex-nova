@@ -1103,10 +1103,18 @@ export default function Dashboard() {
           Draws nothing at all when there is no synced account, or when
           nothing is open and nothing is wrong.
         */}
-        {BROKER_SYNC_ENABLED && (
+        {/*
+          Only for an account that actually syncs. Passing a manual or
+          CSV-imported account here asked MetaApi about a connection it has
+          never heard of, and the panel drew "That account isn't set up for
+          syncing" - which is true, and is not news to somebody who added
+          the account by hand. is_synced is already on the account, so the
+          question simply does not need asking.
+        */}
+        {BROKER_SYNC_ENABLED && selectedAccount?.is_synced && (
           <OpenPositions
-            connectionId={selectedAccount?.id ?? null}
-            accountName={selectedAccount?.account_name ?? null}
+            connectionId={selectedAccount.id}
+            accountName={selectedAccount.account_name ?? null}
           />
         )}
 

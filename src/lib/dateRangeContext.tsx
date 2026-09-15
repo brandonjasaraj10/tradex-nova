@@ -10,10 +10,22 @@ import { createContext, useContext, useState, useCallback, ReactNode } from 'rea
   the NOVA Score now following the picker, that showed up as the same account
   scoring 35, 27 and "--" depending on which page you were looking at.
 
-  The chosen range is stored as absolute dates rather than as a preset like
-  "last 30 days". If someone picks a window, that exact window is what they
-  keep seeing until they change it - which is the behaviour a picker implies.
-  A stored preset would silently slide forward day by day instead.
+  Which preset was chosen is stored alongside the dates, and that is a
+  revision of an earlier decision here.
+
+  This used to keep absolute dates only, on the reasoning that a picked
+  window should stay put rather than slide under you. That is right for a
+  window somebody actually picked - "1 Sep to 8 Sep" means those days, and
+  moving it would be its own bug. It is wrong for the relative ones. Someone
+  who chose "This Year" on the 13th and came back on the 15th found every
+  trade from the 14th and 15th missing, every statistic reading zero, and a
+  picker still saying "Jan 1 - Sep 13" as though that were their choice. It
+  was two days stale and nothing said so.
+
+  So the two kinds are now told apart. "This Year", "Last 30 Days", "Today"
+  and "All Time" mean a rule and are recomputed on load. "Yesterday", "Last
+  Month" and a hand-picked custom range name fixed days and are restored
+  exactly as stored.
 */
 
 const STORAGE_KEY = 'tradex_date_range';
@@ -41,9 +53,74 @@ function endOfDay(d: Date): Date {
   return end;
 }
 
+export type PresetKind =
+  | 'today' | 'yesterday' | 'last7days' | 'last30days'
+  | 'thisMonth' | 'lastMonth' | 'thisYear' | 'allTime' | 'custom';
+
+/*
+  The presets that mean a rule rather than a pair of days. These are
+  recomputed every time the app loads; everything else is restored as stored.
+*/
+const RELATIVE: ReadonlySet<PresetKind> = new Set<PresetKind>([
+  'today', 'last7days', 'last30days', 'thisMonth', 'thisYear', 'allTime',
+]);
+
 export interface DateRange {
   startDate: Date;
   endDate: Date;
+  /*
+    Which preset produced this, when one did. Absent on ranges stored before
+    this existed and on a custom pick, both of which are treated as fixed
+    days - the safe reading, since it restores exactly what was stored.
+  */
+  preset?: PresetKind;
+}
+
+/*
+  What each preset means, in one place.
+
+  This lived in DateRangePicker, which meant the only code that knew how to
+  build "Last 30 Days" was the dropdown - and the restore path could not
+  recompute a range without duplicating it. Here, both use the same function.
+*/
+export function presetRange(preset: PresetKind, fallback?: DateRange): DateRange {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const withKind = (startDate: Date, endDate: Date): DateRange =>
+    ({ startDate, endDate: endOfDay(endDate), preset });
+
+  switch (preset) {
+    case 'today':
+      return withKind(today, today);
+    case 'yesterday': {
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      return withKind(yesterday, yesterday);
+    }
+    case 'last7days': {
+      const start = new Date(today);
+      start.setDate(start.getDate() - 6);
+      return withKind(start, today);
+    }
+    case 'last30days': {
+      const start = new Date(today);
+      start.setDate(start.getDate() - 29);
+      return withKind(start, today);
+    }
+    case 'thisMonth':
+      return withKind(new Date(now.getFullYear(), now.getMonth(), 1), today);
+    case 'lastMonth':
+      return withKind(
+        new Date(now.getFullYear(), now.getMonth() - 1, 1),
+        new Date(now.getFullYear(), now.getMonth(), 0),
+      );
+    case 'thisYear':
+      return withKind(new Date(now.getFullYear(), 0, 1), today);
+    case 'allTime':
+      return { ...allTimeRange(), preset };
+    default:
+      return fallback ?? defaultRange();
+  }
 }
 
 /*
@@ -67,11 +144,21 @@ export function isAllTime(range: DateRange): boolean {
   return range.startDate.getTime() <= ALL_TIME_START.getTime();
 }
 
+/*
+  All Time, for somebody who has not chosen.
+
+  It used to open on the last 30 days, which quietly decided that a new
+  account's history began a month ago - and for a trader who has just
+  connected five years of it, the first thing TradeX showed was a fraction
+  of their trading with nothing saying so.
+
+  All Time is also the one default that cannot go stale. It is a relative
+  preset, so it is recomputed on every load and always reaches today; a
+  fixed window cannot make that promise, which is exactly how a range last
+  touched on the 13th was still ending on the 13th two days later.
+*/
 function defaultRange(): DateRange {
-  const endDate = endOfDay(new Date());
-  const startDate = new Date();
-  startDate.setDate(startDate.getDate() - 29);
-  return { startDate, endDate };
+  return { ...allTimeRange(), preset: 'allTime' };
 }
 
 function loadStoredRange(): DateRange {
@@ -87,8 +174,16 @@ function loadStoredRange(): DateRange {
     // querying with Invalid Date, which silently returns nothing.
     if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return defaultRange();
 
+    /*
+      A relative preset is a rule, so it is recomputed rather than restored.
+      Without this, "This Year" chosen on the 13th still ended on the 13th
+      two days later and silently hid everything traded since.
+    */
+    const preset = parsed.preset as PresetKind | undefined;
+    if (preset && RELATIVE.has(preset)) return presetRange(preset);
+
     /* Ranges stored before this was fixed end at an instant. */
-    return { startDate, endDate: endOfDay(endDate) };
+    return { startDate, endDate: endOfDay(endDate), preset };
   } catch {
     return defaultRange();
   }
@@ -114,12 +209,14 @@ export function DateRangeProvider({ children }: { children: ReactNode }) {
     const range: DateRange = {
       startDate: incoming.startDate,
       endDate: endOfDay(incoming.endDate),
+      preset: incoming.preset,
     };
     setDateRangeState(range);
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         startDate: range.startDate.toISOString(),
         endDate: range.endDate.toISOString(),
+        preset: range.preset,
       }));
     } catch {
       // A full or unavailable localStorage should not stop the range from
