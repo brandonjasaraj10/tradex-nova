@@ -135,6 +135,21 @@ ALTER TABLE public.psychology_audits
 COMMENT ON COLUMN public.psychology_audits.email_sent_at IS
   'When the breakdown was dispatched. An email with an address but no sent stamp is one that failed to go out, which is worth being able to find.';
 
+/*
+  The unsubscribe token.
+
+  One per row rather than one per address, matching abandon_signup_emails:
+  the token is the proof in the link, it grants nothing except the ability
+  to stop receiving mail, and a token tied to a single send cannot be used
+  to enumerate anything. Somebody who takes the audit twice gets two
+  tokens, and either one suppresses the address.
+*/
+ALTER TABLE public.psychology_audits
+  ADD COLUMN IF NOT EXISTS unsubscribe_token uuid NOT NULL DEFAULT gen_random_uuid();
+
+CREATE UNIQUE INDEX IF NOT EXISTS psychology_audits_unsub_token_idx
+  ON public.psychology_audits (unsubscribe_token);
+
 CREATE OR REPLACE FUNCTION public.notify_audit_email()
 RETURNS trigger
 LANGUAGE plpgsql

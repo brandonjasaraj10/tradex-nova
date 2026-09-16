@@ -274,6 +274,15 @@ export default function Audit() {
                           {emailState === 'saving' ? 'Sending…' : 'Send it'}
                         </button>
                       </form>
+                      {/*
+                        Said here rather than only in the email footer. We do
+                        keep the address and we will email it again, so "no
+                        spam" would be a small lie told at the exact moment
+                        somebody decides whether to trust us.
+                      */}
+                      <p className="mt-2.5 text-center text-[11.5px] text-gray-600">
+                        One email now, and the occasional one after. Unsubscribe in a click.
+                      </p>
                       {emailState === 'error' && (
                         <p className="mt-2.5 text-[12.5px] text-gray-400">
                           That didn&rsquo;t save. Try again, or just start a journal above.

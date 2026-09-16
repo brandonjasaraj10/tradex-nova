@@ -48,24 +48,54 @@ Deno.serve(async (req: Request) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
   );
 
-  const { data: record } = await supabase
+  /*
+    Two kinds of token now reach this one endpoint.
+
+    An abandoned-signup token belongs to an account, and the address has to
+    be looked up through auth. An audit token belongs to somebody who has no
+    account at all - they answered six questions and left an email - so the
+    address is on the row itself.
+
+    One endpoint rather than two because an unsubscribe link should work
+    whatever it came from, and because the suppression list is shared: a
+    person who opts out through one email must not keep receiving the other.
+  */
+  const { data: abandonRecord } = await supabase
     .from('abandon_signup_emails')
     .select('user_id')
     .eq('unsubscribe_token', token)
     .maybeSingle();
 
-  if (!record) {
+  const { data: auditRecord } = abandonRecord ? { data: null } : await supabase
+    .from('psychology_audits')
+    .select('email')
+    .eq('unsubscribe_token', token)
+    .maybeSingle();
+
+  if (!abandonRecord && !auditRecord) {
     return page('Link not recognised', 'That unsubscribe link is not one of ours, or it has already been used.');
   }
 
-  const { data: user } = await supabase.auth.admin.getUserById(record.user_id);
-  const email = user?.user?.email;
-  if (!email) return page('Something went wrong', 'We could not find that account. Email tradenovaai@gmail.com and we will take care of it.');
+  let email: string | undefined;
+  let userId: string | null = null;
+  let reason: string;
+
+  if (abandonRecord) {
+    const { data: user } = await supabase.auth.admin.getUserById(abandonRecord.user_id);
+    email = user?.user?.email;
+    userId = abandonRecord.user_id;
+    reason = 'unsubscribed_abandon_email';
+  } else {
+    email = (auditRecord as { email: string | null } | null)?.email ?? undefined;
+    reason = 'unsubscribed_audit_email';
+  }
+
+  if (!email) return page('Something went wrong', 'We could not find that address. Email tradenovaai@gmail.com and we will take care of it.');
 
   await supabase.from('email_suppressions').insert({
-    user_id: record.user_id,
+    user_id: userId,
     email,
-    reason: 'unsubscribed_abandon_email',
+    reason,
   });
 
   return page(

@@ -186,7 +186,7 @@ const BREAKDOWNS: Record<string, Breakdown> = {
   },
 };
 
-function renderEmail(b: Breakdown): string {
+function renderEmail(b: Breakdown, unsubscribeUrl: string): string {
   /*
     Light, table-based, with bgcolor attributes beside every inline style -
     the same construction as the welcome email, and for the same reason
@@ -276,7 +276,8 @@ function renderEmail(b: Breakdown): string {
             <td align="center">
               <p style="margin: 0; font-size: 12px; line-height: 1.6; color: #999999;">
                 You got this because you took the psychology audit at tradexnova.com.<br>
-                We will not add you to anything without asking.
+                We keep your address and may send you the occasional thing worth reading.<br>
+                <a href="${unsubscribeUrl}" style="color: #999999;">Unsubscribe</a> and we will not email you again.
               </p>
             </td>
           </tr>
@@ -327,7 +328,7 @@ Deno.serve(async (req: Request) => {
     */
     const { data: audit, error } = await admin
       .from("psychology_audits")
-      .select("id, archetype, email, email_sent_at")
+      .select("id, archetype, email, email_sent_at, unsubscribe_token")
       .eq("id", auditId)
       .maybeSingle();
 
@@ -347,11 +348,40 @@ Deno.serve(async (req: Request) => {
       return json({ error: "Unknown archetype" }, 400);
     }
 
+    /*
+      The opt-out list, checked before anything is sent.
+
+      Somebody who unsubscribed from one of our emails has said no to all of
+      them, and the audit form has no idea they ever did - it is anonymous
+      and there is nothing on the page to check against. So the check belongs
+      here, where the address is finally known. Matched case-insensitively
+      because people type their own address inconsistently and an unsubscribe
+      that only works for the exact casing they used last time is not one.
+    */
+    const { data: suppressed } = await admin
+      .from("email_suppressions")
+      .select("id")
+      .ilike("email", audit.email)
+      .limit(1);
+
+    if (suppressed && suppressed.length > 0) {
+      /* Stamped as though sent, so the trigger does not come back to this
+         row on every retry looking for a send that will never happen. */
+      await admin
+        .from("psychology_audits")
+        .update({ email_sent_at: new Date().toISOString() })
+        .eq("id", auditId);
+      return json({ skipped: "unsubscribed" });
+    }
+
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
     if (!resendApiKey) {
       console.error("RESEND_API_KEY missing - breakdown not sent to", audit.email);
       return json({ error: "Email not configured" }, 503);
     }
+
+    const unsubscribeUrl =
+      `${Deno.env.get("SUPABASE_URL")}/functions/v1/email-unsubscribe?token=${audit.unsubscribe_token}`;
 
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -363,7 +393,15 @@ Deno.serve(async (req: Request) => {
         from: "TradeX <noreply@tradexnova.com>",
         to: [audit.email],
         subject: breakdown.subject,
-        html: renderEmail(breakdown),
+        html: renderEmail(breakdown, unsubscribeUrl),
+        /* The native unsubscribe button in Gmail and Apple Mail. It is
+           itself a Promotions-tab signal, which is a real cost - and the
+           worse trade by far is the person who cannot find a way out and
+           presses spam instead. */
+        headers: {
+          "List-Unsubscribe": `<${unsubscribeUrl}>`,
+          "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+        },
       }),
     });
 
