@@ -28,6 +28,7 @@ import { captureAppPageView, identifyUser, resetUser } from './lib/productAnalyt
 const Sales = lazyWithReload('Sales', () => import('./pages/Sales'));
 const Auth = lazyWithReload('Auth', () => import('./pages/Auth'));
 const Onboarding = lazyWithReload('Onboarding', () => import('./pages/Onboarding'));
+const Audit = lazyWithReload('Audit', () => import('./pages/Audit'));
 const Payment = lazyWithReload('Payment', () => import('./pages/Payment'));
 const Affiliates = lazyWithReload('Affiliates', () => import('./pages/Affiliates'));
 const Dashboard = lazyWithReload('Dashboard', () => import('./pages/Dashboard'));
@@ -51,9 +52,18 @@ const About = lazyWithReload('About', () => import('./pages/About'));
 const FAQ = lazyWithReload('FAQ', () => import('./pages/FAQ'));
 const NotFound = lazyWithReload('NotFound', () => import('./pages/NotFound'));
 
+/*
+  Paths that render the public site even for somebody who is signed in.
+
+  Missing from this list is not a routing miss, it is a 404: the route can
+  exist in the public router and still be unreachable, because a signed-in
+  visitor never reaches that router at all. /audit 404'd for exactly this
+  reason while /pricing beside it worked.
+*/
 const PUBLIC_PATHS = [
   '/', '/auth', '/sales', '/terms', '/privacy', '/risk-disclaimer', '/payment', '/affiliates',
   '/pricing', '/features', '/security', '/nova-ai', '/for-prop-firm-traders', '/about', '/faq',
+  '/audit',
 ];
 
 function PublicLayout() {
@@ -71,6 +81,7 @@ function PublicLayout() {
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/risk-disclaimer" element={<RiskDisclaimer />} />
             <Route path="/pricing" element={<Pricing />} />
+            <Route path="/audit" element={<Audit />} />
             <Route path="/features" element={<Features />} />
             <Route path="/security" element={<Security />} />
             {/*
