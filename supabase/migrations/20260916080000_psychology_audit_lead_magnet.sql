@@ -114,3 +114,72 @@ $$;
 
 REVOKE ALL ON FUNCTION public.attach_audit_email(uuid, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.attach_audit_email(uuid, text) TO anon, authenticated;
+
+/*
+  Send the breakdown the audit page promised.
+
+  The result page says "we'll email you the full breakdown" in exchange for
+  an address. Collecting the address and sending nothing is a promise broken
+  to exactly the people the audit exists to win over.
+
+  Fired by a trigger rather than by the browser, for the same reason the
+  welcome email is: a tab closed a second after submitting should not be the
+  difference between getting the thing and not. It also means the client
+  cannot ask us to mail an address it invented - the trigger only fires on a
+  row the set-once function has already written.
+*/
+
+ALTER TABLE public.psychology_audits
+  ADD COLUMN IF NOT EXISTS email_sent_at timestamptz;
+
+COMMENT ON COLUMN public.psychology_audits.email_sent_at IS
+  'When the breakdown was dispatched. An email with an address but no sent stamp is one that failed to go out, which is worth being able to find.';
+
+CREATE OR REPLACE FUNCTION public.notify_audit_email()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_secret text;
+BEGIN
+  /*
+    cron_secret, shared with the other database-triggered functions rather
+    than a secret of its own. A webhook secret that exists everywhere except
+    production fails closed and silently - 403, no email, nothing said - and
+    the claim being made here is "this call came from our own database",
+    which is the same claim those functions already check.
+  */
+  SELECT value INTO v_secret FROM internal_config WHERE key = 'cron_secret';
+  IF v_secret IS NULL THEN
+    RAISE WARNING 'cron_secret missing - audit breakdown not sent for %', NEW.id;
+    RETURN NEW;
+  END IF;
+
+  PERFORM net.http_post(
+    url := 'https://irtlwmpcfzjrlrxicxbk.supabase.co/functions/v1/send-audit-email',
+    body := jsonb_build_object('auditId', NEW.id),
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'X-Webhook-Secret', v_secret
+    )
+  );
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_notify_audit_email ON public.psychology_audits;
+
+/*
+  Only when an address actually arrives.
+
+  UPDATE OF email with the WHEN clause means this fires once, on the
+  transition from no email to an email - not on the insert, which has none,
+  and not again if anything else on the row is ever touched.
+*/
+CREATE TRIGGER trg_notify_audit_email
+  AFTER UPDATE OF email ON public.psychology_audits
+  FOR EACH ROW
+  WHEN (OLD.email IS NULL AND NEW.email IS NOT NULL)
+  EXECUTE FUNCTION public.notify_audit_email();
