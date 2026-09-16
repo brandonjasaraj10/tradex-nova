@@ -226,9 +226,29 @@ export default function Audit() {
                       key={opt.label}
                       type="button"
                       onClick={() => choose(QUESTIONS[stage as number].id, i)}
+                      /*
+                        The hover styles are gated behind a real pointer, and
+                        that is a bug fix rather than tidiness.
+
+                        A phone has no pointer, so it fakes one: after a tap
+                        the browser leaves :hover applied to whatever sits
+                        under the last touch point, and it stays there until
+                        you touch somewhere else. Each question replaces the
+                        buttons in place, so tapping the second option left
+                        the NEXT question's second option glowing blue - an
+                        answer nobody had given, on a screen they had not
+                        read yet.
+
+                        :active replaces it for touch. It paints while the
+                        finger is down and clears the moment it lifts, so the
+                        tap still feels answered without outliving itself.
+                      */
                       className="w-full text-left px-5 py-4 rounded-xl border border-white/10 bg-brand-surface
                         text-[14.5px] leading-relaxed text-gray-200 transition-colors
-                        hover:border-brand-blue-light/40 hover:bg-brand-blue/[0.07] hover:text-white
+                        [@media(hover:hover)]:hover:border-brand-blue-light/40
+                        [@media(hover:hover)]:hover:bg-brand-blue/[0.07]
+                        [@media(hover:hover)]:hover:text-white
+                        active:border-brand-blue-light/50 active:bg-brand-blue/[0.07]
                         focus-visible:outline-none focus-visible:border-brand-blue-light/60"
                     >
                       {opt.label}
