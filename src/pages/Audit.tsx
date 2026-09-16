@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, Check, Clock } from 'lucide-react';
 import Wordmark from '../components/shared/Wordmark';
+import PageLoader from '../components/shared/PageLoader';
 import {
   QUESTIONS, ARCHETYPES, scoreAudit, type Archetype,
 } from '../lib/auditContent';
@@ -32,7 +33,67 @@ import { trackEvent } from '../lib/productAnalytics';
     ones not ready. Two equal buttons is two decisions.
 */
 
-type Stage = number | 'result';
+type Stage = number | 'analysing' | 'result';
+
+/*
+  The pause between the last answer and the verdict.
+
+  Purely theatrical in the sense that the answer is already computed - and
+  not at all theatrical in what it does to how the answer lands. Buell and
+  Norton's labor illusion work found people rate an identical result HIGHER
+  when the site visibly works for it than when it appears instantly; five
+  experiments, and the effect survives the wait being longer. An instant
+  verdict reads as a lookup table, which is exactly what somebody suspects
+  a free quiz of being.
+
+  Each line is true. The answers really are scored against five patterns
+  while this is on screen, and the row really is written during it, so the
+  wait is doing the work it claims to be doing rather than counting to
+  itself.
+
+  Around two and a half seconds. Long enough to read three lines, short
+  enough that cold traffic from a reel does not leave.
+*/
+const ANALYSING_STEPS = [
+  'Reading your six answers',
+  'Comparing them against five patterns',
+  'Finding the moment yours breaks',
+];
+const STEP_MS = 760;
+const ANALYSING_MS = STEP_MS * ANALYSING_STEPS.length + 300;
+
+function Analysing() {
+  const [shown, setShown] = useState(0);
+
+  useEffect(() => {
+    const timers = ANALYSING_STEPS.map((_, i) =>
+      window.setTimeout(() => setShown(i + 1), i * STEP_MS));
+    return () => timers.forEach(clearTimeout);
+  }, []);
+
+  return (
+    <div className="min-h-[60vh] flex flex-col items-center justify-center text-center">
+      {/* The app's own loader, not a one-off. Somebody arriving here from a
+          reel meets this bar again on every page they load after signing
+          up, and the first screen of a product should already look like the
+          product. */}
+      <PageLoader className="!py-0 mb-7" />
+      <div className="flex flex-col gap-3">
+        {ANALYSING_STEPS.map((label, i) => (
+          <motion.p
+            key={label}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: i < shown ? 1 : 0.22, y: 0 }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
+            className={`text-[14.5px] ${i < shown ? 'text-gray-200' : 'text-gray-600'}`}
+          >
+            {label}
+          </motion.p>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function Progress({ step }: { step: number }) {
   return (
@@ -74,18 +135,29 @@ export default function Audit() {
     }
 
     /*
-      Last answer: score, show, and record - in that order. The write is not
-      awaited, because somebody who has answered six questions is owed their
-      answer immediately and a slow insert is not their problem.
+      Last answer: score it, hold it behind the analysing screen, and record
+      it while that screen is up. The write is not awaited - somebody who
+      has answered six questions is owed their answer, and a slow insert is
+      not their problem - but it now has a couple of seconds of cover, which
+      makes a slow connection invisible rather than a blank pause.
     */
     const scored = scoreAudit(next);
     setResult(scored);
-    setStage('result');
+    setStage('analysing');
     trackEvent('audit_completed', { archetype: scored.primary, secondary: scored.secondary });
 
     const source = new URLSearchParams(window.location.search).get('src') ?? undefined;
     void recordAudit(scored.primary, next, source).then(setAuditId);
   };
+
+  /* The hand-off to the verdict. Held here rather than inside Analysing so
+     that unmounting the page mid-count cannot set state on a dead
+     component. */
+  useEffect(() => {
+    if (stage !== 'analysing') return;
+    const t = window.setTimeout(() => setStage('result'), ANALYSING_MS);
+    return () => clearTimeout(t);
+  }, [stage]);
 
   const submitEmail = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,7 +187,9 @@ export default function Audit() {
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
           >
-            {stage !== 'result' && (
+            {stage === 'analysing' && <Analysing />}
+
+            {stage !== 'result' && stage !== 'analysing' && (
               <>
                 {/*
                   The promise, above the first question only. Somebody
@@ -239,20 +313,58 @@ export default function Audit() {
                 </div>
 
                 {/*
-                  And the quiet landing for everybody else, which is most of
-                  cold traffic. The email buys the full written breakdown -
-                  a thing they receive, not a list they join.
+                  The deep dive.
+
+                  This used to open "Not ready?", which framed the email as
+                  the consolation prize for somebody who was not going to buy
+                  - and a frame like that tends to come true. The research is
+                  consistent on the alternative: give the result away, then
+                  offer something additional in exchange for the address. The
+                  bonus framing beats gating the result, and naming what is
+                  actually inside beats "the full breakdown", because a
+                  specific promise is the thing somebody trades an address
+                  for.
+
+                  The three things named below are literally the three
+                  sections of the email, so this is a contents page rather
+                  than a tease.
                 */}
                 <div className="mt-9 pt-7 border-t border-white/[0.07]">
                   {emailState === 'done' ? (
-                    <p className="text-center text-[13.5px] text-gray-300">
-                      Sent. Check your inbox for the full breakdown of {card.name}.
-                    </p>
+                    /*
+                      Confirmation first, then one more small ask. Somebody
+                      who has just said yes is the likeliest they will ever
+                      be to say yes again, and sending them off to the
+                      homepage spends that on nothing.
+                    */
+                    <div className="text-center">
+                      <p className="text-[14px] text-white">
+                        On its way. Check your inbox for the deep dive on {card.name}.
+                      </p>
+                      <p className="mt-2 text-[13px] leading-relaxed text-gray-400 text-balance">
+                        It has the three things to do this week. The one thing it cannot do is
+                        show you your own numbers.
+                      </p>
+                      <Link
+                        to="/auth?mode=signup"
+                        onClick={() => trackEvent('audit_cta_clicked', {
+                          archetype: result.primary, placement: 'post_email',
+                        })}
+                        className="mt-4 inline-flex items-center justify-center gap-1.5 text-[14px]
+                          text-brand-blue-light hover:text-white transition-colors"
+                      >
+                        {card.cta}
+                        <ArrowRight size={15} />
+                      </Link>
+                    </div>
                   ) : (
                     <>
-                      <p className="text-center text-[13.5px] text-gray-400 mb-3.5 text-balance">
-                        Not ready? We&rsquo;ll email you the full breakdown — what to watch for,
-                        and how to fix it.
+                      <p className="text-center text-[15px] font-medium text-white mb-2">
+                        Want the deep dive on {card.name}?
+                      </p>
+                      <p className="text-center text-[13.5px] leading-relaxed text-gray-400 mb-4 text-balance">
+                        Why it happens, three things to do about it this week, and the one number
+                        that tells you whether it is working. Emailed to you, free.
                       </p>
                       <form onSubmit={submitEmail} className="flex flex-col sm:flex-row gap-2.5">
                         <input
@@ -271,7 +383,7 @@ export default function Audit() {
                           className="px-6 py-3 rounded-xl border border-white/15 text-[14px] text-white
                             hover:bg-white/5 transition-colors disabled:opacity-50"
                         >
-                          {emailState === 'saving' ? 'Sending…' : 'Send it'}
+                          {emailState === 'saving' ? 'Sending…' : 'Send it to me'}
                         </button>
                       </form>
                       {/*
