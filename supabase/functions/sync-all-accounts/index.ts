@@ -29,19 +29,25 @@ import {
 
 const CLIENT_URL = "https://mt-client-api-v1.london.agiliumtrade.ai";
 
-/*
-  What is still open on the account, and since when.
+interface OpenPositions {
+  /* Open time of the oldest position still open, or null if none are. */
+  oldest: Date | null;
+  /* Every open position id, so a disappearance is detectable next run. */
+  ids: string[];
+}
 
-  Used for one purpose: to hold the history window open behind a position
-  that has not closed yet. Returns undefined rather than null when the call
-  fails, so the caller can tell "no open positions" apart from "we do not
-  know" - releasing the floor on a failed request would reintroduce exactly
-  the bug this exists to prevent.
+/*
+  What is still open on the account: since when, and which ones.
+
+  Returns undefined rather than an empty answer when the call fails. "We do
+  not know" and "nothing is open" have opposite consequences here - one must
+  hold the window open, the other may let it close - and collapsing them
+  would reintroduce exactly the bug this exists to prevent.
 */
-async function oldestOpenPositionAt(
+async function readOpenPositions(
   token: string,
   metaapiAccountId: string,
-): Promise<Date | null | undefined> {
+): Promise<OpenPositions | undefined> {
   try {
     const res = await fetch(
       `${CLIENT_URL}/users/current/accounts/${metaapiAccountId}/positions`,
@@ -52,11 +58,13 @@ async function oldestOpenPositionAt(
     if (!Array.isArray(positions)) return undefined;
 
     let oldest: number | null = null;
+    const ids: string[] = [];
     for (const p of positions) {
+      if (p?.id !== undefined && p?.id !== null) ids.push(String(p.id));
       const t = Date.parse(p?.time ?? "");
       if (Number.isFinite(t) && (oldest === null || t < oldest)) oldest = t;
     }
-    return oldest === null ? null : new Date(oldest);
+    return { oldest: oldest === null ? null : new Date(oldest), ids };
   } catch {
     return undefined;
   }
@@ -78,6 +86,7 @@ async function syncOne(
     last_sync: string | null;
     starting_balance: number | null;
     oldest_open_position_at: string | null;
+    open_position_ids: string[] | null;
   },
 ): Promise<
   { id: string; imported?: number; error?: string; truncated?: boolean }
@@ -111,13 +120,13 @@ async function syncOne(
     long before this column existed, which is what makes the fix repair
     accounts rather than only protect them from here on.
   */
-  const liveOldest = await oldestOpenPositionAt(token, connection.metaapi_account_id);
+  const live = await readOpenPositions(token, connection.metaapi_account_id);
 
   const storedFloor = connection.oldest_open_position_at
     ? new Date(connection.oldest_open_position_at)
     : null;
 
-  const candidates = [storedFloor, liveOldest ?? null].filter(
+  const candidates = [storedFloor, live?.oldest ?? null].filter(
     (d): d is Date => d instanceof Date,
   );
   const openFloor = candidates.length
@@ -128,13 +137,41 @@ async function syncOne(
     ? new Date(new Date(connection.last_sync).getTime() - 24 * 60 * 60 * 1000)
     : FULL_HISTORY_START;
 
+  /*
+    Whether this run needs the deep window.
+
+    Reaching back to the floor on every run is correct and unaffordable: a
+    position held a year would re-read a year of history every five minutes.
+    The deep window is only genuinely needed on the run where a position
+    stops being open, because that is the moment its trade becomes history
+    with an open time far behind the rolling window.
+
+    Three cases call for it:
+
+      a position we saw last run is gone now - the close we exist to catch;
+      we have never recorded the set - one repair pass for an account
+        carrying a position from before any of this was written;
+      the positions call failed - we cannot rule a close out, and being
+        slow is cheaper than being wrong.
+
+    Everything else takes the ordinary 24-hour window, which is what nearly
+    every run is.
+  */
+  const previousIds = connection.open_position_ids;
+  const currentIds = live ? new Set(live.ids) : null;
+
+  const somethingClosed = previousIds !== null && currentIds !== null &&
+    previousIds.some((id) => !currentIds.has(id));
+
+  const needsDeepWindow = !live || previousIds === null || somethingClosed;
+
   /* A margin under the floor, because a broker's clock is not ours and the
      open time we stored came from theirs. */
   const flooredStart = openFloor
     ? new Date(openFloor.getTime() - 24 * 60 * 60 * 1000)
     : null;
 
-  const since = flooredStart && flooredStart < rollingStart
+  const since = needsDeepWindow && flooredStart && flooredStart < rollingStart
     ? flooredStart
     : rollingStart;
 
@@ -236,8 +273,9 @@ async function syncOne(
     trade. null is a real answer meaning nothing is open, and only then is
     the floor cleared so the window can close up again.
   */
-  if (liveOldest !== undefined) {
-    update.oldest_open_position_at = liveOldest ? liveOldest.toISOString() : null;
+  if (live) {
+    update.oldest_open_position_at = live.oldest ? live.oldest.toISOString() : null;
+    update.open_position_ids = live.ids;
   }
 
   if (sawDeposit) update.starting_balance = netDeposits;
@@ -278,7 +316,7 @@ Deno.serve(async (req: Request) => {
 
   const { data: connections, error } = await admin
     .from("broker_connections")
-    .select("id, user_id, metaapi_account_id, last_sync, starting_balance, oldest_open_position_at")
+    .select("id, user_id, metaapi_account_id, last_sync, starting_balance, oldest_open_position_at, open_position_ids")
     .not("metaapi_account_id", "is", null)
     .eq("is_auto_sync_enabled", true);
 
