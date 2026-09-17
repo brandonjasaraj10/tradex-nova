@@ -661,17 +661,16 @@ export default function Sales() {
                 className="pointer-events-none absolute -top-[38px] right-5 sm:right-7 h-[38px] overflow-hidden"
               >
                 {/*
-                  The bob is on HIM, not on the clip. Animating the wrapper
-                  moves the window too, so he lifts away from the card and
-                  the illusion dies - a sticker sliding about above an edge.
-                  Moving him inside a fixed window is the whole effect: the
-                  edge stays put and he rises and dips behind it.
-
                   38 of 78 is head, eyes and the smile. Stop above the smile
                   and he is a pair of eyes on a dome, which reads as watching
                   rather than as friendly.
+
+                  Static, by choice. A bob was tried and removed: the effect
+                  here is the clip, not the movement, and a loop that runs
+                  forever on a marketing page is one more thing to get right
+                  on a slow phone for something the still frame already does.
                 */}
-                <Mascot height={78} className="motion-safe:animate-mascot-bob" />
+                <Mascot height={78} />
               </div>
               <p className="text-[11px] uppercase tracking-[0.14em] text-gray-400 mb-4">TradeX</p>
               <ul className="flex flex-col gap-3">
