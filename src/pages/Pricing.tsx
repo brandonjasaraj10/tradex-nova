@@ -97,28 +97,32 @@ const TIERS: Tier[] = [
 /*
   In every plan, listed once rather than three times.
 
-  Repeating fourteen identical ticks down three columns is how a pricing
-  table becomes a wall nobody reads, and the measured effect of whitespace
-  on these pages is large enough to take seriously. The columns carry only
-  what differs; everything shared sits underneath, where it reassures
-  without competing.
+  Repeating identical ticks down three columns is how a pricing table
+  becomes a wall nobody reads. The columns carry only what differs;
+  everything shared sits underneath, where it reassures without competing.
+
+  The WORDING here came from main rather than from this branch, and
+  deliberately. This branch still carried the old fourteen-item inventory,
+  where "Psychology template & scoring" and "NOVA Score" were the same
+  promise twice and "Performance analytics", "Trading calendar" and
+  "Searchable trade log" were three names for looking at your own trades.
+  Main had already cut that to six outcomes, on research putting the useful
+  range at five to seven bullets and a documented case going from 1.2% to
+  3.1% conversion by shortening the list. Winning a merge is not a reason to
+  lose that.
 */
 const IN_EVERY_PLAN = [
-  'Voice journaling',
-  'Nova AI analysis',
-  'Psychology template & scoring',
-  'NOVA Score',
-  'Pre-trade checklists',
-  'Weekly & monthly reports',
-  'Trading rules & confluences',
-  'Performance analytics',
-  'Trading calendar',
-  'Searchable trade log',
-  'Unlimited trades',
-  'CSV import',
-  'Notes',
-  '14-day money back guarantee',
+  'Talk through a trade \u2014 it writes itself up',
+  'Nova reads every entry and tells you what you keep doing',
+  'Your psychology scored on every trade, not just P&L',
+  'Your own rules and checklists, checked before you enter',
+  'Calendar, analytics and every trade searchable',
+  'Weekly and monthly reviews, written for you',
 ];
+
+/* The specifics a comparison shopper checks, kept but not shouted. */
+const ALSO_INCLUDED =
+  'Unlimited trades \u00b7 CSV import \u00b7 Notes \u00b7 14-day money back guarantee';
 
 function TierCard({ tier }: { tier: Tier }) {
   return (
@@ -137,7 +141,6 @@ function TierCard({ tier }: { tier: Tier }) {
           Most popular
         </span>
       )}
-
       <p className="text-[13px] uppercase tracking-[0.14em] text-gray-400">{tier.name}</p>
 
       <p className="mt-3 flex items-baseline gap-1.5">
@@ -224,6 +227,10 @@ export default function Pricing() {
             </li>
           ))}
         </ul>
+        {/* The specifics a comparison shopper looks for, kept but not shouted. */}
+        <p className="mt-5 text-[12px] text-gray-500 leading-relaxed">
+          {ALSO_INCLUDED}
+        </p>
       </div>
 
       <div className="my-12 sm:my-16">

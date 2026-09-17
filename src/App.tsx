@@ -27,6 +27,8 @@ import { captureAppPageView, identifyUser, resetUser } from './lib/productAnalyt
 // module". Seen for real in production from an Instagram in-app browser.
 const Sales = lazyWithReload('Sales', () => import('./pages/Sales'));
 const Auth = lazyWithReload('Auth', () => import('./pages/Auth'));
+const Onboarding = lazyWithReload('Onboarding', () => import('./pages/Onboarding'));
+const Audit = lazyWithReload('Audit', () => import('./pages/Audit'));
 const Payment = lazyWithReload('Payment', () => import('./pages/Payment'));
 const Affiliates = lazyWithReload('Affiliates', () => import('./pages/Affiliates'));
 const Dashboard = lazyWithReload('Dashboard', () => import('./pages/Dashboard'));
@@ -50,9 +52,18 @@ const About = lazyWithReload('About', () => import('./pages/About'));
 const FAQ = lazyWithReload('FAQ', () => import('./pages/FAQ'));
 const NotFound = lazyWithReload('NotFound', () => import('./pages/NotFound'));
 
+/*
+  Paths that render the public site even for somebody who is signed in.
+
+  Missing from this list is not a routing miss, it is a 404: the route can
+  exist in the public router and still be unreachable, because a signed-in
+  visitor never reaches that router at all. /audit 404'd for exactly this
+  reason while /pricing beside it worked.
+*/
 const PUBLIC_PATHS = [
   '/', '/auth', '/sales', '/terms', '/privacy', '/risk-disclaimer', '/payment', '/affiliates',
   '/pricing', '/features', '/security', '/nova-ai', '/for-prop-firm-traders', '/about', '/faq',
+  '/audit',
 ];
 
 function PublicLayout() {
@@ -70,6 +81,7 @@ function PublicLayout() {
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/risk-disclaimer" element={<RiskDisclaimer />} />
             <Route path="/pricing" element={<Pricing />} />
+            <Route path="/audit" element={<Audit />} />
             <Route path="/features" element={<Features />} />
             <Route path="/security" element={<Security />} />
             {/*
@@ -97,7 +109,7 @@ function PublicLayout() {
 function PrivateLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, profile, loading, showWelcome, needsProfile, needsSubscription, isFirstTimeUser, setShowWelcome, setNeedsProfile, setNeedsSubscription, refreshProfile, refreshSubscription } = useAuth();
+  const { user, profile, loading, profileResolved, showWelcome, needsProfile, needsSubscription, isFirstTimeUser, setShowWelcome, setNeedsProfile, setNeedsSubscription, refreshProfile, refreshSubscription } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -107,7 +119,21 @@ function PrivateLayout() {
     return 'User';
   };
 
-  if (loading) {
+  /*
+    Hold the loader until it is actually known where this user belongs.
+
+    `loading` only covers the first page load, where the profile is fetched
+    before it clears. Signing up takes the other path: onAuthStateChange
+    sets the user and then awaits the profile, so for that moment there is a
+    user, no profile, and needsProfile still at its default - which reads as
+    "signed in and complete", and drew the entire dashboard for an instant
+    before the profile screen replaced it.
+
+    A spinner for a fraction of a second is the honest thing to show while
+    the answer is unknown. The alternative is showing the wrong screen
+    confidently.
+  */
+  if (loading || (user && !profileResolved)) {
     return <PageLoader fullScreen />;
   }
 
@@ -120,6 +146,36 @@ function PrivateLayout() {
           setNeedsProfile(false);
         }}
       />
+    );
+  }
+
+  /*
+    The three questions, between having an account and seeing a price.
+
+    A gate rather than a route, because that is how this layout already
+    works: profile setup, then subscription, then the app. Routing to
+    /onboarding after signup put it in the PUBLIC router, which a
+    signed-in user never reaches - so the first thing a new account saw
+    was a 404. The gate also means it cannot be skipped by typing a URL
+    and cannot be seen twice, both of which a route would have allowed.
+
+    Ordered before the paywall deliberately. The questions are what make
+    the price screen land: somebody who has just said revenge trading is
+    costing them money has been shown the cooldown check thirty seconds
+    before being asked to pay for it.
+
+    Conditioned on needsSubscription as well as the answers, which is what
+    keeps this to the funnel it was designed for. Every one of the 360
+    accounts that already exist has no answers recorded, so without that
+    condition the next thing a paying customer saw on login would be three
+    questions they never asked for - an interruption to somebody who has
+    already bought, in service of data about people who have not.
+  */
+  if (user && profile && needsSubscription && !profile.onboarding_completed_at) {
+    return (
+      <Suspense fallback={<PageLoader fullScreen />}>
+        <Onboarding onComplete={refreshProfile} />
+      </Suspense>
     );
   }
 
