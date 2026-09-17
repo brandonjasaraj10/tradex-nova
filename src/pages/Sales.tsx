@@ -813,7 +813,7 @@ export default function Sales() {
       */}
       <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
         <div className="max-w-xl mx-auto px-5 sm:px-8">
-          <div className="text-center mb-24 sm:mb-12">
+          <div className="text-center mb-24 sm:mb-24">
             <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
               Pricing
             </p>
@@ -837,15 +837,20 @@ export default function Sales() {
 
             The leaning pose, propped against the card's top edge, which is
             what that pose was generated for. Same clip trick as the
-            objection: he is behind the edge rather than pasted over it, and
-            the window is tall enough to show the lean rather than cutting it
-            off at the neck.
+            objection: he is behind the edge rather than pasted over it.
+
+            The window height is not a look-right guess - it is measured. The
+            underside of his propped arm sits at 41.3% of his height in the
+            render, so the window is 41.3% of whatever height he is given,
+            which puts the card's edge exactly where his arm comes down. Cut
+            lower and the arm rests on nothing, which is what a taller window
+            did here and what Brandon spotted immediately.
           */}
           <div className="relative rounded-2xl border border-white/10 bg-brand-surface p-6 sm:p-8">
             <div
               aria-hidden="true"
               className="pointer-events-none absolute left-4 sm:left-6 overflow-hidden
-                -top-[84px] h-[84px] sm:-top-[108px] sm:h-[108px]"
+                -top-[70px] h-[70px] sm:-top-[92px] sm:h-[92px]"
             >
               <Mascot pose="lean" height={120} className="sm:hidden" />
               <Mascot pose="lean" height={158} className="hidden sm:block" />
