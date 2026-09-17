@@ -358,7 +358,7 @@ export default function Sales() {
               to read as a presenter beside the list rather than a second
               headline over it.
             */}
-            <Mascot height={86} tilt={5} className="mx-auto mt-7 sm:mt-8" />
+            <Mascot pose="present" height={96} className="mx-auto mt-7 sm:mt-8" />
           </div>
 
           <div className="flex flex-col gap-4 sm:gap-5">

@@ -1,5 +1,6 @@
 import mascotIdle from '../../assets/mascot.png';
 import mascotWave from '../../assets/mascot-wave.png';
+import mascotPresent from '../../assets/mascot-present.png';
 
 /*
   His poses.
@@ -14,6 +15,7 @@ import mascotWave from '../../assets/mascot-wave.png';
 const POSES = {
   idle: mascotIdle,
   wave: mascotWave,
+  present: mascotPresent,
 } as const;
 
 export type MascotPose = keyof typeof POSES;
