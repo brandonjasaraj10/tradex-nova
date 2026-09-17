@@ -127,10 +127,25 @@ Deno.serve(async (req: Request) => {
     (rows ?? []).map((r) => String(r.metaapi_account_id)),
   );
 
+  /*
+    Every recorded candidate, including ones a previous run already asked
+    MetaApi to delete.
+
+    This used to skip anything with a released_at, which treated "the DELETE
+    returned OK" as "the account is gone". Those are not the same thing, and
+    the first real release proved it: MetaApi accepted the delete and went on
+    listing the account a minute and a half later. Skipping it meant we would
+    never ask again - a bill that looks handled and is not.
+
+    The only evidence that counts is MetaApi no longer listing it. So a still
+    listed orphan is retried however many times we have asked before, and
+    released_at is a record of the last attempt rather than a reason to stop.
+    Once it really does disappear from the listing it stops being quarantined,
+    falls out as stale, and the row goes.
+  */
   const { data: recorded } = await admin
     .from("metaapi_orphan_candidates")
-    .select("metaapi_account_id, first_seen_at")
-    .is("released_at", null);
+    .select("metaapi_account_id, first_seen_at");
 
   const decision = decideReleases({
     listed: accounts.map((a) => ({
