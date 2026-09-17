@@ -318,7 +318,15 @@ Deno.serve(async (req: Request) => {
     .from("broker_connections")
     .select("id, user_id, metaapi_account_id, last_sync, starting_balance, oldest_open_position_at, open_position_ids")
     .not("metaapi_account_id", "is", null)
-    .eq("is_auto_sync_enabled", true);
+    .eq("is_auto_sync_enabled", true)
+    /*
+      Removal parks an account rather than deleting it, so its row survives
+      with removed_at set. Auto-sync is switched off at the same moment, but
+      syncing a removed account would redeploy it at MetaApi - turning a
+      $0.73 a month parked account back into an $8.64 one - so this does not
+      lean on that single flag.
+    */
+    .is("removed_at", null);
 
   if (error) return json({ error: error.message }, 500);
 

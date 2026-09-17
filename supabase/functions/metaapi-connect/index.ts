@@ -27,6 +27,7 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { wakeMetaApiAccount } from "../_shared/metaApiAccount.ts";
 
 const SUPPORT_EMAIL = "tradenovaai@gmail.com";
 
@@ -253,11 +254,97 @@ Deno.serve(async (req: Request) => {
       metastatsApiEnabled: true,
     };
 
+    /*
+      Before buying a new one, look for a parked account for these exact
+      credentials.
+
+      MetaApi charges $2.10 to add a trading account to its cloud. It is per
+      account created, never refunded, and paid again on every re-add - a
+      real invoice billed it twice for one broker account reconnected ten
+      minutes later. Removal now parks the account instead of deleting it
+      precisely so that this path exists.
+
+      Matched on login + server + platform, which is what identifies a
+      trading account, rather than on the connection row - the user will
+      have made a fresh row to reconnect through.
+
+      Read from the base table, not the view: the view hides removed rows,
+      which is exactly the set being searched here. RLS still scopes it to
+      the caller.
+    */
+    let adoptedAccountId: string | null = null;
+
+    const { data: parked } = await supabase
+      .from("broker_connections")
+      .select("id, metaapi_account_id")
+      .eq("user_id", user.id)
+      .eq("mt_login", login)
+      .eq("metaapi_server", server)
+      .eq("platform", platform)
+      .not("removed_at", "is", null)
+      .not("metaapi_account_id", "is", null)
+      .order("removed_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (parked?.metaapi_account_id) {
+      const parkedId = String(parked.metaapi_account_id);
+
+      /*
+        Push the submitted password through first. The parked account still
+        holds whatever credentials it was created with, and an investor
+        password can be rotated while an account sits idle - waking it on a
+        stale one would connect to nothing and look like a broken feature.
+
+        Anything other than success here falls through to creating a fresh
+        account. That costs the $2.10 this block exists to avoid, which is
+        the right trade: a working connection the user paid a little for
+        beats a free one that does not connect.
+      */
+      const updated = await fetch(
+        `${PROVISIONING_URL}/users/current/accounts/${parkedId}`,
+        {
+          method: "PUT",
+          headers: { "auth-token": token, "Content-Type": "application/json" },
+          body: JSON.stringify({ password, server, name: `TradeX ${connection.account_name ?? login}`.slice(0, 64) }),
+        },
+      ).catch(() => null);
+
+      if (updated && (updated.ok || updated.status === 204)) {
+        const woken = await wakeMetaApiAccount(parkedId, token);
+        if (woken.released) {
+          adoptedAccountId = parkedId;
+          console.info("Reused parked MetaApi account", parkedId, "for", user.id);
+        } else {
+          console.error("Parked account would not deploy, creating fresh:", parkedId, woken.detail);
+        }
+      } else {
+        console.error(
+          "Parked account credentials would not update, creating fresh:",
+          parkedId,
+          updated ? updated.status : "unreachable",
+        );
+      }
+
+      if (adoptedAccountId) {
+        /*
+          The parked row gives up its pointer, so exactly one row ever points
+          at a MetaApi account. Two would make the orphan sweep's reference
+          set wrong and leave a second row claiming an account it does not
+          have.
+        */
+        await supabase
+          .from("broker_connections")
+          .update({ metaapi_account_id: null })
+          .eq("id", parked.id);
+      }
+    }
+
     let created: Response | null = null;
     let payload: unknown = null;
 
     // Only a 202 is worth trying again; everything else is decided.
-    for (let attempt = 0; attempt < 4; attempt++) {
+    for (let attempt = 0; adoptedAccountId === null && attempt < 4; attempt++) {
       created = await fetch(`${PROVISIONING_URL}/users/current/accounts`, {
         method: "POST",
         headers: { "auth-token": token, "Content-Type": "application/json" },
@@ -271,7 +358,7 @@ Deno.serve(async (req: Request) => {
       await sleep(Math.min(Math.max(retryAfter, 1), 15) * 1000);
     }
 
-    if (!created || !created.ok) {
+    if (adoptedAccountId === null && (!created || !created.ok)) {
       const status = created?.status ?? 500;
       /*
         Deliberately not retried. A wrong password or an unknown server
@@ -287,7 +374,7 @@ Deno.serve(async (req: Request) => {
       return json({ error: message, permanent: status < 500 }, 400);
     }
 
-    const accountId = (payload as { id?: string } | null)?.id;
+    const accountId = adoptedAccountId ?? (payload as { id?: string } | null)?.id;
     if (!accountId) {
       return json({ error: "MetaApi didn't return an account id." }, 502);
     }
@@ -321,7 +408,12 @@ Deno.serve(async (req: Request) => {
       refused, or failed on a wrong password, costs nothing and must not
       count against anybody.
     */
-    try {
+    /*
+      An adopted account was not added to MetaApi cloud, so no $2.10 was
+      charged and there is nothing to record. Writing one anyway would
+      inflate the very log that exists to say what we have paid for.
+    */
+    if (adoptedAccountId === null) try {
       /*
         Written with the service role, not the caller's token. The table has
         no insert policy on purpose: a user who could write their own rows

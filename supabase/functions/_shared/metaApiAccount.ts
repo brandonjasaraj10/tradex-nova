@@ -56,3 +56,90 @@ export async function releaseMetaApiAccount(
     detail: detail.trim() || `MetaApi returned ${res.status}.`,
   };
 }
+
+/*
+  Parking an account instead of giving it back.
+
+  MetaApi charges $2.10 to add a trading account to its cloud - per account
+  created, never refunded, and paid again on every re-add. Undeployed storage
+  is $0.0010/hour, about $0.73 a month. So an account a user might return to
+  inside roughly three months is cheaper kept than deleted and rebuilt, and
+  keeping it also spares them re-entering an investor password we never
+  store.
+
+  Undeploy stops the meter on the expensive part: $8.64 a month running
+  becomes $0.73 a month registered. The account keeps its id, its server and
+  its credentials at MetaApi, so bringing it back is a deploy call rather
+  than a purchase.
+
+  Already-undeployed is success. This runs on removal, and an account that
+  was never deployed - or that MetaApi already stopped - is in the state we
+  were asking for.
+*/
+export async function parkMetaApiAccount(
+  accountId: string,
+  token: string,
+): Promise<ReleaseResult> {
+  const base = `${PROVISIONING_URL}/users/current/accounts/${accountId}`;
+
+  let res: Response;
+  try {
+    res = await fetch(`${base}/undeploy`, {
+      method: "POST",
+      headers: { "auth-token": token },
+    });
+  } catch (err) {
+    return {
+      released: false,
+      detail: err instanceof Error ? err.message : "MetaApi was unreachable.",
+    };
+  }
+
+  /*
+    A 404 means the account is not there at all, which is further than
+    undeployed and equally fine - nothing is being billed for it.
+  */
+  if (res.ok || res.status === 204 || res.status === 404) {
+    return { released: true };
+  }
+
+  const detail = await res.text().catch(() => "");
+  return {
+    released: false,
+    detail: detail.trim() || `MetaApi returned ${res.status}.`,
+  };
+}
+
+/*
+  Bringing a parked account back. The counterpart to parkMetaApiAccount, and
+  the whole reason parking is worth doing: a deploy, not a $2.10 purchase.
+*/
+export async function wakeMetaApiAccount(
+  accountId: string,
+  token: string,
+): Promise<ReleaseResult> {
+  const base = `${PROVISIONING_URL}/users/current/accounts/${accountId}`;
+
+  let res: Response;
+  try {
+    res = await fetch(`${base}/deploy`, {
+      method: "POST",
+      headers: { "auth-token": token },
+    });
+  } catch (err) {
+    return {
+      released: false,
+      detail: err instanceof Error ? err.message : "MetaApi was unreachable.",
+    };
+  }
+
+  if (res.ok || res.status === 204) {
+    return { released: true };
+  }
+
+  const detail = await res.text().catch(() => "");
+  return {
+    released: false,
+    detail: detail.trim() || `MetaApi returned ${res.status}.`,
+  };
+}

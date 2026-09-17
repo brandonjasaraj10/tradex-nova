@@ -232,11 +232,91 @@ Deno.serve(async (req: Request) => {
     }
   }
 
+  /* Cast for the same reason sync-all-accounts casts its connection: the
+     untyped client's generics do not line up across a function boundary. */
+  const retired = await retireLongParkedAccounts(admin as never, token);
+
   return json({
     listed: accounts.length,
     referenced: referenced.size,
     quarantined: decision.quarantine.map((o) => o.id),
     released,
     failed,
+    retired,
   });
 });
+
+/*
+  The other end of parking.
+
+  Removing an account undeploys it and keeps it, because MetaApi's $2.10 add
+  fee makes deleting an account somebody might return to the expensive
+  choice. Parked storage is about $0.73 a month, so the break-even against
+  buying a replacement is roughly three months.
+
+  Past that, keeping it is just paying rent on something nobody is coming
+  back for. RETENTION_DAYS is set well beyond break-even rather than at it -
+  the cost of waiting too long is cents, and the cost of being early is a
+  returning user paying $2.10 and hunting for an investor password we never
+  stored.
+
+  The row itself stays. Trades reference broker_connections with NO ACTION,
+  so deleting it would be refused wherever there is any history worth
+  keeping. Clearing the pointer is what matters: it is the thing that says
+  we no longer hold a paid account.
+*/
+const RETENTION_DAYS = 120;
+
+async function retireLongParkedAccounts(
+  admin: ReturnType<typeof createClient>,
+  token: string,
+): Promise<string[]> {
+  const cutoff = new Date(Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1000)
+    .toISOString();
+
+  const { data, error } = await admin
+    .from("broker_connections")
+    .select("id, metaapi_account_id, removed_at")
+    .not("removed_at", "is", null)
+    .not("metaapi_account_id", "is", null)
+    .lt("removed_at", cutoff)
+    .limit(MAX_RELEASES_PER_RUN);
+
+  const expired = (data ?? []) as unknown as {
+    id: string;
+    metaapi_account_id: string;
+    removed_at: string;
+  }[];
+
+  if (error) {
+    console.error("Could not read parked connections:", error);
+    return [];
+  }
+
+  const retired: string[] = [];
+
+  for (const row of expired) {
+    const accountId = String(row.metaapi_account_id);
+    const result = await releaseMetaApiAccount(accountId, token);
+
+    if (!result.released) {
+      console.error("Could not retire parked account", accountId, result.detail);
+      continue;
+    }
+
+    /*
+      Only after MetaApi has taken it. Clearing the pointer first would lose
+      the only reference to an account still being billed for - and the
+      orphan sweep above would then have to find it the long way round.
+    */
+    await admin
+      .from("broker_connections")
+      .update({ metaapi_account_id: null } as never)
+      .eq("id", row.id);
+
+    retired.push(accountId);
+    console.info("Retired parked account", accountId, "parked since", row.removed_at);
+  }
+
+  return retired;
+}

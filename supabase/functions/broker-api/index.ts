@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { clientSafeMessage } from "../_shared/errors.ts";
-import { releaseMetaApiAccount } from "../_shared/metaApiAccount.ts";
+import { parkMetaApiAccount } from "../_shared/metaApiAccount.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -149,6 +149,12 @@ Deno.serve(async (req: Request) => {
         number, instead of surfacing a foreign key violation. Journal entries
         need no such check: their reference is ON DELETE SET NULL, so they
         survive the account and reappear under All Accounts.
+
+        This check became load-bearing when removal stopped being a delete.
+        The foreign key used to refuse the operation on its own; a retained
+        row never trips it, so nothing but this stands between a user and
+        trades that quietly vanish from every screen while still sitting in
+        the database under a hidden account.
       */
       const { count: tradeCount, error: countError } = await supabase
         .from("trades")
@@ -173,17 +179,26 @@ Deno.serve(async (req: Request) => {
       }
 
       /*
-        Hand the account back to MetaApi before deleting our row.
+        Park the account rather than destroying it.
 
-        This row holds the only pointer we have to a provisioned MetaApi
-        account, and that account bills about $8.64 a month until somebody
-        deletes it. Removing the row first would stop the charge being
-        visible without stopping the charge - the exact way we ended up
-        paying for an account nobody could account for.
+        MetaApi charges $2.10 to add a trading account to its cloud. It is
+        per account created, it is never refunded, and re-adding pays it
+        again - a real invoice billed it twice for one broker account
+        reconnected ten minutes later. Undeployed storage is about $0.73 a
+        month. So for anyone returning inside roughly three months, keeping
+        the account is the cheaper choice, and it spares them digging out an
+        investor password we deliberately never store.
 
-        So: release first, and if MetaApi will not let go, keep the row and
-        say so. A connection the user can still see and try again on is a
-        far better outcome than a silent bill.
+        Undeploy stops the expensive part: $8.64 a month running becomes
+        $0.73 a month registered. Then the row is marked removed rather than
+        deleted, which is what makes the account vanish from their list
+        while still pointing at the MetaApi account - so the orphan sweep
+        knows it is spoken for and leaves it alone.
+
+        If MetaApi will not undeploy, nothing is marked. An account that
+        still appears in the list and can be removed again is a far better
+        outcome than one that has vanished from the UI while quietly running
+        at full price.
       */
       const { data: connectionRow, error: pointerError } = await supabase
         .from("user_broker_connections")
@@ -203,10 +218,6 @@ Deno.serve(async (req: Request) => {
       if (metaapiAccountId) {
         const metaapiToken = Deno.env.get("METAAPI_TOKEN");
         if (!metaapiToken) {
-          /*
-            Without the token we cannot release the account, and deleting
-            the row anyway would lose the pointer permanently. Stop.
-          */
           return new Response(
             JSON.stringify({
               error: "Account syncing isn't configured, so this account can't be removed safely. Please contact support.",
@@ -215,26 +226,30 @@ Deno.serve(async (req: Request) => {
           );
         }
 
-        const release = await releaseMetaApiAccount(metaapiAccountId, metaapiToken);
-        if (!release.released) {
+        const parked = await parkMetaApiAccount(metaapiAccountId, metaapiToken);
+        if (!parked.released) {
           console.error(
-            "MetaApi release failed, keeping connection row:",
+            "MetaApi undeploy failed, leaving connection in place:",
             connection_id,
             metaapiAccountId,
-            release.detail,
+            parked.detail,
           );
           return new Response(
             JSON.stringify({
-              error: "We couldn't disconnect this account from our sync provider, so it hasn't been removed. Please try again in a moment.",
+              error: "We couldn't stop this account with our sync provider, so it hasn't been removed. Please try again in a moment.",
             }),
             { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
       }
 
+      /*
+        Marked, not deleted. Auto-sync off as well as removed_at set, so a
+        scheduled run has two independent reasons to skip it.
+      */
       const { error } = await supabase
-        .from("user_broker_connections")
-        .delete()
+        .from("broker_connections")
+        .update({ removed_at: new Date().toISOString(), is_auto_sync_enabled: false })
         .eq("id", connection_id)
         .eq("user_id", user.id);
 
