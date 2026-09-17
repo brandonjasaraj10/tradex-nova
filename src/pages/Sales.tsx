@@ -813,7 +813,7 @@ export default function Sales() {
       */}
       <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
         <div className="max-w-xl mx-auto px-5 sm:px-8">
-          <div className="text-center mb-16 sm:mb-12">
+          <div className="text-center mb-24 sm:mb-12">
             <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
               Pricing
             </p>
@@ -832,18 +832,23 @@ export default function Sales() {
 
             The money is the most guarded moment on the page, which is exactly
             why a familiar face belongs at it - by this point the reader has
-            met him three times, and recognition is the whole return on having
-            a mascot at all. Same clip trick as the objection card: he is
-            behind the edge, not pasted over it.
+            met him four times, and recognition is the whole return on having
+            a mascot at all.
+
+            The leaning pose, propped against the card's top edge, which is
+            what that pose was generated for. Same clip trick as the
+            objection: he is behind the edge rather than pasted over it, and
+            the window is tall enough to show the lean rather than cutting it
+            off at the neck.
           */}
           <div className="relative rounded-2xl border border-white/10 bg-brand-surface p-6 sm:p-8">
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute left-5 sm:left-7 overflow-hidden
-                -top-[54px] h-[54px] sm:-top-[72px] sm:h-[72px]"
+              className="pointer-events-none absolute left-4 sm:left-6 overflow-hidden
+                -top-[84px] h-[84px] sm:-top-[108px] sm:h-[108px]"
             >
-              <Mascot height={110} tilt={4} className="sm:hidden" />
-              <Mascot height={150} tilt={4} className="hidden sm:block" />
+              <Mascot pose="lean" height={120} className="sm:hidden" />
+              <Mascot pose="lean" height={158} className="hidden sm:block" />
             </div>
             <div className="text-center pb-7 mb-7 border-b border-white/[0.07]">
               {!launched && (

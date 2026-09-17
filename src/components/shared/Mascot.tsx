@@ -2,6 +2,7 @@ import mascotIdle from '../../assets/mascot.png';
 import mascotWave from '../../assets/mascot-wave.png';
 import mascotPresent from '../../assets/mascot-present.png';
 import mascotArms from '../../assets/mascot-arms.png';
+import mascotLean from '../../assets/mascot-lean.png';
 
 /*
   His poses, and what each one's file needs to be scaled by.
@@ -32,6 +33,7 @@ const POSES = {
   wave:    { src: mascotWave,    scale: 1 },      /* head 51.3% */
   present: { src: mascotPresent, scale: 1.233 },  /* head 41.6% */
   arms:    { src: mascotArms,    scale: 1.386 },  /* head 37.0% */
+  lean:    { src: mascotLean,    scale: 1.370 },  /* head 37.4% */
 } as const;
 
 export type MascotPose = keyof typeof POSES;
