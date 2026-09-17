@@ -137,9 +137,26 @@ export default function Sales() {
           <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[820px] h-[520px] rounded-full bg-white/[0.04] blur-3xl" />
         </div>
 
-        <div className="relative max-w-3xl mx-auto px-5 sm:px-8 pt-14 sm:pt-16
+        {/*
+          Top padding clears the FIXED header, which is 57px tall, and it has
+          to clear it with room to spare rather than exactly.
+
+          It used to be pt-14 - 56px - which put the first element 1px under
+          the header's own bottom edge. That was invisible while the first
+          element was a line of small grey uppercase text, because grey text
+          tucked against a border reads as deliberate. It stopped being
+          invisible the moment a 161px character led the page and appeared to
+          be wearing the header as a hat.
+
+          Two pt- classes were also fighting here: pt-14 sm:pt-16 at the start
+          and a stray pt-10 at the end, so which one won came down to the
+          order Tailwind happened to emit them in rather than anything
+          intended. One value now.
+        */}
+        <div className="relative max-w-3xl mx-auto px-5 sm:px-8
+          pt-24 sm:pt-28
           min-h-[calc(88svh-3.5rem)] sm:min-h-[calc(84svh-4rem)]
-          flex flex-col justify-center text-center pb-6 pt-10">
+          flex flex-col justify-center text-center pb-6">
 
           {/*
             He opens the page.
