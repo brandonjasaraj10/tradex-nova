@@ -27,6 +27,41 @@ import {
   fetchHistoricalTrades,
 } from "../_shared/metaStatsTrade.ts";
 
+const CLIENT_URL = "https://mt-client-api-v1.london.agiliumtrade.ai";
+
+/*
+  What is still open on the account, and since when.
+
+  Used for one purpose: to hold the history window open behind a position
+  that has not closed yet. Returns undefined rather than null when the call
+  fails, so the caller can tell "no open positions" apart from "we do not
+  know" - releasing the floor on a failed request would reintroduce exactly
+  the bug this exists to prevent.
+*/
+async function oldestOpenPositionAt(
+  token: string,
+  metaapiAccountId: string,
+): Promise<Date | null | undefined> {
+  try {
+    const res = await fetch(
+      `${CLIENT_URL}/users/current/accounts/${metaapiAccountId}/positions`,
+      { headers: { "auth-token": token } },
+    );
+    if (!res.ok) return undefined;
+    const positions = await res.json().catch(() => null);
+    if (!Array.isArray(positions)) return undefined;
+
+    let oldest: number | null = null;
+    for (const p of positions) {
+      const t = Date.parse(p?.time ?? "");
+      if (Number.isFinite(t) && (oldest === null || t < oldest)) oldest = t;
+    }
+    return oldest === null ? null : new Date(oldest);
+  } catch {
+    return undefined;
+  }
+}
+
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -42,20 +77,66 @@ async function syncOne(
     metaapi_account_id: string;
     last_sync: string | null;
     starting_balance: number | null;
+    oldest_open_position_at: string | null;
   },
 ): Promise<
   { id: string; imported?: number; error?: string; truncated?: boolean }
 > {
   const now = new Date();
+
   /*
-    A first sync takes the whole account; every sync after it takes the
-    day around the last one. The deep window is the expensive case and it
-    happens once, which is why it is worth doing properly rather than
-    cutting it to a year and hoping nobody traded before that.
+    Where the window starts, and why it is not just "a day before last time".
+
+    MetaStats filters historical-trades by a trade's OPEN time, not its close
+    time. A rolling 24-hour lookback therefore loses any position held longer
+    than a day: while it is open the window sweeps past its open time, and by
+    the time it closes there is no window left that contains it. It is not
+    late, it is gone - every subsequent sync reports imported: 0 and nothing
+    anywhere says a trade is missing.
+
+    Widening the lookback to 30 or 90 days only moves the cliff. Positions can
+    be held for months, and the trader holding a runner since March is the
+    last person a journal should quietly lose.
+
+    So the floor is a fact rather than a guess: no window may start after the
+    open time of the oldest position still open on this account, because that
+    position can close at any moment and has to be findable when it does. The
+    floor is read here and rewritten at the end of the sync, so a position
+    still open keeps holding the window open behind itself.
   */
-  const since = connection.last_sync
+  /*
+    Observed now, before the window is chosen, and combined with what was
+    stored last time. The stored floor covers a position that closed since
+    the last run; the live one covers a position that has been open since
+    long before this column existed, which is what makes the fix repair
+    accounts rather than only protect them from here on.
+  */
+  const liveOldest = await oldestOpenPositionAt(token, connection.metaapi_account_id);
+
+  const storedFloor = connection.oldest_open_position_at
+    ? new Date(connection.oldest_open_position_at)
+    : null;
+
+  const candidates = [storedFloor, liveOldest ?? null].filter(
+    (d): d is Date => d instanceof Date,
+  );
+  const openFloor = candidates.length
+    ? new Date(Math.min(...candidates.map((d) => d.getTime())))
+    : null;
+
+  const rollingStart = connection.last_sync
     ? new Date(new Date(connection.last_sync).getTime() - 24 * 60 * 60 * 1000)
     : FULL_HISTORY_START;
+
+  /* A margin under the floor, because a broker's clock is not ours and the
+     open time we stored came from theirs. */
+  const flooredStart = openFloor
+    ? new Date(openFloor.getTime() - 24 * 60 * 60 * 1000)
+    : null;
+
+  const since = flooredStart && flooredStart < rollingStart
+    ? flooredStart
+    : rollingStart;
 
   let raw: MetaStatsTrade[];
   let truncated = false;
@@ -91,7 +172,7 @@ async function syncOne(
   let dealSummary = new Map();
   try {
     const dealsRes = await fetch(
-      `https://mt-client-api-v1.london.agiliumtrade.ai` +
+      `${CLIENT_URL}` +
         `/users/current/accounts/${connection.metaapi_account_id}/history-deals` +
         `/time/${encodeURIComponent(since.toISOString())}` +
         `/${encodeURIComponent(new Date(now.getTime() + 60_000).toISOString())}`,
@@ -146,6 +227,19 @@ async function syncOne(
     0,
   );
 
+  /*
+    The floor moves only on a call we actually got an answer to.
+
+    undefined means the positions request failed, and the safe response to
+    not knowing is to leave the existing floor alone - a stale floor costs a
+    slightly wider window, while releasing one we cannot verify costs the
+    trade. null is a real answer meaning nothing is open, and only then is
+    the floor cleared so the window can close up again.
+  */
+  if (liveOldest !== undefined) {
+    update.oldest_open_position_at = liveOldest ? liveOldest.toISOString() : null;
+  }
+
   if (sawDeposit) update.starting_balance = netDeposits;
   if (sawDeposit || Number(connection.starting_balance ?? 0) > 0) {
     update.current_balance = starting + realised;
@@ -184,7 +278,7 @@ Deno.serve(async (req: Request) => {
 
   const { data: connections, error } = await admin
     .from("broker_connections")
-    .select("id, user_id, metaapi_account_id, last_sync, starting_balance")
+    .select("id, user_id, metaapi_account_id, last_sync, starting_balance, oldest_open_position_at")
     .not("metaapi_account_id", "is", null)
     .eq("is_auto_sync_enabled", true);
 
