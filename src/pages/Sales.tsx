@@ -156,7 +156,7 @@ export default function Sales() {
             Above the eyebrow rather than beside the headline, so the
             headline still lands alone and he reads as having shown you in.
           */}
-          <Mascot height={132} className="mx-auto mb-5 sm:mb-6" />
+          <Mascot height={168} className="mx-auto mb-4 sm:mb-5" />
 
           <p className="text-[9.5px] sm:text-[10px] tracking-[0.16em] uppercase text-gray-600 mb-4">
             Trading journal &middot; Built around psychology
@@ -352,6 +352,13 @@ export default function Sales() {
             <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-sm sm:max-w-md mx-auto text-balance">
               The reason journals die is the typing. So TradeX takes it off you.
             </p>
+            {/*
+              He introduces the three steps. Below the copy rather than above
+              it so the section still opens on its own words, and small enough
+              to read as a presenter beside the list rather than a second
+              headline over it.
+            */}
+            <Mascot height={86} tilt={5} className="mx-auto mt-7 sm:mt-8" />
           </div>
 
           <div className="flex flex-col gap-4 sm:gap-5">
@@ -698,8 +705,8 @@ export default function Sales() {
                     110 and 72 of 150 are both a touch under half, which is
                     head, eyes and smile. Shrinking only the window cut him
                     off above the smile on a phone. */}
-                <Mascot height={110} className="sm:hidden" />
-                <Mascot height={150} className="hidden sm:block" />
+                <Mascot height={110} facing="left" tilt={6} className="sm:hidden" />
+                <Mascot height={150} facing="left" tilt={6} className="hidden sm:block" />
               </div>
               <p className="text-[11px] uppercase tracking-[0.14em] text-gray-400 mb-4">TradeX</p>
               <ul className="flex flex-col gap-3">
@@ -802,7 +809,7 @@ export default function Sales() {
       */}
       <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
         <div className="max-w-xl mx-auto px-5 sm:px-8">
-          <div className="text-center mb-10 sm:mb-12">
+          <div className="text-center mb-16 sm:mb-12">
             <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
               Pricing
             </p>
@@ -816,7 +823,24 @@ export default function Sales() {
             </p>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-brand-surface p-6 sm:p-8">
+          {/*
+            And he is leaning on the price.
+
+            The money is the most guarded moment on the page, which is exactly
+            why a familiar face belongs at it - by this point the reader has
+            met him three times, and recognition is the whole return on having
+            a mascot at all. Same clip trick as the objection card: he is
+            behind the edge, not pasted over it.
+          */}
+          <div className="relative rounded-2xl border border-white/10 bg-brand-surface p-6 sm:p-8">
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute left-5 sm:left-7 overflow-hidden
+                -top-[54px] h-[54px] sm:-top-[72px] sm:h-[72px]"
+            >
+              <Mascot height={110} tilt={4} className="sm:hidden" />
+              <Mascot height={150} tilt={4} className="hidden sm:block" />
+            </div>
             <div className="text-center pb-7 mb-7 border-b border-white/[0.07]">
               {!launched && (
                 <p className="text-[11px] uppercase tracking-[0.14em] text-gray-400 mb-3">
@@ -1010,7 +1034,7 @@ export default function Sales() {
             margin keeps him from pushing the link row taller than it was.
           */}
           <p className="mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
-            <Mascot height={64} className="flex-shrink-0 -my-3" />
+            <Mascot height={64} facing="left" tilt={7} className="flex-shrink-0 -my-3" />
             <Link to="/faq" className="inline-flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-white transition-colors underline underline-offset-[3px] decoration-white/20 hover:decoration-white/50">
               Every other question
             </Link>
