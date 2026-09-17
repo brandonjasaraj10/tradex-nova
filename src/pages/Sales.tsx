@@ -366,8 +366,30 @@ export default function Sales() {
             <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
               Thirty seconds a trade
             </h2>
+            {/*
+              This said "The reason journals die is the typing. So TradeX
+              takes it off you." Brandon doubted the pain point was typing and
+              he was right, for a reason sharper than taste: convenience is
+              the one claim this product cannot win on. Tradespad already owns
+              simple-and-clean AND a free tier, so a section whose whole
+              argument is "less effort" is picking the fight we lose - while
+              psychology, which none of the four competitors mention at all,
+              is sitting uncontested.
+
+              It was also feature-led where it should be outcome-led. Benefit
+              headlines beat feature headlines by about 27% and concrete
+              numbers add another 15%, so "thirty seconds" stays - it is the
+              number that makes the promise checkable - and the sentence under
+              it now ends on what the reader gets rather than on what they are
+              spared.
+
+              The quitting objection is not lost by this. It is answered
+              directly in the FAQ below, by name: "I have tried journals
+              before and quit. Why is this different?"
+            */}
             <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-sm sm:max-w-md mx-auto text-balance">
-              The reason journals die is the typing. So TradeX takes it off you.
+              You quit the last journal because it was work. This one is thirty
+              seconds of talking, and it still catches what your head was doing.
             </p>
             {/*
               He introduces the three steps. Below the copy rather than above
