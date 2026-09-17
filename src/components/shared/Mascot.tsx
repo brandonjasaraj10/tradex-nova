@@ -3,19 +3,33 @@ import mascotWave from '../../assets/mascot-wave.png';
 import mascotPresent from '../../assets/mascot-present.png';
 
 /*
-  His poses.
+  His poses, and what each one's file needs to be scaled by.
 
-  Every file is cropped so his HEAD is the same fraction of the canvas -
-  51.5% of canvas height, measured rather than eyeballed - which is what
-  makes `height` mean the same thing whatever pose is asked for. Crop them
-  to their own bounding boxes instead and the same number renders a
-  noticeably bigger character for any pose with a raised arm, because the
-  arm inflates the box.
+  The problem this solves: every render comes back framed differently -
+  measured in the original 1254px files his head is 528px wide waving and
+  420px presenting, despite the prompt asking for the same camera. So the
+  same `height` would render a visibly different-sized character between two
+  sections a reader scrolls past in seconds.
+
+  The first fix was to crop every file until his head was the same share of
+  the canvas. That worked and was wrong: forcing the canvas to a ratio meant
+  cutting the presenting pose's reflection off mid-fade, which is exactly
+  what it looked like - a character standing on a shelf.
+
+  So each file is now cropped to hold the WHOLE figure including the full
+  reflection, and the size difference is corrected here instead. `scale` is
+  the number that makes his head the same size as the idle pose's, and
+  `height` therefore means the same thing everywhere while every reflection
+  runs to its natural end.
+
+  Adding a pose: crop to the full figure plus its reflection, measure his
+  head width as a percentage of canvas height, and set scale to 51.3 divided
+  by that percentage.
 */
 const POSES = {
-  idle: mascotIdle,
-  wave: mascotWave,
-  present: mascotPresent,
+  idle:    { src: mascotIdle,    scale: 1 },      /* head 51.3% of canvas */
+  wave:    { src: mascotWave,    scale: 1 },      /* head 51.3% */
+  present: { src: mascotPresent, scale: 1.233 },  /* head 41.6% */
 } as const;
 
 export type MascotPose = keyof typeof POSES;
@@ -87,16 +101,20 @@ export default function Mascot({
     tilt ? `rotate(${facing === 'left' ? -tilt : tilt}deg)` : null,
   ].filter(Boolean).join(' ');
 
+  /* The file's own height, so his BODY comes out the size that was asked
+     for regardless of how much empty frame the render came with. */
+  const renderedHeight = Math.round(height * POSES[pose].scale);
+
   return (
     <img
-      src={POSES[pose]}
+      src={POSES[pose].src}
       alt=""
       aria-hidden="true"
-      height={height}
+      height={renderedHeight}
       loading="lazy"
       decoding="async"
       className={`select-none pointer-events-none ${className}`}
-      style={{ height, width: 'auto', transform: transform || undefined }}
+      style={{ height: renderedHeight, width: 'auto', transform: transform || undefined }}
       draggable={false}
     />
   );
