@@ -109,7 +109,11 @@ export default defineConfig({
           // publicDir is false, so anything in public/ that isn't listed
           // here simply never reaches dist/ and 404s in production.
           'founder-video.mp4',
-          'founder-video-poster.jpg'
+          'founder-video-poster.jpg',
+          /* The mascot. It must be listed here or it never reaches dist/ and
+             404s in production - publicDir is false, so this array is the
+             whole contract for what actually ships. */
+          'mascot.png'
         ];
 
         for (const file of filesToCopy) {
