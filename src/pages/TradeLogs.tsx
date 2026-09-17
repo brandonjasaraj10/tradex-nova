@@ -7,6 +7,7 @@ import { useAccount } from '../lib/accountContext';
 import { useDateRange } from '../lib/dateRangeContext';
 import { getTradeLog, type TradeLogRow } from '../services/trades';
 import { valueColorClass, tradeOutcome, parseOutcomeQuery } from '../utils/formatMetrics';
+import { closeReasonLabel } from '../utils/closeReason';
 import { parseLocalDate, toLocalDateStr } from '../utils/dateHelpers';
 import TradeOutcomeBadge from '../components/trades/TradeOutcomeBadge';
 import Card from '../components/shared/Card';
@@ -45,6 +46,28 @@ function formatMoney(value: number): string {
 }
 
 const VIEW_STORAGE_KEY = 'tradex_trade_log_view';
+
+/*
+  How the trade ended, shown beside the result.
+
+  Kept quiet on purpose. The number is the headline and this is the reason
+  behind it, so it is a line of text rather than another coloured pill - the
+  row already carries a direction tag, an outcome badge and a source tag,
+  and a fourth competing chip turns a scannable list into confetti.
+
+  Red only for a stop. A stop being hit is not automatically bad - it is the
+  plan working - but it is the one ending a trader most needs to be able to
+  pick out of a list.
+*/
+function CloseReason({ reason }: { reason: string | null }) {
+  const label = closeReasonLabel(reason);
+  if (!label) return null;
+  const tone =
+    label.tone === 'stop' ? 'text-red-400/80'
+      : label.tone === 'target' ? 'text-blue-400/80'
+      : 'text-gray-500';
+  return <span className={`text-[10px] ${tone}`}>{label.text}</span>;
+}
 
 export default function TradeLogs() {
   const { user } = useAuth();
@@ -339,15 +362,18 @@ export default function TradeLogs() {
                           <span className="text-[10px] px-1.5 py-0.5 rounded border border-white/10 text-gray-500">
                             {row.source === 'journal' ? 'Journal' : 'Imported'}
                           </span>
-                          {row.entry_price != null && row.exit_price != null ? (
-                            <span className="text-[10px] text-gray-500">
-                              {row.entry_price} &rarr; {row.exit_price}
-                            </span>
-                          ) : (
-                            /* Journal trades have no fill prices; say so rather
-                               than leaving a gap that reads as a loading state. */
-                            <span className="text-[10px] text-gray-600">No fill prices</span>
-                          )}
+                          <span className="flex items-center gap-2">
+                            <CloseReason reason={row.close_reason} />
+                            {row.entry_price != null && row.exit_price != null ? (
+                              <span className="text-[10px] text-gray-500">
+                                {row.entry_price} &rarr; {row.exit_price}
+                              </span>
+                            ) : (
+                              /* Journal trades have no fill prices; say so rather
+                                 than leaving a gap that reads as a loading state. */
+                              <span className="text-[10px] text-gray-600">No fill prices</span>
+                            )}
+                          </span>
                         </div>
                       </div>
                     </motion.div>
@@ -400,11 +426,12 @@ export default function TradeLogs() {
 
                           <div className="text-right flex-shrink-0">
                             <p className={`font-bold ${valueColorClass(row.pnl)}`}>{formatMoney(row.pnl)}</p>
-                            {row.entry_price != null && row.exit_price != null && (
-                              <p className="text-[10px] text-gray-500 mt-0.5">
-                                {row.entry_price} &rarr; {row.exit_price}
-                              </p>
-                            )}
+                            <p className="text-[10px] text-gray-500 mt-0.5 flex items-center justify-end gap-2">
+                              <CloseReason reason={row.close_reason} />
+                              {row.entry_price != null && row.exit_price != null && (
+                                <span>{row.entry_price} &rarr; {row.exit_price}</span>
+                              )}
+                            </p>
                           </div>
                         </div>
                       </Card>

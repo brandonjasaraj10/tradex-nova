@@ -28,6 +28,7 @@ import {
   JournalEntry,
 } from '../services/journalService';
 import { getTrades, updateTradePnl, getTradePnl} from '../services/trades';
+import { closeReasonLabel } from '../utils/closeReason';
 import type { Trade } from '../types/trade';
 import { getUserConfluences, type Confluence } from '../services/confluences';
 import { supabase, getCurrentUser } from '../lib/supabase';
@@ -1865,7 +1866,33 @@ export default function Journal() {
                           <div className={`w-2 h-2 rounded-full ${trade.direction === 'LONG' ? 'bg-blue-400' : 'bg-gray-400'}`} />
                           <div>
                             <p className="text-sm font-medium">{trade.symbol}</p>
-                            <p className="text-xs text-gray-400">{trade.setup || 'No setup'}</p>
+                            {/*
+                              How it ended, where the setup line already is.
+
+                              The broker told us whether this was a stop, a
+                              target or the trader clicking close, and until
+                              now the journal never said - so a stop being
+                              hit and a position being given up on looked
+                              identical on the page where somebody reviews
+                              their own decisions. Falls back to the setup
+                              when there is no deal behind the trade to ask.
+                            */}
+                            {(() => {
+                              const ended = closeReasonLabel(trade.close_reason);
+                              if (!ended) {
+                                return <p className="text-xs text-gray-400">{trade.setup || 'No setup'}</p>;
+                              }
+                              const tone =
+                                ended.tone === 'stop' ? 'text-red-400/80'
+                                  : ended.tone === 'target' ? 'text-blue-400/80'
+                                  : 'text-gray-400';
+                              return (
+                                <p className="text-xs text-gray-400">
+                                  <span className={tone}>{ended.text}</span>
+                                  {trade.setup && <span className="text-gray-500"> &middot; {trade.setup}</span>}
+                                </p>
+                              );
+                            })()}
                           </div>
                         </div>
                         <div className="text-right">

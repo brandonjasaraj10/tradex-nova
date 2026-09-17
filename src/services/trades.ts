@@ -414,6 +414,14 @@ export interface TradeLogRow {
   notes: string;
   tags: string[];
   setup: string | null;
+  /*
+    How the position actually ended, straight from MetaTrader's deal
+    history: a stop, a target, or the trader clicking close. Null for a
+    journal entry, which records what happened rather than how the broker
+    recorded it, and null for a synced trade whose deal history was
+    unavailable - "we do not know" rather than a guessed "manual".
+  */
+  close_reason: string | null;
   source: 'trades' | 'journal';
   /*
     Whatever chart the trader attached, if anything.
@@ -464,7 +472,7 @@ export async function getTradeLog(
 
   let tradesQuery = supabase
     .from('trades')
-    .select('id, symbol, direction, entry_price, exit_price, quantity, pnl, entry_date, exit_date, notes, tags, setup, screenshot_url, broker_id')
+    .select('id, symbol, direction, entry_price, exit_price, quantity, pnl, entry_date, exit_date, notes, tags, setup, screenshot_url, broker_id, close_reason')
     .eq('user_id', user.id);
 
   if (dateRange) {
@@ -530,6 +538,7 @@ export async function getTradeLog(
     notes: t.notes || '',
     tags: t.tags || [],
     setup: t.setup ?? null,
+    close_reason: t.close_reason ?? null,
     screenshot: t.screenshot_url || null,
     account_id: t.broker_id ?? null,
     account_name: t.broker_id ? accountNames.get(t.broker_id) ?? null : null,
@@ -554,6 +563,8 @@ export async function getTradeLog(
     notes: (e.content || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim(),
     tags: e.tags || [],
     setup: e.position_size ?? null,
+    /* A journal entry has no broker deal behind it to ask. */
+    close_reason: null,
     /*
       "After" charts are attached once the trade is closed, so anything there
       is newer than anything in "before" - which makes the last after-chart

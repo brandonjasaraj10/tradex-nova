@@ -23,6 +23,10 @@ export interface Trade {
   notes?: string;
   tags: string[];
   setup?: string;
+  /* How MetaTrader recorded the close: stop_loss, take_profit, manual,
+     stop_out, expert. Null for manually logged trades and for synced ones
+     whose deal history could not be read. */
+  close_reason?: string | null;
   timeframe?: string;
   screenshot_url?: string;
   created_at: string;
