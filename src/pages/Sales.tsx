@@ -927,6 +927,21 @@ export default function Sales() {
             journal has nobody to justify it to, and /pricing carries the
             detail for the minority who want it.
           */}
+          {/*
+            Above the row, not leaning on the featured card.
+
+            The lean was tried there and measured: at this breakpoint a card
+            is 160px wide, the Most Popular badge is 114 and he is 81, so they
+            overlapped by 73px - and they will at every width until the cards
+            are wide enough for both, which is only large desktop. The badge
+            is worth 25-35% on its own; a decorative character does not get to
+            sit on top of it.
+
+            Centred above the three, presenting them, which is the same thing
+            he does on /pricing and works at every width including a phone.
+          */}
+          <Mascot pose="present" height={92} className="mx-auto mb-7" />
+
           <div className="grid gap-4 sm:grid-cols-3 sm:gap-4">
             {TIERS.map((tier) => (
               <div
@@ -944,35 +959,6 @@ export default function Sales() {
                   >
                     Most popular
                   </span>
-                )}
-                {/*
-                  He leans on the recommended plan, and only that one.
-
-                  A character on a pricing card is fine where a paywall
-                  character is not - nobody is blocked here, they are choosing
-                  - and putting him on the featured tier makes him agree with
-                  the badge rather than compete with it. On all three he would
-                  be decoration; on one he is a nudge toward the plan the
-                  badge already recommends.
-
-                  Window is 53.1% of his height, which is where the underside
-                  of his propped arm sits, so the card's edge is what he is
-                  leaning on.
-
-                  Desktop only. The cards sit side by side there with clear
-                  air above the row; on a phone they stack with 16px between
-                  them, so leaning over the Pro card means standing on top of
-                  the Starter card's last line. He is on /pricing for anyone
-                  on a phone who wants to compare properly.
-                */}
-                {tier.featured && (
-                  <div
-                    aria-hidden="true"
-                    className="pointer-events-none absolute right-4 overflow-hidden
-                      hidden sm:block sm:-top-[77px] sm:h-[77px]"
-                  >
-                    <Mascot pose="lean" height={120} />
-                  </div>
                 )}
                 <p className="text-[12px] uppercase tracking-[0.14em] text-gray-400">{tier.name}</p>
                 <p className="mt-2 flex items-baseline gap-1">
