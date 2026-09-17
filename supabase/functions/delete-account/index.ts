@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import Stripe from "npm:stripe@17.7.0";
+import { releaseMetaApiAccount } from "../_shared/metaApiAccount.ts";
 
 /*
   Permanently delete a user's account and everything belonging to them.
@@ -23,14 +24,18 @@ import Stripe from "npm:stripe@17.7.0";
      remove. Currently journal-screenshots and support-attachments; a new
      bucket has to be added to that list.
 
-  3. Delete the four tables whose foreign keys are NO ACTION rather than
+  3. Release any synced MetaApi accounts, BEFORE step 4 destroys the rows
+     that point at them. A provisioned account bills whether or not anyone
+     uses it, and broker_connections holds the only pointer we have.
+
+  4. Delete the four tables whose foreign keys are NO ACTION rather than
      CASCADE: trades, balance_adjustments, trading_plan_settings and
      broker_connections. These do not just leave orphans - they actively
      BLOCK the auth user delete, so without this the whole operation fails.
      trades and balance_adjustments reference broker_connections, so they
      go first.
 
-  4. Delete the auth user, which cascades the remaining 24 tables.
+  5. Delete the auth user, which cascades the remaining 24 tables.
 */
 
 const corsHeaders = {
@@ -97,6 +102,7 @@ Deno.serve(async (req: Request) => {
 
     // 1. Stripe first - never leave a live subscription billing a deleted account.
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+    const metaapiToken = Deno.env.get("METAAPI_TOKEN");
     if (stripeKey) {
       const { data: sub } = await admin
         .from("subscriptions")
@@ -145,7 +151,49 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // 3. Non-cascading tables, children before parents.
+    /*
+      3. Hand any synced accounts back to MetaApi.
+
+      Must happen before the broker_connections rows go, because those rows
+      hold the only pointer to a provisioned account that bills about $8.64
+      a month. Delete the row first and the charge becomes permanent and
+      untraceable.
+
+      Unlike the Stripe cancellation above, a failure here does NOT abort
+      the deletion. That one aborts because continuing would keep charging
+      the user; this one costs us, not them, and nobody should be trapped in
+      an account they asked to delete because our sync provider was having a
+      bad minute. The reconciliation sweep is the backstop: it compares
+      MetaApi's own account list against what we still point at, so anything
+      stranded here gets released later.
+    */
+    if (metaapiToken) {
+      const { data: syncedConnections } = await admin
+        .from("broker_connections")
+        .select("id, metaapi_account_id")
+        .eq("user_id", user.id)
+        .not("metaapi_account_id", "is", null);
+
+      for (const row of syncedConnections ?? []) {
+        const accountId = row.metaapi_account_id as string;
+        const release = await releaseMetaApiAccount(accountId, metaapiToken);
+        if (!release.released) {
+          console.error(
+            "MetaApi release failed during account deletion - account may still be billing:",
+            user.id,
+            accountId,
+            release.detail,
+          );
+        }
+      }
+    } else {
+      console.error(
+        "METAAPI_TOKEN missing during account deletion; synced accounts not released for",
+        user.id,
+      );
+    }
+
+    // 4. Non-cascading tables, children before parents.
     for (const table of ["trades", "balance_adjustments", "trading_plan_settings", "broker_connections"]) {
       const { error } = await admin.from(table).delete().eq("user_id", user.id);
       if (error) {
@@ -157,7 +205,7 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // 4. The account itself; the remaining 24 tables cascade from here.
+    // 5. The account itself; the remaining 24 tables cascade from here.
     const { error: deleteError } = await admin.auth.admin.deleteUser(user.id);
     if (deleteError) {
       console.error("Auth user deletion failed:", deleteError);
