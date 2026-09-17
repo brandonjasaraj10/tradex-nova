@@ -618,26 +618,9 @@ export default function Sales() {
             he is standing there, not that he is announcing anything.
           */}
           <div className="text-center mb-12 sm:mb-14">
-            {/*
-              Two treatments, because the phone has no room beside a heading
-              that wraps to two lines - and hiding him there would remove a
-              third of his presence on the traffic that matters most, which
-              arrives from Instagram on a phone.
-
-              So: above the line on mobile at 48, beside it on desktop at 60.
-              Both are far enough under the closing CTA's 112 that neither
-              reads as the same moment repeated.
-            */}
-            <Mascot height={48} className="sm:hidden mx-auto mb-3" />
-
-            {/* items-end so he stands level with the last line of the
-                heading rather than floating against the middle of two. */}
-            <div className="flex items-end justify-center gap-3 sm:gap-4">
-              <Mascot height={60} className="hidden sm:block flex-shrink-0 translate-y-1" />
-              <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
-                &ldquo;I already have a spreadsheet&rdquo;
-              </h2>
-            </div>
+            <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
+              &ldquo;I already have a spreadsheet&rdquo;
+            </h2>
             <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-sm sm:max-w-md mx-auto text-balance">
               You do. Be honest about how up to date it is.
             </p>
@@ -657,7 +640,39 @@ export default function Sales() {
                 ))}
               </ul>
             </div>
-            <div className="rounded-2xl border border-white/15 bg-brand-surface p-4 sm:p-6">
+            {/*
+              He is looking over the top of the TradeX card.
+
+              Standing next to a heading is a sticker; leaning on the furniture
+              is a character. The clip window is what sells it - the wrapper is
+              as tall as the part of him that should show, so the rest is cut
+              off behind the card's edge and he reads as being BEHIND it rather
+              than pasted on top.
+
+              Over the TradeX card and not the spreadsheet one, deliberately.
+              The spreadsheet is the reader's, and this section already takes
+              care not to mock them for it - "You do. Be honest about how up to
+              date it is." A character sneering over that column would undo the
+              one line on the page that grants them some dignity.
+            */}
+            <div className="relative rounded-2xl border border-white/15 bg-brand-surface p-4 sm:p-6">
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -top-[38px] right-5 sm:right-7 h-[38px] overflow-hidden"
+              >
+                {/*
+                  The bob is on HIM, not on the clip. Animating the wrapper
+                  moves the window too, so he lifts away from the card and
+                  the illusion dies - a sticker sliding about above an edge.
+                  Moving him inside a fixed window is the whole effect: the
+                  edge stays put and he rises and dips behind it.
+
+                  38 of 78 is head, eyes and the smile. Stop above the smile
+                  and he is a pair of eyes on a dome, which reads as watching
+                  rather than as friendly.
+                */}
+                <Mascot height={78} className="motion-safe:animate-mascot-bob" />
+              </div>
               <p className="text-[11px] uppercase tracking-[0.14em] text-gray-400 mb-4">TradeX</p>
               <ul className="flex flex-col gap-3">
                 {[

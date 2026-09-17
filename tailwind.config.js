@@ -24,9 +24,23 @@ export default {
           '0%': { transform: 'translateX(-100%)' },
           '100%': { transform: 'translateX(350%)' },
         },
+        /*
+          The mascot's idle bob, for where he is peeking over something.
+
+          Transform only, so it cannot move anything around it - the whole
+          point of feature/stable-layout was that looping animations were
+          shoving the page while people read. Four pixels over three seconds
+          is under the threshold at which it reads as motion; it reads as
+          something alive holding still.
+        */
+        'mascot-bob': {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-4px)' },
+        },
       },
       animation: {
         'loader-sweep': 'loader-sweep 1.2s ease-in-out infinite',
+        'mascot-bob': 'mascot-bob 3s ease-in-out infinite',
       },
     },
   },
