@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Plus, Check } from 'lucide-react';
 import Footer from '../components/layout/Footer';
+import Mascot from '../components/shared/Mascot';
 import TranscriptToEntry from '../components/sales/TranscriptToEntry';
 import ProductTabs from '../components/sales/ProductTabs';
 import Wordmark from '../components/shared/Wordmark';
@@ -136,9 +137,43 @@ export default function Sales() {
           <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[820px] h-[520px] rounded-full bg-white/[0.04] blur-3xl" />
         </div>
 
-        <div className="relative max-w-3xl mx-auto px-5 sm:px-8 pt-14 sm:pt-16
+        {/*
+          Top padding clears the FIXED header, which is 57px tall, and it has
+          to clear it with room to spare rather than exactly.
+
+          It used to be pt-14 - 56px - which put the first element 1px under
+          the header's own bottom edge. That was invisible while the first
+          element was a line of small grey uppercase text, because grey text
+          tucked against a border reads as deliberate. It stopped being
+          invisible the moment a 161px character led the page and appeared to
+          be wearing the header as a hat.
+
+          Two pt- classes were also fighting here: pt-14 sm:pt-16 at the start
+          and a stray pt-10 at the end, so which one won came down to the
+          order Tailwind happened to emit them in rather than anything
+          intended. One value now.
+        */}
+        <div className="relative max-w-3xl mx-auto px-5 sm:px-8
+          pt-24 sm:pt-28
           min-h-[calc(88svh-3.5rem)] sm:min-h-[calc(84svh-4rem)]
-          flex flex-col justify-center text-center pb-6 pt-10">
+          flex flex-col justify-center text-center pb-6">
+
+          {/*
+            He opens the page.
+
+            This was held back for a while on the theory that a character
+            next to "Stop guessing why you lose" would undercut it. The
+            research points the other way: consistent character assets carry
+            about 37% higher recall and 24% higher purchase intent than
+            abstract visuals, Duolingo's mascot is front and centre rather
+            than tucked into corners, and the whole reason to have one is to
+            be recognised on the second visit. A mascot nobody notices is
+            just a file in the repo.
+
+            Above the eyebrow rather than beside the headline, so the
+            headline still lands alone and he reads as having shown you in.
+          */}
+          <Mascot pose="wave" height={168} className="mx-auto mb-4 sm:mb-5" />
 
           <p className="text-[9.5px] sm:text-[10px] tracking-[0.16em] uppercase text-gray-600 mb-4">
             Trading journal &middot; Built around psychology
@@ -331,9 +366,38 @@ export default function Sales() {
             <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
               Thirty seconds a trade
             </h2>
+            {/*
+              This said "The reason journals die is the typing. So TradeX
+              takes it off you." Brandon doubted the pain point was typing and
+              he was right, for a reason sharper than taste: convenience is
+              the one claim this product cannot win on. Tradespad already owns
+              simple-and-clean AND a free tier, so a section whose whole
+              argument is "less effort" is picking the fight we lose - while
+              psychology, which none of the four competitors mention at all,
+              is sitting uncontested.
+
+              It was also feature-led where it should be outcome-led. Benefit
+              headlines beat feature headlines by about 27% and concrete
+              numbers add another 15%, so "thirty seconds" stays - it is the
+              number that makes the promise checkable - and the sentence under
+              it now ends on what the reader gets rather than on what they are
+              spared.
+
+              The quitting objection is not lost by this. It is answered
+              directly in the FAQ below, by name: "I have tried journals
+              before and quit. Why is this different?"
+            */}
             <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-sm sm:max-w-md mx-auto text-balance">
-              The reason journals die is the typing. So TradeX takes it off you.
+              You quit the last journal because it was work. This one is thirty
+              seconds of talking, and it still catches what your head was doing.
             </p>
+            {/*
+              He introduces the three steps. Below the copy rather than above
+              it so the section still opens on its own words, and small enough
+              to read as a presenter beside the list rather than a second
+              headline over it.
+            */}
+            <Mascot pose="present" height={96} className="mx-auto mt-7 sm:mt-8" />
           </div>
 
           <div className="flex flex-col gap-4 sm:gap-5">
@@ -457,6 +521,21 @@ export default function Sales() {
               Rate your head before the trade. TradeX matches it against what
               actually happened, and turns it into one score you can watch move.
             </p>
+
+            {/*
+              The slumped pose, and the only section on the page it can go in.
+
+              Everywhere else he is selling - waving, presenting, leaning on a
+              price - and this is the one part that names the problem rather
+              than the answer. "Your P&L is the symptom" is about the bad day,
+              so the character under it is the one having one. He is the reader
+              here, not the product.
+
+              The render has a flat line where the smile is, which is why this
+              pose has to stay out of the hero, the pricing and the CTA: a
+              mascot pulling that face next to a price reads as a warning.
+            */}
+            <Mascot pose="slump" height={104} className="mx-auto mt-8 sm:mt-9" />
           </div>
 
           <div className="rounded-2xl border border-white/[0.07] bg-brand-surface p-5 sm:p-8">
@@ -603,7 +682,20 @@ export default function Sales() {
       */}
       <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
         <div className="max-w-3xl mx-auto px-5 sm:px-8">
-          <div className="text-center mb-12 sm:mb-14">
+          {/*
+            He turns up beside the objection rather than above it.
+
+            This is the only heading on the page written in somebody else's
+            voice - it is the reader's own line, quoted back at them - so a
+            character standing next to it reads as the one saying it, and the
+            section becomes a conversation instead of a rebuttal. Centred
+            above, like the closing CTA, he would just be a second badge on a
+            second heading.
+
+            Small, and beside the text rather than over it: the joke is that
+            he is standing there, not that he is announcing anything.
+          */}
+          <div className="text-center mb-24 sm:mb-14">
             <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
               &ldquo;I already have a spreadsheet&rdquo;
             </h2>
@@ -626,7 +718,57 @@ export default function Sales() {
                 ))}
               </ul>
             </div>
-            <div className="rounded-2xl border border-white/15 bg-brand-surface p-4 sm:p-6">
+            {/*
+              He is looking over the top of the TradeX card.
+
+              Standing next to a heading is a sticker; leaning on the furniture
+              is a character. The clip window is what sells it - the wrapper is
+              as tall as the part of him that should show, so the rest is cut
+              off behind the card's edge and he reads as being BEHIND it rather
+              than pasted on top.
+
+              Arms crossed, turned to face the spreadsheet column he is
+            unimpressed by - the pose carries the head tilt, so no rotation
+            is added on top of it.
+
+            Over the TradeX card and not the spreadsheet one, deliberately.
+              The spreadsheet is the reader's, and this section already takes
+              care not to mock them for it - "You do. Be honest about how up to
+              date it is." A character sneering over that column would undo the
+              one line on the page that grants them some dignity.
+            */}
+            <div className="relative rounded-2xl border border-white/15 bg-brand-surface p-4 sm:p-6">
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute right-3 sm:right-5 overflow-hidden
+                  -top-[84px] h-[84px] sm:-top-[110px] sm:h-[110px]"
+              >
+                {/*
+                  The window is 56.8% of his height, which is where the
+                  underside of his crossed arms sits - so the card's edge
+                  lands under the arms rather than through them. It shows his
+                  head AND his crossed arms, which is
+                  the whole reason this pose is here - clipped at head height
+                  he would just be the idle pose again and the skepticism
+                  would be invisible. It lands so the card's edge cuts just
+                  under the arms, which reads as him leaning on it.
+
+                  Shorter on a phone, because the gap over a card is smaller
+                  when the text above it wraps - at full height his head sat
+                  across the word "date" in "how up to date it is".
+
+                  Static, by choice. A bob was tried and removed: the effect
+                  here is the clip, not the movement, and a loop that runs
+                  forever on a marketing page is one more thing to get right
+                  on a slow phone for something the still frame already does.
+                */}
+                {/* Two sizes so the PROPORTION shown stays the same: 54 of
+                    110 and 72 of 150 are both a touch under half, which is
+                    head, eyes and smile. Shrinking only the window cut him
+                    off above the smile on a phone. */}
+                <Mascot pose="arms" height={124} facing="left" className="sm:hidden" />
+                <Mascot pose="arms" height={162} facing="left" className="hidden sm:block" />
+              </div>
               <p className="text-[11px] uppercase tracking-[0.14em] text-gray-400 mb-4">TradeX</p>
               <ul className="flex flex-col gap-3">
                 {[
@@ -728,7 +870,7 @@ export default function Sales() {
       */}
       <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
         <div className="max-w-xl mx-auto px-5 sm:px-8">
-          <div className="text-center mb-10 sm:mb-12">
+          <div className="text-center mb-24 sm:mb-24">
             <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
               Pricing
             </p>
@@ -742,7 +884,34 @@ export default function Sales() {
             </p>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-brand-surface p-6 sm:p-8">
+          {/*
+            And he is leaning on the price.
+
+            The money is the most guarded moment on the page, which is exactly
+            why a familiar face belongs at it - by this point the reader has
+            met him four times, and recognition is the whole return on having
+            a mascot at all.
+
+            The leaning pose, propped against the card's top edge, which is
+            what that pose was generated for. Same clip trick as the
+            objection: he is behind the edge rather than pasted over it.
+
+            The window height is not a look-right guess - it is measured. The
+            underside of his propped arm sits at 53.1% of his height in the
+            render, so the window is 53.1% of whatever height he is given,
+            which puts the card's edge exactly where his arm comes down. Cut
+            lower and the arm rests on nothing, which is what a taller window
+            did here and what Brandon spotted immediately.
+          */}
+          <div className="relative rounded-2xl border border-white/10 bg-brand-surface p-6 sm:p-8">
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute left-4 sm:left-6 overflow-hidden
+                -top-[77px] h-[77px] sm:-top-[101px] sm:h-[101px]"
+            >
+              <Mascot pose="lean" height={120} className="sm:hidden" />
+              <Mascot pose="lean" height={158} className="hidden sm:block" />
+            </div>
             <div className="text-center pb-7 mb-7 border-b border-white/[0.07]">
               {!launched && (
                 <p className="text-[11px] uppercase tracking-[0.14em] text-gray-400 mb-3">
@@ -1012,6 +1181,21 @@ export default function Sales() {
       */}
       <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
         <div className="max-w-xl mx-auto px-5 sm:px-8 text-center">
+          {/*
+            He appears once, here, and not anywhere above.
+
+            Everything before this point is the argument - what it costs you,
+            what the numbers say, why the spreadsheet is not enough - and that
+            argument is what justifies the price. A character standing next to
+            it competes with it. By this section the case is made and the only
+            thing left is the decision, which is the one moment on the page
+            where warmth helps rather than undercuts.
+
+            Sized so he reads as a small presence rather than a banner: he is
+            greeting the reader at the door, not blocking it.
+          */}
+          <Mascot height={150} className="mx-auto mb-6 sm:mb-7" />
+
           <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
             Stop guessing why you lose
           </h2>
