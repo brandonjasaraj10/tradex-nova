@@ -39,6 +39,18 @@ const fmtPrice = (n: number | null) =>
 */
 const fmtVolume = (n: number | null) => (n === null ? '--' : `${n} lots`);
 
+/*
+  How often the panel re-reads while it is on screen.
+
+  45 seconds is a compromise between the two things that are actually true:
+  a position appears at MetaApi within a second or two of being taken, and
+  nobody watching a journal needs to-the-second P&L - they have a terminal
+  for that. Short enough that a trade taken while the dashboard is open
+  shows up before anyone wonders why it has not, long enough that a tab left
+  open all day is not making thousands of requests.
+*/
+const POLL_INTERVAL_MS = 45_000;
+
 export default function OpenPositions({ connectionId, accountName }: Props) {
   const [result, setResult] = useState<OpenPositionsResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -71,10 +83,15 @@ export default function OpenPositions({ connectionId, accountName }: Props) {
   */
   const askedFor = useRef<string | null>(null);
 
-  const load = useCallback(async (attempt = 0) => {
+  const load = useCallback(async (attempt = 0, silent = false) => {
     if (!connectionId) return;
     askedFor.current = connectionId;
-    setLoading(true);
+    /*
+      A background poll does not spin the refresh icon. Left visible, the
+      panel would flicker into a loading state every poll on its own, which
+      reads as the page doing something the trader did not ask for.
+    */
+    if (!silent) setLoading(true);
 
     const next = await getOpenPositions(connectionId);
 
@@ -83,7 +100,7 @@ export default function OpenPositions({ connectionId, accountName }: Props) {
 
     if (next.error && attempt < 2) {
       setTimeout(() => {
-        if (askedFor.current === connectionId) void load(attempt + 1);
+        if (askedFor.current === connectionId) void load(attempt + 1, silent);
       }, 2000);
       return;
     }
@@ -101,6 +118,66 @@ export default function OpenPositions({ connectionId, accountName }: Props) {
     setResult(null);
     load();
   }, [load]);
+
+  /*
+    Kept current while the panel is on screen.
+
+    Until this existed the panel asked once, on mount, and never again - so
+    a trader with the dashboard already open took a position and watched a
+    panel headed "Open now" go on saying nothing was open. It was only ever
+    right at the moment the page loaded, which is the one thing a live view
+    must not be.
+
+    Polling rather than realtime because these positions never touch our
+    database: they are read straight from MetaApi, so there is no row
+    changing for a subscription to notice. (Worth knowing separately: the
+    supabase_realtime publication on this project contains no tables at all,
+    so nothing in this app has ever received a postgres_changes event.)
+
+    Paused whenever the tab is hidden, and refreshed the moment it comes
+    back. A dashboard left open in a background tab for a day would
+    otherwise make nearly two thousand requests nobody is looking at, and
+    the answer waiting on return would be however stale the last poll left
+    it. MetaApi bills for hosting rather than per call, so the cost of this
+    is request volume and their rate limit, not money.
+  */
+  useEffect(() => {
+    if (!connectionId) return;
+
+    let timer: number | undefined;
+
+    const stop = () => {
+      if (timer !== undefined) {
+        clearInterval(timer);
+        timer = undefined;
+      }
+    };
+
+    const start = () => {
+      stop();
+      timer = window.setInterval(() => {
+        if (document.visibilityState === 'visible') void load(0, true);
+      }, POLL_INTERVAL_MS);
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        /* Whatever is on screen was true when the tab was last looked at. */
+        void load(0, true);
+        start();
+      } else {
+        stop();
+      }
+    };
+
+    if (document.visibilityState === 'visible') start();
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    return () => {
+      stop();
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [connectionId, load]);
 
   /* Nothing to say for a manual account. */
   if (!connectionId) return null;
