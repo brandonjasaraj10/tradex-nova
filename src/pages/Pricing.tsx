@@ -3,6 +3,7 @@ import { Check, Minus } from 'lucide-react';
 import PageShell from '../components/layout/PageShell';
 import { Section, QA, Steps, ClosingCta } from '../components/marketing/blocks';
 import { PullQuote, StatBand } from '../components/marketing/product';
+import Mascot from '../components/shared/Mascot';
 
 /*
   Pricing, on its own page, because people search for it by name and a price
@@ -194,6 +195,24 @@ export default function Pricing() {
       title="Pick how many accounts you run."
       subtitle="Every plan has the whole product in it. What changes is how many accounts sync, and how fast."
     >
+      {/*
+        He belongs on this page and NOT on the paywall, and the distinction is
+        not taste.
+
+        The guidance on mascots in product is specific about this one screen:
+        a character that becomes the face of a paywall gets resented, and the
+        exception is when the upgrade is tied to positive progress - more
+        seats, more exports, more of something the reader already wants. This
+        page is exactly that exception: nobody is blocked here, they are
+        choosing how many accounts to sync. Payment.tsx is the other case - a
+        signed-up trader who cannot get in - so he stays off it.
+
+        Presenting, because the three cards are what he is presenting, and
+        above them rather than beside a price, so he introduces the choice
+        instead of selling one of the options.
+      */}
+      <Mascot pose="present" height={96} className="mx-auto mb-8 sm:mb-10" />
+
       <div className="grid gap-5 md:grid-cols-3 md:gap-4 lg:gap-5 items-stretch">
         {TIERS.map((tier) => (
           <TierCard key={tier.name} tier={tier} />

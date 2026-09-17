@@ -875,11 +875,11 @@ export default function Sales() {
               Pricing
             </p>
             <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
-              One plan. Everything in it.
+              Everything in every plan
             </h2>
             <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-sm mx-auto text-balance">
               {launched
-                ? 'No tiers, no add-ons, no trade limits.'
+                ? 'What changes is how many accounts sync, and how fast.'
                 : 'Join the waitlist before launch and lock in founding member pricing.'}
             </p>
           </div>
@@ -922,8 +922,11 @@ export default function Sales() {
                 {!launched && (
                   <span className="text-xl text-gray-600 line-through mr-1 tabular-nums">$24.99</span>
                 )}
+                {launched && (
+                  <span className="text-[15px] text-gray-500 self-center mr-0.5">From</span>
+                )}
                 <span className="text-[44px] sm:text-5xl font-semibold text-white tracking-[-0.03em] tabular-nums">
-                  {launched ? '$24.99' : '$14.99'}
+                  {launched ? '$29.99' : '$14.99'}
                 </span>
                 <span className="text-[15px] text-gray-500">/month</span>
               </p>
@@ -933,18 +936,19 @@ export default function Sales() {
             </div>
 
             {/*
-              Real urgency, not a countdown clock.
-
-              MT4 and MT5 sync ships in the next week or two and the price
-              goes up with it. Saying so is both the honest warning and the
-              strongest reason to join today - and unlike a fake timer, it is
-              a promise that can actually be kept.
+              This block used to say "MT4 & MT5 sync lands in the next couple
+              of weeks - and the price goes up when it does." That was true
+              and is the exact thing this branch ships, so it stops being true
+              the moment this goes out. Replaced rather than deleted: the
+              honest version of the same note is that anyone already paying
+              keeps what they were promised.
             */}
             {launched && (
               <div className="mb-7 rounded-xl border border-brand-blue-light/25 bg-brand-blue/[0.06] px-4 py-3.5">
                 <p className="text-[12.5px] sm:text-[13px] text-gray-300 leading-relaxed">
-                  <span className="text-white font-medium">MT4 &amp; MT5 sync lands in the next couple of weeks</span>
-                  {' \u2014 '}and the price goes up when it does. Join now and yours stays at $24.99.
+                  <span className="text-white font-medium">MT4 &amp; MT5 sync is live.</span>
+                  {' '}Plans differ by how many accounts sync and how quickly. Already a
+                  member? Your price does not change.
                 </p>
               </div>
             )}
@@ -1003,6 +1007,22 @@ export default function Sales() {
                   </p>
                 }
               />
+            )}
+            {/*
+              The homepage shows the entry price and what every plan
+              contains; which plan is a decision, and decisions belong on the
+              page built for them. Quiet link rather than a second button -
+              the job here is still to start a journal, not to shop.
+            */}
+            {launched && (
+              <p className="mt-5 text-center">
+                <Link
+                  to="/pricing"
+                  className="inline-flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-white transition-colors underline underline-offset-[3px] decoration-white/20 hover:decoration-white/50"
+                >
+                  Compare the three plans
+                </Link>
+              </p>
             )}
           </div>
         </div>
