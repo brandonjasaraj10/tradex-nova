@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Activity, AlertTriangle, RefreshCw } from 'lucide-react';
 import { getOpenPositions, type OpenPositionsResult } from '../../services/openPositions';
+import { syncMetaTraderAccount } from '../../services/metaTraderConnect';
+import { useDataSync } from '../../lib/dataSync';
 import { valueColorClass } from '../../utils/formatMetrics';
 
 /*
@@ -83,6 +85,50 @@ export default function OpenPositions({ connectionId, accountName }: Props) {
   */
   const askedFor = useRef<string | null>(null);
 
+  const { forceRefresh } = useDataSync();
+
+  /*
+    The position ids seen on the previous poll, so a disappearance is
+    noticeable. Null until the first answer for this account - the first
+    poll has nothing to compare against and must not be read as everything
+    having just closed.
+  */
+  const seenIds = useRef<Set<string> | null>(null);
+  /* One sync per close, not one per poll while the sync is in flight. */
+  const syncing = useRef(false);
+
+  /*
+    A position that was open a moment ago and is not now has closed, and its
+    trade is sitting at the broker waiting for the next scheduled sync - up
+    to five minutes of a trader looking at a journal that does not yet
+    contain the trade they just took. They are on the screen, so the work is
+    worth doing now.
+
+    Deliberately small: it syncs the one account being looked at, through
+    the same endpoint the Sync button already uses, which authenticates the
+    caller and checks they own the connection. It upserts on the broker's
+    own trade id, so firing it twice imports nothing twice.
+
+    Nothing here replaces the scheduled sync. This only helps the case where
+    somebody is watching; the cron remains what guarantees the trade arrives
+    for everyone else.
+  */
+  const syncAfterClose = useCallback(async (connId: string) => {
+    if (syncing.current) return;
+    syncing.current = true;
+    try {
+      const res = await syncMetaTraderAccount(connId);
+      /*
+        Refresh the rest of the page only when something actually landed.
+        A forceRefresh on every close would reload the journal, calendar and
+        metrics to show them exactly what they already showed.
+      */
+      if (res.ok && (res.imported ?? 0) > 0) forceRefresh();
+    } finally {
+      syncing.current = false;
+    }
+  }, [forceRefresh]);
+
   const load = useCallback(async (attempt = 0, silent = false) => {
     if (!connectionId) return;
     askedFor.current = connectionId;
@@ -107,7 +153,27 @@ export default function OpenPositions({ connectionId, accountName }: Props) {
 
     setResult(next);
     setLoading(false);
-  }, [connectionId]);
+
+    /*
+      Compare against the previous poll before recording this one. Only a
+      real answer counts: an errored read returns no positions, and treating
+      that as "everything closed" would fire a sync on every blip.
+    */
+    if (!next.error) {
+      const current = new Set(
+        (next.positions ?? [])
+          .map((p) => p.position_id)
+          .filter((id): id is string => typeof id === 'string' && id.length > 0),
+      );
+      const previous = seenIds.current;
+      seenIds.current = current;
+
+      if (previous) {
+        const closed = [...previous].some((id) => !current.has(id));
+        if (closed) void syncAfterClose(connectionId);
+      }
+    }
+  }, [connectionId, syncAfterClose]);
 
   useEffect(() => {
     /*
@@ -116,6 +182,8 @@ export default function OpenPositions({ connectionId, accountName }: Props) {
       is still in flight.
     */
     setResult(null);
+    /* The previous account's positions are not this one's baseline. */
+    seenIds.current = null;
     load();
   }, [load]);
 
