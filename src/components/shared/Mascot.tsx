@@ -3,6 +3,7 @@ import mascotWave from '../../assets/mascot-wave.png';
 import mascotPresent from '../../assets/mascot-present.png';
 import mascotArms from '../../assets/mascot-arms.png';
 import mascotLean from '../../assets/mascot-lean.png';
+import mascotSlump from '../../assets/mascot-slump.png';
 
 /*
   His poses, and what each one's file needs to be scaled by.
@@ -34,6 +35,13 @@ const POSES = {
   present: { src: mascotPresent, scale: 1.233 },  /* head 41.6% */
   arms:    { src: mascotArms,    scale: 1.386 },  /* head 37.0% */
   lean:    { src: mascotLean,    scale: 1.370 },  /* head 37.4% */
+  /*
+    Slumped. The only pose where the smile is gone - the render has a flat
+    line instead - so it is the one to keep away from anything selling. It
+    belongs where somebody has just had a bad one: a stopped-out trade, a red
+    week, an empty journal after a loss.
+  */
+  slump:   { src: mascotSlump,   scale: 1.407 },  /* head 36.5% */
 } as const;
 
 export type MascotPose = keyof typeof POSES;

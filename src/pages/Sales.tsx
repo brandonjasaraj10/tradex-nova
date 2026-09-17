@@ -482,6 +482,21 @@ export default function Sales() {
               Rate your head before the trade. TradeX matches it against what
               actually happened, and turns it into one score you can watch move.
             </p>
+
+            {/*
+              The slumped pose, and the only section on the page it can go in.
+
+              Everywhere else he is selling - waving, presenting, leaning on a
+              price - and this is the one part that names the problem rather
+              than the answer. "Your P&L is the symptom" is about the bad day,
+              so the character under it is the one having one. He is the reader
+              here, not the product.
+
+              The render has a flat line where the smile is, which is why this
+              pose has to stay out of the hero, the pricing and the CTA: a
+              mascot pulling that face next to a price reads as a warning.
+            */}
+            <Mascot pose="slump" height={104} className="mx-auto mt-8 sm:mt-9" />
           </div>
 
           <div className="rounded-2xl border border-white/[0.07] bg-brand-surface p-5 sm:p-8">
