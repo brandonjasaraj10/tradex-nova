@@ -41,6 +41,66 @@ describe('evaluateSubscriptionAccess', () => {
     expect(result.reason).toBe('Access until end of billing period');
   });
 
+  /*
+    The expensive case. Stripe cancels a subscription once its retries on a
+    failed card run out, and current_period_end is then the end of a period
+    nobody paid for - a whole year ahead on an annual plan.
+  */
+  it('refuses the wind-down when Stripe cancelled the subscription for non-payment', () => {
+    const result = evaluateSubscriptionAccess(
+      makeSubscription({
+        status: 'canceled',
+        current_period_end: '2027-06-20T00:00:00Z',
+        cancellation_reason: 'payment_failed',
+      }),
+      NOW
+    );
+    expect(result.hasAccess).toBe(false);
+    expect(result.reason).toBe('Payment failed - update your card to restore access');
+  });
+
+  it('refuses the wind-down on a disputed payment too', () => {
+    const result = evaluateSubscriptionAccess(
+      makeSubscription({
+        status: 'canceled',
+        current_period_end: '2027-06-20T00:00:00Z',
+        cancellation_reason: 'payment_disputed',
+      }),
+      NOW
+    );
+    expect(result.hasAccess).toBe(false);
+  });
+
+  it('still gives the wind-down to someone who chose to cancel', () => {
+    const result = evaluateSubscriptionAccess(
+      makeSubscription({
+        status: 'canceled',
+        current_period_end: '2026-06-20T00:00:00Z',
+        cancellation_reason: 'cancellation_requested',
+      }),
+      NOW
+    );
+    expect(result.hasAccess).toBe(true);
+    expect(result.reason).toBe('Access until end of billing period');
+  });
+
+  /*
+    Rows written before the column existed carry null, and are read as a
+    voluntary cancellation on purpose - cutting off somebody who genuinely
+    paid is the worse of the two mistakes.
+  */
+  it('treats an unknown cancellation reason as voluntary', () => {
+    const result = evaluateSubscriptionAccess(
+      makeSubscription({
+        status: 'canceled',
+        current_period_end: '2026-06-20T00:00:00Z',
+        cancellation_reason: null,
+      }),
+      NOW
+    );
+    expect(result.hasAccess).toBe(true);
+  });
+
   it('revokes access to a canceled subscription once its period has actually ended', () => {
     const result = evaluateSubscriptionAccess(
       makeSubscription({ status: 'canceled', current_period_end: '2026-06-10T00:00:00Z' }),

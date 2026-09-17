@@ -241,6 +241,21 @@ export async function syncSubscription(supabase: SupabaseClient, userId: string,
       writing null here is belt and braces, not the rule itself.
     */
     grace_period_end: gracePeriodEnd,
+    /*
+      Why it ended, because Stripe says `canceled` for two opposite things.
+
+      Somebody who paid and then quit is owed the rest of the period they
+      bought. Somebody Stripe cancelled after exhausting its retries on a
+      failed card paid for none of it - and on an annual plan that period
+      runs a year ahead. has_active_subscription() reads this column to tell
+      them apart; without it, running out of retries handed people the
+      product for free until their period end.
+
+      Stripe's own value, stored as it comes: cancellation_requested,
+      payment_failed or payment_disputed. Null while the subscription is
+      live, which is correct - nothing has ended yet.
+    */
+    cancellation_reason: subscription.cancellation_details?.reason ?? null,
     updated_at: new Date().toISOString(),
   };
 

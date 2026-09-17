@@ -20,6 +20,9 @@ export interface Subscription {
   current_period_end: string | null;
   cancel_at_period_end: boolean;
   grace_period_end: string | null;
+  // Stripe's own cancellation_details.reason, written by subscriptionSync.
+  // Null on a live subscription, and on rows predating the column.
+  cancellation_reason?: string | null;
   // Written by subscriptionSync from the Stripe subscription item, so the UI
   // can show the real price instead of a hard-coded one. Optional because
   // rows created before these columns existed will not have them.
@@ -98,7 +101,22 @@ export function evaluateSubscriptionAccess(subscription: Subscription, now: Date
     };
   }
 
-  if (subscription.status === 'canceled' && currentPeriodEnd && now < currentPeriodEnd) {
+  /*
+    The wind-down, and who does not get it.
+
+    Stripe reports `canceled` both for somebody who paid and then quit - owed
+    the rest of the period they bought - and for somebody it dropped after
+    its retries on a failed card ran out, who paid for none of it. On an
+    annual plan the second case would hand out a year. Mirrors the same
+    condition in has_active_subscription(), which is the real gate.
+  */
+  const endedForNonPayment = subscription.cancellation_reason === 'payment_failed' ||
+    subscription.cancellation_reason === 'payment_disputed';
+
+  if (
+    subscription.status === 'canceled' && currentPeriodEnd && now < currentPeriodEnd &&
+    !endedForNonPayment
+  ) {
     return {
       hasAccess: true,
       subscription,
@@ -135,6 +153,18 @@ function getNoAccessReason(
   }
 
   if (subscription.status === 'canceled') {
+    /*
+      Say which kind of cancellation it was. Somebody whose card failed did
+      not cancel anything, and telling them "Subscription canceled" sends
+      them looking for a cancellation they never made instead of at the card
+      that needs fixing.
+    */
+    if (
+      subscription.cancellation_reason === 'payment_failed' ||
+      subscription.cancellation_reason === 'payment_disputed'
+    ) {
+      return 'Payment failed - update your card to restore access';
+    }
     if (currentPeriodEnd && now >= currentPeriodEnd) {
       return 'Subscription ended - reactivate to continue';
     }
