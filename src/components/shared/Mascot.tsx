@@ -1,7 +1,27 @@
-import mascotPng from '../../assets/mascot.png';
+import mascotIdle from '../../assets/mascot.png';
+import mascotWave from '../../assets/mascot-wave.png';
+
+/*
+  His poses.
+
+  Every file is cropped so his HEAD is the same fraction of the canvas -
+  51.5% of canvas height, measured rather than eyeballed - which is what
+  makes `height` mean the same thing whatever pose is asked for. Crop them
+  to their own bounding boxes instead and the same number renders a
+  noticeably bigger character for any pose with a raised arm, because the
+  arm inflates the box.
+*/
+const POSES = {
+  idle: mascotIdle,
+  wave: mascotWave,
+} as const;
+
+export type MascotPose = keyof typeof POSES;
 
 interface MascotProps {
-  /* Rendered height in px. Width follows the asset's 4:5 ratio. */
+  /* Which render. See POSES - they are scale-matched on head width. */
+  pose?: MascotPose;
+  /* Rendered height in px. Width follows the asset's own ratio. */
   height?: number;
   /*
     Which way he faces. There is one render, so this is a horizontal flip -
@@ -42,6 +62,7 @@ interface MascotProps {
   it.
 */
 export default function Mascot({
+  pose = 'idle',
   height = 120,
   facing = 'right',
   tilt = 0,
@@ -66,10 +87,9 @@ export default function Mascot({
 
   return (
     <img
-      src={mascotPng}
+      src={POSES[pose]}
       alt=""
       aria-hidden="true"
-      width={Math.round(height * 0.8)}
       height={height}
       loading="lazy"
       decoding="async"

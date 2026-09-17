@@ -156,7 +156,7 @@ export default function Sales() {
             Above the eyebrow rather than beside the headline, so the
             headline still lands alone and he reads as having shown you in.
           */}
-          <Mascot height={168} className="mx-auto mb-4 sm:mb-5" />
+          <Mascot pose="wave" height={168} className="mx-auto mb-4 sm:mb-5" />
 
           <p className="text-[9.5px] sm:text-[10px] tracking-[0.16em] uppercase text-gray-600 mb-4">
             Trading journal &middot; Built around psychology
