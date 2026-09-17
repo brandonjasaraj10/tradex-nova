@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Plus, Check } from 'lucide-react';
 import Footer from '../components/layout/Footer';
+import Mascot from '../components/shared/Mascot';
 import TranscriptToEntry from '../components/sales/TranscriptToEntry';
 import ProductTabs from '../components/sales/ProductTabs';
 import Wordmark from '../components/shared/Wordmark';
@@ -1012,6 +1013,21 @@ export default function Sales() {
       */}
       <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
         <div className="max-w-xl mx-auto px-5 sm:px-8 text-center">
+          {/*
+            He appears once, here, and not anywhere above.
+
+            Everything before this point is the argument - what it costs you,
+            what the numbers say, why the spreadsheet is not enough - and that
+            argument is what justifies the price. A character standing next to
+            it competes with it. By this section the case is made and the only
+            thing left is the decision, which is the one moment on the page
+            where warmth helps rather than undercuts.
+
+            Sized so he reads as a small presence rather than a banner: he is
+            greeting the reader at the door, not blocking it.
+          */}
+          <Mascot height={112} className="mx-auto mb-6 sm:mb-7" />
+
           <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
             Stop guessing why you lose
           </h2>
