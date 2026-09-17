@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Plus, Check } from 'lucide-react';
 import Footer from '../components/layout/Footer';
 import Mascot from '../components/shared/Mascot';
+import { TIERS, IN_EVERY_PLAN, ALSO_INCLUDED } from '../lib/pricingTiers';
 import TranscriptToEntry from '../components/sales/TranscriptToEntry';
 import ProductTabs from '../components/sales/ProductTabs';
 import Wordmark from '../components/shared/Wordmark';
@@ -903,102 +904,138 @@ export default function Sales() {
             lower and the arm rests on nothing, which is what a taller window
             did here and what Brandon spotted immediately.
           */}
-          <div className="relative rounded-2xl border border-white/10 bg-brand-surface p-6 sm:p-8">
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute left-4 sm:left-6 overflow-hidden
-                -top-[77px] h-[77px] sm:-top-[101px] sm:h-[101px]"
-            >
-              <Mascot pose="lean" height={120} className="sm:hidden" />
-              <Mascot pose="lean" height={158} className="hidden sm:block" />
-            </div>
-            <div className="text-center pb-7 mb-7 border-b border-white/[0.07]">
-              {!launched && (
-                <p className="text-[11px] uppercase tracking-[0.14em] text-gray-400 mb-3">
-                  Founding member pricing
-                </p>
-              )}
-              <p className="flex items-baseline justify-center gap-1.5">
-                {!launched && (
-                  <span className="text-xl text-gray-600 line-through mr-1 tabular-nums">$24.99</span>
-                )}
-                {launched && (
-                  <span className="text-[15px] text-gray-500 self-center mr-0.5">From</span>
-                )}
-                <span className="text-[44px] sm:text-5xl font-semibold text-white tracking-[-0.03em] tabular-nums">
-                  {launched ? '$29.99' : '$14.99'}
-                </span>
-                <span className="text-[15px] text-gray-500">/month</span>
-              </p>
-              <p className="mt-2 text-[12.5px] text-gray-500">
-                {launched ? '14-day money back guarantee \u00b7 Cancel anytime' : 'Locked in forever \u00b7 Cancel anytime'}
-              </p>
-            </div>
+          {/*
+            Three tiers, not one price with a link.
 
-            {/*
-              This block used to say "MT4 & MT5 sync lands in the next couple
-              of weeks - and the price goes up when it does." That was true
-              and is the exact thing this branch ships, so it stops being true
-              the moment this goes out. Replaced rather than deleted: the
-              honest version of the same note is that anyone already paying
-              keeps what they were promised.
-            */}
-            {launched && (
-              <div className="mb-7 rounded-xl border border-brand-blue-light/25 bg-brand-blue/[0.06] px-4 py-3.5">
-                <p className="text-[12.5px] sm:text-[13px] text-gray-300 leading-relaxed">
-                  <span className="text-white font-medium">MT4 &amp; MT5 sync is live.</span>
-                  {' '}Plans differ by how many accounts sync and how quickly. Already a
-                  member? Your price does not change.
+            This showed a single card reading "From $29.99", on the theory
+            that choosing a plan belongs on /pricing. The research says
+            otherwise and is specific about it: below $25K annual contract
+            value, show pricing in full, and displaying all three tiers with
+            a highlighted middle beats a starting price. Top-quartile pricing
+            pages convert at 6.5-12% against a 2.8% average, and three tiers
+            with a highlighted middle account for most of that gap.
+
+            The named conversion killer is a visitor who cannot tell the
+            tiers apart - so these cards carry only what DIFFERS, which for
+            this product is how many accounts sync and how fast. Everything
+            shared sits underneath once, rather than being repeated down
+            three columns where it reads as a wall.
+
+            No comparison table. The hybrid pattern - cards on top, matrix
+            below - earns its 15-30% in multi-stakeholder B2B, where a buyer
+            has to justify the choice to finance. A trader buying their own
+            journal has nobody to justify it to, and /pricing carries the
+            detail for the minority who want it.
+          */}
+          <div className="grid gap-4 sm:grid-cols-3 sm:gap-4">
+            {TIERS.map((tier) => (
+              <div
+                key={tier.name}
+                className={`relative flex flex-col rounded-2xl border p-5 sm:p-6 ${
+                  tier.featured
+                    ? 'border-brand-blue-light/40 bg-brand-blue/[0.06]'
+                    : 'border-white/10 bg-brand-surface'
+                }`}
+              >
+                {tier.featured && (
+                  <span
+                    className="absolute -top-2.5 left-5 rounded-full bg-brand-blue-light px-2.5 py-1
+                      text-[10px] font-medium uppercase tracking-[0.12em] text-black"
+                  >
+                    Most popular
+                  </span>
+                )}
+                {/*
+                  He leans on the recommended plan, and only that one.
+
+                  A character on a pricing card is fine where a paywall
+                  character is not - nobody is blocked here, they are choosing
+                  - and putting him on the featured tier makes him agree with
+                  the badge rather than compete with it. On all three he would
+                  be decoration; on one he is a nudge toward the plan the
+                  badge already recommends.
+
+                  Window is 53.1% of his height, which is where the underside
+                  of his propped arm sits, so the card's edge is what he is
+                  leaning on.
+
+                  Desktop only. The cards sit side by side there with clear
+                  air above the row; on a phone they stack with 16px between
+                  them, so leaning over the Pro card means standing on top of
+                  the Starter card's last line. He is on /pricing for anyone
+                  on a phone who wants to compare properly.
+                */}
+                {tier.featured && (
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute right-4 overflow-hidden
+                      hidden sm:block sm:-top-[77px] sm:h-[77px]"
+                  >
+                    <Mascot pose="lean" height={120} />
+                  </div>
+                )}
+                <p className="text-[12px] uppercase tracking-[0.14em] text-gray-400">{tier.name}</p>
+                <p className="mt-2 flex items-baseline gap-1">
+                  <span className="text-[30px] font-semibold text-white tracking-[-0.03em] tabular-nums">
+                    {tier.price}
+                  </span>
+                  <span className="text-[13px] text-gray-500">/mo</span>
                 </p>
+                <p className="mt-2 text-[12.5px] text-gray-500 leading-relaxed">{tier.who}</p>
+
+                {/* Only the lines that differ between plans. */}
+                <ul className="mt-4 flex flex-col gap-2">
+                  {tier.lines.filter((l) => l.included).slice(0, 2).map((line) => (
+                    <li key={line.text} className="flex gap-2 text-[12.5px] text-gray-300 leading-snug">
+                      <Check className="mt-[3px] w-3.5 h-3.5 flex-shrink-0 text-brand-blue-light" strokeWidth={3} />
+                      {line.text}
+                    </li>
+                  ))}
+                </ul>
               </div>
-            )}
+            ))}
+          </div>
 
-            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-2.5 mb-7">
-              {[
-                /*
-                  This list, not the product tour, is where "is it complete
-                  enough?" gets answered. The research on landing pages is
-                  consistent that clarity beats completeness - piling every
-                  feature into the tour turns three clear ideas into twelve
-                  competing ones - but somebody reading a price is checking
-                  for gaps, and that is the right moment to show there are
-                  none. Everything here exists today.
-                */
-                'Voice journaling',
-                'Nova AI analysis',
-                'Psychology scoring',
-                'NOVA Score',
-                'Pre-trade checklists',
-                'Weekly & monthly reports',
-                'Trading rules & confluences',
-                'Performance analytics',
-                'Unlimited trades',
-                'Up to 5 accounts',
-                'CSV import',
-                'Notes',
-              ].map((feature) => (
-                <li key={feature} className="flex items-center gap-2.5 text-[13.5px] text-gray-300">
-                  {/* Blue, matching the same list on /pricing and /features.
-                      Grey here and blue there made one list look like a
-                      lesser version of the other. The hero's three checks
-                      stay grey on purpose - that block is deliberately
-                      monochrome so the first blue on the page is the product
-                      panel, where it means something. */}
-                  <Check className="w-3.5 h-3.5 flex-shrink-0 text-brand-blue-light" strokeWidth={3} />
-                  {feature}
+          {/*
+            What every plan contains, once. Same six outcomes as /pricing,
+            from the same module, so the two pages cannot drift.
+          */}
+          <div className="mt-5 rounded-2xl border border-white/[0.07] bg-brand-surface p-5 sm:p-6">
+            <p className="text-[11px] uppercase tracking-[0.14em] text-gray-400 mb-4">
+              In every plan
+            </p>
+            <ul className="grid gap-x-8 gap-y-2.5 sm:grid-cols-2">
+              {IN_EVERY_PLAN.map((item) => (
+                <li key={item} className="flex gap-2.5 text-[13px] text-gray-300 leading-relaxed">
+                  <Check className="mt-[3px] w-3.5 h-3.5 flex-shrink-0 text-brand-blue-light" strokeWidth={2.5} />
+                  {item}
                 </li>
               ))}
             </ul>
+            <p className="mt-4 text-[12px] text-gray-500 leading-relaxed">{ALSO_INCLUDED}</p>
+          </div>
 
+          <div className="mt-7 flex flex-col items-center gap-3">
             {launched ? (
-              <Link
-                to="/auth?mode=signup"
-                className="w-full inline-flex items-center justify-center gap-2 px-7 py-3.5
-                  rounded-full bg-white text-black text-[14px] font-medium hover:bg-gray-200 transition-colors"
-              >
-                Start journaling
-                <ArrowRight className="w-4 h-4" />
-              </Link>
+              <>
+                <Link
+                  to="/auth?mode=signup"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5
+                    rounded-full bg-white text-black text-[14px] font-medium hover:bg-gray-200 transition-colors"
+                >
+                  Start journaling
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+                <p className="text-[12px] text-gray-500">
+                  14-day money back guarantee &middot; Cancel anytime
+                </p>
+                <Link
+                  to="/pricing"
+                  className="text-[13px] text-gray-500 hover:text-white transition-colors underline underline-offset-[3px] decoration-white/20 hover:decoration-white/50"
+                >
+                  Full plan comparison
+                </Link>
+              </>
             ) : (
               <SignupOrWaitlist
                 preLaunchFootnote={
@@ -1007,22 +1044,6 @@ export default function Sales() {
                   </p>
                 }
               />
-            )}
-            {/*
-              The homepage shows the entry price and what every plan
-              contains; which plan is a decision, and decisions belong on the
-              page built for them. Quiet link rather than a second button -
-              the job here is still to start a journal, not to shop.
-            */}
-            {launched && (
-              <p className="mt-5 text-center">
-                <Link
-                  to="/pricing"
-                  className="inline-flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-white transition-colors underline underline-offset-[3px] decoration-white/20 hover:decoration-white/50"
-                >
-                  Compare the three plans
-                </Link>
-              </p>
             )}
           </div>
         </div>
