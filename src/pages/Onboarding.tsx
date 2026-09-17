@@ -9,6 +9,7 @@ import {
   SAMPLE_TRADES, STRUGGLE_CARD, INSTRUMENT_LABEL,
 } from '../lib/onboardingPreview';
 import { trackEvent } from '../lib/productAnalytics';
+import MascotSays from '../components/shared/MascotSays';
 
 /*
   Three questions and a preview, between signing up and seeing a price.
@@ -188,12 +189,33 @@ export default function Onboarding({ onComplete }: { onComplete: () => void | Pr
           transition={{ duration: 0.18, ease: 'easeOut' }}
         >
         {step === 0 && (
-          <Question
-            step={0}
-            title="What do you trade?"
-            options={INSTRUMENTS}
-            onChoose={answerOne}
-          />
+          <>
+            {/*
+              He greets on the first screen and nowhere else in the flow.
+
+              Activation is the metric this screen moves - it is the single
+              strongest predictor of long-term retention and revenue, and the
+              SaaS median is 37.5% against 65-75% in the top quartile - and
+              the thing that loses it here is somebody deciding three
+              questions is more work than it is. Saying how short it is, in
+              a character's voice rather than as another line of grey helper
+              text, is the cheapest thing that addresses that.
+
+              Once, not on all three. Repeating him down every step would add
+              height to a twenty-second flow and turn a greeting into
+              furniture, and the drop-off this fights is at the start.
+            */}
+            <MascotSays pose="wave" height={84} side="above" className="mb-6">
+              Three taps and I&rsquo;ll set this up for you.
+            </MascotSays>
+
+            <Question
+              step={0}
+              title="What do you trade?"
+              options={INSTRUMENTS}
+              onChoose={answerOne}
+            />
+          </>
         )}
 
         {step === 1 && (

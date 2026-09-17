@@ -629,10 +629,10 @@ export default function Sales() {
               Nova
             </p>
             <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
-              Ask her anything about your trading
+              Ask Nova anything about your trading
             </h2>
             <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-sm sm:max-w-md mx-auto text-balance">
-              She has read every entry you have written. Not generic advice &mdash;
+              Nova has read every entry you have written. Not generic advice &mdash;
               your trades, your numbers, your habits.
             </p>
           </div>
@@ -652,8 +652,8 @@ export default function Sales() {
             <div className="mt-6 pt-5 border-t border-white/[0.06] grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
                 ['Reads every entry', 'Not just the last one. Patterns show up across months, not trades.'],
-                ['Remembers you', 'Tell her once what you are working on and she holds on to it.'],
-                ['Writes your entries', 'Talk it through and she files the whole thing for you.'],
+                ['Remembers you', 'Say it once, and Nova keeps hold of it.'],
+                ['Writes your entries', 'Talk it through and Nova files the whole thing for you.'],
               ].map(([title, body]) => (
                 <div key={title}>
                   <p className="text-[12.5px] font-medium text-white">{title}</p>

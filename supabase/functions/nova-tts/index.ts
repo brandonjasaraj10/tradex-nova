@@ -73,7 +73,7 @@ Deno.serve(async (req: Request) => {
       console.error('Rate limit check failed:', usageError);
     } else if (usageCheck && !(usageCheck as any).allowed) {
       const message = (usageCheck as any).reason === 'daily_limit'
-        ? "You've reached today's limit for Nova speaking out loud. It resets at midnight - she can still reply in text."
+        ? "You've reached today's limit for Nova speaking out loud. It resets at midnight - Nova can still reply in text."
         : "Give it a moment before asking Nova to speak again.";
       return new Response(
         JSON.stringify({ error: message }),
