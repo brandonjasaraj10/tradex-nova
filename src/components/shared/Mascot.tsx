@@ -31,17 +31,17 @@ import mascotSlump from '../../assets/mascot-slump.png';
 */
 const POSES = {
   idle:    { src: mascotIdle,    scale: 1.000 },  /* head 56.3% of canvas */
-  wave:    { src: mascotWave,    scale: 0.961 },  /* head 58.6% */
-  present: { src: mascotPresent, scale: 1.246 },  /* head 45.2% */
-  arms:    { src: mascotArms,    scale: 1.449 },  /* head 38.8% */
-  lean:    { src: mascotLean,    scale: 1.417 },  /* head 39.7% */
+  wave:    { src: mascotWave,    scale: 0.904 },  /* head 62.2% */
+  present: { src: mascotPresent, scale: 1.078 },  /* head 52.2% */
+  arms:    { src: mascotArms,    scale: 1.192 },  /* head 47.2% */
+  lean:    { src: mascotLean,    scale: 1.210 },  /* head 46.5% */
   /*
     Slumped. The only pose where the smile is gone - the render has a flat
     line instead - so it is the one to keep away from anything selling. It
     belongs where somebody has just had a bad one: a stopped-out trade, a red
     week, an empty journal after a loss.
   */
-  slump:   { src: mascotSlump,   scale: 1.496 },  /* head 37.6% */
+  slump:   { src: mascotSlump,   scale: 1.166 },  /* head 48.2% */
 } as const;
 
 export type MascotPose = keyof typeof POSES;

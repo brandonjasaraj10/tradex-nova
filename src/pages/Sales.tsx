@@ -719,10 +719,10 @@ export default function Sales() {
               <div
                 aria-hidden="true"
                 className="pointer-events-none absolute right-3 sm:right-5 overflow-hidden
-                  -top-[86px] h-[86px] sm:-top-[112px] sm:h-[112px]"
+                  -top-[84px] h-[84px] sm:-top-[110px] sm:h-[110px]"
               >
                 {/*
-                  The window is 47.8% of his height, which is where the
+                  The window is 56.8% of his height, which is where the
                   underside of his crossed arms sits - so the card's edge
                   lands under the arms rather than through them. It shows his
                   head AND his crossed arms, which is
@@ -875,8 +875,8 @@ export default function Sales() {
             objection: he is behind the edge rather than pasted over it.
 
             The window height is not a look-right guess - it is measured. The
-            underside of his propped arm sits at 46.5% of his height in the
-            render, so the window is 46.5% of whatever height he is given,
+            underside of his propped arm sits at 53.1% of his height in the
+            render, so the window is 53.1% of whatever height he is given,
             which puts the card's edge exactly where his arm comes down. Cut
             lower and the arm rests on nothing, which is what a taller window
             did here and what Brandon spotted immediately.
@@ -885,7 +885,7 @@ export default function Sales() {
             <div
               aria-hidden="true"
               className="pointer-events-none absolute left-4 sm:left-6 overflow-hidden
-                -top-[79px] h-[79px] sm:-top-[104px] sm:h-[104px]"
+                -top-[77px] h-[77px] sm:-top-[101px] sm:h-[101px]"
             >
               <Mascot pose="lean" height={120} className="sm:hidden" />
               <Mascot pose="lean" height={158} className="hidden sm:block" />
