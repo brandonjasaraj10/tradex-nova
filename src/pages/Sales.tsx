@@ -1070,24 +1070,7 @@ export default function Sales() {
             ))}
           </div>
 
-          {/*
-            And once the questions run out, he is standing at the end of them.
-
-            He sits ABOVE the links rather than inside them. Putting him in
-            the flex row seemed tidier and broke it: he takes real horizontal
-            space, so at narrower widths "How your data is kept" wrapped to a
-            second line and he ended up beside a ragged two-line stack looking
-            like a mistake. A row of links is a row of links.
-
-            No tilt either. That rotation was standing in for a gesture back
-            when there was one pose; on an upright figure at this size it just
-            reads as falling over.
-
-            64px: measured on black, he stops being a character and becomes a
-            smudge below about 56.
-          */}
-          <Mascot height={64} className="mx-auto mb-4" />
-          <p className="mt-0 flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+          <p className="mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
             <Link to="/faq" className="inline-flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-white transition-colors underline underline-offset-[3px] decoration-white/20 hover:decoration-white/50">
               Every other question
             </Link>
