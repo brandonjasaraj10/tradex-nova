@@ -141,6 +141,23 @@ export default function Sales() {
           min-h-[calc(88svh-3.5rem)] sm:min-h-[calc(84svh-4rem)]
           flex flex-col justify-center text-center pb-6 pt-10">
 
+          {/*
+            He opens the page.
+
+            This was held back for a while on the theory that a character
+            next to "Stop guessing why you lose" would undercut it. The
+            research points the other way: consistent character assets carry
+            about 37% higher recall and 24% higher purchase intent than
+            abstract visuals, Duolingo's mascot is front and centre rather
+            than tucked into corners, and the whole reason to have one is to
+            be recognised on the second visit. A mascot nobody notices is
+            just a file in the repo.
+
+            Above the eyebrow rather than beside the headline, so the
+            headline still lands alone and he reads as having shown you in.
+          */}
+          <Mascot height={132} className="mx-auto mb-5 sm:mb-6" />
+
           <p className="text-[9.5px] sm:text-[10px] tracking-[0.16em] uppercase text-gray-600 mb-4">
             Trading journal &middot; Built around psychology
           </p>
@@ -617,7 +634,7 @@ export default function Sales() {
             Small, and beside the text rather than over it: the joke is that
             he is standing there, not that he is announcing anything.
           */}
-          <div className="text-center mb-12 sm:mb-14">
+          <div className="text-center mb-16 sm:mb-14">
             <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
               &ldquo;I already have a spreadsheet&rdquo;
             </h2>
@@ -658,19 +675,31 @@ export default function Sales() {
             <div className="relative rounded-2xl border border-white/15 bg-brand-surface p-4 sm:p-6">
               <div
                 aria-hidden="true"
-                className="pointer-events-none absolute -top-[38px] right-5 sm:right-7 h-[38px] overflow-hidden"
+                className="pointer-events-none absolute right-4 sm:right-6 overflow-hidden
+                  -top-[54px] h-[54px] sm:-top-[72px] sm:h-[72px]"
               >
                 {/*
-                  38 of 78 is head, eyes and the smile. Stop above the smile
-                  and he is a pair of eyes on a dome, which reads as watching
-                  rather than as friendly.
+                  72 of 150 is head, shoulders and a bit of body - enough to
+                  be a character leaning on the card rather than a sliver of
+                  forehead above it, which is what 38 of 78 turned out to be
+                  on a real screen.
+
+                  Shorter on a phone, because at 72 his head reached up into
+                  the line above and sat across the word "date" in "how up to
+                  date it is". The gap over a card is smaller when the text
+                  above it wraps.
 
                   Static, by choice. A bob was tried and removed: the effect
                   here is the clip, not the movement, and a loop that runs
                   forever on a marketing page is one more thing to get right
                   on a slow phone for something the still frame already does.
                 */}
-                <Mascot height={78} />
+                {/* Two sizes so the PROPORTION shown stays the same: 54 of
+                    110 and 72 of 150 are both a touch under half, which is
+                    head, eyes and smile. Shrinking only the window cut him
+                    off above the smile on a phone. */}
+                <Mascot height={110} className="sm:hidden" />
+                <Mascot height={150} className="hidden sm:block" />
               </div>
               <p className="text-[11px] uppercase tracking-[0.14em] text-gray-400 mb-4">TradeX</p>
               <ul className="flex flex-col gap-3">
@@ -981,7 +1010,7 @@ export default function Sales() {
             margin keeps him from pushing the link row taller than it was.
           */}
           <p className="mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
-            <Mascot height={52} className="flex-shrink-0 -my-2" />
+            <Mascot height={64} className="flex-shrink-0 -my-3" />
             <Link to="/faq" className="inline-flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-white transition-colors underline underline-offset-[3px] decoration-white/20 hover:decoration-white/50">
               Every other question
             </Link>
@@ -1083,7 +1112,7 @@ export default function Sales() {
             Sized so he reads as a small presence rather than a banner: he is
             greeting the reader at the door, not blocking it.
           */}
-          <Mascot height={112} className="mx-auto mb-6 sm:mb-7" />
+          <Mascot height={150} className="mx-auto mb-6 sm:mb-7" />
 
           <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
             Stop guessing why you lose
