@@ -641,7 +641,7 @@ export default function Sales() {
             Small, and beside the text rather than over it: the joke is that
             he is standing there, not that he is announcing anything.
           */}
-          <div className="text-center mb-16 sm:mb-14">
+          <div className="text-center mb-24 sm:mb-14">
             <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
               &ldquo;I already have a spreadsheet&rdquo;
             </h2>
@@ -673,7 +673,11 @@ export default function Sales() {
               off behind the card's edge and he reads as being BEHIND it rather
               than pasted on top.
 
-              Over the TradeX card and not the spreadsheet one, deliberately.
+              Arms crossed, turned to face the spreadsheet column he is
+            unimpressed by - the pose carries the head tilt, so no rotation
+            is added on top of it.
+
+            Over the TradeX card and not the spreadsheet one, deliberately.
               The spreadsheet is the reader's, and this section already takes
               care not to mock them for it - "You do. Be honest about how up to
               date it is." A character sneering over that column would undo the
@@ -682,19 +686,19 @@ export default function Sales() {
             <div className="relative rounded-2xl border border-white/15 bg-brand-surface p-4 sm:p-6">
               <div
                 aria-hidden="true"
-                className="pointer-events-none absolute right-4 sm:right-6 overflow-hidden
-                  -top-[54px] h-[54px] sm:-top-[72px] sm:h-[72px]"
+                className="pointer-events-none absolute right-3 sm:right-5 overflow-hidden
+                  -top-[86px] h-[86px] sm:-top-[112px] sm:h-[112px]"
               >
                 {/*
-                  72 of 150 is head, shoulders and a bit of body - enough to
-                  be a character leaning on the card rather than a sliver of
-                  forehead above it, which is what 38 of 78 turned out to be
-                  on a real screen.
+                  The window shows his head AND his crossed arms, which is
+                  the whole reason this pose is here - clipped at head height
+                  he would just be the idle pose again and the skepticism
+                  would be invisible. It lands so the card's edge cuts just
+                  under the arms, which reads as him leaning on it.
 
-                  Shorter on a phone, because at 72 his head reached up into
-                  the line above and sat across the word "date" in "how up to
-                  date it is". The gap over a card is smaller when the text
-                  above it wraps.
+                  Shorter on a phone, because the gap over a card is smaller
+                  when the text above it wraps - at full height his head sat
+                  across the word "date" in "how up to date it is".
 
                   Static, by choice. A bob was tried and removed: the effect
                   here is the clip, not the movement, and a loop that runs
@@ -705,8 +709,8 @@ export default function Sales() {
                     110 and 72 of 150 are both a touch under half, which is
                     head, eyes and smile. Shrinking only the window cut him
                     off above the smile on a phone. */}
-                <Mascot height={110} facing="left" tilt={6} className="sm:hidden" />
-                <Mascot height={150} facing="left" tilt={6} className="hidden sm:block" />
+                <Mascot pose="arms" height={124} facing="left" className="sm:hidden" />
+                <Mascot pose="arms" height={162} facing="left" className="hidden sm:block" />
               </div>
               <p className="text-[11px] uppercase tracking-[0.14em] text-gray-400 mb-4">TradeX</p>
               <ul className="flex flex-col gap-3">
