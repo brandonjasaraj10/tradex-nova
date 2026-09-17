@@ -604,10 +604,40 @@ export default function Sales() {
       */}
       <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
         <div className="max-w-3xl mx-auto px-5 sm:px-8">
+          {/*
+            He turns up beside the objection rather than above it.
+
+            This is the only heading on the page written in somebody else's
+            voice - it is the reader's own line, quoted back at them - so a
+            character standing next to it reads as the one saying it, and the
+            section becomes a conversation instead of a rebuttal. Centred
+            above, like the closing CTA, he would just be a second badge on a
+            second heading.
+
+            Small, and beside the text rather than over it: the joke is that
+            he is standing there, not that he is announcing anything.
+          */}
           <div className="text-center mb-12 sm:mb-14">
-            <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
-              &ldquo;I already have a spreadsheet&rdquo;
-            </h2>
+            {/*
+              Two treatments, because the phone has no room beside a heading
+              that wraps to two lines - and hiding him there would remove a
+              third of his presence on the traffic that matters most, which
+              arrives from Instagram on a phone.
+
+              So: above the line on mobile at 48, beside it on desktop at 60.
+              Both are far enough under the closing CTA's 112 that neither
+              reads as the same moment repeated.
+            */}
+            <Mascot height={48} className="sm:hidden mx-auto mb-3" />
+
+            {/* items-end so he stands level with the last line of the
+                heading rather than floating against the middle of two. */}
+            <div className="flex items-end justify-center gap-3 sm:gap-4">
+              <Mascot height={60} className="hidden sm:block flex-shrink-0 translate-y-1" />
+              <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
+                &ldquo;I already have a spreadsheet&rdquo;
+              </h2>
+            </div>
             <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-sm sm:max-w-md mx-auto text-balance">
               You do. Be honest about how up to date it is.
             </p>
@@ -924,7 +954,20 @@ export default function Sales() {
             ))}
           </div>
 
+          {/*
+            And once the questions run out, he is standing at the end of them.
+
+            Smallest of his three appearances and deliberately so - this is a
+            sign-off, not a moment. Placed with the links rather than centred
+            on its own line so it reads as part of the footer of the section
+            instead of a third announcement.
+
+            52px rather than smaller: measured on black, he stops being a
+            character and becomes a smudge below about 56, and the negative
+            margin keeps him from pushing the link row taller than it was.
+          */}
           <p className="mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+            <Mascot height={52} className="flex-shrink-0 -my-2" />
             <Link to="/faq" className="inline-flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-white transition-colors underline underline-offset-[3px] decoration-white/20 hover:decoration-white/50">
               Every other question
             </Link>
