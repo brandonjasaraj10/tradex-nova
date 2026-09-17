@@ -1882,10 +1882,10 @@ export default function Journal() {
                               if (!ended) {
                                 return <p className="text-xs text-gray-400">{trade.setup || 'No setup'}</p>;
                               }
+                              /* Blue for a target, grey for the rest - losses
+                                 are grey in this app, never red. */
                               const tone =
-                                ended.tone === 'stop' ? 'text-red-400/80'
-                                  : ended.tone === 'target' ? 'text-blue-400/80'
-                                  : 'text-gray-400';
+                                ended.tone === 'target' ? 'text-blue-400/80' : 'text-gray-400';
                               return (
                                 <p className="text-xs text-gray-400">
                                   <span className={tone}>{ended.text}</span>

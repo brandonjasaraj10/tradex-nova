@@ -55,17 +55,15 @@ const VIEW_STORAGE_KEY = 'tradex_trade_log_view';
   row already carries a direction tag, an outcome badge and a source tag,
   and a fourth competing chip turns a scannable list into confetti.
 
-  Red only for a stop. A stop being hit is not automatically bad - it is the
-  plan working - but it is the one ending a trader most needs to be able to
-  pick out of a list.
+  Blue for a target and grey for everything else, matching valueColorClass
+  and the rest of the app - BRAND_GUIDE is explicit that losses are grey
+  rather than red, and a stop-out sitting beside the P&L is a loss, not an
+  error state.
 */
 function CloseReason({ reason }: { reason: string | null }) {
   const label = closeReasonLabel(reason);
   if (!label) return null;
-  const tone =
-    label.tone === 'stop' ? 'text-red-400/80'
-      : label.tone === 'target' ? 'text-blue-400/80'
-      : 'text-gray-500';
+  const tone = label.tone === 'target' ? 'text-blue-400/80' : 'text-gray-500';
   return <span className={`text-[10px] ${tone}`}>{label.text}</span>;
 }
 

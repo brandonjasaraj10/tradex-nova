@@ -11,6 +11,17 @@
   synced trade whose deal history could not be read. Nothing is shown in
   that case rather than guessing, because a wrong label here would quietly
   rewrite somebody's own account of what they did.
+
+  On colour: this first shipped with a stop in red, which is off-brand and
+  was corrected. BRAND_GUIDE is explicit - losses are #9CA3AF grey, "not
+  red", and that is not a preference but how Calendar, Analytics and the
+  marketing page already work; several places that used red were brought
+  into line rather than the other way round. The guide's exemption for red
+  covers delete buttons, errors and connection badges, none of which this
+  is: a stop-out sits in the same row as the money and reads as a loss.
+
+  So blue marks the one ending that went to plan, and everything else is
+  grey. The words carry the meaning, which is the point of the palette.
 */
 
 export type CloseReasonTone = 'stop' | 'target' | 'neutral';
