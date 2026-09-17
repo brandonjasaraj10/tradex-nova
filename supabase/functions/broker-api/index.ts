@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { clientSafeMessage } from "../_shared/errors.ts";
+import { releaseMetaApiAccount } from "../_shared/metaApiAccount.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -169,6 +170,66 @@ Deno.serve(async (req: Request) => {
           }),
           { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
+      }
+
+      /*
+        Hand the account back to MetaApi before deleting our row.
+
+        This row holds the only pointer we have to a provisioned MetaApi
+        account, and that account bills about $8.64 a month until somebody
+        deletes it. Removing the row first would stop the charge being
+        visible without stopping the charge - the exact way we ended up
+        paying for an account nobody could account for.
+
+        So: release first, and if MetaApi will not let go, keep the row and
+        say so. A connection the user can still see and try again on is a
+        far better outcome than a silent bill.
+      */
+      const { data: connectionRow, error: pointerError } = await supabase
+        .from("user_broker_connections")
+        .select("metaapi_account_id")
+        .eq("id", connection_id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (pointerError) {
+        return new Response(JSON.stringify({ error: clientSafeMessage(pointerError) }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const metaapiAccountId = connectionRow?.metaapi_account_id ?? null;
+      if (metaapiAccountId) {
+        const metaapiToken = Deno.env.get("METAAPI_TOKEN");
+        if (!metaapiToken) {
+          /*
+            Without the token we cannot release the account, and deleting
+            the row anyway would lose the pointer permanently. Stop.
+          */
+          return new Response(
+            JSON.stringify({
+              error: "Account syncing isn't configured, so this account can't be removed safely. Please contact support.",
+            }),
+            { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        const release = await releaseMetaApiAccount(metaapiAccountId, metaapiToken);
+        if (!release.released) {
+          console.error(
+            "MetaApi release failed, keeping connection row:",
+            connection_id,
+            metaapiAccountId,
+            release.detail,
+          );
+          return new Response(
+            JSON.stringify({
+              error: "We couldn't disconnect this account from our sync provider, so it hasn't been removed. Please try again in a moment.",
+            }),
+            { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
       }
 
       const { error } = await supabase

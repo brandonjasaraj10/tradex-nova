@@ -14,6 +14,7 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { releaseMetaApiAccount } from "../_shared/metaApiAccount.ts";
 
 const PROVISIONING_URL =
   // Global endpoint, not regional - see the note in mt-servers/index.ts.
@@ -138,19 +139,13 @@ Deno.serve(async (req: Request) => {
     }
 
     if (action === "disconnect") {
-      /*
-        Undeploy first, then delete. Deleting a running account can be
-        refused, and a refused delete is the failure mode that leaves us
-        paying - so the order matters more than it looks.
-      */
-      await fetch(`${base}/undeploy`, { method: "POST", headers: auth })
-        .catch(() => undefined);
-
-      const res = await fetch(base, { method: "DELETE", headers: auth });
-      if (!res.ok && res.status !== 404) {
-        const detail = await res.text().catch(() => "");
+      /* One implementation of undeploy-then-delete, shared with the
+         remove-account route in broker-api. Two copies of this would drift,
+         and the copy that drifts is the one that stops stopping the bill. */
+      const release = await releaseMetaApiAccount(accountId, token);
+      if (!release.released) {
         return json({
-          error: `Couldn't remove the account from MetaApi. ${detail}`.trim(),
+          error: `Couldn't remove the account from MetaApi. ${release.detail ?? ""}`.trim(),
           stillBilling: true,
         }, 400);
       }
