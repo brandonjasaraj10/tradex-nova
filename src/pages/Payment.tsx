@@ -6,6 +6,7 @@ import { Shield, CheckCircle2, Lock, AlertCircle, ArrowLeft, Zap, Crown, Gift, X
 import { supabase } from '../lib/supabase';
 import NOVAScore from '../components/shared/NOVAScore';
 import { TickList } from '../components/marketing/blocks';
+import { TIERS } from '../lib/pricingTiers';
 import { Frame } from '../components/marketing/product';
 import { EXAMPLE_SCORE } from '../components/marketing/exampleScore';
 import { useAuth } from '../lib/auth';
@@ -57,6 +58,9 @@ type PlanType = 'monthly' | 'annual';
 /* Which plan, for everyone who is not a founding member. */
 type TierId = 'starter' | 'pro' | 'elite';
 
+/* Looked up by the display name, which is what TIERS is keyed on. */
+const tierById = (name: string) => TIERS.find((t) => t.name === name);
+
 /*
   A row in the chooser is either a tier or, for founders, a billing interval,
   so the id the list is keyed on has to be able to be either.
@@ -66,23 +70,28 @@ type SelectionId = PlanType | TierId;
 /*
   Six prices: three tiers, monthly and annual each.
 
-  Read once here rather than inline, so a missing one is a visible undefined
-  in a table rather than a silent failure three files away. None of these are
-  configured in Stripe yet - until they are, picking a tier and pressing the
-  button says so plainly instead of throwing the user into a broken checkout.
+  The ids now live in pricingTiers.ts beside the copy they sell, because the
+  price a customer reads and the price they are charged should come out of
+  one file. They are public identifiers - they ship in this bundle whatever
+  we do - so keeping them in six environment variables bought nothing except
+  a way for one tier's checkout to break silently when a variable went
+  missing on a deploy.
+
+  An environment variable still wins if it is set, which is what makes a test
+  price or a one-off promotion possible without a code change.
 */
 const TIER_PRICE_IDS: Record<TierId, Record<PlanType, string | undefined>> = {
   starter: {
-    monthly: import.meta.env.VITE_STRIPE_STARTER_PRICE_ID,
-    annual: import.meta.env.VITE_STRIPE_STARTER_ANNUAL_PRICE_ID,
+    monthly: import.meta.env.VITE_STRIPE_STARTER_PRICE_ID ?? tierById('Starter')?.priceIds.monthly,
+    annual: import.meta.env.VITE_STRIPE_STARTER_ANNUAL_PRICE_ID ?? tierById('Starter')?.priceIds.annual,
   },
   pro: {
-    monthly: import.meta.env.VITE_STRIPE_PRO_PRICE_ID,
-    annual: import.meta.env.VITE_STRIPE_PRO_ANNUAL_PRICE_ID,
+    monthly: import.meta.env.VITE_STRIPE_PRO_PRICE_ID ?? tierById('Pro')?.priceIds.monthly,
+    annual: import.meta.env.VITE_STRIPE_PRO_ANNUAL_PRICE_ID ?? tierById('Pro')?.priceIds.annual,
   },
   elite: {
-    monthly: import.meta.env.VITE_STRIPE_ELITE_PRICE_ID,
-    annual: import.meta.env.VITE_STRIPE_ELITE_ANNUAL_PRICE_ID,
+    monthly: import.meta.env.VITE_STRIPE_ELITE_PRICE_ID ?? tierById('Elite')?.priceIds.monthly,
+    annual: import.meta.env.VITE_STRIPE_ELITE_ANNUAL_PRICE_ID ?? tierById('Elite')?.priceIds.annual,
   },
 };
 

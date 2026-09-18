@@ -23,6 +23,16 @@ export type Tier = {
   lines: { text: string; included: boolean }[];
   cta: string;
   featured?: boolean;
+  /*
+    The live Stripe prices this tier sells, by billing interval.
+
+    Kept beside the copy rather than in six environment variables, because a
+    price id is a public identifier, not a secret - it ships in the frontend
+    bundle either way. Putting them here means the price a customer reads and
+    the price they are charged come from one file, and a missing Vercel
+    variable can no longer silently break checkout for one tier.
+  */
+  priceIds: { monthly: string; annual: string };
 };
 
 export const TIERS: Tier[] = [
@@ -32,39 +42,51 @@ export const TIERS: Tier[] = [
     who: 'One account, and you would rather not type it up yourself.',
     lines: [
       { text: 'One account, syncing on its own', included: true },
-      { text: 'Yesterday’s trades, waiting each morning', included: true },
+      { text: 'Trades land minutes after you close them', included: true },
       { text: 'Add or import as many accounts as you like', included: true },
       { text: '25 questions a day for Nova', included: true },
-      { text: 'Trades that land while you are still at the screen', included: false },
+      { text: 'A second account syncing at the same time', included: false },
     ],
     cta: 'Start journaling',
+    priceIds: {
+      monthly: 'price_1UGqG0P9mqFWeYrvtPMZvsk6',
+      annual: 'price_1UGqFzP9mqFWeYrvwxpKrL7T',
+    },
   },
   {
     name: 'Pro',
-    price: '$59.99',
-    who: 'A few accounts running, and you write trades up while they are fresh.',
+    price: '$49.99',
+    who: 'A couple of accounts running, and you write trades up while they are fresh.',
     lines: [
-      { text: 'Three accounts, syncing on their own', included: true },
+      { text: 'Two accounts, syncing on their own', included: true },
       { text: 'Trades land minutes after you close them', included: true },
       { text: 'Add or import as many accounts as you like', included: true },
       { text: '100 questions a day for Nova', included: true },
-      { text: 'More synced accounts whenever, $15 each', included: true },
+      { text: 'More synced accounts whenever, $19 each', included: true },
     ],
     cta: 'Start journaling',
     featured: true,
+    priceIds: {
+      monthly: 'price_1UGqGwP9mqFWeYrvzMUUTkyY',
+      annual: 'price_1UGqGwP9mqFWeYrvkph5vtn3',
+    },
   },
   {
     name: 'Elite',
     price: '$149.99',
     who: 'Several funded accounts at once, where a missed day is real money.',
     lines: [
-      { text: 'Six accounts, syncing on their own', included: true },
+      { text: 'Five accounts, syncing on their own', included: true },
       { text: 'Trades land minutes after you close them', included: true },
       { text: '300 questions a day — you will not reach it', included: true },
       { text: 'First on every new platform we connect', included: true },
       { text: 'Your support goes to the front of the queue', included: true },
     ],
     cta: 'Start journaling',
+    priceIds: {
+      monthly: 'price_1UGqHeP9mqFWeYrvJOymED7D',
+      annual: 'price_1UGqHeP9mqFWeYrvn9dntceN',
+    },
   },
 ];
 
