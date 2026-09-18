@@ -281,9 +281,9 @@ Deno.serve(async (req: Request) => {
       .eq("mt_login", login)
       .eq("metaapi_server", server)
       .eq("platform", platform)
-      .not("removed_at", "is", null)
+      .not("sync_paused_at", "is", null)
       .not("metaapi_account_id", "is", null)
-      .order("removed_at", { ascending: false })
+      .order("sync_paused_at", { ascending: false })
       .limit(1)
       .maybeSingle();
 

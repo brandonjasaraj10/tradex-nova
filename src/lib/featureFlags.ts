@@ -46,4 +46,4 @@ export const NOVA_VOICE_OUTPUT_ENABLED = false;
 
   Set to true once syncing genuinely works.
 */
-export const BROKER_SYNC_ENABLED = false;
+export const BROKER_SYNC_ENABLED = true;

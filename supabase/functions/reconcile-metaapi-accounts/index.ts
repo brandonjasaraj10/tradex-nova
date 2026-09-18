@@ -276,16 +276,16 @@ async function retireLongParkedAccounts(
 
   const { data, error } = await admin
     .from("broker_connections")
-    .select("id, metaapi_account_id, removed_at")
-    .not("removed_at", "is", null)
+    .select("id, metaapi_account_id, sync_paused_at")
+    .not("sync_paused_at", "is", null)
     .not("metaapi_account_id", "is", null)
-    .lt("removed_at", cutoff)
+    .lt("sync_paused_at", cutoff)
     .limit(MAX_RELEASES_PER_RUN);
 
   const expired = (data ?? []) as unknown as {
     id: string;
     metaapi_account_id: string;
-    removed_at: string;
+    sync_paused_at: string;
   }[];
 
   if (error) {
@@ -315,7 +315,7 @@ async function retireLongParkedAccounts(
       .eq("id", row.id);
 
     retired.push(accountId);
-    console.info("Retired parked account", accountId, "parked since", row.removed_at);
+    console.info("Retired parked account", accountId, "parked since", row.sync_paused_at);
   }
 
   return retired;

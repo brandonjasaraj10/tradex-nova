@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { clientSafeMessage } from "../_shared/errors.ts";
-import { parkMetaApiAccount, releaseMetaApiAccount } from "../_shared/metaApiAccount.ts";
+import { parkMetaApiAccount, releaseMetaApiAccount, wakeMetaApiAccount } from "../_shared/metaApiAccount.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -81,7 +81,8 @@ Deno.serve(async (req: Request) => {
           ownership_type,
           last_balance_update,
           broker_id,
-          broker_type
+          broker_type,
+          sync_paused_at
         `)
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
@@ -124,6 +125,19 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    /*
+      Turning syncing off. The common case, and deliberately not a delete.
+
+      The account, its trades and its whole history stay exactly where they
+      are and stay visible - what stops is automatic syncing, and the
+      MetaApi account is parked so it costs $0.73 a month instead of $8.64.
+      The sync slot goes back to the plan's allowance, which is the thing
+      the customer is actually paying for.
+
+      No trades guard here, because nothing is being destroyed. That guard
+      exists to stop trade history pointing at an account that no longer
+      exists, and after this the account still exists.
+    */
     if (pathname === "/disconnect" && req.method === "POST") {
       const body = await req.json();
       const { connection_id } = body;
@@ -135,71 +149,6 @@ Deno.serve(async (req: Request) => {
         });
       }
 
-      /*
-        Trades block deletion, so say so before trying.
-
-        trades.broker_id references broker_connections with NO ACTION, so
-        Postgres refuses to delete an account that still has any - it does not
-        cascade and it does not null them out. The delete simply failed, the
-        client logged it to the console, and the account stayed in the list
-        with nothing on screen explaining why. Someone would press it again
-        and again.
-
-        Counting first lets the message name the actual obstacle and the
-        number, instead of surfacing a foreign key violation. Journal entries
-        need no such check: their reference is ON DELETE SET NULL, so they
-        survive the account and reappear under All Accounts.
-
-        This check became load-bearing when removal stopped being a delete.
-        The foreign key used to refuse the operation on its own; a retained
-        row never trips it, so nothing but this stands between a user and
-        trades that quietly vanish from every screen while still sitting in
-        the database under a hidden account.
-      */
-      const { count: tradeCount, error: countError } = await supabase
-        .from("trades")
-        .select("id", { count: "exact", head: true })
-        .eq("broker_id", connection_id)
-        .eq("user_id", user.id);
-
-      if (countError) {
-        return new Response(JSON.stringify({ error: clientSafeMessage(countError) }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      if ((tradeCount ?? 0) > 0) {
-        return new Response(
-          JSON.stringify({
-            error: `This account still has ${tradeCount} ${tradeCount === 1 ? "trade" : "trades"}. Delete or move them before removing the account, so your trade history isn't left pointing at an account that no longer exists.`,
-          }),
-          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      /*
-        Park the account rather than destroying it.
-
-        MetaApi charges $2.10 to add a trading account to its cloud. It is
-        per account created, it is never refunded, and re-adding pays it
-        again - a real invoice billed it twice for one broker account
-        reconnected ten minutes later. Undeployed storage is about $0.73 a
-        month. So for anyone returning inside roughly three months, keeping
-        the account is the cheaper choice, and it spares them digging out an
-        investor password we deliberately never store.
-
-        Undeploy stops the expensive part: $8.64 a month running becomes
-        $0.73 a month registered. Then the row is marked removed rather than
-        deleted, which is what makes the account vanish from their list
-        while still pointing at the MetaApi account - so the orphan sweep
-        knows it is spoken for and leaves it alone.
-
-        If MetaApi will not undeploy, nothing is marked. An account that
-        still appears in the list and can be removed again is a far better
-        outcome than one that has vanished from the UI while quietly running
-        at full price.
-      */
       const { data: connectionRow, error: pointerError } = await supabase
         .from("user_broker_connections")
         .select("metaapi_account_id")
@@ -220,36 +169,37 @@ Deno.serve(async (req: Request) => {
         if (!metaapiToken) {
           return new Response(
             JSON.stringify({
-              error: "Account syncing isn't configured, so this account can't be removed safely. Please contact support.",
+              error: "Account syncing isn't configured, so this can't be turned off safely. Please contact support.",
             }),
             { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
 
+        /*
+          Park before recording it. If MetaApi will not stop the account,
+          saying we paused it would free the slot while the meter kept
+          running at full price - the one outcome worth refusing over.
+        */
         const parked = await parkMetaApiAccount(metaapiAccountId, metaapiToken);
         if (!parked.released) {
           console.error(
-            "MetaApi undeploy failed, leaving connection in place:",
+            "MetaApi undeploy failed, leaving sync on:",
             connection_id,
             metaapiAccountId,
             parked.detail,
           );
           return new Response(
             JSON.stringify({
-              error: "We couldn't stop this account with our sync provider, so it hasn't been removed. Please try again in a moment.",
+              error: "We couldn't stop this account with our sync provider, so syncing is still on. Please try again in a moment.",
             }),
             { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
       }
 
-      /*
-        Marked, not deleted. Auto-sync off as well as removed_at set, so a
-        scheduled run has two independent reasons to skip it.
-      */
       const { error } = await supabase
         .from("broker_connections")
-        .update({ removed_at: new Date().toISOString(), is_auto_sync_enabled: false })
+        .update({ sync_paused_at: new Date().toISOString(), is_auto_sync_enabled: false })
         .eq("id", connection_id)
         .eq("user_id", user.id);
 
@@ -260,37 +210,218 @@ Deno.serve(async (req: Request) => {
         });
       }
 
-      /*
-        Keeping parked accounts is cheap, not free.
-
-        Each one is about $0.73 a month, and the 120-day retirement is the
-        only other thing that removes them. A trader cycling through ten
-        blown prop accounts a month would sit on forty before the first
-        expired - $29 a month of nothing. So the plan's allowance caps it,
-        and past the cap the oldest is released early.
-
-        The user loses nothing they can see: their trades, journal entries
-        and the account itself all stay. The only consequence is that
-        reconnecting that particular account later pays MetaApi's $2.10
-        again instead of being free.
-
-        Best effort. A failure here costs cents and must never turn a
-        successful removal into an error the user has to act on.
-      */
+      /* Keeping a parked account is cheap, not free - see the helper. */
       try {
-        /* Cast for the same reason elsewhere in this project: the untyped
-           client's generics do not survive a function boundary. */
         await releaseOldestParkedOverLimit(supabase as never, user.id);
       } catch (e) {
         console.error("Parked-account trim failed (continuing):", user.id, e);
       }
 
       return new Response(
-        JSON.stringify({ success: true }),
-        {
-          status: 200,
+        JSON.stringify({ success: true, paused: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    /*
+      Turning syncing back on.
+
+      The parked MetaApi account still holds this account's credentials, so
+      this is a deploy rather than a $2.10 purchase - which is the entire
+      reason removal parks instead of deletes.
+
+      The slot is checked here and not only in the UI, because the UI is a
+      suggestion and this is the thing that actually costs money.
+    */
+    if (pathname === "/reconnect" && req.method === "POST") {
+      const body = await req.json();
+      const { connection_id } = body;
+
+      if (!connection_id) {
+        return new Response(JSON.stringify({ error: "connection_id required" }), {
+          status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { data: connectionRow, error: readError } = await supabase
+        .from("user_broker_connections")
+        .select("metaapi_account_id, account_name")
+        .eq("id", connection_id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (readError || !connectionRow) {
+        return new Response(JSON.stringify({ error: "Account not found." }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { data: limitData } = await supabase.rpc("synced_account_limit");
+      const { data: inUseData } = await supabase.rpc("synced_accounts_in_use", { p_user_id: user.id });
+      const limit = typeof limitData === "number" ? limitData : 0;
+      const inUse = typeof inUseData === "number" ? inUseData : 0;
+
+      if (inUse >= limit) {
+        return new Response(
+          JSON.stringify({
+            error: limit === 0
+              ? "Automatic syncing needs an active subscription."
+              : `All ${limit} of your sync slots are in use. Turn syncing off on another account, or add a slot.`,
+            slotsFull: true,
+            limit,
+            inUse,
+          }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const metaapiAccountId = connectionRow.metaapi_account_id;
+      if (metaapiAccountId) {
+        const metaapiToken = Deno.env.get("METAAPI_TOKEN");
+        if (!metaapiToken) {
+          return new Response(
+            JSON.stringify({ error: "Account syncing isn't configured yet." }),
+            { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
         }
+
+        const woken = await wakeMetaApiAccount(metaapiAccountId, metaapiToken);
+        if (!woken.released) {
+          /*
+            The parked account would not start. Most often its credentials
+            went stale while it sat idle, and the fix is to connect it again
+            with the current investor password - which the connect flow will
+            reuse this same account for, so it still costs nothing.
+          */
+          console.error("Parked account would not deploy:", metaapiAccountId, woken.detail);
+          return new Response(
+            JSON.stringify({
+              error: "That account wouldn't start again. Connect it once more with your investor password and we'll reuse the same connection.",
+              needsCredentials: true,
+            }),
+            { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
+
+      const { error } = await supabase
+        .from("broker_connections")
+        .update({ sync_paused_at: null, is_auto_sync_enabled: true })
+        .eq("id", connection_id)
+        .eq("user_id", user.id);
+
+      if (error) {
+        return new Response(JSON.stringify({ error: clientSafeMessage(error) }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, reconnected: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    /*
+      Deleting the account for real. Rare, and the only destructive route.
+
+      This is where the trades guard belongs, and it is now genuinely
+      load-bearing: nothing else stands between a user and trade history
+      pointing at an account that no longer exists. Journal entries need no
+      such check - their reference is ON DELETE SET NULL, so they survive
+      and reappear under All Accounts.
+    */
+    if (pathname === "/delete" && req.method === "POST") {
+      const body = await req.json();
+      const { connection_id } = body;
+
+      if (!connection_id) {
+        return new Response(JSON.stringify({ error: "connection_id required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { count: tradeCount, error: countError } = await supabase
+        .from("trades")
+        .select("id", { count: "exact", head: true })
+        .eq("broker_id", connection_id)
+        .eq("user_id", user.id);
+
+      if (countError) {
+        return new Response(JSON.stringify({ error: clientSafeMessage(countError) }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if ((tradeCount ?? 0) > 0) {
+        return new Response(
+          JSON.stringify({
+            error: `This account still has ${tradeCount} ${tradeCount === 1 ? "trade" : "trades"}. Delete or move them first, or just turn syncing off instead - that keeps everything and stops the account costing you a slot.`,
+            hasTrades: true,
+            tradeCount: tradeCount ?? 0,
+          }),
+          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const { data: connectionRow } = await supabase
+        .from("user_broker_connections")
+        .select("metaapi_account_id")
+        .eq("id", connection_id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      const metaapiAccountId = connectionRow?.metaapi_account_id ?? null;
+      if (metaapiAccountId) {
+        const metaapiToken = Deno.env.get("METAAPI_TOKEN");
+        if (!metaapiToken) {
+          return new Response(
+            JSON.stringify({
+              error: "Account syncing isn't configured, so this account can't be removed safely. Please contact support.",
+            }),
+            { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        /* Hand it back properly, or keep the row - never lose the pointer. */
+        const released = await releaseMetaApiAccount(metaapiAccountId, metaapiToken);
+        if (!released.released) {
+          console.error(
+            "MetaApi release failed, keeping connection row:",
+            connection_id,
+            metaapiAccountId,
+            released.detail,
+          );
+          return new Response(
+            JSON.stringify({
+              error: "We couldn't disconnect this account from our sync provider, so it hasn't been deleted. Please try again in a moment.",
+            }),
+            { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
+
+      const { error } = await supabase
+        .from("user_broker_connections")
+        .delete()
+        .eq("id", connection_id)
+        .eq("user_id", user.id);
+
+      if (error) {
+        return new Response(JSON.stringify({ error: clientSafeMessage(error) }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, deleted: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -333,11 +464,11 @@ async function releaseOldestParkedOverLimit(
 
   const { data, error } = await supabase
     .from("broker_connections")
-    .select("id, metaapi_account_id, removed_at")
+    .select("id, metaapi_account_id, sync_paused_at")
     .eq("user_id", userId)
-    .not("removed_at", "is", null)
+    .not("sync_paused_at", "is", null)
     .not("metaapi_account_id", "is", null)
-    .order("removed_at", { ascending: true });
+    .order("sync_paused_at", { ascending: true });
 
   if (error) return;
 

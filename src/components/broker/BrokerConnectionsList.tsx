@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { motion } from 'framer-motion';
-import { Link2, CheckCircle2, AlertCircle, Trash2, Clock, Upload, Plus, X, RefreshCw, DollarSign, Pencil } from 'lucide-react';
+import { Link2, CheckCircle2, AlertCircle, Clock, Upload, Plus, X, RefreshCw, DollarSign, Pencil, PauseCircle } from 'lucide-react';
 import Button from '../shared/Button';
 import ConfirmModal from '../shared/ConfirmModal';
 import { brokerService, type BrokerConnection, type BrokerFromAPI } from '../../services/brokerService';
@@ -12,7 +12,12 @@ import { useAccount } from '../../lib/accountContext';
 
 export default function BrokerConnectionsList() {
   const { showToast } = useToast();
-  const { refreshAccounts, selectedAccount, setSelectedAccount } = useAccount();
+  /*
+    selectedAccount and setSelectedAccount went with the delete handler.
+    Pausing never needs to clear the selection, because the account is still
+    there and still selectable - which is the whole point of the change.
+  */
+  const { refreshAccounts } = useAccount();
   const [connections, setConnections] = useState<BrokerConnection[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
@@ -201,28 +206,63 @@ export default function BrokerConnectionsList() {
     setDisconnectConfirm({ isOpen: true, connectionId });
   };
 
-  const executeDelete = async (connectionId: string) => {
+  /*
+    Turning syncing off, which is what the old "remove" button should always
+    have done.
+
+    Nothing disappears: the account stays in the list with every trade and
+    journal entry, it can still be written to by hand, and the sync slot goes
+    back to the plan. The only thing that stops is the account updating
+    itself, which is the part that costs money to provide.
+  */
+  const executePauseSync = async (connectionId: string) => {
     setDisconnectConfirm({ isOpen: false, connectionId: '' });
     setDeletingIds(prev => new Set(prev).add(connectionId));
 
     try {
-      const success = await brokerService.disconnectBroker(connectionId);
+      const success = await brokerService.pauseSync(connectionId);
 
       if (success) {
-        if (selectedAccount?.id === connectionId) {
-          setSelectedAccount(null);
-        }
         await loadConnections();
         await refreshAccounts();
-        showToast('Account removed.', 'success');
+        showToast('Syncing turned off. Your trades are still here.', 'success');
       }
     } catch (error) {
-      // The server says exactly why - usually that the account still holds
-      // trades. Logging it to a console nobody has open is what made this
-      // read as a dead button.
-      console.error('Delete error:', error);
+      console.error('Pause sync error:', error);
       showToast(
-        error instanceof Error ? error.message : 'Could not remove that account.',
+        error instanceof Error ? error.message : 'Could not turn syncing off.',
+        'error'
+      );
+    } finally {
+      setDeletingIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(connectionId);
+        return newSet;
+      });
+    }
+  };
+
+  /*
+    Turning it back on. Free - the parked MetaApi account still holds this
+    account's credentials, so this is a restart rather than a new purchase.
+    The server refuses if every slot is in use and says which, so the error
+    is the upsell.
+  */
+  const executeResumeSync = async (connectionId: string) => {
+    setDeletingIds(prev => new Set(prev).add(connectionId));
+
+    try {
+      const success = await brokerService.resumeSync(connectionId);
+
+      if (success) {
+        await loadConnections();
+        await refreshAccounts();
+        showToast('Syncing back on. New trades will appear on their own.', 'success');
+      }
+    } catch (error) {
+      console.error('Resume sync error:', error);
+      showToast(
+        error instanceof Error ? error.message : 'Could not turn syncing back on.',
         'error'
       );
     } finally {
@@ -476,14 +516,38 @@ export default function BrokerConnectionsList() {
               >
                 <DollarSign className="w-5 h-5 text-gray-400 group-hover:text-blue-400 transition-colors" />
               </button>
-              <button
-                onClick={() => handleDelete(connection.id)}
-                disabled={deletingIds.has(connection.id)}
-                className="p-2 hover:bg-red-500/10 rounded-lg transition-colors group"
-                title="Remove account"
-              >
-                <Trash2 className="w-4 h-4 text-gray-400 group-hover:text-red-400 transition-colors" />
-              </button>
+              {/*
+                Pause and resume, not delete.
+
+                A synced account gets a way to stop it costing a slot; a
+                paused one gets a way to start again. Deleting for real is
+                deliberately not on the card - it is rare, it is the only
+                destructive option, and putting it next to the everyday
+                control is how people lose an account they meant to pause.
+              */}
+              {connection.metaapi_account_id && (
+                connection.sync_paused_at ? (
+                  <button
+                    onClick={() => executeResumeSync(connection.id)}
+                    disabled={deletingIds.has(connection.id)}
+                    className="px-3 py-2 rounded-lg text-[12.5px] font-medium bg-brand-blue/10
+                      text-brand-blue hover:bg-brand-blue/20 transition-colors
+                      disabled:opacity-60 disabled:cursor-not-allowed"
+                    title="Start syncing this account again"
+                  >
+                    {deletingIds.has(connection.id) ? 'Starting…' : 'Resume syncing'}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleDelete(connection.id)}
+                    disabled={deletingIds.has(connection.id)}
+                    className="p-2 hover:bg-blue-500/10 rounded-lg transition-colors group"
+                    title="Turn off syncing - keeps every trade"
+                  >
+                    <PauseCircle className="w-4 h-4 text-gray-400 group-hover:text-blue-400 transition-colors" />
+                  </button>
+                )
+              )}
             </div>
           </div>
         </motion.div>
@@ -676,13 +740,19 @@ export default function BrokerConnectionsList() {
         />
       )}
 
+      {/*
+        Says what actually happens, which is much less alarming than what
+        "Remove Account" implied. The old copy promised trades would survive
+        while the account itself vanished from the product - technically true
+        and thoroughly misleading.
+      */}
       <ConfirmModal
         isOpen={disconnectConfirm.isOpen}
-        title="Remove Account"
-        message="Are you sure you want to remove this account? Your existing trades will not be deleted."
-        confirmLabel="Remove"
+        title="Turn off syncing?"
+        message="This account stays here with all its trades, and you can still add trades to it by hand. It just stops updating on its own, and the sync slot goes back to your plan. You can turn it back on any time, free."
+        confirmLabel="Turn off syncing"
         variant="warning"
-        onConfirm={() => executeDelete(disconnectConfirm.connectionId)}
+        onConfirm={() => executePauseSync(disconnectConfirm.connectionId)}
         onCancel={() => setDisconnectConfirm({ isOpen: false, connectionId: '' })}
       />
     </div>
