@@ -164,7 +164,63 @@ Deno.serve(async (req: Request) => {
       }
 
       const metaapiAccountId = connectionRow?.metaapi_account_id ?? null;
-      if (metaapiAccountId) {
+
+      /*
+        A manual or CSV account has no syncing to turn off, so pausing it
+        would be a button that visibly does nothing. Removing one means
+        removing it, and this route still does that - trades guard and all.
+
+        This branch also protects the live site while the frontend catches
+        up. Deployed functions go live immediately; the bundle in front of
+        users still calls /disconnect expecting a delete, and every account
+        it can reach today is a manual one because syncing is switched off.
+        So for them nothing changes at all.
+      */
+      if (!metaapiAccountId) {
+        const { count: tradeCount, error: countError } = await supabase
+          .from("trades")
+          .select("id", { count: "exact", head: true })
+          .eq("broker_id", connection_id)
+          .eq("user_id", user.id);
+
+        if (countError) {
+          return new Response(JSON.stringify({ error: clientSafeMessage(countError) }), {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        if ((tradeCount ?? 0) > 0) {
+          return new Response(
+            JSON.stringify({
+              error: `This account still has ${tradeCount} ${tradeCount === 1 ? "trade" : "trades"}. Delete or move them before removing the account, so your trade history isn't left pointing at an account that no longer exists.`,
+              hasTrades: true,
+              tradeCount: tradeCount ?? 0,
+            }),
+            { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        const { error: deleteError } = await supabase
+          .from("user_broker_connections")
+          .delete()
+          .eq("id", connection_id)
+          .eq("user_id", user.id);
+
+        if (deleteError) {
+          return new Response(JSON.stringify({ error: clientSafeMessage(deleteError) }), {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        return new Response(
+          JSON.stringify({ success: true, deleted: true }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      {
         const metaapiToken = Deno.env.get("METAAPI_TOKEN");
         if (!metaapiToken) {
           return new Response(
