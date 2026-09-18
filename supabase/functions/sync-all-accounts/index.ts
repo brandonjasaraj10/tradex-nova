@@ -25,6 +25,7 @@ import {
   toTradeRow,
   FULL_HISTORY_START,
   fetchHistoricalTrades,
+  BROKER_OFFSET_ALLOWANCE_MS,
 } from "../_shared/metaStatsTrade.ts";
 
 const CLIENT_URL = "https://mt-client-api-v1.london.agiliumtrade.ai";
@@ -212,7 +213,7 @@ async function syncOne(
       `${CLIENT_URL}` +
         `/users/current/accounts/${connection.metaapi_account_id}/history-deals` +
         `/time/${encodeURIComponent(since.toISOString())}` +
-        `/${encodeURIComponent(new Date(now.getTime() + 60_000).toISOString())}`,
+        `/${encodeURIComponent(new Date(now.getTime() + BROKER_OFFSET_ALLOWANCE_MS).toISOString())}`,
       { headers: { "auth-token": token } },
     );
     if (dealsRes.ok) {

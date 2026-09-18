@@ -351,8 +351,20 @@ const MAX_PAGES = 50;
   every row is upserted on the broker's own trade id, so re-reading one
   changes nothing. 24 hours clears every real-world broker offset, which
   tops out around 14.
+
+  Exported because the deal history needs exactly the same padding and did
+  not have it. That call ended 60 seconds from now, which is inside the
+  broker's clock for any broker running ahead of UTC - so a deal that had
+  just closed fell outside the window, the enrichment was missed, and the
+  trade fell back to MetaStats' broker-time strings parsed as UTC. The
+  result imports and looks fine until you notice it is stamped three hours
+  into the future with no close reason, commission or swap.
+
+  Found on a real close: a position the positions API had recorded opening
+  at 06:15:29.569 UTC arrived as a trade opening at 09:15:29.569 UTC - the
+  same milliseconds, exactly one broker offset apart.
 */
-const BROKER_OFFSET_ALLOWANCE_MS = 24 * 60 * 60 * 1000;
+export const BROKER_OFFSET_ALLOWANCE_MS = 24 * 60 * 60 * 1000;
 
 export async function fetchHistoricalTrades(
   token: string,
