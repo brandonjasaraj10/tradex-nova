@@ -39,11 +39,25 @@ export const TIERS: Tier[] = [
   {
     name: 'Starter',
     price: '$29.99',
-    who: 'The account you actually trade.',
+    who: 'For one trading account.',
+    /*
+      Three lines, identical shape in every column, in the same order.
+
+      This replaced a version where each tier had its own sentence structure
+      and its own em-dashed aside. It read better and compared worse, which
+      is the wrong trade on a pricing table - nobody reads these, they diff
+      them. When the columns line up, 1 / 2 / 5 and 25 / 100 / 300 do the
+      selling on their own and the eye finds the difference without being
+      told what it is.
+
+      What the product actually DOES is not in here on purpose. It is the
+      same on every plan, so it sits in IN_EVERY_PLAN below where it is said
+      once instead of three times competing with the numbers.
+    */
     lines: [
-      { text: 'One account logs its own trades \u2014 you write the thinking, never the numbers', included: true },
-      { text: 'Ask Nova 25 times a day what your own numbers actually say', included: true },
-      { text: 'Journal any other account by hand or CSV, as many as you like', included: true },
+      { text: '1 account synced', included: true },
+      { text: '25 Nova questions a day', included: true },
+      { text: 'Unlimited accounts by hand or CSV', included: true },
     ],
     cta: 'Start journaling',
     priceIds: {
@@ -54,11 +68,11 @@ export const TIERS: Tier[] = [
   {
     name: 'Pro',
     price: '$49.99',
-    who: 'Your funded account and your own.',
+    who: 'For a funded account and your own.',
     lines: [
-      { text: 'Two accounts log their own trades \u2014 prop and personal, neither one typed', included: true },
-      { text: '100 questions a day \u2014 four times Starter, past what most people use', included: true },
-      { text: 'Need a third? $19, on the spot \u2014 no upgrade, no email', included: true },
+      { text: '2 accounts synced', included: true },
+      { text: '100 Nova questions a day', included: true },
+      { text: 'Extra synced accounts, $19 each', included: true },
     ],
     cta: 'Start journaling',
     featured: true,
@@ -70,11 +84,11 @@ export const TIERS: Tier[] = [
   {
     name: 'Elite',
     price: '$99.99',
-    who: 'Several funded accounts, where a missed day is real money.',
+    who: 'For several funded accounts at once.',
     lines: [
-      { text: 'Five accounts log their own trades \u2014 cheaper than Pro plus three add-ons', included: true },
-      { text: '300 questions a day \u2014 you will not reach it', included: true },
-      { text: 'Your support goes to the front of the queue', included: true },
+      { text: '5 accounts synced', included: true },
+      { text: '300 Nova questions a day', included: true },
+      { text: 'Priority support', included: true },
     ],
     cta: 'Start journaling',
     priceIds: {
@@ -102,6 +116,7 @@ export const TIERS: Tier[] = [
   lose that.
 */
 export const IN_EVERY_PLAN = [
+  'Synced accounts fill their own trades in \u2014 you add the thinking, never the numbers',
   'Talk through a trade \u2014 it writes itself up',
   'Nova reads every entry and tells you what you keep doing',
   'Your psychology scored on every trade, not just P&L',
