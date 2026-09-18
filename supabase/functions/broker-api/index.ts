@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { clientSafeMessage } from "../_shared/errors.ts";
-import { parkMetaApiAccount } from "../_shared/metaApiAccount.ts";
+import { parkMetaApiAccount, releaseMetaApiAccount } from "../_shared/metaApiAccount.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -260,6 +260,31 @@ Deno.serve(async (req: Request) => {
         });
       }
 
+      /*
+        Keeping parked accounts is cheap, not free.
+
+        Each one is about $0.73 a month, and the 120-day retirement is the
+        only other thing that removes them. A trader cycling through ten
+        blown prop accounts a month would sit on forty before the first
+        expired - $29 a month of nothing. So the plan's allowance caps it,
+        and past the cap the oldest is released early.
+
+        The user loses nothing they can see: their trades, journal entries
+        and the account itself all stay. The only consequence is that
+        reconnecting that particular account later pays MetaApi's $2.10
+        again instead of being free.
+
+        Best effort. A failure here costs cents and must never turn a
+        successful removal into an error the user has to act on.
+      */
+      try {
+        /* Cast for the same reason elsewhere in this project: the untyped
+           client's generics do not survive a function boundary. */
+        await releaseOldestParkedOverLimit(supabase as never, user.id);
+      } catch (e) {
+        console.error("Parked-account trim failed (continuing):", user.id, e);
+      }
+
       return new Response(
         JSON.stringify({ success: true }),
         {
@@ -284,3 +309,52 @@ Deno.serve(async (req: Request) => {
     );
   }
 });
+
+/*
+  Release parked accounts beyond what the plan allows, oldest first.
+
+  Reads the allowance from parked_account_limit() rather than a number
+  written here, so the screen that explains the plan and the rule that
+  enforces it cannot disagree.
+
+  Only the MetaApi pointer is cleared. The row stays, because trades
+  reference it and because the user should still see the account and its
+  history - what they lose is the free instant reconnect, nothing else.
+*/
+async function releaseOldestParkedOverLimit(
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+): Promise<void> {
+  const token = Deno.env.get("METAAPI_TOKEN");
+  if (!token) return;
+
+  const { data: limitData } = await supabase.rpc("parked_account_limit");
+  const limit = typeof limitData === "number" ? limitData : 0;
+
+  const { data, error } = await supabase
+    .from("broker_connections")
+    .select("id, metaapi_account_id, removed_at")
+    .eq("user_id", userId)
+    .not("removed_at", "is", null)
+    .not("metaapi_account_id", "is", null)
+    .order("removed_at", { ascending: true });
+
+  if (error) return;
+
+  const parked = (data ?? []) as unknown as { id: string; metaapi_account_id: string }[];
+  if (parked.length <= limit) return;
+
+  /* Oldest first, which is what the ordering above already gives. */
+  for (const row of parked.slice(0, parked.length - limit)) {
+    const released = await releaseMetaApiAccount(String(row.metaapi_account_id), token);
+    if (!released.released) {
+      console.error("Could not release over-limit parked account", row.metaapi_account_id, released.detail);
+      continue;
+    }
+    await supabase
+      .from("broker_connections")
+      .update({ metaapi_account_id: null } as never)
+      .eq("id", row.id);
+    console.info("Released parked account over plan limit:", row.metaapi_account_id);
+  }
+}
