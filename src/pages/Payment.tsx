@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { loadStripe } from '@stripe/stripe-js';
+import { loadStripe, type StripeEmbeddedCheckout } from '@stripe/stripe-js';
 import { Shield, CheckCircle2, Lock, AlertCircle, ArrowLeft, Zap, Crown, Gift, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import NOVAScore from '../components/shared/NOVAScore';
@@ -178,6 +178,12 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
   const { pastDue } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  /*
+    The Checkout Session's client secret, set once the user has chosen and
+    pressed the button. Non-null means the embedded form is on screen, which
+    is also what the mounting effect below keys off.
+  */
+  const [checkoutSecret, setCheckoutSecret] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [stripeConfigured, setStripeConfigured] = useState(false);
   const [manualLoading, setManualLoading] = useState(false);
@@ -227,6 +233,55 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
     checkFounderEligibility();
     return () => { cancelled = true; };
   }, []);
+
+  /*
+    Mount Stripe's embedded checkout once a session exists.
+
+    Kept in an effect rather than done inline in the click handler because
+    the element it mounts into does not exist until React has rendered the
+    checkout view - setting the secret is what puts that element on screen,
+    and this runs after.
+
+    The destroyed flag matters: initEmbeddedCheckout is async, and a user who
+    presses back before it resolves would otherwise have an instance mounted
+    into a element that is no longer there. Stripe's own instance is torn
+    down on the way out so a second attempt gets a clean one rather than
+    "you can only create one Embedded Checkout".
+  */
+  useEffect(() => {
+    if (!checkoutSecret) return;
+
+    let destroyed = false;
+    let instance: StripeEmbeddedCheckout | null = null;
+
+    (async () => {
+      const stripe = await stripePromise;
+      if (!stripe || destroyed) return;
+
+      const checkout = await stripe.initEmbeddedCheckout({ clientSecret: checkoutSecret });
+      if (destroyed) {
+        checkout.destroy();
+        return;
+      }
+      instance = checkout;
+      checkout.mount('#tradex-embedded-checkout');
+    })().catch((err) => {
+      console.error('Embedded checkout failed to mount:', err);
+      if (destroyed) return;
+      /*
+        Back to the plan chooser rather than a blank panel. The message names
+        the card form specifically, because "something went wrong" on a
+        payment screen reads as "your card was charged, maybe".
+      */
+      setCheckoutSecret(null);
+      setError('The payment form did not load. Please try again.');
+    });
+
+    return () => {
+      destroyed = true;
+      instance?.destroy();
+    };
+  }, [checkoutSecret]);
 
   const handleSubscribe = async () => {
     if (!stripeConfigured) {
@@ -289,6 +344,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
         },
         body: JSON.stringify({
           priceId,
+          embedded: true,
         }),
       });
 
@@ -297,7 +353,26 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
         throw new Error(errorData.error || 'Failed to create checkout session');
       }
 
-      const { sessionId } = await response.json();
+      const { sessionId, clientSecret } = await response.json();
+
+      /*
+        Keep the card form on our own page.
+
+        Same Checkout Session as the redirect - the fields are still Stripe's
+        iframe, so no card number ever reaches us and PCI scope does not
+        move. What changes is that somebody deciding whether to pay is not
+        thrown onto a different domain mid-decision, which is the point in
+        the funnel where people reconsider.
+
+        If the server gives us no clientSecret - an older deploy, or embedded
+        refused for any reason - fall back to the redirect rather than
+        showing an empty box. A checkout that works somewhere else beats one
+        that works nowhere.
+      */
+      if (clientSecret) {
+        setCheckoutSecret(clientSecret);
+        return;
+      }
 
       const { error: stripeError } = await stripe.redirectToCheckout({
         sessionId,
@@ -474,6 +549,45 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
 
     pb-44 below sm clears the CTA bar pinned to the bottom there.
   */
+  /*
+    The checkout, on our own page.
+
+    A full replacement rather than a modal over the plan chooser: someone
+    entering card details should have one thing in front of them, and a
+    dimmed pricing table behind glass is a second thing. The way back is a
+    single quiet control, because a prominent escape next to a payment form
+    is an invitation to take it.
+
+    Stripe's iframe brings its own light surface, so the panel around it is
+    white on purpose - a black gutter around a white form reads as a seam.
+  */
+  if (checkoutSecret) {
+    return (
+      <div className="min-h-screen bg-black text-white">
+        <div className="max-w-2xl mx-auto px-5 sm:px-8 pt-6 sm:pt-12 pb-20">
+          <button
+            type="button"
+            onClick={() => setCheckoutSecret(null)}
+            className="inline-flex items-center gap-2 text-[13.5px] text-gray-400
+              hover:text-white transition-colors mb-8"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to plans
+          </button>
+
+          <div className="rounded-2xl overflow-hidden bg-white">
+            <div id="tradex-embedded-checkout" />
+          </div>
+
+          <p className="mt-6 text-center text-[12.5px] text-gray-500">
+            <Lock className="w-3.5 h-3.5 inline-block mr-1.5 -mt-0.5" />
+            Payments handled by Stripe. Your card details never touch our servers.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Wider from lg up so the two columns have room to be columns. At
