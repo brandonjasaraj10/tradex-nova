@@ -314,7 +314,13 @@ Deno.serve(async (req: Request) => {
         });
       }
 
-      const { data: limitData } = await supabase.rpc("synced_account_limit");
+      /*
+        The _for variants, because this function holds the service-role key
+        and auth.uid() is null under it. The auth.uid() versions come back 0
+        here, which reads as "no subscription" and would refuse a resume to
+        somebody who is paying.
+      */
+      const { data: limitData } = await supabase.rpc("synced_account_limit_for", { p_user_id: user.id });
       const { data: inUseData } = await supabase.rpc("synced_accounts_in_use", { p_user_id: user.id });
       const limit = typeof limitData === "number" ? limitData : 0;
       const inUse = typeof inUseData === "number" ? inUseData : 0;
@@ -515,8 +521,21 @@ async function releaseOldestParkedOverLimit(
   const token = Deno.env.get("METAAPI_TOKEN");
   if (!token) return;
 
-  const { data: limitData } = await supabase.rpc("parked_account_limit");
-  const limit = typeof limitData === "number" ? limitData : 0;
+  /*
+    Same reason as the slot check: service-role means auth.uid() is null, so
+    the auth.uid() version answers 0 - and a parked limit of 0 told this to
+    release the account it had just parked. That is how a Pro subscriber's
+    first pause deleted the account at MetaApi instead of keeping it.
+
+    A missing answer is treated as "do not trim" rather than "trim
+    everything", because releasing is the irreversible direction.
+  */
+  const { data: limitData } = await supabase.rpc("parked_account_limit_for", { p_user_id: userId } as never);
+  if (typeof limitData !== "number") {
+    console.error("Could not read the parked-account allowance; leaving parked accounts alone.");
+    return;
+  }
+  const limit = limitData;
 
   const { data, error } = await supabase
     .from("broker_connections")
