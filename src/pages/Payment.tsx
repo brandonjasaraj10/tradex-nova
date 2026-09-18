@@ -124,50 +124,42 @@ const TIER_CATALOGUE: {
   summary: string;
   features: string[];
   popular?: boolean;
-}[] = [
-  {
-    id: 'starter',
-    name: 'Starter',
-    monthly: '$29.99',
-    annualPerMonth: '$24.99',
-    annualTotal: '$299.90 billed annually',
-    summary: '1 account · synced once a day',
-    features: [
-      'Yesterday\u2019s trades, waiting each morning',
-      'Unlimited manual & CSV accounts',
-      '25 Nova questions a day',
-    ],
-  },
-  {
-    id: 'pro',
-    name: 'Pro',
-    monthly: '$59.99',
-    annualPerMonth: '$49.99',
-    annualTotal: '$599.90 billed annually',
-    summary: '3 accounts · synced as trades close',
-    features: [
-      'Trades land minutes after you close them',
-      'Unlimited manual & CSV accounts',
-      '100 Nova questions a day',
-      'More synced accounts, $15 each',
-    ],
-    popular: true,
-  },
-  {
-    id: 'elite',
-    name: 'Elite',
-    monthly: '$149.99',
-    annualPerMonth: '$124.99',
-    annualTotal: '$1,499.90 billed annually',
-    summary: '6 accounts · synced as trades close',
-    features: [
-      'Trades land minutes after you close them',
-      '300 Nova questions a day \u2014 you will not reach it',
-      'First on every new platform we connect',
-      'Your support goes to the front of the queue',
-    ],
-  },
-];
+}[] = TIERS.map((tier) => {
+  /*
+    Derived from TIERS rather than written again here.
+
+    This array used to be a second, hand-kept copy, and it had already
+    drifted exactly as pricingTiers.ts warned it would: the paywall was
+    still offering Pro at $59.99 with three accounts and Elite at $149.99
+    with six, still promising a daily-sync tier that no longer exists, and
+    still advertising "first on every new platform" - which was never true,
+    since every plan gets a new platform on the same day. Somebody comparing
+    the paywall against /pricing would have found four disagreements.
+
+    A price that lives in two files eventually disagrees with itself, and on
+    a payment screen that disagreement is a chargeback.
+  */
+  const monthlyValue = Number(tier.price.replace(/[^0-9.]/g, ''));
+  const annualTotalValue = monthlyValue * 10;
+  const money = (n: number) =>
+    `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  return {
+    id: tier.name.toLowerCase() as TierId,
+    name: tier.name,
+    monthly: tier.price,
+    /*
+      Annual is ten months for twelve, so the per-month figure is the annual
+      total spread back over twelve - not the monthly price with a discount
+      bolted on. Rounded to the cent Stripe will actually charge.
+    */
+    annualPerMonth: money(Math.round((annualTotalValue / 12) * 100) / 100),
+    annualTotal: `${money(annualTotalValue)} billed annually`,
+    summary: tier.who,
+    features: tier.lines.filter((l) => l.included).map((l) => l.text),
+    popular: tier.featured,
+  };
+});
 
 interface PaymentProps {
   onSubscriptionComplete?: () => void;

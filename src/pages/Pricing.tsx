@@ -217,8 +217,8 @@ export default function Pricing() {
               a: 'No. The rate you joined at is the rate you keep, and nothing you already have access to is being moved behind a higher tier. These plans are for new members.',
             },
             {
-              q: 'What if I need more than six accounts?',
-              a: 'Add them to Pro or Elite for $15 a month each. That is close to what a hosted account costs us, so there is no volume penalty hiding in it.',
+              q: 'What if I need more accounts than my plan covers?',
+              a: 'Add them for $19 a month each, on any plan, whenever you want \u2014 no upgrade call, no waiting. About half of that is what a hosted account actually costs us, which is why it is a real per-account price rather than a penalty for needing more.',
             },
             {
               q: 'Is there a free trial?',

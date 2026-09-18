@@ -39,13 +39,11 @@ export const TIERS: Tier[] = [
   {
     name: 'Starter',
     price: '$29.99',
-    who: 'One account, and you would rather not type it up yourself.',
+    who: 'The account you actually trade.',
     lines: [
-      { text: 'One account, syncing on its own', included: true },
-      { text: 'Trades land minutes after you close them', included: true },
-      { text: 'Add or import as many accounts as you like', included: true },
-      { text: '25 questions a day for Nova', included: true },
-      { text: 'A second account syncing at the same time', included: false },
+      { text: 'One account logs its own trades \u2014 you write the thinking, never the numbers', included: true },
+      { text: 'Ask Nova 25 times a day what your own numbers actually say', included: true },
+      { text: 'Journal any other account by hand or CSV, as many as you like', included: true },
     ],
     cta: 'Start journaling',
     priceIds: {
@@ -56,13 +54,11 @@ export const TIERS: Tier[] = [
   {
     name: 'Pro',
     price: '$49.99',
-    who: 'A couple of accounts running, and you write trades up while they are fresh.',
+    who: 'Your funded account and your own.',
     lines: [
-      { text: 'Two accounts, syncing on their own', included: true },
-      { text: 'Trades land minutes after you close them', included: true },
-      { text: 'Add or import as many accounts as you like', included: true },
-      { text: '100 questions a day for Nova', included: true },
-      { text: 'More synced accounts whenever, $19 each', included: true },
+      { text: 'Two accounts log their own trades \u2014 prop and personal, neither one typed', included: true },
+      { text: '100 questions a day \u2014 four times Starter, past what most people use', included: true },
+      { text: 'Need a third? $19, on the spot \u2014 no upgrade, no email', included: true },
     ],
     cta: 'Start journaling',
     featured: true,
@@ -73,19 +69,17 @@ export const TIERS: Tier[] = [
   },
   {
     name: 'Elite',
-    price: '$149.99',
-    who: 'Several funded accounts at once, where a missed day is real money.',
+    price: '$99.99',
+    who: 'Several funded accounts, where a missed day is real money.',
     lines: [
-      { text: 'Five accounts, syncing on their own', included: true },
-      { text: 'Trades land minutes after you close them', included: true },
-      { text: '300 questions a day — you will not reach it', included: true },
-      { text: 'First on every new platform we connect', included: true },
+      { text: 'Five accounts log their own trades \u2014 cheaper than Pro plus three add-ons', included: true },
+      { text: '300 questions a day \u2014 you will not reach it', included: true },
       { text: 'Your support goes to the front of the queue', included: true },
     ],
     cta: 'Start journaling',
     priceIds: {
-      monthly: 'price_1UGqHeP9mqFWeYrvJOymED7D',
-      annual: 'price_1UGqHeP9mqFWeYrvn9dntceN',
+      monthly: 'price_1UGqq1P9mqFWeYrvfkgvSpDn',
+      annual: 'price_1UGqrcP9mqFWeYrvwfanVeKY',
     },
   },
 ];
