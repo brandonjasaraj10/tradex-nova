@@ -562,7 +562,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
                     </span>
                     <span className="hidden sm:inline">
                       Every plan has the whole product in it. What changes is how many
-                      accounts sync, and how fast.
+                      accounts sync themselves.
                     </span>
                   </>
                 )}

@@ -880,7 +880,7 @@ export default function Sales() {
             </h2>
             <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-sm mx-auto text-balance">
               {launched
-                ? 'What changes is how many accounts sync, and how fast.'
+                ? 'What changes is how many accounts sync themselves.'
                 : 'Join the waitlist before launch and lock in founding member pricing.'}
             </p>
           </div>
@@ -917,7 +917,7 @@ export default function Sales() {
 
             The named conversion killer is a visitor who cannot tell the
             tiers apart - so these cards carry only what DIFFERS, which for
-            this product is how many accounts sync and how fast. Everything
+            this product is how many accounts sync themselves. Everything
             shared sits underneath once, rather than being repeated down
             three columns where it reads as a wall.
 

@@ -105,7 +105,7 @@ export default function Pricing() {
       width="wide"
       eyebrow="Pricing"
       title="Pick how many accounts you run."
-      subtitle="Every plan has the whole product in it. What changes is how many accounts sync, and how fast."
+      subtitle="Every plan has the whole product in it. What changes is how many accounts sync themselves."
     >
       {/*
         He belongs on this page and NOT on the paywall, and the distinction is
