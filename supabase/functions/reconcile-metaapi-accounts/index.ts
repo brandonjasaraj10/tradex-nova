@@ -66,6 +66,9 @@ interface MetaApiAccount {
   _id?: string;
   id?: string;
   name?: string;
+  /* DEPLOYED / UNDEPLOYED - what decides $8.64 a month against $0.73. */
+  state?: string;
+  connectionStatus?: string;
 }
 
 function json(body: unknown, status = 200): Response {
@@ -209,6 +212,23 @@ Deno.serve(async (req: Request) => {
       referenced: referenced.size,
       quarantined: decision.quarantine.map((o) => o.id),
       wouldRelease: due,
+      /*
+        Every account's deployment state, not only the orphans'.
+
+        Pausing an account is supposed to undeploy it, and the difference
+        between DEPLOYED and UNDEPLOYED is $8.64 a month against $0.73. The
+        undeploy call returning OK is not evidence of either - MetaApi
+        accepted a delete earlier and went on listing the account regardless
+        - so the only way to know a parked account is actually parked is to
+        read the state back.
+      */
+      states: accounts.map((a) => ({
+        id: String(a._id ?? a.id ?? ""),
+        name: a.name ?? null,
+        state: a.state ?? null,
+        connection: a.connectionStatus ?? null,
+        referenced: referenced.has(String(a._id ?? a.id ?? "")),
+      })),
     });
   }
 

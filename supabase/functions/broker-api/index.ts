@@ -266,6 +266,8 @@ Deno.serve(async (req: Request) => {
         });
       }
 
+      await logDeployEvent(supabase as never, connection_id, metaapiAccountId, "undeployed", "pause");
+
       /* Keeping a parked account is cheap, not free - see the helper. */
       try {
         await releaseOldestParkedOverLimit(supabase as never, user.id);
@@ -394,6 +396,8 @@ Deno.serve(async (req: Request) => {
         });
       }
 
+      await logDeployEvent(supabase as never, connection_id, String(metaapiAccountId), "deployed", "resume");
+
       return new Response(
         JSON.stringify({ success: true, reconnected: true }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -494,6 +498,10 @@ Deno.serve(async (req: Request) => {
         });
       }
 
+      if (metaapiAccountId) {
+        await logDeployEvent(supabase as never, connection_id, metaapiAccountId, "released", "delete");
+      }
+
       return new Response(
         JSON.stringify({ success: true, deleted: true }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -575,5 +583,33 @@ async function releaseOldestParkedOverLimit(
       .update({ metaapi_account_id: null } as never)
       .eq("id", row.id);
     console.info("Released parked account over plan limit:", row.metaapi_account_id);
+  }
+}
+
+/*
+  A line in the deploy log, for the billing question.
+
+  MetaApi bills a minimum of six hours per deploy and does not say whether a
+  redeploy inside an existing minimum starts a new one. The invoice itemises
+  deployed hours; this is the other half of that comparison - what we did and
+  when. Best effort, and never allowed to fail the operation it describes: a
+  missing log line is a worse record, a failed pause is a real problem.
+*/
+async function logDeployEvent(
+  supabase: ReturnType<typeof createClient>,
+  connectionId: string,
+  metaapiAccountId: string,
+  action: "deployed" | "undeployed" | "released",
+  reason: string,
+): Promise<void> {
+  try {
+    await supabase.from("metaapi_deploy_log").insert({
+      broker_connection_id: connectionId,
+      metaapi_account_id: metaapiAccountId,
+      action,
+      reason,
+    } as never);
+  } catch (e) {
+    console.error("Could not write deploy log:", metaapiAccountId, action, e);
   }
 }
