@@ -366,6 +366,19 @@ Deno.serve(async (req: Request) => {
             { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
+      } else {
+        /*
+          Nothing left at MetaApi to wake - the account was released rather
+          than parked. Reconnecting means buying one again, which the connect
+          flow does with the investor password.
+        */
+        return new Response(
+          JSON.stringify({
+            error: "This account isn't connected to our sync provider any more. Connect it again with your investor password to start syncing.",
+            needsCredentials: true,
+          }),
+          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
 
       const { error } = await supabase
@@ -506,7 +519,7 @@ Deno.serve(async (req: Request) => {
 /*
   Release parked accounts beyond what the plan allows, oldest first.
 
-  Reads the allowance from parked_account_limit() rather than a number
+  Reads the allowance from parked_account_limit_for() rather than a number
   written here, so the screen that explains the plan and the rule that
   enforces it cannot disagree.
 
@@ -527,8 +540,8 @@ async function releaseOldestParkedOverLimit(
     release the account it had just parked. That is how a Pro subscriber's
     first pause deleted the account at MetaApi instead of keeping it.
 
-    A missing answer is treated as "do not trim" rather than "trim
-    everything", because releasing is the irreversible direction.
+    A missing answer is treated as "do not trim" rather than 0, because
+    releasing is the irreversible direction.
   */
   const { data: limitData } = await supabase.rpc("parked_account_limit_for", { p_user_id: userId } as never);
   if (typeof limitData !== "number") {
