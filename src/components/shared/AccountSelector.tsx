@@ -305,8 +305,13 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
               break;
             }
             if (attempt < ATTEMPTS - 1) {
+              /*
+                Says how long rather than counting attempts. "3 of 7" invites
+                somebody to wonder what happens at 7; "a minute or two" tells
+                them it is normal and they can stop watching.
+              */
               setConnectStatus(
-                `Waiting for your broker's history… (${attempt + 1}/${ATTEMPTS})`,
+                'Pulling your history from your broker. This can take a minute or two.',
               );
               await new Promise((r) => setTimeout(r, GAP_MS));
             }
@@ -316,7 +321,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
           showToast(
             imported > 0
               ? `Account connected. Imported ${imported} trades.`
-              : 'Account connected. Your history is still coming from your broker and will appear shortly.',
+              : 'Account connected. Your broker is still sending your history — it will appear on its own within a few minutes.',
             'success',
           );
         }
