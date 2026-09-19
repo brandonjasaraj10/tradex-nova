@@ -965,13 +965,20 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
             a few days, and an unexplained pending charge the size of the
             subscription is how you earn a chargeback from somebody who was
             about to become a customer. Cheaper to say it here.
+
+            "Temporary hold" rather than a description of what we do to the
+            card. It is the phrase banks, hotels and fuel pumps already use,
+            so most people have met it before and do not need it explained -
+            which is the whole job of a line this small. The first version
+            said the same thing in thirty words across two sentences and read
+            like terms nobody finishes.
           */}
           <p className="text-center text-[11.5px] text-gray-500">
             3 days free &middot; Cancel in two clicks
           </p>
           <p className="text-center text-[11px] text-gray-600 leading-relaxed mt-2 max-w-sm mx-auto">
-            We check your card for the plan price and release it straight away. Nothing is
-            charged until day 3, and your bank may show the check as pending until then.
+            Nothing is charged today. Your bank may show a temporary hold for the plan
+            amount, released straight away.
           </p>
         </div>
 
