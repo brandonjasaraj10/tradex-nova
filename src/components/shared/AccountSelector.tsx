@@ -15,6 +15,7 @@ import { connectMetaTraderAccount, syncMetaTraderAccount } from '../../services/
 import { searchMtServers, type MtServerSuggestion } from '../../services/mtServers';
 import AccountLimitReached from '../broker/AccountLimitReached';
 import { getSyncAccessState } from '../../services/syncAccess';
+import { useAuth } from '../../lib/auth';
 
 /*
   Which platform the account actually runs on, asked separately from which
@@ -73,6 +74,14 @@ interface AccountSelectorProps {
 
 export default function AccountSelector({ accounts, selectedAccount, onAccountChange, onAccountsUpdate }: AccountSelectorProps) {
   const { showToast } = useToast();
+  /*
+    Ending a trial early changes the subscription the whole app reads from,
+    not just this panel. Without refreshing it, Settings and the paywall gate
+    would go on believing the trial was still running until the next full
+    page load - so somebody who had just paid would still be told they were
+    on a trial.
+  */
+  const { refreshSubscription } = useAuth();
   const { setDateRange } = useDateRange();
   const [isOpen, setIsOpen] = useState(false);
   const [showAddAccount, setShowAddAccount] = useState(false);
@@ -962,6 +971,11 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
                       allowance, and it is there now.
                     */
                     setLimitInfo(null);
+                    /*
+                      Before anything else: the subscription they are now on
+                      is different from the one the app has cached.
+                    */
+                    await refreshSubscription();
                     setConnectStatus('Connecting to your broker...');
                     const retry = await connectMetaTraderAccount({
                       connectionId: limitInfo.connectionId,
