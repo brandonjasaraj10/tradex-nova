@@ -143,7 +143,7 @@ export function ClosingCta({
           Start journaling
         </Link>
         <p className="text-[11.5px] text-gray-500">
-          14-day money back guarantee &middot; Cancel anytime
+          3 days free &middot; Cancel in two clicks &middot; 14-day money back after that
         </p>
       </div>
     </section>

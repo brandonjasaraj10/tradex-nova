@@ -175,7 +175,7 @@ const GROUPS: {
       },
       {
         q: 'Is there a free trial?',
-        a: 'The money back guarantee does the same job without the part where a card gets charged on a day you forgot about.',
+        a: 'Three days, free. Your card is authorised for the plan price and released straight away \u2014 nothing is taken \u2014 so a card that will not work shows up on day one rather than day three. Syncing is the one thing a trial does not include; that is what subscribing turns on. The 14-day money back guarantee applies after that as well.',
       },
       {
         q: 'Will my price go up?',

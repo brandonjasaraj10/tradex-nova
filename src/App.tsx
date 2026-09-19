@@ -4,11 +4,12 @@ import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './lib/auth';
 import { AccountProvider } from './lib/accountContext';
 import { DateRangeProvider } from './lib/dateRangeContext';
-import { ToastProvider } from './lib/toastContext';
+import { ToastProvider, useToast } from './lib/toastContext';
 import { NovaProvider } from './lib/novaContext';
 import { TourProvider, TourNavigationSetter } from './lib/tourContext';
 import { DataSyncProvider } from './lib/dataSync';
 import { PreferencesProvider } from './lib/preferencesContext';
+import { verifyTrialCard } from './services/trialCard';
 import Header from './components/layout/Header';
 import Sidebar from './components/layout/Sidebar';
 import PrivateRoute from './components/shared/PrivateRoute';
@@ -109,6 +110,7 @@ function PublicLayout() {
 function PrivateLayout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { showToast } = useToast();
   const { user, profile, loading, profileResolved, showWelcome, needsProfile, needsSubscription, isFirstTimeUser, setShowWelcome, setNeedsProfile, setNeedsSubscription, refreshProfile, refreshSubscription } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -221,6 +223,31 @@ function PrivateLayout() {
     covered it - the exact problem the profile gate below was added to fix.
   */
   const justCompletedCheckout = new URLSearchParams(location.search).get('success') === 'true';
+
+  /*
+    Authorise the trial card while they are still here.
+
+    Stripe validates a collected card for $0, which a prepaid card with
+    nothing on it passes. The last cohort is what that costs: 17 of 22 trials
+    never reached a successful charge. So the real amount is authorised and
+    released the moment they land back, and a decline is said now - while
+    they still have another card to hand - rather than three days later in a
+    failed-payment email.
+
+    Deliberately not awaited by the render. It runs once per return from
+    checkout, and everything except an outright decline is silent, because
+    there is nothing the member could do about the rest.
+  */
+  useEffect(() => {
+    if (!justCompletedCheckout || !user) return;
+    let cancelled = false;
+    verifyTrialCard().then((result) => {
+      if (!cancelled && result.declined && result.error) {
+        showToast(result.error, 'error');
+      }
+    });
+    return () => { cancelled = true; };
+  }, [justCompletedCheckout, user]);
 
   if ((showWelcome || justCompletedCheckout) && user) {
     if (!profile) {

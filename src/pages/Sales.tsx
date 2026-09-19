@@ -206,7 +206,7 @@ export default function Sales() {
               <ArrowRight className="w-4 h-4" />
             </Link>
             <p className="text-[11.5px] text-gray-500">
-              14-day money back guarantee &middot; Cancel anytime
+              3 days free &middot; Cancel in two clicks &middot; 14-day money back after that
             </p>
             {/* Watched by the header - see showHeaderCta above. */}
             <div ref={heroCtaRef} aria-hidden="true" className="h-px w-full" />
@@ -1149,7 +1149,7 @@ export default function Sales() {
                   <ArrowRight className="w-4 h-4" />
                 </Link>
                 <p className="text-[12px] text-gray-500">
-                  14-day money back guarantee &middot; Cancel anytime
+                  3 days free &middot; Cancel in two clicks &middot; 14-day money back after that
                 </p>
                 <Link
                   to="/pricing"
@@ -1378,7 +1378,7 @@ export default function Sales() {
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <p className="text-[11.5px] text-gray-500">
-                14-day money back guarantee &middot; Cancel anytime
+                3 days free &middot; Cancel in two clicks &middot; 14-day money back after that
               </p>
             </div>
           ) : (

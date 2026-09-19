@@ -951,8 +951,22 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
             </>
           )}
 
+          {/*
+            The hold, said before it happens.
+
+            The card is authorised for the full plan price and released a
+            moment later, which is what stops a dead card becoming a failed
+            charge on day three. It still shows as pending on a statement for
+            a few days, and an unexplained pending charge the size of the
+            subscription is how you earn a chargeback from somebody who was
+            about to become a customer. Cheaper to say it here.
+          */}
           <p className="text-center text-[11.5px] text-gray-500">
-            14-day money back guarantee &middot; Cancel anytime
+            3 days free &middot; Cancel in two clicks &middot; 14-day money back after that
+          </p>
+          <p className="text-center text-[11px] text-gray-600 leading-relaxed mt-2 max-w-sm mx-auto">
+            We check your card for the plan price and release it straight away. Nothing is
+            charged until day 3, and your bank may show the check as pending until then.
           </p>
         </div>
 
