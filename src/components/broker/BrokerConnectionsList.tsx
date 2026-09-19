@@ -471,6 +471,26 @@ export default function BrokerConnectionsList() {
                   </div>
                 </div>
 
+                {/*
+                  A synced account with nothing in it yet is almost always
+                  waiting on the broker rather than broken - MetaApi pulls the
+                  history after the account is provisioned, measured between
+                  well under a minute and over two. Without a line saying so,
+                  an empty account reads as a failed connection, which is when
+                  people disconnect it and try again.
+
+                  Only while it is genuinely plausible. After an hour this
+                  stops being reassurance and starts being a wrong excuse.
+                */}
+                {connection.metaapi_account_id &&
+                  !connection.sync_paused_at &&
+                  (connection.trades_count || 0) === 0 &&
+                  Date.now() - new Date(connection.created_at).getTime() < 60 * 60 * 1000 && (
+                  <p className="mt-3 text-[12px] text-gray-500">
+                    Pulling your history from your broker — this usually takes a minute or two.
+                  </p>
+                )}
+
                 <div className="mt-4">
                   <input
                     ref={(el) => fileInputRefs.current[connection.id] = el}
