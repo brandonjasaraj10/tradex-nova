@@ -428,6 +428,8 @@ Deno.serve(async (req: Request) => {
       let payment: { status: string; clientSecret?: string; hostedInvoiceUrl?: string } = {
         status: "paid",
       };
+      /* Kept so a declined invoice can be voided rather than left to dun. */
+      let openInvoiceId: string | null = null;
 
       if (wanted > 0) {
         try {
@@ -453,6 +455,7 @@ Deno.serve(async (req: Request) => {
                   status: "failed",
                   hostedInvoiceUrl: invoice.hosted_invoice_url ?? undefined,
                 };
+                openInvoiceId = invoice.id ?? null;
               }
             }
           }
@@ -477,6 +480,29 @@ Deno.serve(async (req: Request) => {
         So the change is undone rather than left hanging.
       */
       if (payment.status === "failed") {
+        /*
+          Void the invoice before anything else.
+
+          Removing the line item is not enough on its own. always_invoice
+          raises a real invoice and attempts it immediately; when that fails
+          the invoice stays OPEN, and Stripe's automatic retries go on
+          chasing it for days. Worse, enough failed attempts move the whole
+          subscription to past_due - which, under this app's no-grace-period
+          rule, ends every bit of their access. Losing a journal over a $19
+          add-on they were told had been declined is not a trade anyone would
+          accept.
+
+          Voided rather than marked uncollectible: nothing was owed, because
+          the thing it was for is being removed in the same breath.
+        */
+        if (openInvoiceId) {
+          try {
+            await stripe.invoices.voidInvoice(openInvoiceId);
+          } catch (err) {
+            console.error("Could not void the declined add-on invoice", openInvoiceId, err);
+          }
+        }
+
         try {
           const failedItem = (await stripe.subscriptions.retrieve(subscriptionId))
             .items.data.find((i) => ADDON_PRICE_IDS.has(i.price?.id ?? ""));
