@@ -13,6 +13,8 @@ import { useDateRange, allTimeRange } from '../../lib/dateRangeContext';
 import { BROKER_SYNC_ENABLED } from '../../lib/featureFlags';
 import { connectMetaTraderAccount, syncMetaTraderAccount } from '../../services/metaTraderConnect';
 import { searchMtServers, type MtServerSuggestion } from '../../services/mtServers';
+import AccountLimitReached from '../broker/AccountLimitReached';
+import { getExtraSyncedAccounts } from '../../services/extraAccounts';
 
 /*
   Which platform the account actually runs on, asked separately from which
@@ -89,6 +91,13 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
   const [mtServer, setMtServer] = useState('');
   const [mtInvestorPassword, setMtInvestorPassword] = useState('');
   const [connectStatus, setConnectStatus] = useState('');
+  /*
+    Set only when the backend refused on allowance. Null the rest of the time,
+    which is what keeps the panel out of the way of every other outcome.
+  */
+  const [limitInfo, setLimitInfo] = useState<
+    { limit: number; extras: number; connectionId: string } | null
+  >(null);
   const [serverSuggestions, setServerSuggestions] = useState<MtServerSuggestion[]>([]);
   const [showServerList, setShowServerList] = useState(false);
   const [syncingId, setSyncingId] = useState<string | null>(null);
@@ -267,7 +276,23 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
         });
         setConnectStatus('');
 
-        if (!result.ok) {
+        if (!result.ok && result.limitReached) {
+          /*
+            Not a toast. This is the one connect failure the user resolves by
+            deciding something rather than correcting something, and a message
+            that fades while they are still reading it cannot carry a choice.
+            The panel stays until they act on it or dismiss it.
+
+            The account itself was created and kept - it works by hand and by
+            CSV import, and deleting it because syncing was refused would
+            throw away something they can use while they think about it.
+          */
+          setLimitInfo({
+            limit: result.limit ?? 1,
+            extras: await getExtraSyncedAccounts(),
+            connectionId: created.id,
+          });
+        } else if (!result.ok) {
           showToast(`Account created, but syncing didn't connect: ${result.error}`, 'error');
         } else {
           /*
@@ -858,6 +883,55 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
 
             {connectStatus && (
               <p className="text-xs text-blue-400 mt-4 text-right">{connectStatus}</p>
+            )}
+
+            {/*
+              Shown in place of the usual footer once the allowance refused
+              the connection, so the next thing under their cursor is the
+              decision rather than a "Create account" button for an account
+              that already exists.
+            */}
+            {limitInfo && (
+              <div className="mt-5">
+                <AccountLimitReached
+                  limit={limitInfo.limit}
+                  currentExtras={limitInfo.extras}
+                  onDismiss={() => {
+                    setLimitInfo(null);
+                    setShowAddAccount(false);
+                    loadBrokers();
+                  }}
+                  onPurchased={async (newExtras) => {
+                    /*
+                      Retry the connection they were already making rather
+                      than asking them to type the server and password again.
+                      They are still in the form; the credentials are still
+                      in state; the only thing that was missing was the
+                      allowance, and it is there now.
+                    */
+                    setLimitInfo(null);
+                    setConnectStatus('Connecting to your broker...');
+                    const retry = await connectMetaTraderAccount({
+                      connectionId: limitInfo.connectionId,
+                      login: mtLogin.trim(),
+                      server: mtServer.trim(),
+                      password: mtInvestorPassword,
+                      platform: platform === 'mt4' ? 'mt4' : 'mt5',
+                    });
+                    setConnectStatus('');
+                    if (retry.ok) {
+                      showToast(
+                        `Added ${newExtras === 1 ? 'an account' : `${newExtras} accounts`} and connected. Your trades will start arriving shortly.`,
+                        'success',
+                      );
+                      setShowAddAccount(false);
+                    } else {
+                      showToast(`Added, but syncing didn't connect: ${retry.error}`, 'error');
+                    }
+                    loadBrokers();
+                  }}
+                />
+              </div>
             )}
 
             <div className="flex justify-end gap-3 mt-6">

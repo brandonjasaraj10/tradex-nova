@@ -366,7 +366,7 @@ function tierForPrice(priceId: string | null | undefined): string | null {
   never picks: whichever price matches the interval they are already billed on
   is the one they get.
 */
-const ADDON_PRICE_IDS = new Set([
+export const ADDON_PRICE_IDS = new Set([
   'price_1UHFqeP9mqFWeYrvvBoTx41L',  /* $19.00 / month */
   'price_1UHFrKP9mqFWeYrvfsljAgP3',  /* $190.00 / year */
 ]);

@@ -25,6 +25,18 @@ export interface ConnectResult {
   */
   connected?: boolean;
   error?: string;
+  /*
+    Set when the refusal was an allowance, not a mistake.
+
+    Worth separating from every other error because it is the only one the
+    user can fix by deciding something rather than by correcting something.
+    A wrong password needs a better password; this needs a bigger plan or an
+    extra account, and offering that is a different piece of UI from a red
+    line under a field.
+  */
+  limitReached?: boolean;
+  limit?: number;
+  connectedCount?: number;
 }
 
 export async function connectMetaTraderAccount(params: {
@@ -47,16 +59,29 @@ export async function connectMetaTraderAccount(params: {
     */
     if (error) {
       let message = 'Could not connect that account.';
+      let limitReached = false;
+      let limit: number | undefined;
+      let connectedCount: number | undefined;
       const context = (error as { context?: Response }).context;
       if (context && typeof context.json === 'function') {
         try {
           const body = await context.json();
           if (typeof body?.error === 'string') message = body.error;
+          /*
+            The 403 the allowance check returns carries these three. They are
+            read off the same body the message comes from, so a plain error
+            and an allowance refusal cannot be confused for one another.
+          */
+          if (body?.limitReached === true) {
+            limitReached = true;
+            if (typeof body.limit === 'number') limit = body.limit;
+            if (typeof body.connected === 'number') connectedCount = body.connected;
+          }
         } catch {
           /* keep the generic message */
         }
       }
-      return { ok: false, error: message };
+      return { ok: false, error: message, limitReached, limit, connectedCount };
     }
 
     if (data?.error) {

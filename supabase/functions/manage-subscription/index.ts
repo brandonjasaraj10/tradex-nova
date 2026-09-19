@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import Stripe from "npm:stripe@17.7.0";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { ADDON_PRICE_IDS, addonPriceIdForInterval, syncSubscription } from "../_shared/subscriptionSync.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -46,7 +47,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const { action } = await req.json();
+    const { action, quantity: requested } = await req.json();
 
     if (action === "create_portal_session") {
       let stripeCustomerId: string | null = null;
@@ -287,6 +288,107 @@ Deno.serve(async (req: Request) => {
           message: "Subscription cancelled successfully",
           cancel_at: formattedCancelDate,
         }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    /*
+      Buy, change or drop extra synced accounts.
+
+      The quantity is absolute, not a delta - "I want three" rather than "add
+      one". Two reasons. A double-tapped button cannot silently sell somebody
+      a fourth account, because sending 3 twice still means 3. And the number
+      the user is looking at on screen is the number they send, so the screen
+      and Stripe cannot drift apart through a dropped response.
+    */
+    if (action === "set_extra_accounts") {
+      const wanted = Math.floor(Number(requested ?? NaN));
+      if (!Number.isFinite(wanted) || wanted < 0 || wanted > 50) {
+        return new Response(
+          JSON.stringify({ error: "That is not a number of accounts we can set." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const { data: row } = await supabase
+        .from("subscriptions")
+        .select("stripe_subscription_id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      const subscriptionId = (row as { stripe_subscription_id: string | null } | null)?.stripe_subscription_id;
+      if (!subscriptionId) {
+        return new Response(
+          JSON.stringify({ error: "You need a subscription before you can add accounts to it." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+
+      /*
+        Refuse on anything that is not actually live. Adding a paid line to a
+        past_due subscription bills somebody whose card is already failing,
+        and a canceled one would host an account nobody is paying for.
+      */
+      if (!["active", "trialing"].includes(subscription.status)) {
+        return new Response(
+          JSON.stringify({ error: "Your subscription needs to be active before you can add accounts." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      /*
+        The add-on has to match the interval the member is already billed on.
+        Stripe rejects a subscription holding two intervals unless the account
+        is in flexible billing mode, which this SDK version predates. Picking
+        it from the plan item rather than asking the user means the choice
+        cannot be got wrong.
+      */
+      const planLine = subscription.items.data.find(
+        (i) => !ADDON_PRICE_IDS.has(i.price?.id ?? "")
+      ) ?? subscription.items.data[0];
+      const interval = planLine?.price?.recurring?.interval ?? "month";
+      const addonPriceId = addonPriceIdForInterval(interval);
+
+      const existing = subscription.items.data.find(
+        (i) => ADDON_PRICE_IDS.has(i.price?.id ?? "")
+      );
+
+      /*
+        always_invoice rather than create_prorations: the member gets the
+        account the moment this returns, so the prorated charge should land
+        now too. Deferring it to the next cycle means hosting an account for
+        up to a month before finding out the card does not work.
+      */
+      if (wanted === 0 && existing) {
+        await stripe.subscriptionItems.del(existing.id, { proration_behavior: "always_invoice" });
+      } else if (wanted > 0 && existing) {
+        await stripe.subscriptionItems.update(existing.id, {
+          quantity: wanted,
+          proration_behavior: "always_invoice",
+        });
+      } else if (wanted > 0) {
+        await stripe.subscriptionItems.create({
+          subscription: subscriptionId,
+          price: addonPriceId,
+          quantity: wanted,
+          proration_behavior: "always_invoice",
+        });
+      }
+
+      /*
+        Written back here rather than left to the webhook. The member is
+        sitting on the connect screen waiting to use what they just bought,
+        and customer.subscription.updated can take a few seconds. The webhook
+        still fires and writes the same thing - this makes it immediate, not
+        authoritative.
+      */
+      const fresh = await stripe.subscriptions.retrieve(subscriptionId);
+      await syncSubscription(supabase, user.id, fresh);
+
+      return new Response(
+        JSON.stringify({ success: true, extraAccounts: wanted, interval }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
