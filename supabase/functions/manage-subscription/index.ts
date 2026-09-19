@@ -230,7 +230,7 @@ Deno.serve(async (req: Request) => {
                 <tr>
                   <td style="padding: 36px 32px;">
                     <h1 style="margin: 0 0 12px 0; font-size: 21px; font-weight: 700; color: #111111; letter-spacing: -0.3px;">Your subscription is cancelled</h1>
-                    <p style="margin: 0 0 24px 0; font-size: 15px; line-height: 1.6; color: #555555;">${firstName}, that&rsquo;s done &mdash; you won&rsquo;t be charged again.</p>
+                    <p style="margin: 0 0 24px 0; font-size: 15px; line-height: 1.6; color: #555555;">${firstName}, that&rsquo;s done &mdash; there is nothing more to pay.</p>
 
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                       <tr>
