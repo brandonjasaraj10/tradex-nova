@@ -28,10 +28,15 @@ import PaymentFailedGate from '../components/billing/PaymentFailedGate';
   at your own trades. Grouping them loses nothing a buyer needed and stops
   the list arguing with itself about how many things this product does.
 
-  What is NOT dropped is the detail underneath. "Up to 5 accounts" and "CSV
-  import" are facts somebody comparing products will look for, so they stay
-  - as one quiet line rather than four bullets competing with the six that
-  do the selling.
+  What is NOT dropped is the detail underneath - the facts somebody
+  comparing products looks for - as one quiet line rather than four bullets
+  competing with the six that do the selling.
+
+  "Up to 5 accounts" used to sit in that line and had to go. It is left over
+  from the single-plan era and, now that the tier columns are directly above
+  it, it flatly contradicts them: Starter says one account synced and
+  unlimited by hand, and then this said five. A comparison shopper reading
+  both in the same glance is exactly who that would lose.
 */
 const INCLUDED = [
   'Talk through a trade \u2014 it writes itself up',
@@ -43,7 +48,7 @@ const INCLUDED = [
 ];
 
 /* The specifics a comparison shopper checks, kept but not shouted. */
-const ALSO_INCLUDED = 'Unlimited trades \u00b7 Up to 5 accounts \u00b7 CSV import \u00b7 Notes';
+const ALSO_INCLUDED = 'Unlimited trades \u00b7 Unlimited manual accounts \u00b7 CSV import \u00b7 Notes';
 
 const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
 const stripeMonthlyPriceId = import.meta.env.VITE_STRIPE_PRICE_ID;
@@ -1010,7 +1015,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
                   {[
                     'Nothing is charged today \u2014 day 3 is the first payment',
                     'Cancelling is two clicks in Settings \u2014 no email, any time',
-                    'We check your card for the plan price and release it straight away',
+                    'Syncing starts the moment you subscribe, not when the trial ends',
                     'Your journal stays yours \u2014 export it or delete it whenever',
                   ].map((item) => (
                     <li key={item} className="flex items-start gap-2.5 text-[13px] leading-relaxed text-gray-400">
