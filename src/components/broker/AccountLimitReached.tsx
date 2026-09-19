@@ -22,6 +22,7 @@ import {
   EXTRA_ACCOUNT_PRICE_ANNUAL,
   setExtraSyncedAccounts,
   confirmExtraAccountPayment,
+  startSubscriptionNow,
 } from '../../services/extraAccounts';
 
 interface Props {
@@ -36,12 +37,19 @@ interface Props {
     becomes a chargeback.
   */
   interval: 'month' | 'year';
+  /*
+    On a trial there is nothing to sell here. Trials deliberately have no
+    synced accounts at all, so an add-on would buy an allowance of zero -
+    which is exactly what this panel used to offer them. What they want is
+    the subscription, which is one button rather than a purchase.
+  */
+  onTrial?: boolean;
   /* Called once Stripe has taken the money and the allowance is bigger. */
   onPurchased: (newExtras: number) => void;
   onDismiss?: () => void;
 }
 
-export default function AccountLimitReached({ limit, currentExtras, interval, onPurchased, onDismiss }: Props) {
+export default function AccountLimitReached({ limit, currentExtras, interval, onTrial, onPurchased, onDismiss }: Props) {
   /*
     Starts at one more than they have, because wanting one more is why this
     panel is on screen. They can still ask for several.
@@ -108,6 +116,81 @@ export default function AccountLimitReached({ limit, currentExtras, interval, on
     }
 
     onPurchased(result.extraAccounts ?? wanted);
+  }
+
+  async function startNow() {
+    setBusy(true);
+    setError('');
+    const result = await startSubscriptionNow();
+    setBusy(false);
+    if (!result.ok) {
+      setError(result.error ?? 'Could not start your subscription.');
+      return;
+    }
+    /*
+      Same callback as a purchase: the allowance has changed and the caller
+      retries the connection that was refused. currentExtras is passed back
+      unchanged because none were bought - the tier itself is what moved.
+    */
+    onPurchased(currentExtras);
+  }
+
+  if (onTrial) {
+    return (
+      <div className="rounded-xl border border-brand-blue-light/25 bg-brand-blue/[0.06] p-5">
+        <p className="text-[15px] font-medium text-white">
+          Syncing starts when your subscription does
+        </p>
+        <p className="mt-1.5 text-[13px] text-gray-400 leading-relaxed">
+          Your trial has everything else{' — '}talk your trades through, let Nova read
+          them back. Connecting an account to sync itself is what the subscription turns on,
+          and you do not have to wait out the rest of the trial to do it.
+        </p>
+
+        <button
+          type="button"
+          onClick={startNow}
+          disabled={busy}
+          className="mt-4 w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg
+            bg-brand-blue text-white text-[13.5px] font-medium hover:bg-brand-blue/90
+            disabled:opacity-60 transition-colors"
+        >
+          {busy ? (
+            <>
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              Starting
+            </>
+          ) : (
+            <>Start my subscription now</>
+          )}
+        </button>
+
+        <p className="mt-2.5 text-[11.5px] text-gray-500 leading-relaxed">
+          This ends your free trial and charges your card today. Cancel any time in two clicks.
+        </p>
+
+        {error && <p className="mt-3 text-[12.5px] text-brand-loss leading-relaxed">{error}</p>}
+
+        <div className="mt-4 pt-3.5 border-t border-white/[0.07] flex items-center justify-between">
+          <Link
+            to="/pricing"
+            className="inline-flex items-center gap-1.5 text-[12.5px] text-brand-blue-light hover:text-white transition-colors"
+          >
+            Compare plans
+            <ArrowRight className="w-3 h-3" />
+          </Link>
+          {onDismiss && (
+            <button
+              type="button"
+              onClick={onDismiss}
+              className="text-[12.5px] text-gray-500 hover:text-gray-300 transition-colors"
+            >
+              Not now
+            </button>
+          )}
+        </div>
+      </div>
+    );
   }
 
   return (

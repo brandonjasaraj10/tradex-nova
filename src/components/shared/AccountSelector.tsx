@@ -103,7 +103,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
     which is what keeps the panel out of the way of every other outcome.
   */
   const [limitInfo, setLimitInfo] = useState<
-    { limit: number; extras: number; interval: 'month' | 'year'; connectionId: string } | null
+    { limit: number; extras: number; interval: 'month' | 'year'; onTrial: boolean; connectionId: string } | null
   >(null);
   const [serverSuggestions, setServerSuggestions] = useState<MtServerSuggestion[]>([]);
   const [showServerList, setShowServerList] = useState(false);
@@ -309,6 +309,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
             limit: result.limit ?? 1,
             extras: state.extras,
             interval: state.interval,
+            onTrial: state.onTrial,
             connectionId: created.id,
           });
         } else if (!result.ok) {
@@ -950,6 +951,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
                   limit={limitInfo.limit}
                   currentExtras={limitInfo.extras}
                   interval={limitInfo.interval}
+                  onTrial={limitInfo.onTrial}
                   onDismiss={() => {
                     setLimitInfo(null);
                     setShowAddAccount(false);

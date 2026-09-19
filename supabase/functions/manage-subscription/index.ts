@@ -361,6 +361,29 @@ Deno.serve(async (req: Request) => {
       }
 
       /*
+        And refuse during the trial, which is the one that would have taken
+        real money for nothing.
+
+        Trials do not sync at all - synced_account_limit_for() returns 0 for
+        a trialing subscription before it ever adds extras on. So somebody on
+        a trial who bought an add-on would have paid $19 and still had an
+        allowance of zero. The limit panel was reachable from the trial and
+        offered exactly that.
+
+        There is nothing to sell here. What they want is the subscription
+        itself, which start_subscription_now below gives them in one step.
+      */
+      if (subscription.status === "trialing") {
+        return new Response(
+          JSON.stringify({
+            error: "Extra accounts are for subscribers. Start your subscription and syncing turns on straight away.",
+            needsSubscription: true,
+          }),
+          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      /*
         The add-on has to match the interval the member is already billed on.
         Stripe rejects a subscription holding two intervals unless the account
         is in flexible billing mode, which this SDK version predates. Picking
@@ -581,6 +604,92 @@ Deno.serve(async (req: Request) => {
       return new Response(
         JSON.stringify({ success: true, extraAccounts: wanted, interval, payment }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    /*
+      End the trial now and start paying.
+
+      Syncing is the one thing a trial does not include, so somebody who
+      wants their trades arriving tonight needs the subscription rather than
+      the remaining two days. Without this their only option was to wait -
+      which is a strange thing to make a person do when they are trying to
+      give you money.
+
+      trial_end: 'now' is Stripe's own way of doing this: it closes the trial,
+      raises the first invoice immediately and moves the subscription to
+      active. The webhook then writes the new status, and the allowance
+      follows from that without anything here having to touch it.
+    */
+    if (action === "start_subscription_now") {
+      const { data: row } = await supabase
+        .from("subscriptions")
+        .select("stripe_subscription_id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      const subscriptionId = (row as { stripe_subscription_id: string | null } | null)?.stripe_subscription_id;
+      if (!subscriptionId) {
+        return new Response(
+          JSON.stringify({ error: "You do not have a subscription to start." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+
+      if (subscription.status === "active") {
+        return new Response(
+          JSON.stringify({ success: true, alreadyActive: true }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (subscription.status !== "trialing") {
+        return new Response(
+          JSON.stringify({ error: "There is no trial to end on this subscription." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const started = await stripe.subscriptions.update(subscriptionId, {
+        trial_end: "now",
+        proration_behavior: "none",
+      });
+
+      /*
+        Written straight back for the same reason the add-on is: they are
+        sitting on the connect screen waiting to use what they just paid for,
+        and the webhook takes a few seconds. It runs afterwards and writes
+        the same thing.
+
+        If the card fails here Stripe moves them to past_due rather than
+        active, and that status is what lands - so a failed charge cannot
+        leave somebody looking subscribed.
+      */
+      const { error: writeError } = await supabase
+        .from("subscriptions")
+        .update({
+          status: started.status,
+          current_period_start: new Date(started.current_period_start * 1000).toISOString(),
+          current_period_end: new Date(started.current_period_end * 1000).toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", user.id);
+
+      if (writeError) {
+        console.error("Trial ended but the status write failed for", user.id, writeError);
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: started.status === "active",
+          status: started.status,
+          error: started.status === "active"
+            ? undefined
+            : "Your card did not go through, so the subscription has not started. Update it in Settings and try again.",
+        }),
+        { status: started.status === "active" ? 200 : 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 

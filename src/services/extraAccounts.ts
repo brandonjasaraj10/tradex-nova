@@ -31,6 +31,11 @@ export interface ExtraAccountState {
   extras: number;
   /* 'month' | 'year', straight off the member's own subscription. */
   interval: 'month' | 'year';
+  /*
+    Trials have no synced accounts at all, so the panel offers the
+    subscription rather than an add-on that would buy an allowance of zero.
+  */
+  onTrial: boolean;
 }
 
 export interface ExtraAccountsResult {
@@ -132,10 +137,15 @@ export async function setExtraSyncedAccounts(quantity: number): Promise<ExtraAcc
 export async function getExtraAccountState(): Promise<ExtraAccountState> {
   const { data } = await supabase
     .from('subscriptions')
-    .select('extra_synced_accounts, billing_interval')
+    .select('extra_synced_accounts, billing_interval, status')
     .maybeSingle();
-  const row = data as { extra_synced_accounts: number | null; billing_interval: string | null } | null;
+  const row = data as {
+    extra_synced_accounts: number | null;
+    billing_interval: string | null;
+    status: string | null;
+  } | null;
   return {
+    onTrial: row?.status === 'trialing',
     extras: typeof row?.extra_synced_accounts === 'number' ? row.extra_synced_accounts : 0,
     /*
       Defaults to monthly, which is both the common case and the safe one: a
@@ -167,6 +177,45 @@ export async function confirmExtraAccountPayment(clientSecret: string): Promise<
     return {
       ok: false,
       error: err instanceof Error ? err.message : 'Could not confirm the payment.',
+    };
+  }
+}
+
+/*
+  End the trial and start paying, so syncing turns on now.
+
+  A trial deliberately has no synced accounts, so somebody who wants their
+  trades arriving tonight needs the subscription rather than the remaining
+  two days. Stripe closes the trial, raises the first invoice and moves the
+  subscription to active; if the card fails it lands on past_due instead and
+  this reports that rather than pretending it worked.
+*/
+export async function startSubscriptionNow(): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const { data, error } = await supabase.functions.invoke('manage-subscription', {
+      body: { action: 'start_subscription_now' },
+    });
+
+    if (error) {
+      let message = 'Could not start your subscription.';
+      const context = (error as { context?: Response }).context;
+      if (context && typeof context.json === 'function') {
+        try {
+          const body = await context.json();
+          if (typeof body?.error === 'string') message = body.error;
+        } catch {
+          /* keep the generic message */
+        }
+      }
+      return { ok: false, error: message };
+    }
+
+    if (data?.success === true) return { ok: true };
+    return { ok: false, error: String(data?.error ?? 'Could not start your subscription.') };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : 'Could not start your subscription.',
     };
   }
 }
