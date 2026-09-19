@@ -14,7 +14,7 @@ import { BROKER_SYNC_ENABLED } from '../../lib/featureFlags';
 import { connectMetaTraderAccount, syncMetaTraderAccount } from '../../services/metaTraderConnect';
 import { searchMtServers, type MtServerSuggestion } from '../../services/mtServers';
 import AccountLimitReached from '../broker/AccountLimitReached';
-import { getExtraAccountState } from '../../services/extraAccounts';
+import { getSyncAccessState } from '../../services/syncAccess';
 
 /*
   Which platform the account actually runs on, asked separately from which
@@ -103,7 +103,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
     which is what keeps the panel out of the way of every other outcome.
   */
   const [limitInfo, setLimitInfo] = useState<
-    { limit: number; extras: number; interval: 'month' | 'year'; onTrial: boolean; connectionId: string } | null
+    { limit: number; onTrial: boolean; connectionId: string } | null
   >(null);
   const [serverSuggestions, setServerSuggestions] = useState<MtServerSuggestion[]>([]);
   const [showServerList, setShowServerList] = useState(false);
@@ -304,11 +304,9 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
             throw away something they can use while they think about it.
           */
           hitAccountLimit = true;
-          const state = await getExtraAccountState();
+          const state = await getSyncAccessState();
           setLimitInfo({
             limit: result.limit ?? 1,
-            extras: state.extras,
-            interval: state.interval,
             onTrial: state.onTrial,
             connectionId: created.id,
           });
@@ -949,15 +947,13 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
               <div className="mt-5">
                 <AccountLimitReached
                   limit={limitInfo.limit}
-                  currentExtras={limitInfo.extras}
-                  interval={limitInfo.interval}
                   onTrial={limitInfo.onTrial}
                   onDismiss={() => {
                     setLimitInfo(null);
                     setShowAddAccount(false);
                     loadBrokers();
                   }}
-                  onPurchased={async (newExtras) => {
+                  onUnlocked={async () => {
                     /*
                       Retry the connection they were already making rather
                       than asking them to type the server and password again.
@@ -977,12 +973,12 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
                     setConnectStatus('');
                     if (retry.ok) {
                       showToast(
-                        `Added ${newExtras === 1 ? 'an account' : `${newExtras} accounts`} and connected. Your trades will start arriving shortly.`,
+                        'Subscribed and connected. Your trades will start arriving shortly.',
                         'success',
                       );
                       setShowAddAccount(false);
                     } else {
-                      showToast(`Added, but syncing didn't connect: ${retry.error}`, 'error');
+                      showToast(`Subscribed, but syncing didn't connect: ${retry.error}`, 'error');
                     }
                     loadBrokers();
                   }}

@@ -112,6 +112,40 @@ function PrivateLayout() {
   const location = useLocation();
   const { showToast } = useToast();
   const { user, profile, loading, profileResolved, showWelcome, needsProfile, needsSubscription, isFirstTimeUser, setShowWelcome, setNeedsProfile, setNeedsSubscription, refreshProfile, refreshSubscription } = useAuth();
+
+  /*
+    Authorise the trial card while they are still here.
+
+    Stripe validates a collected card for $0, which a prepaid card with
+    nothing on it passes. The last cohort is what that costs: 17 of 22 trials
+    never reached a successful charge. So the real amount is authorised and
+    released the moment they land back, and a decline is said now - while
+    they still have another card to hand - rather than three days later in a
+    failed-payment email.
+
+    Deliberately not awaited by the render, and everything except an outright
+    decline is silent, because there is nothing the member could do about the
+    rest.
+
+    It sits HERE, above every early return in this component, and that is not
+    stylistic. It first went in beside justCompletedCheckout further down, at
+    which point the loading and profile gates above could return before React
+    ever reached it - so the hook count changed between renders and the whole
+    dashboard died with "Rendered more hooks than during the previous render".
+    Hooks run unconditionally or they do not run at all.
+  */
+  const justCompletedCheckout = new URLSearchParams(location.search).get('success') === 'true';
+
+  useEffect(() => {
+    if (!justCompletedCheckout || !user) return;
+    let cancelled = false;
+    verifyTrialCard().then((result) => {
+      if (!cancelled && result.declined && result.error) {
+        showToast(result.error, 'error');
+      }
+    });
+    return () => { cancelled = true; };
+  }, [justCompletedCheckout, user]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -222,32 +256,6 @@ function PrivateLayout() {
     the first paint, so the dashboard would flash before the animation
     covered it - the exact problem the profile gate below was added to fix.
   */
-  const justCompletedCheckout = new URLSearchParams(location.search).get('success') === 'true';
-
-  /*
-    Authorise the trial card while they are still here.
-
-    Stripe validates a collected card for $0, which a prepaid card with
-    nothing on it passes. The last cohort is what that costs: 17 of 22 trials
-    never reached a successful charge. So the real amount is authorised and
-    released the moment they land back, and a decline is said now - while
-    they still have another card to hand - rather than three days later in a
-    failed-payment email.
-
-    Deliberately not awaited by the render. It runs once per return from
-    checkout, and everything except an outright decline is silent, because
-    there is nothing the member could do about the rest.
-  */
-  useEffect(() => {
-    if (!justCompletedCheckout || !user) return;
-    let cancelled = false;
-    verifyTrialCard().then((result) => {
-      if (!cancelled && result.declined && result.error) {
-        showToast(result.error, 'error');
-      }
-    });
-    return () => { cancelled = true; };
-  }, [justCompletedCheckout, user]);
 
   if ((showWelcome || justCompletedCheckout) && user) {
     if (!profile) {
