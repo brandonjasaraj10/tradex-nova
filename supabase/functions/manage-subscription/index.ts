@@ -1,7 +1,29 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import Stripe from "npm:stripe@17.7.0";
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { ADDON_PRICE_IDS, addonPriceIdForInterval, syncSubscription } from "../_shared/subscriptionSync.ts";
+/*
+  Deliberately not importing from ../_shared/subscriptionSync.ts.
+
+  That module is 545 lines and this function needs three small things from it.
+  Deploying it alongside means hand-copying it into the deploy call, which is
+  precisely how this project's production copy drifted from its repo twice in
+  one night. Fewer lines crossing that gap is fewer chances to get it wrong.
+
+  The two price ids below therefore exist in two places. They must agree with
+  ADDON_PRICE_IDS in ../_shared/subscriptionSync.ts - if one of them ever
+  changes, change both. Two constants duplicated with a note is a smaller risk
+  than five hundred lines retyped.
+*/
+const ADDON_PRICE_IDS = new Set([
+  "price_1UHFqeP9mqFWeYrvvBoTx41L",  /* $19.00 / month */
+  "price_1UHFrKP9mqFWeYrvfsljAgP3",  /* $190.00 / year */
+]);
+
+function addonPriceIdForInterval(interval: string | null | undefined): string {
+  return interval === "year"
+    ? "price_1UHFrKP9mqFWeYrvfsljAgP3"
+    : "price_1UHFqeP9mqFWeYrvvBoTx41L";
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -445,13 +467,38 @@ Deno.serve(async (req: Request) => {
       */
       const fresh = await stripe.subscriptions.retrieve(subscriptionId);
       /*
-        Cast because this function pins npm:@supabase/supabase-js@2 while the
-        shared module pins 2.49.1, so the two SupabaseClient generics do not
-        line up even though it is the same client at runtime. Caught by
-        `deno check`, which the frontend typecheck never sees - edge functions
-        are not in tsconfig.app.json.
+        Only the one column, rather than a full re-sync from Stripe.
+
+        The add-on is the only thing this request changed; status, price and
+        period are exactly what they were a moment ago. Writing the quantity
+        straight back means the member's allowance is correct before this
+        response lands, which matters because they are staring at the connect
+        screen waiting to use what they just bought.
+
+        The webhook still fires customer.subscription.updated and runs the
+        real sync over the top. This is the fast path, not the authority.
       */
-      await syncSubscription(supabase as unknown as Parameters<typeof syncSubscription>[0], user.id, fresh);
+      const quantityNow = fresh.items.data.find(
+        (i) => ADDON_PRICE_IDS.has(i.price?.id ?? "")
+      )?.quantity ?? 0;
+
+      const { error: writeError } = await supabase
+        .from("subscriptions")
+        .update({
+          extra_synced_accounts: Math.max(0, Math.min(50, quantityNow)),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", user.id);
+
+      if (writeError) {
+        /*
+          Stripe has already taken the money and the webhook will correct the
+          row within seconds, so this is not a failure of the purchase - but
+          the member may briefly not see what they paid for, and that is worth
+          knowing about if it ever becomes common.
+        */
+        console.error("Add-on bought but the allowance write failed for", user.id, writeError);
+      }
 
       return new Response(
         JSON.stringify({ success: true, extraAccounts: wanted, interval, payment }),

@@ -265,6 +265,15 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
         account and a message explaining what to fix - never a lost account
         or a half-made one.
       */
+      /*
+        Whether the allowance refused this connection.
+
+        A local rather than reading limitInfo back, because setState has not
+        applied by the time the cleanup below runs - and the cleanup is what
+        this decides.
+      */
+      let hitAccountLimit = false;
+
       if (canAutoSync && autoSync && created?.id) {
         setConnectStatus('Connecting to your broker...');
         const result = await connectMetaTraderAccount({
@@ -287,6 +296,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
             CSV import, and deleting it because syncing was refused would
             throw away something they can use while they think about it.
           */
+          hitAccountLimit = true;
           setLimitInfo({
             limit: result.limit ?? 1,
             extras: await getExtraSyncedAccounts(),
@@ -359,6 +369,24 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
         dashboard - the trades were there, just outside the range.
       */
       setDateRange(allTimeRange());
+
+      /*
+        Everything below closes the form and empties it. Both are wrong when
+        the allowance has just refused the connection.
+
+        The panel offering the add-on renders inside this form, so closing it
+        takes the choice off screen the instant it appears - which is what
+        happened the first time this was tested end to end. And the fields it
+        clears are the ones the retry needs: after the purchase goes through,
+        the connection is attempted again with the login, server and investor
+        password still in state, precisely so nobody has to find their
+        investor password a second time. Emptying them would make the retry
+        submit three blank strings.
+      */
+      if (hitAccountLimit) {
+        setConnectStatus('');
+        return;
+      }
 
       setShowAddAccount(false);
       setNewAccountName('');
