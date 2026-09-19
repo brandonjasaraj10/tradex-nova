@@ -582,6 +582,7 @@ async function releaseOldestParkedOverLimit(
       .from("broker_connections")
       .update({ metaapi_account_id: null } as never)
       .eq("id", row.id);
+    await logDeployEvent(supabase, row.id, String(row.metaapi_account_id), "released", "over parked limit");
     console.info("Released parked account over plan limit:", row.metaapi_account_id);
   }
 }
