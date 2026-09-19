@@ -356,6 +356,56 @@ function tierForPrice(priceId: string | null | undefined): string | null {
   return TIER_BY_PRICE_ID[priceId] ?? null;
 }
 
+/*
+  The add-on: extra synced accounts, $19 a month each.
+
+  Two prices for one thing, and only because Stripe forces it. Every recurring
+  price on a subscription must share an interval unless the account is in
+  flexible billing mode, which needs a newer API version than the SDK pinned
+  here - so an annual member genuinely cannot hold a monthly add-on. The buyer
+  never picks: whichever price matches the interval they are already billed on
+  is the one they get.
+*/
+const ADDON_PRICE_IDS = new Set([
+  'price_1UHFqeP9mqFWeYrvvBoTx41L',  /* $19.00 / month */
+  'price_1UHFrKP9mqFWeYrvfsljAgP3',  /* $190.00 / year */
+]);
+
+export function addonPriceIdForInterval(interval: string | null | undefined): string {
+  return interval === 'year'
+    ? 'price_1UHFrKP9mqFWeYrvfsljAgP3'
+    : 'price_1UHFqeP9mqFWeYrvvBoTx41L';
+}
+
+/*
+  Which line item is the plan, and which is the add-on.
+
+  Everything below used to read items.data[0] and call it the plan. That was
+  true for exactly as long as a subscription had one item. The moment somebody
+  buys an add-on there are two, Stripe does not promise an order, and data[0]
+  can be the $19 line - which would write the add-on's price as the member's
+  plan, set plan_type from a price that is not a tier, and show "$19.00" on
+  the Settings screen of somebody paying $49.99.
+
+  So both are found by identity rather than position.
+*/
+function planItem(subscription: Stripe.Subscription) {
+  return subscription.items.data.find((i) => !ADDON_PRICE_IDS.has(i.price?.id ?? ''))
+    ?? subscription.items.data[0];
+}
+
+function addonQuantity(subscription: Stripe.Subscription): number {
+  const item = subscription.items.data.find((i) => ADDON_PRICE_IDS.has(i.price?.id ?? ''));
+  if (!item) return 0;
+  /*
+    Clamped to the column's own check constraint rather than trusted. This
+    number decides how many accounts we host on somebody's behalf at $8.64
+    a month each; a bad value should fail closed at a sane ceiling, not
+    throw and leave the whole subscription row unsynced.
+  */
+  return Math.max(0, Math.min(50, item.quantity ?? 0));
+}
+
 export async function syncSubscription(supabase: SupabaseClient, userId: string, subscription: Stripe.Subscription) {
   const { data: current, error: lookupError } = await supabase
     .from('subscriptions')
@@ -393,15 +443,21 @@ export async function syncSubscription(supabase: SupabaseClient, userId: string,
       subscriber - the exact screen they look at after paying. Stripe sends
       this on every event; it was simply never stored.
     */
-    stripe_price_id: subscription.items.data[0]?.price?.id ?? null,
-    unit_amount: subscription.items.data[0]?.price?.unit_amount ?? null,
-    billing_interval: subscription.items.data[0]?.price?.recurring?.interval ?? null,
+    stripe_price_id: planItem(subscription)?.price?.id ?? null,
+    unit_amount: planItem(subscription)?.price?.unit_amount ?? null,
+    billing_interval: planItem(subscription)?.price?.recurring?.interval ?? null,
+    /*
+      Written on every sync, including back to 0. Removing the add-on in
+      Stripe drops the line item entirely, and an allowance that only ever
+      went up would keep hosting an account nobody is paying for.
+    */
+    extra_synced_accounts: addonQuantity(subscription),
     /*
       Spread rather than set, so an unmapped price leaves whatever plan_type
       is already on the row instead of nulling it. See tierForPrice above.
     */
-    ...(tierForPrice(subscription.items.data[0]?.price?.id)
-      ? { plan_type: tierForPrice(subscription.items.data[0]?.price?.id) }
+    ...(tierForPrice(planItem(subscription)?.price?.id)
+      ? { plan_type: tierForPrice(planItem(subscription)?.price?.id) }
       : {}),
     /*
       Always null. Kept as a column, and written on every sync, purely so a
