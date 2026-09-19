@@ -64,36 +64,45 @@ export default function AccountLimitReached({ limit, currentExtras, interval, on
     setError('');
     const result = await setExtraSyncedAccounts(wanted);
 
-    if (!result.ok) {
-      setBusy(false);
-      setError(result.error ?? 'Could not change your accounts.');
-      return;
-    }
-
     /*
-      The bank asked for a second factor. Stripe.js puts the issuer's own
-      challenge over the page - there is no card to collect here, the card is
-      already on file and already on the invoice, so the only thing missing is
-      the tap. Nothing is granted until it comes back clean.
+      The bank wants 3-D Secure. Stripe.js puts the issuer's own challenge
+      over the page - there is no card to collect, it is already on file and
+      already on the invoice, so the only thing missing is the tap.
+
+      Nothing has been granted at this point: the server refuses to raise the
+      allowance until the invoice is settled. So once the challenge passes we
+      ask again with the same number, which is idempotent - Stripe sees no
+      change to make, finds the invoice now paid, and grants it.
     */
-    if (result.payment?.status === 'requires_action' && result.payment.clientSecret) {
+    if (result.pending && result.payment?.clientSecret) {
       const confirmed = await confirmExtraAccountPayment(result.payment.clientSecret);
-      setBusy(false);
       if (!confirmed.ok) {
+        setBusy(false);
         setError(
           `${confirmed.error ?? 'Your bank did not approve the payment.'} The account has not been added.`,
         );
         return;
       }
-      onPurchased(result.extraAccounts ?? wanted);
+
+      const settled = await setExtraSyncedAccounts(wanted);
+      setBusy(false);
+      if (!settled.ok) {
+        setError(
+          settled.error
+            ?? 'Your bank approved it but the payment has not settled yet. Give it a moment and try again.',
+        );
+        return;
+      }
+      onPurchased(settled.extraAccounts ?? wanted);
       return;
     }
 
     setBusy(false);
 
-    if (result.payment?.status === 'failed') {
+    if (!result.ok) {
       setError(
-        'Your card was declined, so the account has not been added. Update your card in Settings and try again.',
+        result.error
+          ?? 'Your card was declined, so the account has not been added. Update your card in Settings and try again.',
       );
       return;
     }

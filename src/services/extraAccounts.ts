@@ -47,6 +47,11 @@ export interface ExtraAccountsResult {
     $8.64 a month per account and the member never finds out they owe it.
   */
   payment?: { status: string; clientSecret?: string; hostedInvoiceUrl?: string };
+  /*
+    The bank is holding the charge for 3-D Secure. Not a failure and not a
+    purchase - the caller confirms the card and then asks again.
+  */
+  pending?: boolean;
 }
 
 export async function setExtraSyncedAccounts(quantity: number): Promise<ExtraAccountsResult> {
@@ -76,7 +81,27 @@ export async function setExtraSyncedAccounts(quantity: number): Promise<ExtraAcc
       return { ok: false, error: message };
     }
 
-    if (data?.error) return { ok: false, error: String(data.error) };
+    if (data?.error) return { ok: false, error: String(data.error), payment: data?.payment };
+
+    /*
+      ok means paid, and nothing else.
+
+      The server now refuses to raise the allowance until the invoice is
+      actually settled, so a response that is not a success is not a purchase
+      - it is either the bank asking for 3-D Secure (pending) or a decline.
+      Treating "the request did not throw" as success is exactly what let an
+      unpaid account through before.
+    */
+    if (data?.success !== true) {
+      return {
+        ok: false,
+        pending: data?.pending === true,
+        error: data?.pending === true ? undefined : 'Your card was declined.',
+        extraAccounts: typeof data?.extraAccounts === 'number' ? data.extraAccounts : quantity,
+        interval: typeof data?.interval === 'string' ? data.interval : undefined,
+        payment: data?.payment,
+      };
+    }
 
     return {
       ok: true,

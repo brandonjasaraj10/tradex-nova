@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { useClampedPanel } from '../../hooks/useClampedPanel';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Check, Plus, FileUp, X, Info, ShieldCheck, RefreshCw } from 'lucide-react';
+import { ChevronDown, Check, Plus, FileUp, X, Info, ShieldCheck, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import Button from './Button';
 import CSVUpload from '../broker/CSVUpload';
 import { supabase, getCurrentUser } from '../../lib/supabase';
@@ -91,6 +91,13 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
   const [mtServer, setMtServer] = useState('');
   const [mtInvestorPassword, setMtInvestorPassword] = useState('');
   const [connectStatus, setConnectStatus] = useState('');
+  /*
+    An investor password is copied out of MetaTrader and is usually a jumble
+    of characters nobody can type reliably. Not being able to check it turns
+    one typo into "Invalid account credentials", which reads as the feature
+    being broken rather than a mistyped character.
+  */
+  const [showInvestorPassword, setShowInvestorPassword] = useState(false);
   /*
     Set only when the backend refused on allowance. Null the rest of the time,
     which is what keeps the panel out of the way of every other outcome.
@@ -810,14 +817,30 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
                             <Info size={14} />
                           </span>
                         </label>
-                        <input
-                          type="password"
-                          autoComplete="off"
-                          value={mtInvestorPassword}
-                          onChange={(e) => setMtInvestorPassword(e.target.value)}
-                          placeholder="Read-only password"
-                          className="w-full px-4 py-2.5 rounded-lg bg-black/30 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                        />
+                        <div className="relative">
+                          <input
+                            type={showInvestorPassword ? 'text' : 'password'}
+                            autoComplete="off"
+                            value={mtInvestorPassword}
+                            onChange={(e) => setMtInvestorPassword(e.target.value)}
+                            placeholder="Read-only password"
+                            className="w-full pl-4 pr-11 py-2.5 rounded-lg bg-black/30 border border-white/10 text-white placeholder-gray-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                          />
+                          {/*
+                            Hidden by default, so the password is not sitting
+                            in plain sight on a screen somebody might be
+                            sharing - revealing it is a deliberate act.
+                          */}
+                          <button
+                            type="button"
+                            onClick={() => setShowInvestorPassword((v) => !v)}
+                            aria-label={showInvestorPassword ? 'Hide password' : 'Show password'}
+                            className="absolute right-1.5 top-1/2 -translate-y-1/2 p-2 rounded-md
+                              text-gray-500 hover:text-gray-300 transition-colors"
+                          >
+                            {showInvestorPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                          </button>
+                        </div>
                         <div className="flex items-start gap-1.5 mt-2 text-xs text-[#3B82F6]">
                           <ShieldCheck size={14} className="mt-px shrink-0" />
                           <span>

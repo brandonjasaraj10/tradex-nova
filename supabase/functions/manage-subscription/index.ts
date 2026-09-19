@@ -378,6 +378,15 @@ Deno.serve(async (req: Request) => {
       );
 
       /*
+        What it was before, so a declined card can be put back exactly as it
+        was. Without this a failed payment leaves a $19 line on the
+        subscription that Stripe goes on dunning and that inflates their next
+        invoice - charging somebody monthly for something they were told they
+        had not bought.
+      */
+      const previousQuantity = existing?.quantity ?? 0;
+
+      /*
         always_invoice rather than create_prorations: the member gets the
         account the moment this returns, so the prorated charge should land
         now too. Deferring it to the next cycle means hosting an account for
@@ -459,25 +468,68 @@ Deno.serve(async (req: Request) => {
       }
 
       /*
-        Written back here rather than left to the webhook. The member is
-        sitting on the connect screen waiting to use what they just bought,
-        and customer.subscription.updated can take a few seconds. The webhook
-        still fires and writes the same thing - this makes it immediate, not
-        authoritative.
+        A declined card is put back the way it was.
+
+        The subscription item already exists in Stripe at this point - that is
+        what generated the invoice. Leaving it there after a decline would
+        mean a $19 line Stripe goes on dunning, and a bigger invoice next
+        month, for something the member has just been told they did not buy.
+        So the change is undone rather than left hanging.
+      */
+      if (payment.status === "failed") {
+        try {
+          const failedItem = (await stripe.subscriptions.retrieve(subscriptionId))
+            .items.data.find((i) => ADDON_PRICE_IDS.has(i.price?.id ?? ""));
+          if (failedItem) {
+            if (previousQuantity === 0) {
+              await stripe.subscriptionItems.del(failedItem.id, { proration_behavior: "none" });
+            } else {
+              await stripe.subscriptionItems.update(failedItem.id, {
+                quantity: previousQuantity,
+                proration_behavior: "none",
+              });
+            }
+          }
+        } catch (err) {
+          console.error("Could not undo the add-on after a declined card for", user.id, err);
+        }
+
+        return new Response(
+          JSON.stringify({ success: false, error: "Your card was declined.", payment }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      /*
+        Nothing is granted until the money is actually in.
+
+        This used to write the allowance whatever the invoice said. The
+        frontend refused to report success on a decline, but the allowance had
+        already gone up in the database - so dismissing the panel and pressing
+        connect again would have handed over an account nobody paid for, at
+        $8.64 a month of our money. The check above decided the payment; this
+        is where that decision is allowed to mean something.
+
+        requires_action is not a grant either. The bank is still holding the
+        charge pending 3-D Secure, and the member confirms it in the page;
+        the frontend then calls this action again with the same quantity,
+        which is idempotent, finds the invoice paid, and lands here.
+      */
+      if (payment.status !== "paid") {
+        return new Response(
+          JSON.stringify({ success: false, pending: true, extraAccounts: wanted, interval, payment }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      /*
+        Paid. Written straight back rather than left to the webhook, because
+        the member is sitting on the connect screen waiting to use what they
+        just bought and customer.subscription.updated can take a few seconds.
+        The webhook still runs the real sync over the top - this is the fast
+        path, not the authority.
       */
       const fresh = await stripe.subscriptions.retrieve(subscriptionId);
-      /*
-        Only the one column, rather than a full re-sync from Stripe.
-
-        The add-on is the only thing this request changed; status, price and
-        period are exactly what they were a moment ago. Writing the quantity
-        straight back means the member's allowance is correct before this
-        response lands, which matters because they are staring at the connect
-        screen waiting to use what they just bought.
-
-        The webhook still fires customer.subscription.updated and runs the
-        real sync over the top. This is the fast path, not the authority.
-      */
       const quantityNow = fresh.items.data.find(
         (i) => ADDON_PRICE_IDS.has(i.price?.id ?? "")
       )?.quantity ?? 0;
@@ -492,12 +544,12 @@ Deno.serve(async (req: Request) => {
 
       if (writeError) {
         /*
-          Stripe has already taken the money and the webhook will correct the
-          row within seconds, so this is not a failure of the purchase - but
-          the member may briefly not see what they paid for, and that is worth
-          knowing about if it ever becomes common.
+          The money is in and the webhook will correct the row within seconds,
+          so this is not a failure of the purchase - but the member may
+          briefly not see what they paid for, and that is worth knowing about
+          if it ever becomes common.
         */
-        console.error("Add-on bought but the allowance write failed for", user.id, writeError);
+        console.error("Add-on paid for but the allowance write failed for", user.id, writeError);
       }
 
       return new Response(
