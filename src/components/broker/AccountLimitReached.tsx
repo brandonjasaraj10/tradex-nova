@@ -17,19 +17,31 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Minus, ArrowRight, Loader2 } from 'lucide-react';
-import { EXTRA_ACCOUNT_PRICE_MONTHLY, setExtraSyncedAccounts, confirmExtraAccountPayment } from '../../services/extraAccounts';
+import {
+  EXTRA_ACCOUNT_PRICE_MONTHLY,
+  EXTRA_ACCOUNT_PRICE_ANNUAL,
+  setExtraSyncedAccounts,
+  confirmExtraAccountPayment,
+} from '../../services/extraAccounts';
 
 interface Props {
   /* What their plan allows today, including extras already bought. */
   limit: number;
   /* Extras already paid for, so the stepper starts from the truth. */
   currentExtras: number;
+  /*
+    What the member is billed on. Decides which price is quoted, because
+    Stripe will charge the one matching their existing subscription whatever
+    the screen says - and being told $19 then charged $190 is how a surprise
+    becomes a chargeback.
+  */
+  interval: 'month' | 'year';
   /* Called once Stripe has taken the money and the allowance is bigger. */
   onPurchased: (newExtras: number) => void;
   onDismiss?: () => void;
 }
 
-export default function AccountLimitReached({ limit, currentExtras, onPurchased, onDismiss }: Props) {
+export default function AccountLimitReached({ limit, currentExtras, interval, onPurchased, onDismiss }: Props) {
   /*
     Starts at one more than they have, because wanting one more is why this
     panel is on screen. They can still ask for several.
@@ -39,7 +51,13 @@ export default function AccountLimitReached({ limit, currentExtras, onPurchased,
   const [error, setError] = useState('');
 
   const adding = wanted - currentExtras;
-  const monthly = adding * EXTRA_ACCOUNT_PRICE_MONTHLY;
+
+  const annual = interval === 'year';
+  const each = annual ? EXTRA_ACCOUNT_PRICE_ANNUAL : EXTRA_ACCOUNT_PRICE_MONTHLY;
+  const total = adding * each;
+  /* "a year" / "/yr" rather than a separate string per sentence. */
+  const per = annual ? 'a year' : 'a month';
+  const short = annual ? '/yr' : '/mo';
 
   async function buy() {
     setBusy(true);
@@ -89,7 +107,7 @@ export default function AccountLimitReached({ limit, currentExtras, onPurchased,
         Your plan covers {limit} synced {limit === 1 ? 'account' : 'accounts'}
       </p>
       <p className="mt-1.5 text-[13px] text-gray-400 leading-relaxed">
-        Add another for ${EXTRA_ACCOUNT_PRICE_MONTHLY} a month, or move up a plan. Accounts you
+        Add another for ${each} {per}, or move up a plan. Accounts you
         add by hand or import from a CSV stay unlimited either way.
       </p>
 
@@ -140,7 +158,7 @@ export default function AccountLimitReached({ limit, currentExtras, onPurchased,
             </>
           ) : (
             <>
-              Add {adding} {adding === 1 ? 'account' : 'accounts'} &middot; ${monthly}/mo
+              Add {adding} {adding === 1 ? 'account' : 'accounts'} &middot; ${total}{short}
             </>
           )}
         </button>
@@ -152,7 +170,7 @@ export default function AccountLimitReached({ limit, currentExtras, onPurchased,
         mentioned it.
       */}
       <p className="mt-2.5 text-[11.5px] text-gray-500 leading-relaxed">
-        Charged now, prorated to your billing date, then ${monthly} a month. Remove it any time
+        Charged now, prorated to your renewal date, then ${total} {per}. Remove it any time
         from Settings.
       </p>
 

@@ -14,7 +14,7 @@ import { BROKER_SYNC_ENABLED } from '../../lib/featureFlags';
 import { connectMetaTraderAccount, syncMetaTraderAccount } from '../../services/metaTraderConnect';
 import { searchMtServers, type MtServerSuggestion } from '../../services/mtServers';
 import AccountLimitReached from '../broker/AccountLimitReached';
-import { getExtraSyncedAccounts } from '../../services/extraAccounts';
+import { getExtraAccountState } from '../../services/extraAccounts';
 
 /*
   Which platform the account actually runs on, asked separately from which
@@ -96,7 +96,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
     which is what keeps the panel out of the way of every other outcome.
   */
   const [limitInfo, setLimitInfo] = useState<
-    { limit: number; extras: number; connectionId: string } | null
+    { limit: number; extras: number; interval: 'month' | 'year'; connectionId: string } | null
   >(null);
   const [serverSuggestions, setServerSuggestions] = useState<MtServerSuggestion[]>([]);
   const [showServerList, setShowServerList] = useState(false);
@@ -297,9 +297,11 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
             throw away something they can use while they think about it.
           */
           hitAccountLimit = true;
+          const state = await getExtraAccountState();
           setLimitInfo({
             limit: result.limit ?? 1,
-            extras: await getExtraSyncedAccounts(),
+            extras: state.extras,
+            interval: state.interval,
             connectionId: created.id,
           });
         } else if (!result.ok) {
@@ -924,6 +926,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
                 <AccountLimitReached
                   limit={limitInfo.limit}
                   currentExtras={limitInfo.extras}
+                  interval={limitInfo.interval}
                   onDismiss={() => {
                     setLimitInfo(null);
                     setShowAddAccount(false);

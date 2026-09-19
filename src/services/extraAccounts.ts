@@ -14,7 +14,24 @@
 
 import { supabase } from '../lib/supabase';
 
+/*
+  Both add-on prices, and they must agree with ADDON_PRICE_IDS in
+  supabase/functions/_shared/subscriptionSync.ts and the copy of it in
+  manage-subscription.
+
+  The annual one exists only because Stripe refuses a subscription holding two
+  different intervals. An annual member cannot be sold a monthly add-on, so
+  they are sold the annual one - at 10x monthly, the same ratio the three
+  tiers already use ($29.99 / $299.90).
+*/
 export const EXTRA_ACCOUNT_PRICE_MONTHLY = 19;
+export const EXTRA_ACCOUNT_PRICE_ANNUAL = 190;
+
+export interface ExtraAccountState {
+  extras: number;
+  /* 'month' | 'year', straight off the member's own subscription. */
+  interval: 'month' | 'year';
+}
 
 export interface ExtraAccountsResult {
   ok: boolean;
@@ -76,18 +93,32 @@ export async function setExtraSyncedAccounts(quantity: number): Promise<ExtraAcc
 }
 
 /*
-  How many extras this user already pays for, so the stepper starts from
-  what they have rather than from zero - otherwise somebody who already
-  bought one and wants a second would be offered "1" and quietly be charged
-  for no change, or worse, have their existing extra removed.
+  How many extras this user already pays for, and on what cycle.
+
+  The count matters so the stepper starts from what they have rather than from
+  zero - otherwise somebody who already bought one and wants a second would be
+  offered "1", be charged for no change, or have their existing extra removed.
+
+  The interval matters because the panel has to quote the price they will
+  actually be charged. Quoting "$19 a month" to an annual member and then
+  taking $190 is the kind of surprise that becomes a chargeback, and the
+  server picks the annual price for them whether or not the screen said so.
 */
-export async function getExtraSyncedAccounts(): Promise<number> {
+export async function getExtraAccountState(): Promise<ExtraAccountState> {
   const { data } = await supabase
     .from('subscriptions')
-    .select('extra_synced_accounts')
+    .select('extra_synced_accounts, billing_interval')
     .maybeSingle();
-  const n = (data as { extra_synced_accounts: number | null } | null)?.extra_synced_accounts;
-  return typeof n === 'number' ? n : 0;
+  const row = data as { extra_synced_accounts: number | null; billing_interval: string | null } | null;
+  return {
+    extras: typeof row?.extra_synced_accounts === 'number' ? row.extra_synced_accounts : 0,
+    /*
+      Defaults to monthly, which is both the common case and the safe one: a
+      member quoted the monthly price and charged the monthly price is right,
+      whereas defaulting to annual would quote $190 to somebody who owes $19.
+    */
+    interval: row?.billing_interval === 'year' ? 'year' : 'month',
+  };
 }
 
 /*
