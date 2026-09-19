@@ -438,7 +438,7 @@ export function PermissionsPanel() {
     ['See your broker password', false],
   ];
   return (
-    <Frame label="What TradeX can reach" note="Read-only sync, when it ships">
+    <Frame label="What TradeX can reach" note="Read-only sync">
       <div className="flex flex-col divide-y divide-white/[0.06]">
         {rows.map(([label, allowed]) => (
           <div key={label} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
@@ -543,10 +543,10 @@ const SHIPPED: { date: string; title: string; body: string; shipped: boolean }[]
     shipped: true,
   },
   {
-    date: 'Days away',
+    date: '18 Sep 2026',
     title: 'MT4 and MT5 sync',
-    body: 'Read-only: closed trade history and balance, nothing else. The price goes up when it lands, and not for anyone already subscribed.',
-    shipped: false,
+    body: 'Connect an account once and closed trades arrive on their own. Read-only: trade history and balance, nothing else.',
+    shipped: true,
   },
 ];
 

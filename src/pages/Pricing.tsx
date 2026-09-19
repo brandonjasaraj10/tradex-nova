@@ -41,6 +41,7 @@ const INCLUDED = [
   'Searchable trade log',
   'Unlimited trades',
   'Up to 5 accounts',
+  'MT4 & MT5 sync',
   'CSV import',
   'Notes',
 ];
@@ -82,19 +83,22 @@ export default function Pricing() {
           </div>
 
           {/*
-            Real urgency rather than a countdown clock. Sync genuinely ships in
-            days and the price genuinely goes up with it -
-            which is both the honest warning and, unlike a fake timer, a
-            promise that can actually be kept.
+            This carried the pre-launch urgency - sync was days away and the
+            price rose with it. Sync has shipped, so the countdown is over and
+            the claim cannot be repeated without becoming a lie. The same
+            block now carries the announcement, which is the honest version of
+            the same pull. See the longer note on the matching block in
+            Sales.tsx; the two must say the same thing or the reader catches
+            the seam.
           */}
           {launched && (
             <div className="mb-7 rounded-xl border border-brand-blue-light/25 bg-brand-blue/[0.06] px-4 py-3.5">
               <p className="text-[12.5px] sm:text-[13px] text-gray-300 leading-relaxed">
                 <span className="text-white font-medium">
-                  MT4 &amp; MT5 sync is days away
+                  MT4 &amp; MT5 sync is live
                 </span>
-                {' — '}and the price goes up when it lands. Join now and yours stays at{' '}
-                {MONTHLY_PRICE}.
+                {' — '}connect an account once and closed trades land in your journal on
+                their own. Read-only, always.
               </p>
             </div>
           )}
@@ -179,11 +183,11 @@ export default function Pricing() {
             },
             {
               q: 'Will the price go up on me later?',
-              a: 'Not on you. The price is going up when MT4 and MT5 sync ships, but the rate you join at is the rate you keep.',
+              a: 'Not on you. Whatever the price does later, the rate you join at is the rate you keep.',
             },
             {
               q: 'What do I need to get started?',
-              a: 'Nothing connected to your broker. Upload a CSV your broker exports, or just start talking through trades as you take them.',
+              a: 'Nothing, unless you want it. Sync your MT4 or MT5 account and the trades arrive on their own, upload a CSV your broker exports, or just start talking through trades as you take them.',
             },
             {
               q: 'How many accounts can I track?',

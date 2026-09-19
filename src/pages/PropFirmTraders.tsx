@@ -108,7 +108,7 @@ export default function PropFirmTraders() {
             },
             {
               q: 'Can I import from my challenge account?',
-              a: 'Yes — upload the statement your platform exports. Direct MT4 and MT5 sync is days away, and it is read-only when it lands.',
+              a: 'Yes — connect the account directly with MT4 or MT5 sync and your closed trades arrive on their own, or upload the statement your platform exports. Sync is read-only: it can never place, close or modify a trade.',
             },
             {
               q: 'I am on my fourth challenge. Is this going to help?',

@@ -159,9 +159,8 @@ export default function About() {
               t: 'Price changes are announced first',
               b: (
                 <>
-                  The price goes up when MT4 and MT5 sync ships. You are told
-                  before it happens, and the rate you joined at is the rate you
-                  keep.
+                  If the price goes up, you are told before it happens, and
+                  the rate you joined at is the rate you keep.
                 </>
               ),
             },

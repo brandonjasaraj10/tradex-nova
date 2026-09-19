@@ -341,7 +341,7 @@ export default function BrokerConnectionsList() {
             Create an account and upload CSV or HTML statements from your broker to get started
           </p>
           <p className="text-xs text-gray-500 mb-6 max-w-sm mx-auto">
-            Broker auto-sync is coming soon. For now, you can manually import your trade history.
+            Or connect an MT4 or MT5 account and your closed trades will arrive on their own.
           </p>
           <div className="flex items-center justify-center gap-3">
             {/*

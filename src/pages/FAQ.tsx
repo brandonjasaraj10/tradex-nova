@@ -73,7 +73,7 @@ const GROUPS: {
     items: [
       {
         q: 'Can I connect my broker?',
-        a: 'Right now you import a CSV from your broker or add trades as you go. Direct MT4 and MT5 sync is days away, and it is read-only when it lands — TradeX will see your trade history and nothing else. It can never place, close or modify a trade, and it never touches your money.',
+        a: 'Yes. MT4 and MT5 sync is live — connect the account once and your closed trades arrive in the journal on their own, usually within a few minutes. It is read-only: TradeX sees your trade history and nothing else. It can never place, close or modify a trade, and it never touches your money. You can still import a CSV or add trades by hand if you would rather.',
       },
       {
         q: 'Which markets does it handle?',
@@ -179,7 +179,7 @@ const GROUPS: {
       },
       {
         q: 'Will my price go up?',
-        a: 'The price is going up when MT4 and MT5 sync ships. The rate you join at is the rate you keep.',
+        a: 'Whatever the price does later, the rate you join at is the rate you keep.',
       },
       {
         q: 'What happens to my data if I cancel?',

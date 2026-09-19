@@ -36,8 +36,8 @@ export default function Security() {
         points={[
           'No trading permissions, ever — there is nothing to revoke',
           'No withdrawal access. TradeX never holds or moves funds',
-          'Today your trades arrive by CSV or by you typing them',
-          'MT4 and MT5 sync is read-only when it ships: closed trades and balance, nothing else',
+          'Your trades arrive by MT4/MT5 sync, by CSV, or by you typing them',
+          'Sync is read-only: closed trades and balance, nothing else',
         ]}
         visual={<ImportPathsPanel />}
       />
@@ -203,8 +203,8 @@ export default function Security() {
       </p>
 
       <ClosingCta
-        title="Nothing to connect, nothing to risk"
-        body="Start with a CSV or type a trade. Your broker never hears about it."
+        title="Read-only, or nothing at all"
+        body="Sync your account read-only, import a CSV, or just type the trade. TradeX can never place an order or move a dollar."
       />
     </PageShell>
   );

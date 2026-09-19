@@ -397,6 +397,142 @@ export default function Sales() {
       </div>
 
       {/*
+        BROKER SYNC.
+
+        Placed second, straight after "how it works", because that section
+        ends on the reader recording a trade and the next thought is always
+        "so I have to do that for every single one?". Answering it here is
+        worth more than answering it in the FAQ, where only the already-sold
+        ever look.
+
+        The firms are named rather than badged with their logos, and that is
+        a deliberate call rather than a shortcut:
+
+          - A logo wall reads as a partnership. There is no arrangement with
+            any of these firms, and implying one to sell a subscription is
+            the kind of claim that is cheap to make and expensive to defend.
+          - TradeX does not integrate with FTMO. It integrates with MT4 and
+            MT5, which FTMO happens to run. Naming the platform as the thing
+            that connects is both the honest version and the more useful
+            one, because it covers every firm not on the list.
+          - Ten sets of foreign brand colours would wreck a page whose whole
+            visual argument is black, white and one blue.
+
+        Set in the page's own type, the names still do the job they are here
+        for, which is recognition - a trader scanning this sees their own
+        firm and stops wondering.
+      */}
+      <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
+        <div className="max-w-3xl mx-auto px-5 sm:px-8">
+          <div className="text-center mb-10 sm:mb-12">
+            <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
+              Broker sync
+            </p>
+
+            {/*
+              The live marker. A dot rather than a "NEW!" flash: the claim is
+              that it is running right now, and a steady pulse says that
+              without shouting. motion-reduce turns the animation off for
+              anyone who has asked the OS for less of it - the dot stays, so
+              nothing is lost.
+            */}
+            <div className="inline-flex items-center gap-2 mb-5 px-3 py-1.5 rounded-full
+              border border-brand-blue-light/25 bg-brand-blue/[0.06]">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="motion-reduce:hidden absolute inline-flex h-full w-full
+                  rounded-full bg-brand-blue-light opacity-75 animate-ping" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-brand-blue-light" />
+              </span>
+              <span className="text-[11px] tracking-[0.1em] uppercase text-brand-blue-light font-medium">
+                Live now
+              </span>
+            </div>
+
+            <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
+              MT4 and MT5 sync is here
+            </h2>
+            <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-md mx-auto text-balance">
+              Connect an account once and every trade you close arrives by itself.
+              You write the thinking. TradeX never asks you for the numbers.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-brand-surface p-6 sm:p-8">
+            {/*
+              MT4 and MT5 set in our own type rather than MetaQuotes' marks,
+              for the trademark reason above and because the real wordmarks
+              are a mid-2000s gradient that would look like a foreign object
+              on this page.
+            */}
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+              {['MT4', 'MT5'].map((platform) => (
+                <div
+                  key={platform}
+                  className="rounded-xl border border-white/[0.07] bg-brand-elevated
+                    px-4 py-6 sm:py-7 text-center"
+                >
+                  <p className="text-2xl sm:text-3xl font-semibold tracking-[-0.02em] text-white tabular-nums">
+                    {platform}
+                  </p>
+                  <p className="mt-1.5 text-[12px] text-gray-500">
+                    {platform === 'MT4' ? 'MetaTrader 4' : 'MetaTrader 5'}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              {[
+                'Read-only \u2014 it can never place or close a trade',
+                'Closed trades land within minutes',
+                'Your whole history imported on connect',
+              ].map((point) => (
+                <div
+                  key={point}
+                  className="flex items-start gap-2 text-[12.5px] text-gray-400 leading-relaxed"
+                >
+                  <Check className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-brand-blue-light" strokeWidth={3} />
+                  {point}
+                </div>
+              ))}
+            </div>
+
+            {/* The prop firm recognition row. */}
+            <div className="mt-7 pt-6 border-t border-white/[0.07]">
+              <p className="text-center text-[11px] tracking-[0.14em] uppercase text-gray-500 mb-4">
+                If your firm runs MT4 or MT5, it works
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2.5">
+                {[
+                  'FTMO',
+                  'FundedNext',
+                  'The5ers',
+                  'FundingPips',
+                  'E8 Markets',
+                  'Alpha Capital',
+                  'FXIFY',
+                  'Goat Funded Trader',
+                  'Funded Trading Plus',
+                  'City Traders Imperium',
+                ].map((firm) => (
+                  <span
+                    key={firm}
+                    className="text-[13px] text-gray-500 tracking-[-0.01em] whitespace-nowrap"
+                  >
+                    {firm}
+                  </span>
+                ))}
+              </div>
+              <p className="mt-5 text-center text-[12px] text-gray-600 leading-relaxed max-w-md mx-auto">
+                TradeX connects through MetaTrader itself, not through any firm{' — '}so
+                your broker, your prop firm, or both at once all work the same way.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/*
         THE PRODUCT, EXPLORABLE.
 
         Placed here rather than in the hero on the evidence: Notre Dame found
@@ -764,18 +900,30 @@ export default function Sales() {
             </div>
 
             {/*
-              Real urgency, not a countdown clock.
+              This block used to carry the pre-launch urgency: sync was days
+              away, and the price went up with it. Sync has now shipped, so
+              that lever has been spent. An urgency line that outlives the
+              thing it was counting down to is exactly the copy a sceptical
+              reader notices, and once they catch one claim going stale they
+              stop believing the others.
 
-              MT4 and MT5 sync ships in the next week or two and the price
-              goes up with it. Saying so is both the honest warning and the
-              strongest reason to join today - and unlike a fake timer, it is
-              a promise that can actually be kept.
+              What replaces it is the announcement itself. "It is live" is a
+              weaker pull than "the price goes up on Friday" and a far
+              stronger one than a promise that has visibly expired - and it
+              is the only one of the three that is true today. Whether the
+              price actually rises is a pricing decision and belongs with the
+              tier work, not in a copy edit.
+
+              Read-only is said here rather than left to the FAQ because this
+              is the moment the objection lands: the reader has just decided
+              they want it and is now wondering what it can do to their
+              account.
             */}
             {launched && (
               <div className="mb-7 rounded-xl border border-brand-blue-light/25 bg-brand-blue/[0.06] px-4 py-3.5">
                 <p className="text-[12.5px] sm:text-[13px] text-gray-300 leading-relaxed">
-                  <span className="text-white font-medium">MT4 &amp; MT5 sync is days away</span>
-                  {' \u2014 '}and the price goes up when it lands. Join now and yours stays at $24.99.
+                  <span className="text-white font-medium">MT4 &amp; MT5 sync is live</span>
+                  {' \u2014 '}connect an account once and closed trades land in your journal on their own. Read-only, always.
                 </p>
               </div>
             )}
@@ -801,6 +949,7 @@ export default function Sales() {
                 'Performance analytics',
                 'Unlimited trades',
                 'Up to 5 accounts',
+                'MT4 & MT5 sync',
                 'CSV import',
                 'Notes',
               ].map((feature) => (
@@ -876,7 +1025,7 @@ export default function Sales() {
               },
               {
                 q: 'Can I connect my broker?',
-                a: 'Right now you import a CSV from your broker or add trades as you go. Direct MT4 and MT5 sync is days away, and it is read-only when it lands \u2014 TradeX will see your trade history and nothing else. It can never place, close or modify a trade, and it never touches your money.',
+                a: 'Yes. MT4 and MT5 sync is live \u2014 connect the account once and your closed trades arrive in the journal on their own, usually within a few minutes. It is read-only: TradeX sees your trade history and nothing else. It can never place, close or modify a trade, and it never touches your money. You can still import a CSV or add trades by hand if you would rather.',
               },
               {
                 q: 'How is this different from a spreadsheet?',
