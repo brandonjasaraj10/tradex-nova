@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { motion } from 'framer-motion';
-import { Link2, CheckCircle2, AlertCircle, Trash2, Clock, Upload, Plus, X, RefreshCw, DollarSign, Pencil } from 'lucide-react';
+import { Link2, CheckCircle2, AlertCircle, Clock, Upload, Plus, X, RefreshCw, DollarSign, Pencil, PauseCircle } from 'lucide-react';
 import Button from '../shared/Button';
 import ConfirmModal from '../shared/ConfirmModal';
 import { brokerService, type BrokerConnection, type BrokerFromAPI } from '../../services/brokerService';
@@ -12,7 +12,12 @@ import { useAccount } from '../../lib/accountContext';
 
 export default function BrokerConnectionsList() {
   const { showToast } = useToast();
-  const { refreshAccounts, selectedAccount, setSelectedAccount } = useAccount();
+  /*
+    selectedAccount and setSelectedAccount went with the delete handler.
+    Pausing never needs to clear the selection, because the account is still
+    there and still selectable - which is the whole point of the change.
+  */
+  const { refreshAccounts } = useAccount();
   const [connections, setConnections] = useState<BrokerConnection[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
@@ -201,28 +206,63 @@ export default function BrokerConnectionsList() {
     setDisconnectConfirm({ isOpen: true, connectionId });
   };
 
-  const executeDelete = async (connectionId: string) => {
+  /*
+    Turning syncing off, which is what the old "remove" button should always
+    have done.
+
+    Nothing disappears: the account stays in the list with every trade and
+    journal entry, it can still be written to by hand, and the sync slot goes
+    back to the plan. The only thing that stops is the account updating
+    itself, which is the part that costs money to provide.
+  */
+  const executePauseSync = async (connectionId: string) => {
     setDisconnectConfirm({ isOpen: false, connectionId: '' });
     setDeletingIds(prev => new Set(prev).add(connectionId));
 
     try {
-      const success = await brokerService.disconnectBroker(connectionId);
+      const success = await brokerService.pauseSync(connectionId);
 
       if (success) {
-        if (selectedAccount?.id === connectionId) {
-          setSelectedAccount(null);
-        }
         await loadConnections();
         await refreshAccounts();
-        showToast('Account removed.', 'success');
+        showToast('Syncing turned off. Your trades are still here.', 'success');
       }
     } catch (error) {
-      // The server says exactly why - usually that the account still holds
-      // trades. Logging it to a console nobody has open is what made this
-      // read as a dead button.
-      console.error('Delete error:', error);
+      console.error('Pause sync error:', error);
       showToast(
-        error instanceof Error ? error.message : 'Could not remove that account.',
+        error instanceof Error ? error.message : 'Could not turn syncing off.',
+        'error'
+      );
+    } finally {
+      setDeletingIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(connectionId);
+        return newSet;
+      });
+    }
+  };
+
+  /*
+    Turning it back on. Free - the parked MetaApi account still holds this
+    account's credentials, so this is a restart rather than a new purchase.
+    The server refuses if every slot is in use and says which, so the error
+    is the upsell.
+  */
+  const executeResumeSync = async (connectionId: string) => {
+    setDeletingIds(prev => new Set(prev).add(connectionId));
+
+    try {
+      const success = await brokerService.resumeSync(connectionId);
+
+      if (success) {
+        await loadConnections();
+        await refreshAccounts();
+        showToast('Syncing back on. New trades will appear on their own.', 'success');
+      }
+    } catch (error) {
+      console.error('Resume sync error:', error);
+      showToast(
+        error instanceof Error ? error.message : 'Could not turn syncing back on.',
         'error'
       );
     } finally {
@@ -284,7 +324,7 @@ export default function BrokerConnectionsList() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <RefreshCw className="w-6 h-6 animate-spin text-gold-400" />
+        <RefreshCw className="w-6 h-6 animate-spin text-brand-blue-light" />
       </div>
     );
   }
@@ -293,15 +333,15 @@ export default function BrokerConnectionsList() {
     return (
       <>
         <div className="text-center py-12">
-          <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-gold-400/20 to-blue-500/20 flex items-center justify-center mb-4 border border-gold-400/30">
-            <Upload className="w-10 h-10 text-gold-400" />
+          <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-brand-blue/15 to-blue-500/20 flex items-center justify-center mb-4 border border-brand-blue/25">
+            <Upload className="w-10 h-10 text-brand-blue-light" />
           </div>
           <h3 className="text-xl font-semibold mb-2">Import Your Trading History</h3>
           <p className="text-gray-400 mb-2 max-w-md mx-auto">
             Create an account and upload CSV or HTML statements from your broker to get started
           </p>
           <p className="text-xs text-gray-500 mb-6 max-w-sm mx-auto">
-            Broker auto-sync is coming soon. For now, you can manually import your trade history.
+            Or connect an MT4 or MT5 account and your closed trades will arrive on their own.
           </p>
           <div className="flex items-center justify-center gap-3">
             {/*
@@ -319,7 +359,7 @@ export default function BrokerConnectionsList() {
             */}
             <button
               onClick={() => setShowAddAccount(true)}
-              className="px-6 py-3 bg-gradient-to-r from-gold-400/20 to-blue-500/20 hover:from-gold-400/30 hover:to-blue-500/30 text-gold-400 rounded-lg text-sm font-medium transition-all inline-flex items-center gap-2 border border-gold-400/30"
+              className="px-6 py-3 bg-gradient-to-r from-brand-blue/15 to-blue-500/20 hover:from-brand-blue/25 hover:to-blue-500/30 text-brand-blue-light rounded-lg text-sm font-medium transition-all inline-flex items-center gap-2 border border-brand-blue/25"
             >
               <Plus size={16} />
               Add Account Manually
@@ -337,12 +377,12 @@ export default function BrokerConnectionsList() {
           key={connection.id}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-6 rounded-xl bg-black/40 border border-white/10 hover:border-gold-400/30 transition-all duration-300"
+          className="p-6 rounded-xl bg-black/40 border border-white/10 hover:border-brand-blue/25 transition-all duration-300"
         >
           <div className="flex flex-wrap items-start justify-between gap-y-3">
             <div className="flex items-start gap-4 flex-1 min-w-[240px]">
-              <div className="w-12 h-12 rounded-lg bg-gold-400/10 flex items-center justify-center flex-shrink-0">
-                <Link2 className="w-6 h-6 text-gold-400" />
+              <div className="w-12 h-12 rounded-lg bg-brand-blue/10 flex items-center justify-center flex-shrink-0">
+                <Link2 className="w-6 h-6 text-brand-blue-light" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -373,10 +413,29 @@ export default function BrokerConnectionsList() {
                     <h3 className="font-medium text-lg">{connection.account_name}</h3>
                   )}
                   {getStatusBadge(connection.status)}
-                  <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs bg-white/5 text-gray-400 border border-white/10">
-                    <Upload className="w-3 h-3" />
-                    Manual Import
-                  </span>
+                  {/*
+                    How this account gets its trades, which was hard-coded to
+                    "Manual Import" on every card - including accounts that
+                    sync themselves. Telling somebody their synced account is
+                    manual is worse than saying nothing: it is the one label
+                    on the card that answers "is this working?".
+                  */}
+                  {!connection.metaapi_account_id ? (
+                    <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs bg-white/5 text-gray-400 border border-white/10">
+                      <Upload className="w-3 h-3" />
+                      Manual Import
+                    </span>
+                  ) : connection.sync_paused_at ? (
+                    <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs bg-white/5 text-gray-400 border border-white/10">
+                      <PauseCircle className="w-3 h-3" />
+                      Sync off
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs bg-brand-blue/10 text-brand-blue border border-brand-blue/20">
+                      <RefreshCw className="w-3 h-3" />
+                      Auto-sync
+                    </span>
+                  )}
                 </div>
                 <p className="text-sm text-gray-400 mb-2">
                   {connection.brokers?.name
@@ -424,12 +483,36 @@ export default function BrokerConnectionsList() {
                     <span className="text-sm font-bold text-white">{connection.trades_count || 0}</span>
                   </div>
                   <div className="col-span-2 sm:col-span-1">
-                    <span className="text-xs text-gray-500 block mb-1">Last Import</span>
+                    <span className="text-xs text-gray-500 block mb-1">
+                      {connection.metaapi_account_id && !connection.sync_paused_at
+                        ? 'Last sync'
+                        : 'Last import'}
+                    </span>
                     <span className="text-xs font-medium text-white" title={formatDate(connection.last_synced_at)}>
                       {formatRelativeTime(connection.last_synced_at)}
                     </span>
                   </div>
                 </div>
+
+                {/*
+                  A synced account with nothing in it yet is almost always
+                  waiting on the broker rather than broken - MetaApi pulls the
+                  history after the account is provisioned, measured between
+                  well under a minute and over two. Without a line saying so,
+                  an empty account reads as a failed connection, which is when
+                  people disconnect it and try again.
+
+                  Only while it is genuinely plausible. After an hour this
+                  stops being reassurance and starts being a wrong excuse.
+                */}
+                {connection.metaapi_account_id &&
+                  !connection.sync_paused_at &&
+                  (connection.trades_count || 0) === 0 &&
+                  Date.now() - new Date(connection.created_at).getTime() < 60 * 60 * 1000 && (
+                  <p className="mt-3 text-[12px] text-gray-500">
+                    Pulling your history from your broker — this usually takes a minute or two.
+                  </p>
+                )}
 
                 <div className="mt-4">
                   <input
@@ -444,7 +527,18 @@ export default function BrokerConnectionsList() {
                   />
                   <div className="flex items-center gap-2 text-xs text-gray-400">
                     <Upload size={14} />
-                    <span>Export your broker statement (HTML or CSV) and upload it to import trades</span>
+                    {/*
+                      A syncing account does not need instructions for getting
+                      trades in - they arrive on their own. Leaving the
+                      statement-upload line on every card told somebody whose
+                      account syncs itself that uploading was the way, which
+                      is the same mistake as the Manual Import badge.
+                    */}
+                    <span>
+                      {connection.metaapi_account_id && !connection.sync_paused_at
+                        ? 'Trades arrive on their own. You can still upload an older statement if you want history from before you connected.'
+                        : 'Export your broker statement (HTML or CSV) and upload it to import trades'}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -454,7 +548,7 @@ export default function BrokerConnectionsList() {
               <button
                 onClick={() => fileInputRefs.current[connection.id]?.click()}
                 disabled={uploadingIds.has(connection.id)}
-                className="px-4 py-2 bg-gold-400/20 hover:bg-gold-400/30 text-gold-400 rounded-lg text-sm font-medium transition-all flex items-center gap-2 border border-gold-400/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-brand-blue/10 hover:bg-brand-blue/20 text-brand-blue-light rounded-lg text-sm font-medium transition-all flex items-center gap-2 border border-brand-blue/20 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Upload className="w-4 h-4" />
                 {uploadingIds.has(connection.id) ? 'Uploading...' : 'Import'}
@@ -476,14 +570,38 @@ export default function BrokerConnectionsList() {
               >
                 <DollarSign className="w-5 h-5 text-gray-400 group-hover:text-blue-400 transition-colors" />
               </button>
-              <button
-                onClick={() => handleDelete(connection.id)}
-                disabled={deletingIds.has(connection.id)}
-                className="p-2 hover:bg-red-500/10 rounded-lg transition-colors group"
-                title="Remove account"
-              >
-                <Trash2 className="w-4 h-4 text-gray-400 group-hover:text-red-400 transition-colors" />
-              </button>
+              {/*
+                Pause and resume, not delete.
+
+                A synced account gets a way to stop it costing a slot; a
+                paused one gets a way to start again. Deleting for real is
+                deliberately not on the card - it is rare, it is the only
+                destructive option, and putting it next to the everyday
+                control is how people lose an account they meant to pause.
+              */}
+              {connection.metaapi_account_id && (
+                connection.sync_paused_at ? (
+                  <button
+                    onClick={() => executeResumeSync(connection.id)}
+                    disabled={deletingIds.has(connection.id)}
+                    className="px-3 py-2 rounded-lg text-[12.5px] font-medium bg-brand-blue/10
+                      text-brand-blue hover:bg-brand-blue/20 transition-colors
+                      disabled:opacity-60 disabled:cursor-not-allowed"
+                    title="Start syncing this account again"
+                  >
+                    {deletingIds.has(connection.id) ? 'Starting…' : 'Resume syncing'}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleDelete(connection.id)}
+                    disabled={deletingIds.has(connection.id)}
+                    className="p-2 hover:bg-blue-500/10 rounded-lg transition-colors group"
+                    title="Turn off syncing - keeps every trade"
+                  >
+                    <PauseCircle className="w-4 h-4 text-gray-400 group-hover:text-blue-400 transition-colors" />
+                  </button>
+                )
+              )}
             </div>
           </div>
         </motion.div>
@@ -499,7 +617,7 @@ export default function BrokerConnectionsList() {
         */}
         <button
           onClick={() => setShowAddAccount(true)}
-          className="px-6 py-3 bg-gradient-to-r from-gold-400/20 to-blue-500/20 hover:from-gold-400/30 hover:to-blue-500/30 text-gold-400 rounded-lg text-sm font-medium transition-all flex items-center gap-2 border border-gold-400/30"
+          className="px-6 py-3 bg-gradient-to-r from-brand-blue/15 to-blue-500/20 hover:from-brand-blue/25 hover:to-blue-500/30 text-brand-blue-light rounded-lg text-sm font-medium transition-all flex items-center gap-2 border border-brand-blue/25"
         >
           <Plus size={16} />
           Add Another Account
@@ -676,13 +794,19 @@ export default function BrokerConnectionsList() {
         />
       )}
 
+      {/*
+        Says what actually happens, which is much less alarming than what
+        "Remove Account" implied. The old copy promised trades would survive
+        while the account itself vanished from the product - technically true
+        and thoroughly misleading.
+      */}
       <ConfirmModal
         isOpen={disconnectConfirm.isOpen}
-        title="Remove Account"
-        message="Are you sure you want to remove this account? Your existing trades will not be deleted."
-        confirmLabel="Remove"
+        title="Turn off syncing?"
+        message="This account stays here with all its trades, and you can still add trades to it by hand. It just stops updating on its own, and the sync slot goes back to your plan. You can turn it back on any time, free."
+        confirmLabel="Turn off syncing"
         variant="warning"
-        onConfirm={() => executeDelete(disconnectConfirm.connectionId)}
+        onConfirm={() => executePauseSync(disconnectConfirm.connectionId)}
         onCancel={() => setDisconnectConfirm({ isOpen: false, connectionId: '' })}
       />
     </div>

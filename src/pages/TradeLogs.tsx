@@ -7,6 +7,7 @@ import { useAccount } from '../lib/accountContext';
 import { useDateRange } from '../lib/dateRangeContext';
 import { getTradeLog, type TradeLogRow } from '../services/trades';
 import { valueColorClass, tradeOutcome, parseOutcomeQuery } from '../utils/formatMetrics';
+import { closeReasonLabel } from '../utils/closeReason';
 import { parseLocalDate, toLocalDateStr } from '../utils/dateHelpers';
 import TradeOutcomeBadge from '../components/trades/TradeOutcomeBadge';
 import Card from '../components/shared/Card';
@@ -46,6 +47,26 @@ function formatMoney(value: number): string {
 
 const VIEW_STORAGE_KEY = 'tradex_trade_log_view';
 
+/*
+  How the trade ended, shown beside the result.
+
+  Kept quiet on purpose. The number is the headline and this is the reason
+  behind it, so it is a line of text rather than another coloured pill - the
+  row already carries a direction tag, an outcome badge and a source tag,
+  and a fourth competing chip turns a scannable list into confetti.
+
+  Blue for a target and grey for everything else, matching valueColorClass
+  and the rest of the app - BRAND_GUIDE is explicit that losses are grey
+  rather than red, and a stop-out sitting beside the P&L is a loss, not an
+  error state.
+*/
+function CloseReason({ reason }: { reason: string | null }) {
+  const label = closeReasonLabel(reason);
+  if (!label) return null;
+  const tone = label.tone === 'target' ? 'text-blue-400/80' : 'text-gray-500';
+  return <span className={`text-[10px] ${tone}`}>{label.text}</span>;
+}
+
 export default function TradeLogs() {
   const { user } = useAuth();
   const { accounts, selectedAccount, setSelectedAccount, refreshAccounts } = useAccount();
@@ -74,9 +95,16 @@ export default function TradeLogs() {
       trade is not on, so the journal looked empty. Journal rows are already
       plain YYYY-MM-DD and are passed through unchanged.
     */
-    const dateParam = /^\d{4}-\d{2}-\d{2}$/.test(row.entry_date)
-      ? row.entry_date
-      : toLocalDateStr(new Date(row.entry_date));
+    /*
+      The close date, because that is the day the journal files the trade
+      under - see TRADE_DAY in services/trades.ts. Opening the entry date
+      would land on a day the trade is not on whenever it was held over
+      midnight, which is the bug this link had before, in a new disguise.
+    */
+    const dayField = row.exit_date || row.entry_date;
+    const dateParam = /^\d{4}-\d{2}-\d{2}$/.test(dayField)
+      ? dayField
+      : toLocalDateStr(new Date(dayField));
     navigate(`/journal?date=${dateParam}`);
   };
 
@@ -332,15 +360,18 @@ export default function TradeLogs() {
                           <span className="text-[10px] px-1.5 py-0.5 rounded border border-white/10 text-gray-500">
                             {row.source === 'journal' ? 'Journal' : 'Imported'}
                           </span>
-                          {row.entry_price != null && row.exit_price != null ? (
-                            <span className="text-[10px] text-gray-500">
-                              {row.entry_price} &rarr; {row.exit_price}
-                            </span>
-                          ) : (
-                            /* Journal trades have no fill prices; say so rather
-                               than leaving a gap that reads as a loading state. */
-                            <span className="text-[10px] text-gray-600">No fill prices</span>
-                          )}
+                          <span className="flex items-center gap-2">
+                            <CloseReason reason={row.close_reason} />
+                            {row.entry_price != null && row.exit_price != null ? (
+                              <span className="text-[10px] text-gray-500">
+                                {row.entry_price} &rarr; {row.exit_price}
+                              </span>
+                            ) : (
+                              /* Journal trades have no fill prices; say so rather
+                                 than leaving a gap that reads as a loading state. */
+                              <span className="text-[10px] text-gray-600">No fill prices</span>
+                            )}
+                          </span>
                         </div>
                       </div>
                     </motion.div>
@@ -393,11 +424,12 @@ export default function TradeLogs() {
 
                           <div className="text-right flex-shrink-0">
                             <p className={`font-bold ${valueColorClass(row.pnl)}`}>{formatMoney(row.pnl)}</p>
-                            {row.entry_price != null && row.exit_price != null && (
-                              <p className="text-[10px] text-gray-500 mt-0.5">
-                                {row.entry_price} &rarr; {row.exit_price}
-                              </p>
-                            )}
+                            <p className="text-[10px] text-gray-500 mt-0.5 flex items-center justify-end gap-2">
+                              <CloseReason reason={row.close_reason} />
+                              {row.entry_price != null && row.exit_price != null && (
+                                <span>{row.entry_price} &rarr; {row.exit_price}</span>
+                              )}
+                            </p>
                           </div>
                         </div>
                       </Card>

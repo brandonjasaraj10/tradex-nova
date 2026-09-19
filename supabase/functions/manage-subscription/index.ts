@@ -1,6 +1,29 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import Stripe from "npm:stripe@17.7.0";
 import { createClient } from "npm:@supabase/supabase-js@2";
+/*
+  Deliberately not importing from ../_shared/subscriptionSync.ts.
+
+  That module is 545 lines and this function needs three small things from it.
+  Deploying it alongside means hand-copying it into the deploy call, which is
+  precisely how this project's production copy drifted from its repo twice in
+  one night. Fewer lines crossing that gap is fewer chances to get it wrong.
+
+  The two price ids below therefore exist in two places. They must agree with
+  ADDON_PRICE_IDS in ../_shared/subscriptionSync.ts - if one of them ever
+  changes, change both. Two constants duplicated with a note is a smaller risk
+  than five hundred lines retyped.
+*/
+const ADDON_PRICE_IDS = new Set([
+  "price_1UHFqeP9mqFWeYrvvBoTx41L",  /* $19.00 / month */
+  "price_1UHFrKP9mqFWeYrvfsljAgP3",  /* $190.00 / year */
+]);
+
+function addonPriceIdForInterval(interval: string | null | undefined): string {
+  return interval === "year"
+    ? "price_1UHFrKP9mqFWeYrvfsljAgP3"
+    : "price_1UHFqeP9mqFWeYrvvBoTx41L";
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -46,7 +69,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const { action } = await req.json();
+    const { action, quantity: requested } = await req.json();
 
     if (action === "create_portal_session") {
       let stripeCustomerId: string | null = null;
@@ -287,6 +310,276 @@ Deno.serve(async (req: Request) => {
           message: "Subscription cancelled successfully",
           cancel_at: formattedCancelDate,
         }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    /*
+      Buy, change or drop extra synced accounts.
+
+      The quantity is absolute, not a delta - "I want three" rather than "add
+      one". Two reasons. A double-tapped button cannot silently sell somebody
+      a fourth account, because sending 3 twice still means 3. And the number
+      the user is looking at on screen is the number they send, so the screen
+      and Stripe cannot drift apart through a dropped response.
+    */
+    if (action === "set_extra_accounts") {
+      const wanted = Math.floor(Number(requested ?? NaN));
+      if (!Number.isFinite(wanted) || wanted < 0 || wanted > 50) {
+        return new Response(
+          JSON.stringify({ error: "That is not a number of accounts we can set." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const { data: row } = await supabase
+        .from("subscriptions")
+        .select("stripe_subscription_id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      const subscriptionId = (row as { stripe_subscription_id: string | null } | null)?.stripe_subscription_id;
+      if (!subscriptionId) {
+        return new Response(
+          JSON.stringify({ error: "You need a subscription before you can add accounts to it." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+
+      /*
+        Refuse on anything that is not actually live. Adding a paid line to a
+        past_due subscription bills somebody whose card is already failing,
+        and a canceled one would host an account nobody is paying for.
+      */
+      if (!["active", "trialing"].includes(subscription.status)) {
+        return new Response(
+          JSON.stringify({ error: "Your subscription needs to be active before you can add accounts." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      /*
+        The add-on has to match the interval the member is already billed on.
+        Stripe rejects a subscription holding two intervals unless the account
+        is in flexible billing mode, which this SDK version predates. Picking
+        it from the plan item rather than asking the user means the choice
+        cannot be got wrong.
+      */
+      const planLine = subscription.items.data.find(
+        (i) => !ADDON_PRICE_IDS.has(i.price?.id ?? "")
+      ) ?? subscription.items.data[0];
+      const interval = planLine?.price?.recurring?.interval ?? "month";
+      const addonPriceId = addonPriceIdForInterval(interval);
+
+      const existing = subscription.items.data.find(
+        (i) => ADDON_PRICE_IDS.has(i.price?.id ?? "")
+      );
+
+      /*
+        What it was before, so a declined card can be put back exactly as it
+        was. Without this a failed payment leaves a $19 line on the
+        subscription that Stripe goes on dunning and that inflates their next
+        invoice - charging somebody monthly for something they were told they
+        had not bought.
+      */
+      const previousQuantity = existing?.quantity ?? 0;
+
+      /*
+        always_invoice rather than create_prorations: the member gets the
+        account the moment this returns, so the prorated charge should land
+        now too. Deferring it to the next cycle means hosting an account for
+        up to a month before finding out the card does not work.
+      */
+      if (wanted === 0 && existing) {
+        await stripe.subscriptionItems.del(existing.id, { proration_behavior: "always_invoice" });
+      } else if (wanted > 0 && existing) {
+        await stripe.subscriptionItems.update(existing.id, {
+          quantity: wanted,
+          proration_behavior: "always_invoice",
+        });
+      } else if (wanted > 0) {
+        await stripe.subscriptionItems.create({
+          subscription: subscriptionId,
+          price: addonPriceId,
+          quantity: wanted,
+          proration_behavior: "always_invoice",
+        });
+      }
+
+      /*
+        Whether the money actually arrived.
+
+        always_invoice bills immediately, and "immediately" has three
+        outcomes, not one: paid, declined, or held pending 3-D Secure - which
+        is routine on European cards and on plenty of others under SCA. The
+        first version of this treated the Stripe call returning without
+        throwing as success, which would have handed somebody an allowance
+        against an invoice that was never paid, and left them syncing an
+        account at $8.64 a month on our side while their bank waited for a
+        tap they were never asked for.
+
+        The invoice is read back and its state decides what the caller is
+        told. requires_action carries the client secret so the card can be
+        confirmed in place - the only genuinely embedded part of this, and it
+        appears only when the bank asks for it rather than on every purchase.
+      */
+      let payment: { status: string; clientSecret?: string; hostedInvoiceUrl?: string } = {
+        status: "paid",
+      };
+      /* Kept so a declined invoice can be voided rather than left to dun. */
+      let openInvoiceId: string | null = null;
+
+      if (wanted > 0) {
+        try {
+          const invoices = await stripe.invoices.list({
+            subscription: subscriptionId,
+            limit: 1,
+          });
+          const invoice = invoices.data[0];
+          if (invoice && invoice.status !== "paid" && invoice.status !== "draft") {
+            const intentId = typeof invoice.payment_intent === "string"
+              ? invoice.payment_intent
+              : invoice.payment_intent?.id;
+            if (intentId) {
+              const intent = await stripe.paymentIntents.retrieve(intentId);
+              if (intent.status === "requires_action" || intent.status === "requires_confirmation") {
+                payment = {
+                  status: "requires_action",
+                  clientSecret: intent.client_secret ?? undefined,
+                  hostedInvoiceUrl: invoice.hosted_invoice_url ?? undefined,
+                };
+              } else if (intent.status !== "succeeded") {
+                payment = {
+                  status: "failed",
+                  hostedInvoiceUrl: invoice.hosted_invoice_url ?? undefined,
+                };
+                openInvoiceId = invoice.id ?? null;
+              }
+            }
+          }
+        } catch (err) {
+          /*
+            Never fails the request. The subscription item change has already
+            happened in Stripe, which is the source of truth; not being able
+            to read the invoice back is a reporting problem, and the webhook
+            reconciles either way.
+          */
+          console.error("Could not read the add-on invoice back for", user.id, err);
+        }
+      }
+
+      /*
+        A declined card is put back the way it was.
+
+        The subscription item already exists in Stripe at this point - that is
+        what generated the invoice. Leaving it there after a decline would
+        mean a $19 line Stripe goes on dunning, and a bigger invoice next
+        month, for something the member has just been told they did not buy.
+        So the change is undone rather than left hanging.
+      */
+      if (payment.status === "failed") {
+        /*
+          Void the invoice before anything else.
+
+          Removing the line item is not enough on its own. always_invoice
+          raises a real invoice and attempts it immediately; when that fails
+          the invoice stays OPEN, and Stripe's automatic retries go on
+          chasing it for days. Worse, enough failed attempts move the whole
+          subscription to past_due - which, under this app's no-grace-period
+          rule, ends every bit of their access. Losing a journal over a $19
+          add-on they were told had been declined is not a trade anyone would
+          accept.
+
+          Voided rather than marked uncollectible: nothing was owed, because
+          the thing it was for is being removed in the same breath.
+        */
+        if (openInvoiceId) {
+          try {
+            await stripe.invoices.voidInvoice(openInvoiceId);
+          } catch (err) {
+            console.error("Could not void the declined add-on invoice", openInvoiceId, err);
+          }
+        }
+
+        try {
+          const failedItem = (await stripe.subscriptions.retrieve(subscriptionId))
+            .items.data.find((i) => ADDON_PRICE_IDS.has(i.price?.id ?? ""));
+          if (failedItem) {
+            if (previousQuantity === 0) {
+              await stripe.subscriptionItems.del(failedItem.id, { proration_behavior: "none" });
+            } else {
+              await stripe.subscriptionItems.update(failedItem.id, {
+                quantity: previousQuantity,
+                proration_behavior: "none",
+              });
+            }
+          }
+        } catch (err) {
+          console.error("Could not undo the add-on after a declined card for", user.id, err);
+        }
+
+        return new Response(
+          JSON.stringify({ success: false, error: "Your card was declined.", payment }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      /*
+        Nothing is granted until the money is actually in.
+
+        This used to write the allowance whatever the invoice said. The
+        frontend refused to report success on a decline, but the allowance had
+        already gone up in the database - so dismissing the panel and pressing
+        connect again would have handed over an account nobody paid for, at
+        $8.64 a month of our money. The check above decided the payment; this
+        is where that decision is allowed to mean something.
+
+        requires_action is not a grant either. The bank is still holding the
+        charge pending 3-D Secure, and the member confirms it in the page;
+        the frontend then calls this action again with the same quantity,
+        which is idempotent, finds the invoice paid, and lands here.
+      */
+      if (payment.status !== "paid") {
+        return new Response(
+          JSON.stringify({ success: false, pending: true, extraAccounts: wanted, interval, payment }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      /*
+        Paid. Written straight back rather than left to the webhook, because
+        the member is sitting on the connect screen waiting to use what they
+        just bought and customer.subscription.updated can take a few seconds.
+        The webhook still runs the real sync over the top - this is the fast
+        path, not the authority.
+      */
+      const fresh = await stripe.subscriptions.retrieve(subscriptionId);
+      const quantityNow = fresh.items.data.find(
+        (i) => ADDON_PRICE_IDS.has(i.price?.id ?? "")
+      )?.quantity ?? 0;
+
+      const { error: writeError } = await supabase
+        .from("subscriptions")
+        .update({
+          extra_synced_accounts: Math.max(0, Math.min(50, quantityNow)),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", user.id);
+
+      if (writeError) {
+        /*
+          The money is in and the webhook will correct the row within seconds,
+          so this is not a failure of the purchase - but the member may
+          briefly not see what they paid for, and that is worth knowing about
+          if it ever becomes common.
+        */
+        console.error("Add-on paid for but the allowance write failed for", user.id, writeError);
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, extraAccounts: wanted, interval, payment }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

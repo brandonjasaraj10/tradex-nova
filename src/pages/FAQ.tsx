@@ -52,7 +52,7 @@ const GROUPS: {
       },
       {
         q: 'I have tried journals before and quit. Why is this different?',
-        a: 'Two reasons. The quitting is the problem we built around — journals do not fail on features, they fail at 4pm when typing up a trade is the last thing you want to do. And every other journal shows you your P&L. TradeX records how you felt going in and matches it against what happened, because seeing that you lost and seeing why you lost are different things.',
+        a: 'Because quitting is not really an effort problem. People do not stop journaling — they stop logging the bad days. Writing down the trade you would rather forget means admitting what you did, so the trades most worth reviewing are the ones that never make it in, and the journal ends up with a hole exactly where the lesson was. TradeX asks you to talk instead of type, and Nova reads the entries back to you, so reviewing is not something you have to sit and do to yourself. It also records how you felt going in and matches it against what happened, because seeing that you lost and seeing why you lost are different things.',
       },
       {
         q: 'How is this different from a spreadsheet?',
@@ -73,7 +73,7 @@ const GROUPS: {
     items: [
       {
         q: 'Can I connect my broker?',
-        a: 'Right now you import a CSV from your broker or add trades as you go. Direct MT4 and MT5 sync lands in the next couple of weeks, and it is read-only when it does — TradeX will see your trade history and nothing else. It can never place, close or modify a trade, and it never touches your money.',
+        a: 'Yes. MT4 and MT5 sync is live — connect the account once and your closed trades arrive in the journal on their own, usually within a few minutes. It is read-only: TradeX sees your trade history and nothing else. It can never place, close or modify a trade, and it never touches your money. You can still import a CSV or add trades by hand if you would rather.',
       },
       {
         q: 'Which markets does it handle?',
@@ -171,15 +171,15 @@ const GROUPS: {
     items: [
       {
         q: 'What if it is not for me?',
-        a: 'Two different things, and it is worth being precise. Cancelling is two clicks in Settings, no email and no retention call. Asking for your money back inside 14 days does need an email — there is no self-serve refund button — but that is the only step, and the answer is yes.',
+        a: 'Take the three days and find out. Cancelling is two clicks in Settings — no email, no retention call, no chain of "are you sure". Do it inside the three days and you are never charged at all.',
       },
       {
         q: 'Is there a free trial?',
-        a: 'The money back guarantee does the same job without the part where a card gets charged on a day you forgot about.',
+        a: 'Three days, free. Your card is authorised for the plan price and released straight away \u2014 nothing is taken \u2014 so a card that will not work shows up on day one rather than day three. Syncing is the one thing a trial does not include: that is what subscribing turns on, and you can subscribe the moment you want it rather than waiting the three days out. Cancel inside the three days, in two clicks, and you are never charged at all.',
       },
       {
         q: 'Will my price go up?',
-        a: 'The price is going up when MT4 and MT5 sync ships. The rate you join at is the rate you keep.',
+        a: 'Whatever the price does later, the rate you join at is the rate you keep.',
       },
       {
         q: 'What happens to my data if I cancel?',

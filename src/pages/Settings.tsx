@@ -389,6 +389,14 @@ export default function Settings() {
         .upsert({
           user_id: user.id,
           timezone: preferences.timezone,
+          /*
+            Saving here is what makes the choice stick. Until this is true
+            the app replaces the stored timezone with whatever the browser
+            reports on every load - which is what rescues the accounts that
+            have never been near this screen, and would otherwise undo
+            somebody who deliberately picked a timezone that is not theirs.
+          */
+          timezone_is_explicit: true,
           currency: preferences.currency,
           date_format: preferences.dateFormat,
           updated_at: new Date().toISOString()

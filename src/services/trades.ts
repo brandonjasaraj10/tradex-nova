@@ -22,6 +22,82 @@ export async function createTrade(data: TradeFormData): Promise<Trade> {
   return trade;
 }
 
+/*
+  Correct the P&L on a synced trade from its journal entry.
+
+  Separate from updateTrade because it is a different act: updateTrade takes
+  a whole TradeFormData and is used by the trade editor, while this changes
+  one number on a trade the broker supplied. Brokers routinely leave
+  commissions and swap out of what they report, so the figure that syncs is
+  often a little off and the trader is the one who knows the real number.
+
+  It writes to the trade rather than to the journal entry's manual_pnl on
+  purpose. A journal entry carrying manual_pnl is counted as a logged trade
+  in its own right across the Dashboard, Analytics, the Calendar and Nova -
+  putting the figure there would count the same trade twice. The trade stays
+  the single source of the money; the entry is a view onto it.
+*/
+/*
+  The P&L currently recorded against one trade.
+
+  Fetched when a journal entry linked to that trade is opened, rather than
+  read from whatever the page happens to have in state. The first attempt at
+  this used a ref filled by the day's trade load, and it was a race by
+  construction: in development React mounts twice, the second instance got a
+  fresh empty ref, and the field came up blank on exactly the instance the
+  user was looking at. One small query has no such failure mode.
+*/
+export async function getTradePnl(tradeId: string): Promise<number | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data, error } = await supabase
+    .from('trades')
+    .select('pnl')
+    .eq('id', tradeId)
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return (data as { pnl: number | null }).pnl;
+}
+
+/*
+  Which day a trade belongs to: the day it CLOSED.
+
+  Not the day it was opened, which is what most of this file used to use.
+  The money does not exist until the position closes, a broker statement
+  attributes it to the close date, and - the reason it actually matters
+  here - every prop firm measures its daily loss limit on realised P&L per
+  day. A trade opened at 11pm Monday and closed Tuesday for -$2,000 counts
+  against Tuesday at FTMO. Showing it on Monday would tell a trader they had
+  a clean slate on the day they were closest to breaching.
+
+  The two disagreed before this: the Calendar filtered on exit_date while
+  everything else filtered on entry_date, so the same trade appeared on
+  different days depending which screen you were looking at. On one real
+  account 4 of 25 trades crossed midnight, carrying $1,479 that the calendar
+  and the journal each put on a different day.
+
+  journal_entries is untouched by any of this. Its entry_date is a plain
+  DATE meaning "the day this entry is about", not a timestamp, and it is
+  already the day the trader chose.
+*/
+const TRADE_DAY = 'exit_date';
+
+export async function updateTradePnl(tradeId: string, pnl: number): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { error } = await supabase
+    .from('trades')
+    .update({ pnl, updated_at: new Date().toISOString() })
+    .eq('id', tradeId)
+    .eq('user_id', user.id);
+
+  if (error) throw error;
+}
+
 export async function updateTrade(id: string, data: Partial<TradeFormData>): Promise<Trade> {
   const { data: trade, error } = await supabase
     .from('trades')
@@ -51,7 +127,7 @@ export async function getTrades(filters?: TradeFilters, accountId?: string): Pro
     .from('trades')
     .select('*')
     .eq('user_id', user.id)
-    .order('entry_date', { ascending: false });
+    .order(TRADE_DAY, { ascending: false });
 
   if (accountId) {
     query = query.eq('broker_id', accountId);
@@ -60,8 +136,8 @@ export async function getTrades(filters?: TradeFilters, accountId?: string): Pro
   if (filters) {
     if (filters.dateRange) {
       query = query
-        .gte('entry_date', filters.dateRange[0].toISOString())
-        .lte('entry_date', filters.dateRange[1].toISOString());
+        .gte(TRADE_DAY, filters.dateRange[0].toISOString())
+        .lte(TRADE_DAY, filters.dateRange[1].toISOString());
     }
     if (filters.symbols?.length) {
       query = query.in('symbol', filters.symbols);
@@ -133,8 +209,8 @@ async function getAllUnifiedTrades(
 
   if (dateRange) {
     tradesQuery = tradesQuery
-      .gte('entry_date', dateRange[0].toISOString())
-      .lte('entry_date', dateRange[1].toISOString());
+      .gte(TRADE_DAY, dateRange[0].toISOString())
+      .lte(TRADE_DAY, dateRange[1].toISOString());
   }
   if (accountId) {
     tradesQuery = tradesQuery.eq('broker_id', accountId);
@@ -250,11 +326,16 @@ export async function getDailyPnL(
     // a `date` column there, never stored with a time/offset) - only the
     // timestamp case needs converting to a local calendar day, otherwise
     // that conversion would wrongly shift the already-correct plain date.
-    const dateStr = !trade.entry_date
+    /*
+      exit_date, not entry_date - see TRADE_DAY. Journal-sourced rows carry
+      the same value in both, so this reads correctly for them too.
+    */
+    const tradeDay = trade.exit_date || trade.entry_date;
+    const dateStr = !tradeDay
       ? ''
-      : trade.entry_date.includes('T')
-        ? toLocalDateStr(new Date(trade.entry_date))
-        : trade.entry_date;
+      : tradeDay.includes('T')
+        ? toLocalDateStr(new Date(tradeDay))
+        : tradeDay;
     if (dateStr < startStr || dateStr > endStr) continue;
     const day = parseInt(dateStr.split('-')[2], 10);
     const existing = dailyMap.get(day) || { pnl: 0, trades: 0, hasJournal: false };
@@ -333,6 +414,14 @@ export interface TradeLogRow {
   notes: string;
   tags: string[];
   setup: string | null;
+  /*
+    How the position actually ended, straight from MetaTrader's deal
+    history: a stop, a target, or the trader clicking close. Null for a
+    journal entry, which records what happened rather than how the broker
+    recorded it, and null for a synced trade whose deal history was
+    unavailable - "we do not know" rather than a guessed "manual".
+  */
+  close_reason: string | null;
   source: 'trades' | 'journal';
   /*
     Whatever chart the trader attached, if anything.
@@ -383,13 +472,13 @@ export async function getTradeLog(
 
   let tradesQuery = supabase
     .from('trades')
-    .select('id, symbol, direction, entry_price, exit_price, quantity, pnl, entry_date, exit_date, notes, tags, setup, screenshot_url, broker_id')
+    .select('id, symbol, direction, entry_price, exit_price, quantity, pnl, entry_date, exit_date, notes, tags, setup, screenshot_url, broker_id, close_reason')
     .eq('user_id', user.id);
 
   if (dateRange) {
     tradesQuery = tradesQuery
-      .gte('entry_date', dateRange[0].toISOString())
-      .lte('entry_date', dateRange[1].toISOString());
+      .gte(TRADE_DAY, dateRange[0].toISOString())
+      .lte(TRADE_DAY, dateRange[1].toISOString());
   }
   if (accountId) {
     tradesQuery = tradesQuery.eq('broker_id', accountId);
@@ -449,6 +538,7 @@ export async function getTradeLog(
     notes: t.notes || '',
     tags: t.tags || [],
     setup: t.setup ?? null,
+    close_reason: t.close_reason ?? null,
     screenshot: t.screenshot_url || null,
     account_id: t.broker_id ?? null,
     account_name: t.broker_id ? accountNames.get(t.broker_id) ?? null : null,
@@ -473,6 +563,8 @@ export async function getTradeLog(
     notes: (e.content || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim(),
     tags: e.tags || [],
     setup: e.position_size ?? null,
+    /* A journal entry has no broker deal behind it to ask. */
+    close_reason: null,
     /*
       "After" charts are attached once the trade is closed, so anything there
       is newer than anything in "before" - which makes the last after-chart
@@ -488,6 +580,7 @@ export async function getTradeLog(
   }));
 
   return [...fromTrades, ...fromJournal].sort(
-    (a, b) => new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime()
+    (a, b) => new Date(b.exit_date || b.entry_date).getTime() -
+              new Date(a.exit_date || a.entry_date).getTime()
   );
 }

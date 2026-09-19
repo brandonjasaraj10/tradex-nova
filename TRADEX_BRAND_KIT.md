@@ -26,11 +26,19 @@ group with one expensive, recurring failure.
 
 ### The core insight everything comes from
 
-> Journals do not fail on features. They fail at 4pm.
+> Nobody stops journaling. They stop logging the bad days.
 
-Nobody abandons a journal because it was missing a chart. They abandon it
-because typing up a trade is the last thing anyone wants to do after taking
-one. So the first problem TradeX solved was the typing, not the analytics.
+Traders do not abandon a journal because it was missing a chart, and not
+really because typing is a chore either. They skip the trade they would
+rather forget. Formally recording a bad result amplifies it — behavioural
+finance calls this outcome aversion — so the trades most worth reviewing
+are systematically the ones that never get written down.
+
+Typing is still friction, and it is why TradeX is voice-first: thirty
+seconds of talking is a habit people keep. But friction only explains why
+journaling is unpleasant. Avoidance explains why it fails on the trades
+that decide the account — and that is the case for tracking psychology,
+not just for talking instead of typing.
 
 The second insight, and the actual differentiator:
 

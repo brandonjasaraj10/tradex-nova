@@ -6,7 +6,7 @@ export default function PrivacyPolicy() {
     <PageShell
       eyebrow="Legal"
       title="Privacy Policy"
-      meta="Last updated 13 August 2026"
+      meta="Last updated 11 September 2026"
     >
       <LegalProse>
           <section>
@@ -39,7 +39,12 @@ export default function PrivacyPolicy() {
               <li>Trade Information: Entry/exit prices, symbols, positions, profit/loss, timestamps</li>
               <li>Journal Entries: Notes, screenshots, tags, and trade analysis</li>
               <li>Psychology Data: Pre-trade and post-trade mental state assessments</li>
-              <li>Broker Connection Data: Account balances, positions, and trade history from connected brokers</li>
+              <li>
+                Broker Connection Data: If you connect a MetaTrader account, we import your closed
+                trades and account balance. We store the account number, server name and a
+                connection identifier. We do not store your investor password &mdash; it is passed
+                to MetaApi once to establish the connection
+              </li>
               <li>Performance Metrics: Win rates, risk metrics, and statistical analysis</li>
             </ul>
 
@@ -102,6 +107,15 @@ export default function PrivacyPolicy() {
             <ul className="list-disc pl-6 space-y-2">
               <li>Supabase: Database and authentication services</li>
               <li>Stripe: Payment processing</li>
+              <li>
+                MetaApi (Agiliumtrade AI Ltd): Connects to your MetaTrader account when you choose
+                to enable automatic syncing, and receives the investor password you provide for it
+              </li>
+              <li>
+                Anthropic: Powers NOVA. Content you send to NOVA, and the trading data needed to
+                answer it, are processed by Anthropic&rsquo;s Claude models
+              </li>
+              <li>Resend: Sending account and billing emails</li>
               <li>Cloud providers: Data hosting and storage</li>
               <li>Analytics providers: Usage analytics and monitoring</li>
             </ul>

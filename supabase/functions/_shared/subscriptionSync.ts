@@ -50,6 +50,112 @@ export function resolveGracePeriodEnd(): string | null {
   return null;
 }
 
+/*
+  Global endpoint, not regional - see the note in mt-servers/index.ts.
+*/
+const PROVISIONING_URL = 'https://mt-provisioning-api-v1.agiliumtrade.agiliumtrade.ai';
+
+/*
+  Stop paying MetaApi for accounts belonging to somebody who is no longer a
+  subscriber.
+
+  MetaApi bills per connected account for as long as it exists in their
+  cloud, and none of that stops on its own. Without this, a cancelled
+  customer's connections keep running and keep charging us - a cost with no
+  revenue behind it and nobody using it, which is the worst kind because
+  nothing surfaces it until the invoice.
+
+  Stopping, never deleting:
+
+    no longer paying (past_due, canceled, unpaid, incomplete_expired) ->
+    undeploy. The account stops running, which takes it from about $9 a
+    month to about $0.77, but it stays registered with MetaApi.
+
+    paying again (active, trialing) -> deploy. Syncing resumes on its own,
+    with nothing to re-enter. Without this the undeploy above would be a
+    silent one-way door: the subscriber pays, gets their access back, and
+    their trades quietly never sync again.
+
+  Cancelling used to delete. It was changed because we deliberately never
+  store the investor password, so deleting means the trader has to find it
+  again to come back - and people who cancel a trading journal frequently do
+  come back. TradeZella's own documentation says unlinking a broker "does not
+  delete any existing trades. It only removes the connection for future
+  syncs", and keeping the connection is the same promise one step further.
+
+  The cost of that choice is about $0.77 a month per churned account,
+  accumulating quietly. The point at which it stops being worth it is a
+  dormancy sweep - delete accounts stopped for, say, six months - not a
+  deletion at the moment somebody cancels.
+
+  Never allowed to break the subscription sync. What Stripe says is true
+  about a subscription matters far more than our housekeeping at a third
+  party, so every failure here is caught and logged.
+*/
+async function applyBrokerSyncPolicy(
+  supabase: SupabaseClient,
+  userId: string,
+  status: string,
+) {
+  const token = Deno.env.get('METAAPI_TOKEN');
+  if (!token) return;
+
+  const resume = status === 'active' || status === 'trialing';
+  const stop = ['past_due', 'canceled', 'unpaid', 'incomplete_expired'].includes(status);
+  if (!stop && !resume) return;
+
+  try {
+    const { data, error } = await supabase
+      .from('broker_connections')
+      .select('id, metaapi_account_id')
+      .eq('user_id', userId)
+      .not('metaapi_account_id', 'is', null);
+
+    if (error) {
+      console.error('Could not read broker connections for', userId, error);
+      return;
+    }
+
+    const connections = (data ?? []) as { id: string; metaapi_account_id: string }[];
+    if (connections.length === 0) return;
+
+    for (const connection of connections) {
+      const base = `${PROVISIONING_URL}/users/current/accounts/${connection.metaapi_account_id}`;
+      const auth = { 'auth-token': token };
+
+      try {
+        if (resume) {
+          const res = await fetch(`${base}/deploy`, { method: 'POST', headers: auth });
+          if (!res.ok) {
+            console.error('Could not resume', connection.metaapi_account_id, await res.text());
+          }
+          continue;
+        }
+
+        const res = await fetch(`${base}/undeploy`, { method: 'POST', headers: auth });
+        if (!res.ok) {
+          console.error('Could not stop', connection.metaapi_account_id, await res.text());
+        }
+
+        /*
+          metaapi_account_id is deliberately kept. It is what lets the
+          account start again untouched when they resubscribe, and it is
+          also the only pointer to something still costing us $0.77 a month
+          - losing it would make that charge invisible.
+        */
+      } catch (err) {
+        console.error('Broker sync policy failed for connection', connection.id, err);
+      }
+    }
+
+    console.info(
+      `Broker sync policy applied for ${userId} (${status}): ${connections.length} connection(s)`,
+    );
+  } catch (err) {
+    console.error('Broker sync policy failed for', userId, err);
+  }
+}
+
 const APP_URL = 'https://tradexnova.com';
 const SUPPORT_EMAIL = 'tradenovaai@gmail.com';
 
@@ -190,6 +296,116 @@ async function sendPaymentFailedEmail(
   }
 }
 
+/*
+  Which tier a Stripe price sells.
+
+  Until this existed, plan_type was never written by anything - the webhook
+  stored stripe_price_id and stopped there. subscription_tier_for() falls back
+  to 'pro' when plan_type is null, which meant every paying subscriber got
+  Pro's allowance whatever they had actually bought: a Starter customer at
+  $29.99 received the two synced accounts Pro charges $49.99 for, and an Elite
+  customer at $99.99 received two instead of five.
+
+  The first direction costs real money - a synced account is about $8.64 a
+  month in MetaApi hosting - and the second is worse, because it silently
+  under-delivers to the people paying most.
+
+  Mapped from the price id rather than the amount. The amount changes with
+  discounts, coupons, proration and tax; the id is what the customer actually
+  bought and never moves.
+*/
+const TIER_BY_PRICE_ID: Record<string, string> = {
+  /* Starter - monthly, annual */
+  price_1UGqG0P9mqFWeYrvtPMZvsk6: 'starter',
+  price_1UGqFzP9mqFWeYrvwxpKrL7T: 'starter',
+  /* Pro */
+  price_1UGqGwP9mqFWeYrvzMUUTkyY: 'pro',
+  price_1UGqGwP9mqFWeYrvkph5vtn3: 'pro',
+  /* Elite */
+  price_1UGqq1P9mqFWeYrvfkgvSpDn: 'elite',
+  price_1UGqrcP9mqFWeYrvwfanVeKY: 'elite',
+
+  /*
+    The plans sold before tiers existed, mapped to their own 'legacy' tier.
+
+    Starter in every way that costs money - one synced account, because sync
+    did not exist when they subscribed and one is what $24.99 supports - and
+    Pro in the one way that was already theirs: 100 Nova questions a day
+    rather than Starter's 25. The pricing page promised twice that nothing
+    they already had would move behind a higher tier, and keeping that costs
+    nothing.
+
+    See 20260919060000_put_existing_members_on_a_tier.sql, which defines the
+    tier and must agree with this map.
+  */
+  price_1ScJiLP9mqFWeYrvAf1mt8kh: 'legacy',  /* $24.99 monthly  */
+  price_1ScyAlP9mqFWeYrvEAo0WOhT: 'legacy',  /* $249.90 annual  */
+  price_1U6eAKP9mqFWeYrv2D7cKdz6: 'legacy',  /* $14.99 founder  */
+};
+
+/*
+  An unrecognised price returns null, which leaves plan_type alone rather than
+  overwriting it. A price id this file has not been told about is far more
+  likely to be a new plan nobody has mapped yet than a reason to demote
+  somebody, and subscription_tier_for()'s own 'pro' fallback already covers
+  the null case generously. Erring toward the customer is the right error
+  here; it shows up on an invoice, not in a support ticket.
+*/
+function tierForPrice(priceId: string | null | undefined): string | null {
+  if (!priceId) return null;
+  return TIER_BY_PRICE_ID[priceId] ?? null;
+}
+
+/*
+  The add-on: extra synced accounts, $19 a month each.
+
+  Two prices for one thing, and only because Stripe forces it. Every recurring
+  price on a subscription must share an interval unless the account is in
+  flexible billing mode, which needs a newer API version than the SDK pinned
+  here - so an annual member genuinely cannot hold a monthly add-on. The buyer
+  never picks: whichever price matches the interval they are already billed on
+  is the one they get.
+*/
+export const ADDON_PRICE_IDS = new Set([
+  'price_1UHFqeP9mqFWeYrvvBoTx41L',  /* $19.00 / month */
+  'price_1UHFrKP9mqFWeYrvfsljAgP3',  /* $190.00 / year */
+]);
+
+export function addonPriceIdForInterval(interval: string | null | undefined): string {
+  return interval === 'year'
+    ? 'price_1UHFrKP9mqFWeYrvfsljAgP3'
+    : 'price_1UHFqeP9mqFWeYrvvBoTx41L';
+}
+
+/*
+  Which line item is the plan, and which is the add-on.
+
+  Everything below used to read items.data[0] and call it the plan. That was
+  true for exactly as long as a subscription had one item. The moment somebody
+  buys an add-on there are two, Stripe does not promise an order, and data[0]
+  can be the $19 line - which would write the add-on's price as the member's
+  plan, set plan_type from a price that is not a tier, and show "$19.00" on
+  the Settings screen of somebody paying $49.99.
+
+  So both are found by identity rather than position.
+*/
+function planItem(subscription: Stripe.Subscription) {
+  return subscription.items.data.find((i) => !ADDON_PRICE_IDS.has(i.price?.id ?? ''))
+    ?? subscription.items.data[0];
+}
+
+function addonQuantity(subscription: Stripe.Subscription): number {
+  const item = subscription.items.data.find((i) => ADDON_PRICE_IDS.has(i.price?.id ?? ''));
+  if (!item) return 0;
+  /*
+    Clamped to the column's own check constraint rather than trusted. This
+    number decides how many accounts we host on somebody's behalf at $8.64
+    a month each; a bad value should fail closed at a sane ceiling, not
+    throw and leave the whole subscription row unsynced.
+  */
+  return Math.max(0, Math.min(50, item.quantity ?? 0));
+}
+
 export async function syncSubscription(supabase: SupabaseClient, userId: string, subscription: Stripe.Subscription) {
   const { data: current, error: lookupError } = await supabase
     .from('subscriptions')
@@ -227,9 +443,22 @@ export async function syncSubscription(supabase: SupabaseClient, userId: string,
       subscriber - the exact screen they look at after paying. Stripe sends
       this on every event; it was simply never stored.
     */
-    stripe_price_id: subscription.items.data[0]?.price?.id ?? null,
-    unit_amount: subscription.items.data[0]?.price?.unit_amount ?? null,
-    billing_interval: subscription.items.data[0]?.price?.recurring?.interval ?? null,
+    stripe_price_id: planItem(subscription)?.price?.id ?? null,
+    unit_amount: planItem(subscription)?.price?.unit_amount ?? null,
+    billing_interval: planItem(subscription)?.price?.recurring?.interval ?? null,
+    /*
+      Written on every sync, including back to 0. Removing the add-on in
+      Stripe drops the line item entirely, and an allowance that only ever
+      went up would keep hosting an account nobody is paying for.
+    */
+    extra_synced_accounts: addonQuantity(subscription),
+    /*
+      Spread rather than set, so an unmapped price leaves whatever plan_type
+      is already on the row instead of nulling it. See tierForPrice above.
+    */
+    ...(tierForPrice(planItem(subscription)?.price?.id)
+      ? { plan_type: tierForPrice(planItem(subscription)?.price?.id) }
+      : {}),
     /*
       Always null. Kept as a column, and written on every sync, purely so a
       deadline from the old policy is cleared rather than left sitting there.
@@ -285,6 +514,8 @@ export async function syncSubscription(supabase: SupabaseClient, userId: string,
     if (subscription.status === 'past_due') {
       await sendPaymentFailedEmail(supabase, userId);
     }
+
+    await applyBrokerSyncPolicy(supabase, userId, subscription.status);
   }
 
   console.info(`Synced subscription ${subscription.id} (${subscription.status}) for user ${userId}`);

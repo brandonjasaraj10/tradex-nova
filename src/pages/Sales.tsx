@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Plus, Check } from 'lucide-react';
 import Footer from '../components/layout/Footer';
 import Mascot from '../components/shared/Mascot';
+import { TIERS, IN_EVERY_PLAN, ALSO_INCLUDED } from '../lib/pricingTiers';
 import TranscriptToEntry from '../components/sales/TranscriptToEntry';
 import ProductTabs from '../components/sales/ProductTabs';
 import Wordmark from '../components/shared/Wordmark';
@@ -205,7 +206,7 @@ export default function Sales() {
               <ArrowRight className="w-4 h-4" />
             </Link>
             <p className="text-[11.5px] text-gray-500">
-              14-day money back guarantee &middot; Cancel anytime
+              3 days free &middot; Cancel in two clicks
             </p>
             {/* Watched by the header - see showHeaderCta above. */}
             <div ref={heroCtaRef} aria-hidden="true" className="h-px w-full" />
@@ -456,6 +457,142 @@ export default function Sales() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </div>
+
+      {/*
+        BROKER SYNC.
+
+        Placed second, straight after "how it works", because that section
+        ends on the reader recording a trade and the next thought is always
+        "so I have to do that for every single one?". Answering it here is
+        worth more than answering it in the FAQ, where only the already-sold
+        ever look.
+
+        The firms are named rather than badged with their logos, and that is
+        a deliberate call rather than a shortcut:
+
+          - A logo wall reads as a partnership. There is no arrangement with
+            any of these firms, and implying one to sell a subscription is
+            the kind of claim that is cheap to make and expensive to defend.
+          - TradeX does not integrate with FTMO. It integrates with MT4 and
+            MT5, which FTMO happens to run. Naming the platform as the thing
+            that connects is both the honest version and the more useful
+            one, because it covers every firm not on the list.
+          - Ten sets of foreign brand colours would wreck a page whose whole
+            visual argument is black, white and one blue.
+
+        Set in the page's own type, the names still do the job they are here
+        for, which is recognition - a trader scanning this sees their own
+        firm and stops wondering.
+      */}
+      <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
+        <div className="max-w-3xl mx-auto px-5 sm:px-8">
+          <div className="text-center mb-10 sm:mb-12">
+            <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
+              Broker sync
+            </p>
+
+            {/*
+              The live marker. A dot rather than a "NEW!" flash: the claim is
+              that it is running right now, and a steady pulse says that
+              without shouting. motion-reduce turns the animation off for
+              anyone who has asked the OS for less of it - the dot stays, so
+              nothing is lost.
+            */}
+            <div className="inline-flex items-center gap-2 mb-5 px-3 py-1.5 rounded-full
+              border border-brand-blue-light/25 bg-brand-blue/[0.06]">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="motion-reduce:hidden absolute inline-flex h-full w-full
+                  rounded-full bg-brand-blue-light opacity-75 animate-ping" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-brand-blue-light" />
+              </span>
+              <span className="text-[11px] tracking-[0.1em] uppercase text-brand-blue-light font-medium">
+                Live now
+              </span>
+            </div>
+
+            <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
+              MT4 and MT5 sync is here
+            </h2>
+            <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-md mx-auto text-balance">
+              Connect an account once and every trade you close arrives by itself.
+              You write the thinking. TradeX never asks you for the numbers.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-brand-surface p-6 sm:p-8">
+            {/*
+              MT4 and MT5 set in our own type rather than MetaQuotes' marks,
+              for the trademark reason above and because the real wordmarks
+              are a mid-2000s gradient that would look like a foreign object
+              on this page.
+            */}
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+              {['MT4', 'MT5'].map((platform) => (
+                <div
+                  key={platform}
+                  className="rounded-xl border border-white/[0.07] bg-brand-elevated
+                    px-4 py-6 sm:py-7 text-center"
+                >
+                  <p className="text-2xl sm:text-3xl font-semibold tracking-[-0.02em] text-white tabular-nums">
+                    {platform}
+                  </p>
+                  <p className="mt-1.5 text-[12px] text-gray-500">
+                    {platform === 'MT4' ? 'MetaTrader 4' : 'MetaTrader 5'}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              {[
+                'Read-only \u2014 it can never place or close a trade',
+                'Closed trades land within minutes',
+                'Your whole history imported on connect',
+              ].map((point) => (
+                <div
+                  key={point}
+                  className="flex items-start gap-2 text-[12.5px] text-gray-400 leading-relaxed"
+                >
+                  <Check className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-brand-blue-light" strokeWidth={3} />
+                  {point}
+                </div>
+              ))}
+            </div>
+
+            {/* The prop firm recognition row. */}
+            <div className="mt-7 pt-6 border-t border-white/[0.07]">
+              <p className="text-center text-[11px] tracking-[0.14em] uppercase text-gray-500 mb-4">
+                If your firm runs MT4 or MT5, it works
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2.5">
+                {[
+                  'FTMO',
+                  'FundedNext',
+                  'The5ers',
+                  'FundingPips',
+                  'E8 Markets',
+                  'Alpha Capital',
+                  'FXIFY',
+                  'Goat Funded Trader',
+                  'Funded Trading Plus',
+                  'City Traders Imperium',
+                ].map((firm) => (
+                  <span
+                    key={firm}
+                    className="text-[13px] text-gray-500 tracking-[-0.01em] whitespace-nowrap"
+                  >
+                    {firm}
+                  </span>
+                ))}
+              </div>
+              <p className="mt-5 text-center text-[12px] text-gray-600 leading-relaxed max-w-md mx-auto">
+                TradeX connects through MetaTrader itself, not through any firm{' — '}so
+                your broker, your prop firm, or both at once all work the same way.
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -875,11 +1012,11 @@ export default function Sales() {
               Pricing
             </p>
             <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
-              One plan. Everything in it.
+              Everything in every plan
             </h2>
             <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-sm mx-auto text-balance">
               {launched
-                ? 'No tiers, no add-ons, no trade limits.'
+                ? 'What changes is how many accounts sync themselves.'
                 : 'Join the waitlist before launch and lock in founding member pricing.'}
             </p>
           </div>
@@ -903,98 +1040,124 @@ export default function Sales() {
             lower and the arm rests on nothing, which is what a taller window
             did here and what Brandon spotted immediately.
           */}
-          <div className="relative rounded-2xl border border-white/10 bg-brand-surface p-6 sm:p-8">
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute left-4 sm:left-6 overflow-hidden
-                -top-[77px] h-[77px] sm:-top-[101px] sm:h-[101px]"
-            >
-              <Mascot pose="lean" height={120} className="sm:hidden" />
-              <Mascot pose="lean" height={158} className="hidden sm:block" />
-            </div>
-            <div className="text-center pb-7 mb-7 border-b border-white/[0.07]">
-              {!launched && (
-                <p className="text-[11px] uppercase tracking-[0.14em] text-gray-400 mb-3">
-                  Founding member pricing
-                </p>
-              )}
-              <p className="flex items-baseline justify-center gap-1.5">
-                {!launched && (
-                  <span className="text-xl text-gray-600 line-through mr-1 tabular-nums">$24.99</span>
+          {/*
+            Three tiers, not one price with a link.
+
+            This showed a single card reading "From $29.99", on the theory
+            that choosing a plan belongs on /pricing. The research says
+            otherwise and is specific about it: below $25K annual contract
+            value, show pricing in full, and displaying all three tiers with
+            a highlighted middle beats a starting price. Top-quartile pricing
+            pages convert at 6.5-12% against a 2.8% average, and three tiers
+            with a highlighted middle account for most of that gap.
+
+            The named conversion killer is a visitor who cannot tell the
+            tiers apart - so these cards carry only what DIFFERS, which for
+            this product is how many accounts sync themselves. Everything
+            shared sits underneath once, rather than being repeated down
+            three columns where it reads as a wall.
+
+            No comparison table. The hybrid pattern - cards on top, matrix
+            below - earns its 15-30% in multi-stakeholder B2B, where a buyer
+            has to justify the choice to finance. A trader buying their own
+            journal has nobody to justify it to, and /pricing carries the
+            detail for the minority who want it.
+          */}
+          {/*
+            Above the row, not leaning on the featured card.
+
+            The lean was tried there and measured: at this breakpoint a card
+            is 160px wide, the Most Popular badge is 114 and he is 81, so they
+            overlapped by 73px - and they will at every width until the cards
+            are wide enough for both, which is only large desktop. The badge
+            is worth 25-35% on its own; a decorative character does not get to
+            sit on top of it.
+
+            Centred above the three, presenting them, which is the same thing
+            he does on /pricing and works at every width including a phone.
+          */}
+          <Mascot pose="present" height={92} className="mx-auto mb-7" />
+
+          <div className="grid gap-4 sm:grid-cols-3 sm:gap-4">
+            {TIERS.map((tier) => (
+              <div
+                key={tier.name}
+                className={`relative flex flex-col rounded-2xl border p-5 sm:p-6 ${
+                  tier.featured
+                    ? 'border-brand-blue-light/40 bg-brand-blue/[0.06]'
+                    : 'border-white/10 bg-brand-surface'
+                }`}
+              >
+                {tier.featured && (
+                  <span
+                    className="absolute -top-2.5 left-5 rounded-full bg-brand-blue-light px-2.5 py-1
+                      text-[10px] font-medium uppercase tracking-[0.12em] text-black"
+                  >
+                    Most popular
+                  </span>
                 )}
-                <span className="text-[44px] sm:text-5xl font-semibold text-white tracking-[-0.03em] tabular-nums">
-                  {launched ? '$24.99' : '$14.99'}
-                </span>
-                <span className="text-[15px] text-gray-500">/month</span>
-              </p>
-              <p className="mt-2 text-[12.5px] text-gray-500">
-                {launched ? '14-day money back guarantee \u00b7 Cancel anytime' : 'Locked in forever \u00b7 Cancel anytime'}
-              </p>
-            </div>
-
-            {/*
-              Real urgency, not a countdown clock.
-
-              MT4 and MT5 sync ships in the next week or two and the price
-              goes up with it. Saying so is both the honest warning and the
-              strongest reason to join today - and unlike a fake timer, it is
-              a promise that can actually be kept.
-            */}
-            {launched && (
-              <div className="mb-7 rounded-xl border border-brand-blue-light/25 bg-brand-blue/[0.06] px-4 py-3.5">
-                <p className="text-[12.5px] sm:text-[13px] text-gray-300 leading-relaxed">
-                  <span className="text-white font-medium">MT4 &amp; MT5 sync lands in the next couple of weeks</span>
-                  {' \u2014 '}and the price goes up when it does. Join now and yours stays at $24.99.
+                <p className="text-[12px] uppercase tracking-[0.14em] text-gray-400">{tier.name}</p>
+                <p className="mt-2 flex items-baseline gap-1">
+                  <span className="text-[30px] font-semibold text-white tracking-[-0.03em] tabular-nums">
+                    {tier.price}
+                  </span>
+                  <span className="text-[13px] text-gray-500">/mo</span>
                 </p>
-              </div>
-            )}
+                <p className="mt-2 text-[12.5px] text-gray-500 leading-relaxed">{tier.who}</p>
 
-            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-2.5 mb-7">
-              {[
-                /*
-                  This list, not the product tour, is where "is it complete
-                  enough?" gets answered. The research on landing pages is
-                  consistent that clarity beats completeness - piling every
-                  feature into the tour turns three clear ideas into twelve
-                  competing ones - but somebody reading a price is checking
-                  for gaps, and that is the right moment to show there are
-                  none. Everything here exists today.
-                */
-                'Voice journaling',
-                'Nova AI analysis',
-                'Psychology scoring',
-                'NOVA Score',
-                'Pre-trade checklists',
-                'Weekly & monthly reports',
-                'Trading rules & confluences',
-                'Performance analytics',
-                'Unlimited trades',
-                'Up to 5 accounts',
-                'CSV import',
-                'Notes',
-              ].map((feature) => (
-                <li key={feature} className="flex items-center gap-2.5 text-[13.5px] text-gray-300">
-                  {/* Blue, matching the same list on /pricing and /features.
-                      Grey here and blue there made one list look like a
-                      lesser version of the other. The hero's three checks
-                      stay grey on purpose - that block is deliberately
-                      monochrome so the first blue on the page is the product
-                      panel, where it means something. */}
-                  <Check className="w-3.5 h-3.5 flex-shrink-0 text-brand-blue-light" strokeWidth={3} />
-                  {feature}
+                {/* Only the lines that differ between plans. */}
+                <ul className="mt-4 flex flex-col gap-2">
+                  {tier.lines.filter((l) => l.included).slice(0, 2).map((line) => (
+                    <li key={line.text} className="flex gap-2 text-[12.5px] text-gray-300 leading-snug">
+                      <Check className="mt-[3px] w-3.5 h-3.5 flex-shrink-0 text-brand-blue-light" strokeWidth={3} />
+                      {line.text}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+
+          {/*
+            What every plan contains, once. Same six outcomes as /pricing,
+            from the same module, so the two pages cannot drift.
+          */}
+          <div className="mt-5 rounded-2xl border border-white/[0.07] bg-brand-surface p-5 sm:p-6">
+            <p className="text-[11px] uppercase tracking-[0.14em] text-gray-400 mb-4">
+              In every plan
+            </p>
+            <ul className="grid gap-x-8 gap-y-2.5 sm:grid-cols-2">
+              {IN_EVERY_PLAN.map((item) => (
+                <li key={item} className="flex gap-2.5 text-[13px] text-gray-300 leading-relaxed">
+                  <Check className="mt-[3px] w-3.5 h-3.5 flex-shrink-0 text-brand-blue-light" strokeWidth={2.5} />
+                  {item}
                 </li>
               ))}
             </ul>
+            <p className="mt-4 text-[12px] text-gray-500 leading-relaxed">{ALSO_INCLUDED}</p>
+          </div>
 
+          <div className="mt-7 flex flex-col items-center gap-3">
             {launched ? (
-              <Link
-                to="/auth?mode=signup"
-                className="w-full inline-flex items-center justify-center gap-2 px-7 py-3.5
-                  rounded-full bg-white text-black text-[14px] font-medium hover:bg-gray-200 transition-colors"
-              >
-                Start journaling
-                <ArrowRight className="w-4 h-4" />
-              </Link>
+              <>
+                <Link
+                  to="/auth?mode=signup"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5
+                    rounded-full bg-white text-black text-[14px] font-medium hover:bg-gray-200 transition-colors"
+                >
+                  Start journaling
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+                <p className="text-[12px] text-gray-500">
+                  3 days free &middot; Cancel in two clicks
+                </p>
+                <Link
+                  to="/pricing"
+                  className="text-[13px] text-gray-500 hover:text-white transition-colors underline underline-offset-[3px] decoration-white/20 hover:decoration-white/50"
+                >
+                  Full plan comparison
+                </Link>
+              </>
             ) : (
               <SignupOrWaitlist
                 preLaunchFootnote={
@@ -1045,7 +1208,7 @@ export default function Sales() {
               },
               {
                 q: 'Can I connect my broker?',
-                a: 'Right now you import a CSV from your broker or add trades as you go. Direct MT4 and MT5 sync lands in the next couple of weeks, and it is read-only when it does \u2014 TradeX will see your trade history and nothing else. It can never place, close or modify a trade, and it never touches your money.',
+                a: 'Yes. MT4 and MT5 sync is live \u2014 connect the account once and your closed trades arrive in the journal on their own, usually within a few minutes. It is read-only: TradeX sees your trade history and nothing else. It can never place, close or modify a trade, and it never touches your money. You can still import a CSV or add trades by hand if you would rather.',
               },
               {
                 q: 'How is this different from a spreadsheet?',
@@ -1053,7 +1216,7 @@ export default function Sales() {
               },
               {
                 q: 'I have tried journals before and quit. Why is this different?',
-                a: 'Two reasons. The quitting is the problem we built around \u2014 journals do not fail on features, they fail at 4pm when typing up a trade is the last thing you want to do. And every other journal shows you your P&L. TradeX records how you felt going in and matches it against what happened, because seeing that you lost and seeing why you lost are different things.',
+                a: 'Because quitting is not really an effort problem. People do not stop journaling \u2014 they stop logging the bad days. Writing down the trade you would rather forget means admitting what you did, so the trades most worth reviewing are the ones that never make it in, and the journal ends up with a hole exactly where the lesson was. TradeX asks you to talk instead of type, and Nova reads the entries back to you, so reviewing is not something you have to sit and do to yourself. It also records how you felt going in and matches it against what happened, because seeing that you lost and seeing why you lost are different things.',
               },
               {
                 /*
@@ -1065,7 +1228,7 @@ export default function Sales() {
               },
               {
                 q: 'What if it is not for me?',
-                a: 'Give it two proper weeks. If you are still not journaling, or it has not shown you something about how you trade that you did not already know, ask for your money back. Cancelling is separate and needs no email at all \u2014 two clicks in Settings, any time.',
+                a: 'Take the three days and find out. Talk a few trades through, let Nova read them back, and see whether you actually keep doing it \u2014 that is the only question that matters, and it answers itself fast. Cancel inside the three days in two clicks and you are never charged.',
               },
             ].map((item) => (
               <details
@@ -1215,7 +1378,7 @@ export default function Sales() {
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <p className="text-[11.5px] text-gray-500">
-                14-day money back guarantee &middot; Cancel anytime
+                3 days free &middot; Cancel in two clicks
               </p>
             </div>
           ) : (

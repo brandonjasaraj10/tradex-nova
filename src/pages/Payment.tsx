@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { loadStripe } from '@stripe/stripe-js';
+import { loadStripe, type StripeEmbeddedCheckout } from '@stripe/stripe-js';
 import { Shield, CheckCircle2, Lock, AlertCircle, ArrowLeft, Zap, Crown, Gift, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import NOVAScore from '../components/shared/NOVAScore';
 import { TickList } from '../components/marketing/blocks';
+import { TIERS } from '../lib/pricingTiers';
 import { Frame } from '../components/marketing/product';
 import { EXAMPLE_SCORE } from '../components/marketing/exampleScore';
 import { useAuth } from '../lib/auth';
@@ -27,10 +28,15 @@ import PaymentFailedGate from '../components/billing/PaymentFailedGate';
   at your own trades. Grouping them loses nothing a buyer needed and stops
   the list arguing with itself about how many things this product does.
 
-  What is NOT dropped is the detail underneath. "Up to 5 accounts" and "CSV
-  import" are facts somebody comparing products will look for, so they stay
-  - as one quiet line rather than four bullets competing with the six that
-  do the selling.
+  What is NOT dropped is the detail underneath - the facts somebody
+  comparing products looks for - as one quiet line rather than four bullets
+  competing with the six that do the selling.
+
+  "Up to 5 accounts" used to sit in that line and had to go. It is left over
+  from the single-plan era and, now that the tier columns are directly above
+  it, it flatly contradicts them: Starter says one account synced and
+  unlimited by hand, and then this said five. A comparison shopper reading
+  both in the same glance is exactly who that would lose.
 */
 const INCLUDED = [
   'Talk through a trade \u2014 it writes itself up',
@@ -42,7 +48,7 @@ const INCLUDED = [
 ];
 
 /* The specifics a comparison shopper checks, kept but not shouted. */
-const ALSO_INCLUDED = 'Unlimited trades \u00b7 Up to 5 accounts \u00b7 CSV import \u00b7 Notes';
+const ALSO_INCLUDED = 'Unlimited trades \u00b7 Unlimited manual accounts \u00b7 CSV import \u00b7 Notes';
 
 const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
 const stripeMonthlyPriceId = import.meta.env.VITE_STRIPE_PRICE_ID;
@@ -51,7 +57,114 @@ const stripeFounderMonthlyPriceId = import.meta.env.VITE_STRIPE_FOUNDER_PRICE_ID
 const stripeFounderAnnualPriceId = import.meta.env.VITE_STRIPE_FOUNDER_ANNUAL_PRICE_ID;
 const stripePromise = stripePublicKey ? loadStripe(stripePublicKey) : null;
 
+/* Monthly or annual - the billing interval, and the founder view's two cards. */
 type PlanType = 'monthly' | 'annual';
+
+/* Which plan, for everyone who is not a founding member. */
+type TierId = 'starter' | 'pro' | 'elite';
+
+/* Looked up by the display name, which is what TIERS is keyed on. */
+const tierById = (name: string) => TIERS.find((t) => t.name === name);
+
+/*
+  A row in the chooser is either a tier or, for founders, a billing interval,
+  so the id the list is keyed on has to be able to be either.
+*/
+type SelectionId = PlanType | TierId;
+
+/*
+  Six prices: three tiers, monthly and annual each.
+
+  The ids now live in pricingTiers.ts beside the copy they sell, because the
+  price a customer reads and the price they are charged should come out of
+  one file. They are public identifiers - they ship in this bundle whatever
+  we do - so keeping them in six environment variables bought nothing except
+  a way for one tier's checkout to break silently when a variable went
+  missing on a deploy.
+
+  An environment variable still wins if it is set, which is what makes a test
+  price or a one-off promotion possible without a code change.
+*/
+const TIER_PRICE_IDS: Record<TierId, Record<PlanType, string | undefined>> = {
+  starter: {
+    monthly: import.meta.env.VITE_STRIPE_STARTER_PRICE_ID ?? tierById('Starter')?.priceIds.monthly,
+    annual: import.meta.env.VITE_STRIPE_STARTER_ANNUAL_PRICE_ID ?? tierById('Starter')?.priceIds.annual,
+  },
+  pro: {
+    monthly: import.meta.env.VITE_STRIPE_PRO_PRICE_ID ?? tierById('Pro')?.priceIds.monthly,
+    annual: import.meta.env.VITE_STRIPE_PRO_ANNUAL_PRICE_ID ?? tierById('Pro')?.priceIds.annual,
+  },
+  elite: {
+    monthly: import.meta.env.VITE_STRIPE_ELITE_PRICE_ID ?? tierById('Elite')?.priceIds.monthly,
+    annual: import.meta.env.VITE_STRIPE_ELITE_ANNUAL_PRICE_ID ?? tierById('Elite')?.priceIds.annual,
+  },
+};
+
+/*
+  Annual is ten months for twelve, which is the same "2 months free" the
+  single plan already offered - keeping the discount identical across every
+  tier means nobody has to work out whether the deal got worse as they moved
+  up.
+
+  Monthly figure first because that is what people compare against rivals;
+  the annual total is stated underneath rather than hidden, since a plan that
+  advertises $124.99 and charges $1,499.90 is the thing that generates
+  chargebacks.
+*/
+const TIER_CATALOGUE: {
+  id: TierId;
+  name: string;
+  monthly: string;
+  annualPerMonth: string;
+  annualTotal: string;
+  /*
+    The whole tier in one line, always on screen.
+
+    This is the fix for a paywall that showed three prices and no reason to
+    prefer any of them - somebody was being asked to choose between $29.99
+    and $149.99 with the difference stated nowhere. A scannable comparison
+    is the single most consistent addition among paywalls that convert,
+    because it answers "what do I actually get" before it gets asked.
+  */
+  summary: string;
+  features: string[];
+  popular?: boolean;
+}[] = TIERS.map((tier) => {
+  /*
+    Derived from TIERS rather than written again here.
+
+    This array used to be a second, hand-kept copy, and it had already
+    drifted exactly as pricingTiers.ts warned it would: the paywall was
+    still offering Pro at $59.99 with three accounts and Elite at $149.99
+    with six, still promising a daily-sync tier that no longer exists, and
+    still advertising "first on every new platform" - which was never true,
+    since every plan gets a new platform on the same day. Somebody comparing
+    the paywall against /pricing would have found four disagreements.
+
+    A price that lives in two files eventually disagrees with itself, and on
+    a payment screen that disagreement is a chargeback.
+  */
+  const monthlyValue = Number(tier.price.replace(/[^0-9.]/g, ''));
+  const annualTotalValue = monthlyValue * 10;
+  const money = (n: number) =>
+    `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  return {
+    id: tier.name.toLowerCase() as TierId,
+    name: tier.name,
+    monthly: tier.price,
+    /*
+      Annual is ten months for twelve, so the per-month figure is the annual
+      total spread back over twelve - not the monthly price with a discount
+      bolted on. Rounded to the cent Stripe will actually charge.
+    */
+    annualPerMonth: money(Math.round((annualTotalValue / 12) * 100) / 100),
+    annualTotal: `${money(annualTotalValue)} billed annually`,
+    summary: tier.who,
+    features: tier.lines.filter((l) => l.included).map((l) => l.text),
+    popular: tier.featured,
+  };
+});
 
 interface PaymentProps {
   onSubscriptionComplete?: () => void;
@@ -62,11 +175,24 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
   const { pastDue } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  /*
+    The Checkout Session's client secret, set once the user has chosen and
+    pressed the button. Non-null means the embedded form is on screen, which
+    is also what the mounting effect below keys off.
+  */
+  const [checkoutSecret, setCheckoutSecret] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [stripeConfigured, setStripeConfigured] = useState(false);
   const [manualLoading, setManualLoading] = useState(false);
   const [success, setSuccess] = useState('');
-  const [selectedPlan, setSelectedPlan] = useState<PlanType>('annual');
+  /*
+    Defaults to Pro rather than the cheapest row. A chooser that opens on the
+    entry plan asks people to talk themselves up; opening on the one most
+    will want asks them to confirm.
+  */
+  const [selectedPlan, setSelectedPlan] = useState<SelectionId>('pro');
+  /* Named billing, not interval - setInterval would shadow the global. */
+  const [billing, setBilling] = useState<PlanType>('annual');
   const [isFounder, setIsFounder] = useState(false);
 
   useEffect(() => {
@@ -91,6 +217,13 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
 
       if (!cancelled && !rpcError && data === true) {
         setIsFounder(true);
+        /*
+          A founder's rows are monthly and annual, not Starter/Pro/Elite, so
+          the default tier selection is meaningless to them. Moved onto the
+          annual card - which is the one their view highlights - rather than
+          left pointing at a row that is not on their screen.
+        */
+        setSelectedPlan('annual');
       }
     }
 
@@ -98,18 +231,89 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
     return () => { cancelled = true; };
   }, []);
 
+  /*
+    Mount Stripe's embedded checkout once a session exists.
+
+    Kept in an effect rather than done inline in the click handler because
+    the element it mounts into does not exist until React has rendered the
+    checkout view - setting the secret is what puts that element on screen,
+    and this runs after.
+
+    The destroyed flag matters: initEmbeddedCheckout is async, and a user who
+    presses back before it resolves would otherwise have an instance mounted
+    into a element that is no longer there. Stripe's own instance is torn
+    down on the way out so a second attempt gets a clean one rather than
+    "you can only create one Embedded Checkout".
+  */
+  useEffect(() => {
+    if (!checkoutSecret) return;
+
+    let destroyed = false;
+    let instance: StripeEmbeddedCheckout | null = null;
+
+    (async () => {
+      const stripe = await stripePromise;
+      if (!stripe || destroyed) return;
+
+      const checkout = await stripe.initEmbeddedCheckout({ clientSecret: checkoutSecret });
+      if (destroyed) {
+        checkout.destroy();
+        return;
+      }
+      instance = checkout;
+      checkout.mount('#tradex-embedded-checkout');
+    })().catch((err) => {
+      console.error('Embedded checkout failed to mount:', err);
+      if (destroyed) return;
+      /*
+        Back to the plan chooser rather than a blank panel. The message names
+        the card form specifically, because "something went wrong" on a
+        payment screen reads as "your card was charged, maybe".
+      */
+      setCheckoutSecret(null);
+      setError('The payment form did not load. Please try again.');
+    });
+
+    return () => {
+      destroyed = true;
+      instance?.destroy();
+    };
+  }, [checkoutSecret]);
+
   const handleSubscribe = async () => {
     if (!stripeConfigured) {
       setError('Stripe is not configured. Please contact support.');
       return;
     }
 
-    const priceId = selectedPlan === 'annual'
-      ? (isFounder && stripeFounderAnnualPriceId ? stripeFounderAnnualPriceId : stripeAnnualPriceId)
-      : (isFounder && stripeFounderMonthlyPriceId ? stripeFounderMonthlyPriceId : stripeMonthlyPriceId);
+    /*
+      Two different shapes of choice, deliberately kept apart.
+
+      A founding member is buying the plan they were promised at the rate
+      they were promised, so their selection is still just monthly or annual
+      and resolves exactly as it always did. Nothing about tiers reaches
+      them, which is the whole point of grandfathering.
+
+      Everybody else is choosing a tier, and the interval is a separate
+      toggle, so the price is a lookup on both.
+    */
+    const priceId = isFounder
+      ? (selectedPlan === 'annual'
+          ? (stripeFounderAnnualPriceId ?? stripeAnnualPriceId)
+          : (stripeFounderMonthlyPriceId ?? stripeMonthlyPriceId))
+      : TIER_PRICE_IDS[selectedPlan as TierId]?.[billing];
 
     if (!priceId) {
-      setError('Selected plan is not available. Please try another option.');
+      /*
+        The tier prices do not exist in Stripe yet. Saying so is better than
+        the generic "try another option", which would send somebody round
+        the three tiers pressing a button that cannot work for any of them.
+      */
+      setError(
+        isFounder
+          ? 'Selected plan is not available. Please try another option.'
+          : 'This plan is not open for signups yet. Please contact support and we will sort it out.',
+      );
       return;
     }
 
@@ -137,6 +341,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
         },
         body: JSON.stringify({
           priceId,
+          embedded: true,
         }),
       });
 
@@ -145,7 +350,26 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
         throw new Error(errorData.error || 'Failed to create checkout session');
       }
 
-      const { sessionId } = await response.json();
+      const { sessionId, clientSecret } = await response.json();
+
+      /*
+        Keep the card form on our own page.
+
+        Same Checkout Session as the redirect - the fields are still Stripe's
+        iframe, so no card number ever reaches us and PCI scope does not
+        move. What changes is that somebody deciding whether to pay is not
+        thrown onto a different domain mid-decision, which is the point in
+        the funnel where people reconsider.
+
+        If the server gives us no clientSecret - an older deploy, or embedded
+        refused for any reason - fall back to the redirect rather than
+        showing an empty box. A checkout that works somewhere else beats one
+        that works nowhere.
+      */
+      if (clientSecret) {
+        setCheckoutSecret(clientSecret);
+        return;
+      }
 
       const { error: stripeError } = await stripe.redirectToCheckout({
         sessionId,
@@ -258,36 +482,29 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
           popular: true,
         },
       ]
-    : [
-        {
-          id: 'monthly' as PlanType,
-          name: 'Monthly',
-          price: '$24.99',
-          period: '/month',
-          description: 'Perfect for getting started',
-          icon: Zap,
-          features: ['All Pro features', 'Cancel anytime'],
-          highlight: false,
-          savings: null,
-          popular: false,
-        },
-        {
-          id: 'annual' as PlanType,
-          name: 'Annual',
-          price: '$20.83',
-          period: '/month',
-          // Struck against the monthly plan's own price, so the saving being
-          // shown is exactly what switching to annual is worth.
-          originalPrice: '$24.99',
-          description: 'Best value for serious traders',
-          icon: Crown,
-          features: ['All Pro features', '2 months free vs monthly', 'Priority support'],
-          highlight: true,
-          savings: '2 months free',
-          billedAs: '$249.90 billed annually',
-          popular: true,
-        },
-      ];
+    : /*
+        Three tiers, priced against whichever interval is selected. Built
+        from the same catalogue the figures live in, so the chooser and the
+        button underneath can never quote different money.
+
+        The monthly price is struck through on annual rows rather than the
+        saving being summarised in words: "$59.99 -> $49.99" is a comparison
+        somebody can check, where "save 17%" is one they have to trust.
+      */
+      TIER_CATALOGUE.map((tier) => ({
+        id: tier.id as SelectionId,
+        name: tier.name,
+        price: billing === 'annual' ? tier.annualPerMonth : tier.monthly,
+        period: '/month',
+        originalPrice: billing === 'annual' ? tier.monthly : undefined,
+        summary: tier.summary,
+        icon: tier.id === 'elite' ? Crown : Zap,
+        features: tier.features,
+        highlight: !!tier.popular,
+        savings: billing === 'annual' ? '2 months free' : null,
+        billedAs: billing === 'annual' ? tier.annualTotal : undefined,
+        popular: !!tier.popular,
+      }));
 
   /*
     What the trial actually charges, for whichever plan is selected. Annual
@@ -295,6 +512,13 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
     the timeline has to quote billedAs and not the headline price - saying
     "$20.83 will be charged" would be untrue.
   */
+  /*
+    Whether this purchase is annual, from whichever control actually decides
+    it: a founder picks an interval as their plan, everyone else picks a tier
+    and sets the interval on the toggle. Read from the wrong one and an
+    annual charge gets labelled "/month" on the button that takes the money.
+  */
+  const isAnnual = isFounder ? selectedPlan === 'annual' : billing === 'annual';
   const activePlan = plans.find((pl) => pl.id === selectedPlan) ?? plans[0];
   const activeBilledAs = 'billedAs' in activePlan ? activePlan.billedAs : undefined;
   const chargeAmount = activeBilledAs ? activeBilledAs.split(' ')[0] : activePlan.price;
@@ -322,6 +546,45 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
 
     pb-44 below sm clears the CTA bar pinned to the bottom there.
   */
+  /*
+    The checkout, on our own page.
+
+    A full replacement rather than a modal over the plan chooser: someone
+    entering card details should have one thing in front of them, and a
+    dimmed pricing table behind glass is a second thing. The way back is a
+    single quiet control, because a prominent escape next to a payment form
+    is an invitation to take it.
+
+    Stripe's iframe brings its own light surface, so the panel around it is
+    white on purpose - a black gutter around a white form reads as a seam.
+  */
+  if (checkoutSecret) {
+    return (
+      <div className="min-h-screen bg-black text-white">
+        <div className="max-w-2xl mx-auto px-5 sm:px-8 pt-6 sm:pt-12 pb-20">
+          <button
+            type="button"
+            onClick={() => setCheckoutSecret(null)}
+            className="inline-flex items-center gap-2 text-[13.5px] text-gray-400
+              hover:text-white transition-colors mb-8"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to plans
+          </button>
+
+          <div className="rounded-2xl overflow-hidden bg-white">
+            <div id="tradex-embedded-checkout" />
+          </div>
+
+          <p className="mt-6 text-center text-[12.5px] text-gray-500">
+            <Lock className="w-3.5 h-3.5 inline-block mr-1.5 -mt-0.5" />
+            Payments handled by Stripe. Your card details never touch our servers.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Wider from lg up so the two columns have room to be columns. At
@@ -362,8 +625,19 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
         >
-          <div className="text-center mb-8 sm:mb-10">
-            <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
+          {/*
+            Tighter on a phone, unchanged on a desktop.
+
+            Measured at 375x812: the header ran to 470px before the first
+            price, so the third plan and its price sat below the fold on the
+            screen where somebody chooses between them. A paywall does best
+            when the choice fits on one screen, and 58% of this traffic is a
+            phone. Every reduction below is inside a mobile breakpoint - the
+            desktop layout had the room and keeps it.
+          */}
+          <div className="text-center mb-5 sm:mb-10">
+            <p className="hidden sm:block text-[10px] sm:text-[11px] tracking-[0.18em]
+              uppercase text-gray-500 mb-2.5 sm:mb-4">
               {isFounder ? 'Founding member pricing' : 'Choose your plan'}
             </p>
             {/*
@@ -379,17 +653,30 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
 
               It is now the same headline as /pricing, word for word, so the
               page someone compared on and the page they pay on say the same
-              thing.
+              thing. A founding member is still buying the single plan they
+              were promised, so they keep the old headline - for them it is
+              still true, and "pick how many accounts" would be offering a
+              choice their view does not contain.
             */}
-            <h1 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em]
-              text-white text-balance">
-              One plan. Everything in it.
+            <h1 className="text-[26px] sm:text-5xl leading-[1.1] sm:leading-[1.08] font-semibold
+              tracking-[-0.035em] text-white text-balance">
+              {isFounder ? 'One plan. Everything in it.' : 'Pick how many accounts you run.'}
             </h1>
-            <p className="mt-4 text-[14.5px] sm:text-base leading-relaxed text-gray-400
+            <p className="mt-2.5 sm:mt-4 text-[13.5px] sm:text-base leading-relaxed text-gray-400
               max-w-sm mx-auto text-balance">
               {isFounder
                 ? 'Your founding member rate is applied below, and it never rises.'
-                : 'No tiers, no add-ons, no trade limits. Annual just costs less.'}
+                : (
+                  <>
+                    <span className="sm:hidden">
+                      Every plan has the whole product. Only the syncing changes.
+                    </span>
+                    <span className="hidden sm:inline">
+                      Every plan has the whole product in it. What changes is how many
+                      accounts sync themselves.
+                    </span>
+                  </>
+                )}
             </p>
           </div>
 
@@ -399,15 +686,15 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
             padlock - so the row said the same thing twice on the screen where
             someone decides to pay.
           */}
-          <ul className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 mb-8 sm:mb-10">
+          <ul className="flex flex-wrap items-center justify-center gap-x-3.5 sm:gap-x-5 gap-y-2 mb-5 sm:mb-10">
             {[
-              [Shield, '14-day money back'],
+              [Shield, '3 days free'],
               [Lock, 'Card handled by Stripe'],
               [Gift, 'Cancel in two clicks'],
             ].map(([Icon, label]) => {
               const I = Icon as typeof Shield;
               return (
-                <li key={label as string} className="inline-flex items-center gap-1.5 text-[12.5px] text-gray-400">
+                <li key={label as string} className="inline-flex items-center gap-1.5 text-[11.5px] sm:text-[12.5px] text-gray-400">
                   <I className="w-3.5 h-3.5 text-brand-blue-light flex-shrink-0" />
                   {label as string}
                 </li>
@@ -448,7 +735,53 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
           {/* The plans. Two rows, not two tall cards - the choice here is
               monthly against annual, which is one decision, and a card each
               made it look like two products. */}
-          <div className="flex flex-col gap-3 mb-8">
+          {/*
+            Monthly against annual, once, above the tiers - not repeated as a
+            pair of cards inside every tier, which would turn one decision
+            into six. Founders do not see it: their two rows already are the
+            interval choice.
+
+            Annual is preselected. It is the better deal in both directions
+            and saying "2 months free" beside it is the argument, but the
+            monthly option sits right there at the same size rather than
+            being buried, because a toggle that hides the cheaper commitment
+            is the kind people notice afterwards.
+          */}
+          {!isFounder && (
+            <div className="flex justify-center mb-7">
+              <div className="inline-flex rounded-full border border-white/10 bg-brand-surface p-1">
+                {([
+                  { id: 'monthly' as PlanType, label: 'Monthly' },
+                  { id: 'annual' as PlanType, label: 'Annual' },
+                ]).map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => setBilling(option.id)}
+                    aria-pressed={billing === option.id}
+                    className={`px-5 py-2 rounded-full text-[13px] font-medium transition-colors ${
+                      billing === option.id
+                        ? 'bg-white text-black'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    {option.label}
+                    {option.id === 'annual' && (
+                      <span
+                        className={`ml-2 text-[11px] ${
+                          billing === 'annual' ? 'text-black/60' : 'text-brand-blue-light'
+                        }`}
+                      >
+                        2 months free
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="flex flex-col gap-2.5 sm:gap-3 mb-8">
             {plans.map((plan) => {
               const isSelected = selectedPlan === plan.id;
               return (
@@ -457,7 +790,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
                   type="button"
                   onClick={() => setSelectedPlan(plan.id)}
                   aria-pressed={isSelected}
-                  className={`w-full text-left rounded-2xl p-4 sm:p-5 transition-colors ${
+                  className={`w-full text-left rounded-2xl p-3.5 sm:p-5 transition-colors ${
                     isSelected
                       ? 'border border-brand-blue-light/40 bg-brand-blue/[0.07]'
                       : 'border border-white/[0.07] bg-brand-surface hover:border-white/20'
@@ -485,9 +818,10 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
                             </span>
                           )}
                         </div>
-                        {plan.savings && (
+                        {plan.savings && isFounder && (
                           <p className="text-[12px] text-gray-500 mt-0.5">{plan.savings}</p>
                         )}
+
                       </div>
                     </div>
 
@@ -508,6 +842,47 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
                       )}
                     </div>
                   </div>
+
+                  {/*
+                    The summary gets the whole width, under the name and the
+                    price rather than beside them.
+
+                    Sharing that row with the price is what it did first, and
+                    at 375px "1 account - synced once a day" broke across
+                    three lines against the number, which is the width a
+                    phone actually has once a price in 22px type has taken
+                    its half. Indented to clear the radio so it reads as
+                    belonging to the name above it.
+                  */}
+                  {'summary' in plan && plan.summary && (
+                    <p className="mt-2 pl-[32px] text-[12.5px] text-gray-400 leading-relaxed">
+                      {plan.summary}
+                    </p>
+                  )}
+
+                  {/*
+                    Detail for the selected row only.
+
+                    Printing every feature of every tier turns a paywall into
+                    a spreadsheet and pushes the button that takes the money
+                    below the fold on a phone - and these pages do best when
+                    they fit on one screen. The summary line above is what
+                    the comparison actually needs; this is for the one plan
+                    somebody has landed on.
+                  */}
+                  {isSelected && plan.features.length > 0 && (
+                    <ul className="mt-3 pt-3 sm:mt-4 sm:pt-4 border-t border-white/[0.07] flex flex-col gap-1.5 sm:gap-2">
+                      {plan.features.map((feature) => (
+                        <li key={feature} className="flex gap-2.5 text-[12.5px] text-gray-300 leading-relaxed">
+                          <CheckCircle2
+                            className="mt-[2px] w-3.5 h-3.5 flex-shrink-0 text-brand-blue-light"
+                            strokeWidth={2}
+                          />
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </button>
               );
             })}
@@ -561,7 +936,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
             >
               {loading
                 ? 'Processing…'
-                : `Start journaling — ${chargeAmount}${selectedPlan === 'annual' ? '/year' : '/month'}`}
+                : `Start journaling — ${chargeAmount}${isAnnual ? '/year' : '/month'}`}
             </button>
           ) : (
             <>
@@ -581,8 +956,29 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
             </>
           )}
 
+          {/*
+            The hold, said before it happens.
+
+            The card is authorised for the full plan price and released a
+            moment later, which is what stops a dead card becoming a failed
+            charge on day three. It still shows as pending on a statement for
+            a few days, and an unexplained pending charge the size of the
+            subscription is how you earn a chargeback from somebody who was
+            about to become a customer. Cheaper to say it here.
+
+            "Temporary hold" rather than a description of what we do to the
+            card. It is the phrase banks, hotels and fuel pumps already use,
+            so most people have met it before and do not need it explained -
+            which is the whole job of a line this small. The first version
+            said the same thing in thirty words across two sentences and read
+            like terms nobody finishes.
+          */}
           <p className="text-center text-[11.5px] text-gray-500">
-            14-day money back guarantee &middot; Cancel anytime
+            3 days free &middot; Cancel in two clicks
+          </p>
+          <p className="text-center text-[11px] text-gray-600 leading-relaxed mt-2 max-w-sm mx-auto">
+            Nothing is charged today. Your bank may show a temporary hold for the plan
+            amount, released straight away.
           </p>
         </div>
 
@@ -594,66 +990,40 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
             <div className="mt-8 lg:mt-0">
           {/* ---------------------------------------------------------- */}
           {/*
-            The guarantee, given real weight.
+            The trial, given real weight.
 
-            It used to be nine grey words under the button. It is the single
-            most important thing on this screen: TradeX has no free trial -
-            deliberately, the first cohort converted 1 in 11 and half of them
-            never logged a trade - so this IS the trial, and it is the only
-            thing standing between a stranger and their card.
+            This block used to carry the 14-day money back guarantee, on the
+            reasoning that TradeX had no trial and so the guarantee WAS the
+            trial. The trial is back, and running both was the wrong answer:
+            research puts a card-required auto-converting trial at 35-55%
+            conversion against a guarantee's roughly 21% lift, so if only one
+            can be the headline it is this one. Keeping both would also have
+            meant three free days plus fourteen refundable ones for anyone who
+            wanted them.
 
-            Worth the space on the evidence: guarantee messaging on a pricing
-            page lifts conversion around 21% (Conversion Rate Experts'
-            meta-analysis), and refunds do not rise proportionally - one
-            measured case doubled conversion against a 3% rise in refunds,
-            for about 6.5% more revenue net of them.
-
-            "Both plans" is stated plainly because it is the part that is
-            genuinely unusual here. The nearest competitor's equivalent
-            guarantee applies to annual billing only, so paying monthly with
-            them buys no way out at all. No competitor is named - that is a
-            claim that would need checking and maintaining - but the fact
-            about TradeX is worth saying out loud.
+            The two objections worth answering are the ones a sceptical trader
+            actually has: am I going to get charged without noticing, and what
+            is this hold on my card. Both are answered here rather than left
+            to the FAQ, because this is the screen where the card comes out.
           */}
           <div className="rounded-2xl border border-brand-blue-light/25 bg-brand-blue/[0.06] p-5 sm:p-6 mb-8">
             <div className="flex items-start gap-3.5">
               <Shield className="w-5 h-5 text-brand-blue-light flex-shrink-0 mt-0.5" />
               <div>
                 <h2 className="text-[17px] sm:text-[19px] font-semibold tracking-[-0.02em] text-white mb-2">
-                  Fourteen days to change your mind
+                  Three days, then you decide
                 </h2>
-                {/*
-                  The same words the abandoned-signup email uses, deliberately.
-                  Somebody who gets that email and clicks through should land on
-                  the promise they were just made, not a reworded cousin of it.
-
-                  It also no longer rests on Nova. The old version - "see
-                  whether it tells you something you did not already know" -
-                  staked the whole guarantee on one feature. TradeX makes two
-                  promises: that you keep journaling at all, which is the reason
-                  it was built, and that it shows you something. The guarantee
-                  should fail if either does.
-                */}
                 <p className="text-[13.5px] sm:text-[14px] leading-relaxed text-gray-300">
-                  Give it two proper weeks. If you are still not journaling, or
-                  it has not shown you something about how you trade that you did
-                  not already know, ask for your money back. No questions, no
-                  retention call, no form asking why.
+                  Talk a few trades through and see whether you actually keep doing it. That is
+                  the only question worth answering, and it answers itself fast. Cancel inside
+                  the three days and you are never charged a penny.
                 </p>
-                {/*
-                  Cancelling and refunding are two different things and the
-                  site was blurring them. Cancelling really is two clicks in
-                  Settings with no email. A refund has no self-serve button,
-                  so it genuinely needs one message - which is worth stating
-                  plainly here rather than letting someone discover it after
-                  they have read "no email" somewhere else.
-                */}
                 <ul className="mt-4 flex flex-col gap-2">
                   {[
-                    'Applies to monthly as well as annual, not just the yearly plan',
-                    'Cancelling is two clicks in Settings — no email, any time',
-                    'For a refund, one email to us is the only step',
-                    'Your journal stays yours — export it or delete it whenever',
+                    'Nothing is charged today \u2014 day 3 is the first payment',
+                    'Cancelling is two clicks in Settings \u2014 no email, any time',
+                    'Syncing starts the moment you subscribe, not when the trial ends',
+                    'Your journal stays yours \u2014 export it or delete it whenever',
                   ].map((item) => (
                     <li key={item} className="flex items-start gap-2.5 text-[13px] leading-relaxed text-gray-400">
                       <CheckCircle2 className="w-3.5 h-3.5 text-brand-blue-light flex-shrink-0 mt-[3px]" />

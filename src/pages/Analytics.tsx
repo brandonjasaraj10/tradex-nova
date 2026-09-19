@@ -150,9 +150,10 @@ export default function Analytics() {
           .from('trades')
           .select('pnl, entry_date, exit_date, created_at')
           .eq('user_id', user.id)
-          .gte('entry_date', dateRange.startDate.toISOString())
-          .lte('entry_date', dateRange.endDate.toISOString())
-          .order('entry_date', { ascending: false })
+          /* The day a trade closed - see TRADE_DAY in services/trades.ts. */
+          .gte('exit_date', dateRange.startDate.toISOString())
+          .lte('exit_date', dateRange.endDate.toISOString())
+          .order('exit_date', { ascending: false })
           .limit(100);
 
         let scoreJournalQuery = supabase

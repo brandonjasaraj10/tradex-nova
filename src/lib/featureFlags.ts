@@ -28,3 +28,22 @@
   Set to true to bring it back - no other change needed.
 */
 export const NOVA_VOICE_OUTPUT_ENABLED = false;
+
+/*
+  Automatic MetaTrader account syncing - the account number / server /
+  investor password form, and everything behind it.
+
+  Off until three things are true: the provisioning edge function exists, a
+  MetaApi token is in the Vault, and a real account has synced end to end.
+  Until then the fields are built and testable locally but must not reach
+  users, because a connect form that silently fails is worse than no connect
+  form at all.
+
+  Note for whoever turns this on: the investor password is passed straight
+  through to MetaApi and never stored by us. If you ever find yourself
+  writing it to broker_connections, stop - that is the one thing this design
+  exists to avoid.
+
+  Set to true once syncing genuinely works.
+*/
+export const BROKER_SYNC_ENABLED = true;

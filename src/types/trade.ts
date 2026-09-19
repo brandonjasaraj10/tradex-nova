@@ -6,6 +6,15 @@ export interface Trade {
   entry_price: number;
   exit_price: number;
   quantity: number;
+  /*
+    What `quantity` counts: 'lots', 'shares', 'contracts'.
+
+    Null when nobody knows - a hand-typed or CSV-imported trade could be any
+    of them. The display shows the bare number in that case, because the UI
+    used to say "shares" for everything, so a forex trader's 33.33 lots read
+    as 33.33 shares - wrong by about a hundred thousand to one.
+  */
+  quantity_unit?: string | null;
   direction: 'LONG' | 'SHORT';
   entry_date: string;
   exit_date: string;
@@ -14,6 +23,10 @@ export interface Trade {
   notes?: string;
   tags: string[];
   setup?: string;
+  /* How MetaTrader recorded the close: stop_loss, take_profit, manual,
+     stop_out, expert. Null for manually logged trades and for synced ones
+     whose deal history could not be read. */
+  close_reason?: string | null;
   timeframe?: string;
   screenshot_url?: string;
   created_at: string;

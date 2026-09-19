@@ -18,6 +18,12 @@ export interface BrokerConnection {
   created_at: string;
   metaapi_account_id?: string;
   is_auto_sync_enabled?: boolean;
+  /*
+    Set when the user turned syncing off. The account and every trade on it
+    stay exactly where they are - this only says it has stopped updating
+    itself and is no longer using a sync slot.
+  */
+  sync_paused_at?: string | null;
   starting_balance?: number;
   current_balance?: number;
   currency?: string;
@@ -74,17 +80,41 @@ export class BrokerService {
     }
   }
 
-  async disconnectBroker(connectionId: string): Promise<boolean> {
+  /*
+    Three separate things, deliberately not one.
+
+    Pausing keeps everything and frees a sync slot. Resuming takes a slot
+    back. Deleting destroys the connection and is refused while trades point
+    at it. They used to be a single "disconnect" that deleted, which is how
+    turning off syncing and throwing away an account became the same button.
+  */
+  async pauseSync(connectionId: string): Promise<boolean> {
+    return this.postConnectionAction('/disconnect', connectionId, 'Could not turn syncing off.');
+  }
+
+  async resumeSync(connectionId: string): Promise<boolean> {
+    return this.postConnectionAction('/reconnect', connectionId, 'Could not turn syncing back on.');
+  }
+
+  async deleteConnection(connectionId: string): Promise<boolean> {
+    return this.postConnectionAction('/delete', connectionId, 'Could not delete that account.');
+  }
+
+  private async postConnectionAction(
+    path: string,
+    connectionId: string,
+    fallbackMessage: string,
+  ): Promise<boolean> {
     try {
       const headers = await this.getAuthHeaders();
-      const response = await fetch(`${this.apiUrl}/disconnect`, {
+      const response = await fetch(`${this.apiUrl}${path}`, {
         method: 'POST',
         headers,
         body: JSON.stringify({ connection_id: connectionId }),
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to disconnect');
+      if (!response.ok) throw new Error(data.error || fallbackMessage);
       return data.success === true;
     } catch (error) {
       /*
@@ -92,11 +122,12 @@ export class BrokerService {
 
         Swallowing this into a boolean is what made a blocked delete look
         like nothing happening: the server explains that the account still
-        has trades, that reason died here, and the caller only knew "false".
-        The message is the whole point of the response.
+        has trades, or that every sync slot is in use, and that reason died
+        here while the caller only knew "false". The message is the whole
+        point of the response.
       */
-      console.error('Error disconnecting broker:', error);
-      throw error instanceof Error ? error : new Error('Could not remove that account.');
+      console.error(`Error calling ${path}:`, error);
+      throw error instanceof Error ? error : new Error(fallbackMessage);
     }
   }
 

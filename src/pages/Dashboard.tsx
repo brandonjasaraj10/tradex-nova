@@ -5,6 +5,8 @@ import Card from '../components/shared/Card';
 import Button from '../components/shared/Button';
 import DateRangePicker from '../components/shared/DateRangePicker';
 import AccountSelector from '../components/shared/AccountSelector';
+import OpenPositions from '../components/trades/OpenPositions';
+import { BROKER_SYNC_ENABLED } from '../lib/featureFlags';
 import BalanceCard from '../components/dashboard/BalanceCard';
 import { useAccount } from '../lib/accountContext';
 import { useDateRange } from '../lib/dateRangeContext';
@@ -245,9 +247,13 @@ export default function Dashboard() {
         .from('trades')
         .select('*')
         .eq('user_id', user.id)
-        .gte('entry_date', dateRange.startDate.toISOString())
-        .lte('entry_date', dateRange.endDate.toISOString())
-        .order('entry_date', { ascending: false })
+        /*
+          exit_date: a trade belongs to the day it closed, not the day it
+          opened. See TRADE_DAY in services/trades.ts.
+        */
+        .gte('exit_date', dateRange.startDate.toISOString())
+        .lte('exit_date', dateRange.endDate.toISOString())
+        .order('exit_date', { ascending: false })
         .limit(20);
 
       if (selectedAccount) {
@@ -569,9 +575,13 @@ export default function Dashboard() {
         .from('trades')
         .select('pnl, entry_date, exit_date, created_at')
         .eq('user_id', user.id)
-        .gte('entry_date', dateRange.startDate.toISOString())
-        .lte('entry_date', dateRange.endDate.toISOString())
-        .order('entry_date', { ascending: false })
+        /*
+          exit_date: a trade belongs to the day it closed, not the day it
+          opened. See TRADE_DAY in services/trades.ts.
+        */
+        .gte('exit_date', dateRange.startDate.toISOString())
+        .lte('exit_date', dateRange.endDate.toISOString())
+        .order('exit_date', { ascending: false })
         .limit(100);
 
       if (selectedAccount) {
@@ -1083,6 +1093,30 @@ export default function Dashboard() {
             </div>
           </Card>
         </motion.div>
+
+        {/*
+          Above the calendar, because it is the only thing on this page
+          about right now. Everything below is closed trades, and a trade
+          belongs to the day it closed - so a position held for three weeks
+          appears nowhere until it is exited.
+
+          Draws nothing at all when there is no synced account, or when
+          nothing is open and nothing is wrong.
+        */}
+        {/*
+          Only for an account that actually syncs. Passing a manual or
+          CSV-imported account here asked MetaApi about a connection it has
+          never heard of, and the panel drew "That account isn't set up for
+          syncing" - which is true, and is not news to somebody who added
+          the account by hand. is_synced is already on the account, so the
+          question simply does not need asking.
+        */}
+        {BROKER_SYNC_ENABLED && selectedAccount?.is_synced && (
+          <OpenPositions
+            connectionId={selectedAccount.id}
+            accountName={selectedAccount.account_name ?? null}
+          />
+        )}
 
         {/* Second Section - Calendar and NOVA AI */}
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 mt-6">

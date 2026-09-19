@@ -27,7 +27,8 @@ import {
   JournalFolder,
   JournalEntry,
 } from '../services/journalService';
-import { getTrades } from '../services/trades';
+import { getTrades, updateTradePnl, getTradePnl} from '../services/trades';
+import { closeReasonLabel } from '../utils/closeReason';
 import type { Trade } from '../types/trade';
 import { getUserConfluences, type Confluence } from '../services/confluences';
 import { supabase, getCurrentUser } from '../lib/supabase';
@@ -67,6 +68,38 @@ const FOLDER_ICONS = {
   Folder,
   'file-text': FileText,
 };
+
+/*
+  A trade's size with its unit, when the unit is actually known.
+
+  This used to be hardcoded as "shares", which for a forex account was wrong
+  by roughly a hundred thousand to one - 33.33 lots read as 33.33 shares.
+  MetaTrader reports volume in lots and synced trades now record that; a
+  hand-typed trade could be anything, so it shows the bare number rather than
+  guessing.
+*/
+/*
+  "opened Mar 19" - but only when the trade was opened on a different day
+  from the one it is filed under.
+
+  A trade belongs to the day it closed, which is what a broker statement and
+  a prop firm's daily loss limit both use. That is right, and it is also
+  slightly surprising the first time you see a trade on a day you do not
+  remember taking it, so the day it was actually opened is shown whenever
+  the two differ. Same-day trades say nothing, because there is nothing to
+  explain.
+*/
+const openedOnLabel = (openedIso: string | undefined, filedOnDay: string): string | null => {
+  if (!openedIso) return null;
+  const opened = new Date(openedIso);
+  if (Number.isNaN(opened.getTime())) return null;
+  const openedDay = `${opened.getFullYear()}-${String(opened.getMonth() + 1).padStart(2, '0')}-${String(opened.getDate()).padStart(2, '0')}`;
+  if (openedDay === filedOnDay) return null;
+  return `opened ${opened.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} ${opened.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`;
+};
+
+const formatQuantity = (trade: { quantity: number; quantity_unit?: string | null }) =>
+  trade.quantity_unit ? `${trade.quantity} ${trade.quantity_unit}` : `${trade.quantity}`;
 
 const generateDefaultTitle = (date: string, entryNumber: number) => {
   const [y, m, d] = date.split('-').map(Number);
@@ -110,6 +143,41 @@ export default function Journal() {
   const [novaSessionId, setNovaSessionId] = useState<string | null>(null);
   const novaSessionIdRef = React.useRef<string | null>(null);
   const [recentTrades, setRecentTrades] = useState<Trade[]>([]);
+  /*
+    The P&L that was on the linked trade when this entry was opened.
+
+    Entries created from a synced trade carry no manual_pnl of their own -
+    that field is counted as a logged trade across the whole app, so filling
+    it would count the same trade twice. The figure is read from the trade,
+    and this is what an edit gets compared against on save so an untouched
+    field never writes.
+  */
+  const openedTradePnlRef = React.useRef<number | null>(null);
+
+  /*
+    The day's trades keyed by id, so an entry created from one can show its
+    P&L and size. Derived at render rather than cached in a ref - the ref
+    version of this was a race that came up blank on the instance React kept.
+  */
+  const tradesById = React.useMemo(
+    () => new Map(recentTrades.map((t) => [t.id, t])),
+    [recentTrades],
+  );
+
+  /*
+    Trades the entry list is not already showing.
+
+    Every synced trade gets its own entry, so listing all of them above the
+    entries printed the same day twice in two different styles. What is worth
+    surfacing separately is a trade with no entry - a CSV import, or anything
+    that arrived before this existed.
+  */
+  const unjournaledTrades = React.useMemo(() => {
+    const claimed = new Set(
+      dailyEntries.map((e) => e.trade_id).filter(Boolean) as string[],
+    );
+    return recentTrades.filter((t) => !claimed.has(t.id));
+  }, [recentTrades, dailyEntries]);
   const [dailyPnL, setDailyPnL] = useState<number>(0);
 
   const [folderForm, setFolderForm] = useState({
@@ -524,9 +592,27 @@ export default function Journal() {
         ? form.position_size.trim()
         : null;
 
+      /*
+        For an entry linked to a synced trade the P&L belongs to the trade,
+        so an edit is written there and manual_pnl stays null. Brokers
+        routinely leave commissions and swap out of what they report, so
+        correcting the figure by hand is a normal thing to want - it just has
+        to land on the trade, or the same money is counted twice.
+      */
+      const linkedTradeId = entry?.trade_id ?? null;
+      if (linkedTradeId && parsedManualPnl !== null &&
+          parsedManualPnl !== openedTradePnlRef.current) {
+        await updateTradePnl(linkedTradeId, parsedManualPnl);
+        openedTradePnlRef.current = parsedManualPnl;
+        // Keep the panel above the editor honest without a refetch.
+        setRecentTrades(prev =>
+          prev.map(t => (t.id === linkedTradeId ? { ...t, pnl: parsedManualPnl } : t)),
+        );
+      }
+
       const dataToSave = {
         ...form,
-        manual_pnl: parsedManualPnl,
+        manual_pnl: linkedTradeId ? null : parsedManualPnl,
         position_size: parsedPositionSize,
         direction: form.direction || null,
         entry_date: date,
@@ -718,6 +804,14 @@ export default function Journal() {
   };
 
   const loadEntryForEditing = async (entry: JournalEntry) => {
+    /*
+      Fetched before the form is built, so the field is right the first time
+      it renders rather than filled in by a later effect.
+    */
+    const rawLinkedPnl = entry.trade_id ? await getTradePnl(entry.trade_id) : null;
+    const linkedPnl = rawLinkedPnl != null ? Math.round(rawLinkedPnl * 100) / 100 : null;
+    openedTradePnlRef.current = linkedPnl;
+
     setCurrentEntry(entry);
     currentEntryRef.current = entry;
     setEditingEntryId(entry.id);
@@ -730,7 +824,20 @@ export default function Journal() {
       direction: entry.direction || '',
       trade_duration: entry.trade_duration || '',
       position_size: entry.position_size != null ? String(entry.position_size) : '',
-      manual_pnl: entry.manual_pnl != null ? String(entry.manual_pnl) : '',
+      /*
+        A synced entry's P&L lives on the trade, not here - manual_pnl stays
+        null on those so the same trade is not counted twice across the app.
+        linkedPnl was fetched from the trade a moment ago; handleSave writes
+        any edit back there too.
+      */
+      manual_pnl: entry.trade_id
+        /*
+          Rounded, because the figure arrives from the broker as a float and
+          reaches us as -2215.7200000000003. Showing that in a money field
+          looks broken, and it is the number the trader is asked to correct.
+        */
+        ? (linkedPnl != null ? String(Math.round(linkedPnl * 100) / 100) : '')
+        : entry.manual_pnl != null ? String(entry.manual_pnl) : '',
       tags: entry.tags || [],
       before_screenshots: entry.before_screenshots || [],
       after_screenshots: entry.after_screenshots || [],
@@ -1731,6 +1838,74 @@ export default function Journal() {
                 </div>
               </div>
 
+              {/*
+                Above the editor on purpose.
+
+                This panel used to sit at the very bottom of the card - about
+                2,500px down a 2,700px page. Arriving from Trade Logs, the
+                first thing on screen was "No entries yet", and the trade you
+                had just clicked was two and a half screens below it, so the
+                day read as empty when it wasn't.
+
+                For a synced account the trades are what happened; the entry
+                is what you have not written yet. Show what happened first.
+              */}
+              {unjournaledTrades.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-sm font-medium text-gray-300 mb-3 flex items-center gap-2">
+                    <LineChart size={16} />
+                    Trades on this day ({unjournaledTrades.length})
+                  </h3>
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {unjournaledTrades.map((trade) => (
+                      <div
+                        key={trade.id}
+                        className="flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-2 h-2 rounded-full ${trade.direction === 'LONG' ? 'bg-blue-400' : 'bg-gray-400'}`} />
+                          <div>
+                            <p className="text-sm font-medium">{trade.symbol}</p>
+                            {/*
+                              How it ended, where the setup line already is.
+
+                              The broker told us whether this was a stop, a
+                              target or the trader clicking close, and until
+                              now the journal never said - so a stop being
+                              hit and a position being given up on looked
+                              identical on the page where somebody reviews
+                              their own decisions. Falls back to the setup
+                              when there is no deal behind the trade to ask.
+                            */}
+                            {(() => {
+                              const ended = closeReasonLabel(trade.close_reason);
+                              if (!ended) {
+                                return <p className="text-xs text-gray-400">{trade.setup || 'No setup'}</p>;
+                              }
+                              /* Blue for a target, grey for the rest - losses
+                                 are grey in this app, never red. */
+                              const tone =
+                                ended.tone === 'target' ? 'text-blue-400/80' : 'text-gray-400';
+                              return (
+                                <p className="text-xs text-gray-400">
+                                  <span className={tone}>{ended.text}</span>
+                                  {trade.setup && <span className="text-gray-500"> &middot; {trade.setup}</span>}
+                                </p>
+                              );
+                            })()}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className={`text-sm font-medium ${(trade.pnl || 0) >= 0 ? 'text-blue-400' : 'text-gray-400'}`}>
+                            ${(trade.pnl || 0) >= 0 ? '+' : ''}{(trade.pnl || 0).toFixed(2)}
+                          </p>
+                          <p className="text-xs text-gray-400">{formatQuantity(trade)}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               {dailyEntries.length > 0 && (
                 <div className="mb-6">
                   <div className="flex items-center justify-between mb-3">
@@ -1753,12 +1928,77 @@ export default function Journal() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.05 }}
                         onClick={() => loadEntryForEditing(entry)}
-                        className={`p-4 rounded-lg border transition-all cursor-pointer ${
+                        className={`${entry.trade_id ? 'p-3' : 'p-4'} rounded-lg border transition-all cursor-pointer ${
                           editingEntryId === entry.id
                             ? 'border-blue-400 bg-blue-400/5'
                             : 'border-white/10 hover:border-white/20 bg-white/5'
                         }`}
                       >
+                        {/*
+                          An entry made from a synced trade is rendered like
+                          the trade rows above it - a direction dot, the
+                          instrument, the money on the right. The full card
+                          below repeats the symbol as a chip, the title, a
+                          mood chip and an account chip, which for a row that
+                          is simply "this trade" is a lot of furniture around
+                          one fact. Hand-written entries keep the full card,
+                          because for those the title and the text are the
+                          content.
+                        */}
+                        {entry.trade_id ? (
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                                (editingEntryId === entry.id ? entryForm.direction : entry.direction) === 'LONG'
+                                  ? 'bg-blue-400' : 'bg-gray-400'
+                              }`} />
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium truncate">
+                                  {(editingEntryId === entry.id ? entryForm.symbol : entry.symbol) || 'Trade'}
+                                </p>
+                                <p className="text-xs text-gray-400 truncate">
+                                  {(editingEntryId === entry.id ? entryForm.title : entry.title) || ''}
+                                  {(() => {
+                                    const linked = entry.trade_id ? tradesById.get(entry.trade_id) : undefined;
+                                    const label = openedOnLabel(linked?.entry_date, selectedDate);
+                                    return label ? <span className="text-gray-500"> &middot; {label}</span> : null;
+                                  })()}
+                                </p>
+                              </div>
+                            </div>
+                            {/*
+                              The badge and the figures share one right-hand
+                              group, rather than being separate children of a
+                              justify-between row. As siblings the row spread
+                              all three apart, which shoved the P&L into the
+                              middle of the card on whichever entry was open -
+                              so the one row you were looking at was the one
+                              that did not line up with the rest.
+                            */}
+                            <div className="flex items-center gap-3 flex-shrink-0">
+                              {editingEntryId === entry.id && (
+                                <span className="px-2 py-1 bg-blue-400/20 text-blue-400 text-xs rounded-full font-medium">Editing</span>
+                              )}
+                              <div className="text-right">
+                                {(() => {
+                                  const linked = entry.trade_id ? tradesById.get(entry.trade_id) : undefined;
+                                  const pnl = linked?.pnl ?? 0;
+                                  return (
+                                    <>
+                                      <p className={`text-sm font-medium ${pnl >= 0 ? 'text-blue-400' : 'text-gray-400'}`}>
+                                        ${pnl >= 0 ? '+' : ''}{pnl.toFixed(2)}
+                                      </p>
+                                      <p className="text-xs text-gray-400">
+                                        {linked ? formatQuantity(linked)
+                                               : (editingEntryId === entry.id ? entryForm.position_size : entry.position_size) || ''}
+                                      </p>
+                                    </>
+                                  );
+                                })()}
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
@@ -1800,6 +2040,7 @@ export default function Journal() {
                             </div>
                           )}
                         </div>
+                        )}
                       </motion.div>
                     ))}
                   </div>
@@ -2718,36 +2959,6 @@ export default function Journal() {
               </div>
               )}
 
-              {recentTrades.length > 0 && (
-                <div className="mt-6">
-                  <h3 className="text-sm font-medium text-gray-300 mb-3 flex items-center gap-2">
-                    <LineChart size={16} />
-                    Today's Trades ({recentTrades.length})
-                  </h3>
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {recentTrades.map((trade) => (
-                      <div
-                        key={trade.id}
-                        className="flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className={`w-2 h-2 rounded-full ${trade.direction === 'LONG' ? 'bg-blue-400' : 'bg-gray-400'}`} />
-                          <div>
-                            <p className="text-sm font-medium">{trade.symbol}</p>
-                            <p className="text-xs text-gray-400">{trade.setup || 'No setup'}</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className={`text-sm font-medium ${(trade.pnl || 0) >= 0 ? 'text-blue-400' : 'text-gray-400'}`}>
-                            ${(trade.pnl || 0) >= 0 ? '+' : ''}{(trade.pnl || 0).toFixed(2)}
-                          </p>
-                          <p className="text-xs text-gray-400">{trade.quantity} shares</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </Card>
           </motion.div>
         </div>

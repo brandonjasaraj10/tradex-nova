@@ -83,6 +83,7 @@ export default function Features() {
           'Symbol, direction, size and P&L pulled out and filed',
           'Your reasoning organised into what actually happened',
           'Type it instead whenever you would rather',
+          'Or sync MT4 and MT5 so the trade details arrive on their own',
           'Or import a CSV and bring your whole history in at once',
         ]}
         visual={
@@ -200,7 +201,7 @@ export default function Features() {
         points={[
           'Prop challenge, funded account and personal capital kept apart',
           'A demo you are messing about on never drags a live score down',
-          'CSV import per account',
+          'Sync or CSV import per account',
         ]}
         visual={<AccountsPanel />}
       />
@@ -220,6 +221,7 @@ export default function Features() {
             'Searchable trade log',
             'Unlimited trades',
             'Up to 5 accounts',
+            'MT4 & MT5 sync',
             'CSV import',
             'Notes',
           ]}
