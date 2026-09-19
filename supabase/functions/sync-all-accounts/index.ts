@@ -88,6 +88,8 @@ async function syncOne(
     starting_balance: number | null;
     oldest_open_position_at: string | null;
     open_position_ids: string[] | null;
+    history_imported_at: string | null;
+    created_at: string | null;
   },
 ): Promise<
   { id: string; imported?: number; error?: string; truncated?: boolean }
@@ -134,7 +136,30 @@ async function syncOne(
     ? new Date(Math.min(...candidates.map((d) => d.getTime())))
     : null;
 
-  const rollingStart = connection.last_sync
+  /*
+    The full-history window stays open until a sync actually lands a trade.
+
+    Connecting an account provisions it at MetaApi and MetaStats then goes
+    and fetches the broker's history, which takes minutes. A sync landing in
+    that gap asks for everything, gets an empty list because nothing is there
+    YET, and - if last_sync alone decided this - would switch every later run
+    to the cheap 24-hour window with the account's real history already
+    behind it. Silent and permanent: the account reports synced, the trades
+    are simply absent.
+
+    Bounded by a grace period, or an account that genuinely has no history
+    would re-read all of time every five minutes forever. An hour is far
+    longer than MetaStats needs and costs a handful of wide reads on a
+    brand-new account.
+  */
+  const FIRST_SYNC_GRACE_MS = 60 * 60 * 1000;
+  const createdAt = connection.created_at ? new Date(connection.created_at) : null;
+  const withinGrace = createdAt
+    ? now.getTime() - createdAt.getTime() < FIRST_SYNC_GRACE_MS
+    : false;
+  const awaitingFirstHistory = !connection.history_imported_at && withinGrace;
+
+  const rollingStart = connection.last_sync && !awaitingFirstHistory
     ? new Date(new Date(connection.last_sync).getTime() - 24 * 60 * 60 * 1000)
     : FULL_HISTORY_START;
 
@@ -250,6 +275,14 @@ async function syncOne(
   }
 
   const update: Record<string, unknown> = { last_sync: now.toISOString() };
+
+  /*
+    Record the first sync that actually imported something. That is what
+    closes the full-history window - not merely having run.
+  */
+  if (!connection.history_imported_at && rows.length > 0) {
+    update.history_imported_at = now.toISOString();
+  }
   const starting = sawDeposit
     ? netDeposits
     : Number(connection.starting_balance ?? 0);
@@ -317,7 +350,7 @@ Deno.serve(async (req: Request) => {
 
   const { data: connections, error } = await admin
     .from("broker_connections")
-    .select("id, user_id, metaapi_account_id, last_sync, starting_balance, oldest_open_position_at, open_position_ids")
+    .select("id, user_id, metaapi_account_id, last_sync, starting_balance, oldest_open_position_at, open_position_ids, history_imported_at, created_at")
     .not("metaapi_account_id", "is", null)
     .eq("is_auto_sync_enabled", true)
     /*
