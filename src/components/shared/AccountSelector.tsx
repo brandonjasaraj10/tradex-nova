@@ -269,27 +269,56 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
 
         if (!result.ok) {
           showToast(`Account created, but syncing didn't connect: ${result.error}`, 'error');
-        } else if (result.connected) {
-          /*
-            Sync immediately rather than waiting for the schedule. Without
-            this the account appears with no trades and a zero balance,
-            which reads as a failed connection.
-          */
-          setConnectStatus('Importing your trades...');
-          const first = await syncMetaTraderAccount(created.id);
-          setConnectStatus('');
-          showToast(
-            first.ok && first.imported
-              ? `Account connected. Imported ${first.imported} trades.`
-              : 'Account connected. Your trades will sync from now on.',
-            'success',
-          );
         } else {
           /*
-            Registered but not live yet. This is normal and resolves on its
-            own, so it shouldn't read as a failure.
+            Import now rather than waiting for the schedule, and keep trying
+            for a couple of minutes.
+
+            One attempt is not enough. MetaApi provisions the account and
+            then goes and pulls the broker's history, which is not ready at
+            a predictable moment - measured on this project's own accounts
+            at under 92 seconds once and still not ready at 144 seconds
+            another time. A single sync that lands in that gap imports
+            nothing, and the trader is looking at an empty account they just
+            connected.
+
+            This also runs when the account has not reported CONNECTED yet.
+            That check used to gate the import entirely, so an account that
+            took a moment longer than the connect poll waited got no import
+            at all - which is exactly what happened on the account that
+            prompted this.
+
+            Stops at the first attempt that brings something back. The
+            scheduled sync remains the backstop for anyone who closes the
+            tab.
           */
-          showToast('Account connected. It may take a minute to finish syncing.', 'success');
+          setConnectStatus('Importing your trades...');
+
+          const ATTEMPTS = 7;
+          const GAP_MS = 20000;
+          let imported = 0;
+
+          for (let attempt = 0; attempt < ATTEMPTS; attempt++) {
+            const run = await syncMetaTraderAccount(created.id);
+            if (run.ok && (run.imported ?? 0) > 0) {
+              imported = run.imported ?? 0;
+              break;
+            }
+            if (attempt < ATTEMPTS - 1) {
+              setConnectStatus(
+                `Waiting for your broker's history… (${attempt + 1}/${ATTEMPTS})`,
+              );
+              await new Promise((r) => setTimeout(r, GAP_MS));
+            }
+          }
+
+          setConnectStatus('');
+          showToast(
+            imported > 0
+              ? `Account connected. Imported ${imported} trades.`
+              : 'Account connected. Your history is still coming from your broker and will appear shortly.',
+            'success',
+          );
         }
       }
 
