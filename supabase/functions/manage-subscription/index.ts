@@ -378,6 +378,65 @@ Deno.serve(async (req: Request) => {
       }
 
       /*
+        Whether the money actually arrived.
+
+        always_invoice bills immediately, and "immediately" has three
+        outcomes, not one: paid, declined, or held pending 3-D Secure - which
+        is routine on European cards and on plenty of others under SCA. The
+        first version of this treated the Stripe call returning without
+        throwing as success, which would have handed somebody an allowance
+        against an invoice that was never paid, and left them syncing an
+        account at $8.64 a month on our side while their bank waited for a
+        tap they were never asked for.
+
+        The invoice is read back and its state decides what the caller is
+        told. requires_action carries the client secret so the card can be
+        confirmed in place - the only genuinely embedded part of this, and it
+        appears only when the bank asks for it rather than on every purchase.
+      */
+      let payment: { status: string; clientSecret?: string; hostedInvoiceUrl?: string } = {
+        status: "paid",
+      };
+
+      if (wanted > 0) {
+        try {
+          const invoices = await stripe.invoices.list({
+            subscription: subscriptionId,
+            limit: 1,
+          });
+          const invoice = invoices.data[0];
+          if (invoice && invoice.status !== "paid" && invoice.status !== "draft") {
+            const intentId = typeof invoice.payment_intent === "string"
+              ? invoice.payment_intent
+              : invoice.payment_intent?.id;
+            if (intentId) {
+              const intent = await stripe.paymentIntents.retrieve(intentId);
+              if (intent.status === "requires_action" || intent.status === "requires_confirmation") {
+                payment = {
+                  status: "requires_action",
+                  clientSecret: intent.client_secret ?? undefined,
+                  hostedInvoiceUrl: invoice.hosted_invoice_url ?? undefined,
+                };
+              } else if (intent.status !== "succeeded") {
+                payment = {
+                  status: "failed",
+                  hostedInvoiceUrl: invoice.hosted_invoice_url ?? undefined,
+                };
+              }
+            }
+          }
+        } catch (err) {
+          /*
+            Never fails the request. The subscription item change has already
+            happened in Stripe, which is the source of truth; not being able
+            to read the invoice back is a reporting problem, and the webhook
+            reconciles either way.
+          */
+          console.error("Could not read the add-on invoice back for", user.id, err);
+        }
+      }
+
+      /*
         Written back here rather than left to the webhook. The member is
         sitting on the connect screen waiting to use what they just bought,
         and customer.subscription.updated can take a few seconds. The webhook
@@ -385,10 +444,17 @@ Deno.serve(async (req: Request) => {
         authoritative.
       */
       const fresh = await stripe.subscriptions.retrieve(subscriptionId);
-      await syncSubscription(supabase, user.id, fresh);
+      /*
+        Cast because this function pins npm:@supabase/supabase-js@2 while the
+        shared module pins 2.49.1, so the two SupabaseClient generics do not
+        line up even though it is the same client at runtime. Caught by
+        `deno check`, which the frontend typecheck never sees - edge functions
+        are not in tsconfig.app.json.
+      */
+      await syncSubscription(supabase as unknown as Parameters<typeof syncSubscription>[0], user.id, fresh);
 
       return new Response(
-        JSON.stringify({ success: true, extraAccounts: wanted, interval }),
+        JSON.stringify({ success: true, extraAccounts: wanted, interval, payment }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

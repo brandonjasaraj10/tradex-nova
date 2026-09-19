@@ -22,6 +22,14 @@ export interface ExtraAccountsResult {
   /* 'month' | 'year' - what they are billed on, for wording the receipt. */
   interval?: string;
   error?: string;
+  /*
+    What the card actually did. 'paid' is the ordinary case;
+    'requires_action' means the bank wants 3-D Secure and carries the secret
+    to confirm it in place; 'failed' means declined. Reported rather than
+    assumed, because granting an allowance against an unpaid invoice costs us
+    $8.64 a month per account and the member never finds out they owe it.
+  */
+  payment?: { status: string; clientSecret?: string; hostedInvoiceUrl?: string };
 }
 
 export async function setExtraSyncedAccounts(quantity: number): Promise<ExtraAccountsResult> {
@@ -57,6 +65,7 @@ export async function setExtraSyncedAccounts(quantity: number): Promise<ExtraAcc
       ok: true,
       extraAccounts: typeof data?.extraAccounts === 'number' ? data.extraAccounts : quantity,
       interval: typeof data?.interval === 'string' ? data.interval : undefined,
+      payment: data?.payment,
     };
   } catch (err) {
     return {
@@ -79,4 +88,29 @@ export async function getExtraSyncedAccounts(): Promise<number> {
     .maybeSingle();
   const n = (data as { extra_synced_accounts: number | null } | null)?.extra_synced_accounts;
   return typeof n === 'number' ? n : 0;
+}
+
+/*
+  Finish a purchase the bank wanted a second factor for.
+
+  Stripe.js does the challenge itself - it opens the issuer's own frame over
+  the page, which is the embedded form in the only sense that applies here.
+  There is no card to collect: the card is already on file and already
+  attached to the invoice, so all that is missing is the tap.
+*/
+export async function confirmExtraAccountPayment(clientSecret: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const { loadStripe } = await import('@stripe/stripe-js');
+    const stripe = await loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string);
+    if (!stripe) return { ok: false, error: 'Could not reach Stripe.' };
+
+    const { error } = await stripe.confirmCardPayment(clientSecret);
+    if (error) return { ok: false, error: error.message ?? 'Your bank did not approve the payment.' };
+    return { ok: true };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : 'Could not confirm the payment.',
+    };
+  }
 }

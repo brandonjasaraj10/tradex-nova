@@ -17,7 +17,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Minus, ArrowRight, Loader2 } from 'lucide-react';
-import { EXTRA_ACCOUNT_PRICE_MONTHLY, setExtraSyncedAccounts } from '../../services/extraAccounts';
+import { EXTRA_ACCOUNT_PRICE_MONTHLY, setExtraSyncedAccounts, confirmExtraAccountPayment } from '../../services/extraAccounts';
 
 interface Props {
   /* What their plan allows today, including extras already bought. */
@@ -45,11 +45,41 @@ export default function AccountLimitReached({ limit, currentExtras, onPurchased,
     setBusy(true);
     setError('');
     const result = await setExtraSyncedAccounts(wanted);
-    setBusy(false);
+
     if (!result.ok) {
+      setBusy(false);
       setError(result.error ?? 'Could not change your accounts.');
       return;
     }
+
+    /*
+      The bank asked for a second factor. Stripe.js puts the issuer's own
+      challenge over the page - there is no card to collect here, the card is
+      already on file and already on the invoice, so the only thing missing is
+      the tap. Nothing is granted until it comes back clean.
+    */
+    if (result.payment?.status === 'requires_action' && result.payment.clientSecret) {
+      const confirmed = await confirmExtraAccountPayment(result.payment.clientSecret);
+      setBusy(false);
+      if (!confirmed.ok) {
+        setError(
+          `${confirmed.error ?? 'Your bank did not approve the payment.'} The account has not been added.`,
+        );
+        return;
+      }
+      onPurchased(result.extraAccounts ?? wanted);
+      return;
+    }
+
+    setBusy(false);
+
+    if (result.payment?.status === 'failed') {
+      setError(
+        'Your card was declined, so the account has not been added. Update your card in Settings and try again.',
+      );
+      return;
+    }
+
     onPurchased(result.extraAccounts ?? wanted);
   }
 
