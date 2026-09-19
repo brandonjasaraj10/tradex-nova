@@ -206,7 +206,7 @@ export default function Sales() {
               <ArrowRight className="w-4 h-4" />
             </Link>
             <p className="text-[11.5px] text-gray-500">
-              3 days free &middot; Cancel in two clicks &middot; 14-day money back after that
+              3 days free &middot; Cancel in two clicks
             </p>
             {/* Watched by the header - see showHeaderCta above. */}
             <div ref={heroCtaRef} aria-hidden="true" className="h-px w-full" />
@@ -1149,7 +1149,7 @@ export default function Sales() {
                   <ArrowRight className="w-4 h-4" />
                 </Link>
                 <p className="text-[12px] text-gray-500">
-                  3 days free &middot; Cancel in two clicks &middot; 14-day money back after that
+                  3 days free &middot; Cancel in two clicks
                 </p>
                 <Link
                   to="/pricing"
@@ -1228,7 +1228,7 @@ export default function Sales() {
               },
               {
                 q: 'What if it is not for me?',
-                a: 'Give it two proper weeks. If you are still not journaling, or it has not shown you something about how you trade that you did not already know, ask for your money back. Cancelling is separate and needs no email at all \u2014 two clicks in Settings, any time.',
+                a: 'Take the three days and find out. Talk a few trades through, let Nova read them back, and see whether you actually keep doing it \u2014 that is the only question that matters, and it answers itself fast. Cancel inside the three days in two clicks and you are never charged.',
               },
             ].map((item) => (
               <details
@@ -1378,7 +1378,7 @@ export default function Sales() {
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <p className="text-[11.5px] text-gray-500">
-                3 days free &middot; Cancel in two clicks &middot; 14-day money back after that
+                3 days free &middot; Cancel in two clicks
               </p>
             </div>
           ) : (

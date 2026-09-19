@@ -167,7 +167,7 @@ export default function Pricing() {
       <div className="my-12 sm:my-16">
         <StatBand
           items={[
-            { value: '14', label: 'Days money back, no questions asked' },
+            { value: '3', label: 'Days free before anything is charged' },
             { value: '2', label: 'Clicks to cancel, from Settings' },
             { value: '$0', label: 'Of your card ever stored by us' },
           ]}
@@ -197,7 +197,7 @@ export default function Pricing() {
       </Section>
 
       <PullQuote>
-        Fourteen days is longer than most people last with a journal. That is
+        Three days is longer than most people last with a journal. That is
         rather the point.
       </PullQuote>
 
@@ -218,7 +218,7 @@ export default function Pricing() {
             },
             {
               q: 'Is there a free trial?',
-              a: 'Three days, free. Your card is authorised for the plan price and released straight away \u2014 nothing is taken \u2014 so if the card will not work you find out on day one instead of day three. Syncing is the one thing a trial does not include: that is what subscribing turns on, and you can subscribe the moment you want it rather than waiting the three days out. The 14-day money back guarantee applies after that as well.',
+              a: 'Three days, free. Your card is authorised for the plan price and released straight away \u2014 nothing is taken \u2014 so a card that will not work shows up on day one rather than day three. Syncing is the one thing a trial does not include: that is what subscribing turns on, and you can subscribe the moment you want it rather than waiting the three days out. Cancel inside the three days, in two clicks, and you are never charged at all.',
             },
             {
               q: 'How do I cancel?',
@@ -237,8 +237,8 @@ export default function Pricing() {
       </Section>
 
       <ClosingCta
-        title="Fourteen days to decide"
-        body="If it does not change how you trade, ask for your money back."
+        title="Three days to decide"
+        body="Three days free. Cancel in two clicks and you are never charged."
       />
     </PageShell>
   );

@@ -129,7 +129,7 @@ export default function About() {
         <StatBand
           items={[
             { value: '1', label: 'Plan, with everything in it' },
-            { value: '14', label: 'Days money back, no questions asked' },
+            { value: '3', label: 'Days free before anything is charged' },
             { value: '0', label: 'Compliance badges we have not earned' },
           ]}
         />

@@ -683,7 +683,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
           */}
           <ul className="flex flex-wrap items-center justify-center gap-x-3.5 sm:gap-x-5 gap-y-2 mb-5 sm:mb-10">
             {[
-              [Shield, '14-day money back'],
+              [Shield, '3 days free'],
               [Lock, 'Card handled by Stripe'],
               [Gift, 'Cancel in two clicks'],
             ].map(([Icon, label]) => {
@@ -962,7 +962,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
             about to become a customer. Cheaper to say it here.
           */}
           <p className="text-center text-[11.5px] text-gray-500">
-            3 days free &middot; Cancel in two clicks &middot; 14-day money back after that
+            3 days free &middot; Cancel in two clicks
           </p>
           <p className="text-center text-[11px] text-gray-600 leading-relaxed mt-2 max-w-sm mx-auto">
             We check your card for the plan price and release it straight away. Nothing is
@@ -978,66 +978,40 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
             <div className="mt-8 lg:mt-0">
           {/* ---------------------------------------------------------- */}
           {/*
-            The guarantee, given real weight.
+            The trial, given real weight.
 
-            It used to be nine grey words under the button. It is the single
-            most important thing on this screen: TradeX has no free trial -
-            deliberately, the first cohort converted 1 in 11 and half of them
-            never logged a trade - so this IS the trial, and it is the only
-            thing standing between a stranger and their card.
+            This block used to carry the 14-day money back guarantee, on the
+            reasoning that TradeX had no trial and so the guarantee WAS the
+            trial. The trial is back, and running both was the wrong answer:
+            research puts a card-required auto-converting trial at 35-55%
+            conversion against a guarantee's roughly 21% lift, so if only one
+            can be the headline it is this one. Keeping both would also have
+            meant three free days plus fourteen refundable ones for anyone who
+            wanted them.
 
-            Worth the space on the evidence: guarantee messaging on a pricing
-            page lifts conversion around 21% (Conversion Rate Experts'
-            meta-analysis), and refunds do not rise proportionally - one
-            measured case doubled conversion against a 3% rise in refunds,
-            for about 6.5% more revenue net of them.
-
-            "Both plans" is stated plainly because it is the part that is
-            genuinely unusual here. The nearest competitor's equivalent
-            guarantee applies to annual billing only, so paying monthly with
-            them buys no way out at all. No competitor is named - that is a
-            claim that would need checking and maintaining - but the fact
-            about TradeX is worth saying out loud.
+            The two objections worth answering are the ones a sceptical trader
+            actually has: am I going to get charged without noticing, and what
+            is this hold on my card. Both are answered here rather than left
+            to the FAQ, because this is the screen where the card comes out.
           */}
           <div className="rounded-2xl border border-brand-blue-light/25 bg-brand-blue/[0.06] p-5 sm:p-6 mb-8">
             <div className="flex items-start gap-3.5">
               <Shield className="w-5 h-5 text-brand-blue-light flex-shrink-0 mt-0.5" />
               <div>
                 <h2 className="text-[17px] sm:text-[19px] font-semibold tracking-[-0.02em] text-white mb-2">
-                  Fourteen days to change your mind
+                  Three days, then you decide
                 </h2>
-                {/*
-                  The same words the abandoned-signup email uses, deliberately.
-                  Somebody who gets that email and clicks through should land on
-                  the promise they were just made, not a reworded cousin of it.
-
-                  It also no longer rests on Nova. The old version - "see
-                  whether it tells you something you did not already know" -
-                  staked the whole guarantee on one feature. TradeX makes two
-                  promises: that you keep journaling at all, which is the reason
-                  it was built, and that it shows you something. The guarantee
-                  should fail if either does.
-                */}
                 <p className="text-[13.5px] sm:text-[14px] leading-relaxed text-gray-300">
-                  Give it two proper weeks. If you are still not journaling, or
-                  it has not shown you something about how you trade that you did
-                  not already know, ask for your money back. No questions, no
-                  retention call, no form asking why.
+                  Talk a few trades through and see whether you actually keep doing it. That is
+                  the only question worth answering, and it answers itself fast. Cancel inside
+                  the three days and you are never charged a penny.
                 </p>
-                {/*
-                  Cancelling and refunding are two different things and the
-                  site was blurring them. Cancelling really is two clicks in
-                  Settings with no email. A refund has no self-serve button,
-                  so it genuinely needs one message - which is worth stating
-                  plainly here rather than letting someone discover it after
-                  they have read "no email" somewhere else.
-                */}
                 <ul className="mt-4 flex flex-col gap-2">
                   {[
-                    'Applies to monthly as well as annual, not just the yearly plan',
-                    'Cancelling is two clicks in Settings — no email, any time',
-                    'For a refund, one email to us is the only step',
-                    'Your journal stays yours — export it or delete it whenever',
+                    'Nothing is charged today \u2014 day 3 is the first payment',
+                    'Cancelling is two clicks in Settings \u2014 no email, any time',
+                    'We check your card for the plan price and release it straight away',
+                    'Your journal stays yours \u2014 export it or delete it whenever',
                   ].map((item) => (
                     <li key={item} className="flex items-start gap-2.5 text-[13px] leading-relaxed text-gray-400">
                       <CheckCircle2 className="w-3.5 h-3.5 text-brand-blue-light flex-shrink-0 mt-[3px]" />

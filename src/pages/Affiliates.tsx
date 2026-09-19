@@ -306,7 +306,7 @@ export default function Affiliates() {
             {[
               'Voice journaling, so the habit survives past week three',
               'Nova reads every entry together and names the repeated mistake',
-              '14-day money back guarantee, so nobody you send feels trapped',
+              'Three days free before anyone is charged, so nobody you send feels tricked',
               'Never touches their broker account or their money',
             ].map((point) => (
               <li key={point} className="flex items-start gap-2.5 text-[13.5px] sm:text-[14px] leading-relaxed text-gray-400">

@@ -141,5 +141,5 @@ export const IN_EVERY_PLAN = [
 
 /* The specifics a comparison shopper checks, kept but not shouted. */
 export const ALSO_INCLUDED =
-  'Unlimited trades \u00b7 CSV import \u00b7 Notes \u00b7 14-day money back guarantee';
+  'Unlimited trades \u00b7 CSV import \u00b7 Notes \u00b7 3 days free to start';
 
