@@ -324,7 +324,7 @@ export default function BrokerConnectionsList() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <RefreshCw className="w-6 h-6 animate-spin text-gold-400" />
+        <RefreshCw className="w-6 h-6 animate-spin text-brand-blue-light" />
       </div>
     );
   }
@@ -333,8 +333,8 @@ export default function BrokerConnectionsList() {
     return (
       <>
         <div className="text-center py-12">
-          <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-gold-400/20 to-blue-500/20 flex items-center justify-center mb-4 border border-gold-400/30">
-            <Upload className="w-10 h-10 text-gold-400" />
+          <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-brand-blue/15 to-blue-500/20 flex items-center justify-center mb-4 border border-brand-blue/25">
+            <Upload className="w-10 h-10 text-brand-blue-light" />
           </div>
           <h3 className="text-xl font-semibold mb-2">Import Your Trading History</h3>
           <p className="text-gray-400 mb-2 max-w-md mx-auto">
@@ -359,7 +359,7 @@ export default function BrokerConnectionsList() {
             */}
             <button
               onClick={() => setShowAddAccount(true)}
-              className="px-6 py-3 bg-gradient-to-r from-gold-400/20 to-blue-500/20 hover:from-gold-400/30 hover:to-blue-500/30 text-gold-400 rounded-lg text-sm font-medium transition-all inline-flex items-center gap-2 border border-gold-400/30"
+              className="px-6 py-3 bg-gradient-to-r from-brand-blue/15 to-blue-500/20 hover:from-brand-blue/25 hover:to-blue-500/30 text-brand-blue-light rounded-lg text-sm font-medium transition-all inline-flex items-center gap-2 border border-brand-blue/25"
             >
               <Plus size={16} />
               Add Account Manually
@@ -377,12 +377,12 @@ export default function BrokerConnectionsList() {
           key={connection.id}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-6 rounded-xl bg-black/40 border border-white/10 hover:border-gold-400/30 transition-all duration-300"
+          className="p-6 rounded-xl bg-black/40 border border-white/10 hover:border-brand-blue/25 transition-all duration-300"
         >
           <div className="flex flex-wrap items-start justify-between gap-y-3">
             <div className="flex items-start gap-4 flex-1 min-w-[240px]">
-              <div className="w-12 h-12 rounded-lg bg-gold-400/10 flex items-center justify-center flex-shrink-0">
-                <Link2 className="w-6 h-6 text-gold-400" />
+              <div className="w-12 h-12 rounded-lg bg-brand-blue/10 flex items-center justify-center flex-shrink-0">
+                <Link2 className="w-6 h-6 text-brand-blue-light" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -413,10 +413,29 @@ export default function BrokerConnectionsList() {
                     <h3 className="font-medium text-lg">{connection.account_name}</h3>
                   )}
                   {getStatusBadge(connection.status)}
-                  <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs bg-white/5 text-gray-400 border border-white/10">
-                    <Upload className="w-3 h-3" />
-                    Manual Import
-                  </span>
+                  {/*
+                    How this account gets its trades, which was hard-coded to
+                    "Manual Import" on every card - including accounts that
+                    sync themselves. Telling somebody their synced account is
+                    manual is worse than saying nothing: it is the one label
+                    on the card that answers "is this working?".
+                  */}
+                  {!connection.metaapi_account_id ? (
+                    <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs bg-white/5 text-gray-400 border border-white/10">
+                      <Upload className="w-3 h-3" />
+                      Manual Import
+                    </span>
+                  ) : connection.sync_paused_at ? (
+                    <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs bg-white/5 text-gray-400 border border-white/10">
+                      <PauseCircle className="w-3 h-3" />
+                      Sync off
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs bg-brand-blue/10 text-brand-blue border border-brand-blue/20">
+                      <RefreshCw className="w-3 h-3" />
+                      Auto-sync
+                    </span>
+                  )}
                 </div>
                 <p className="text-sm text-gray-400 mb-2">
                   {connection.brokers?.name
@@ -464,7 +483,11 @@ export default function BrokerConnectionsList() {
                     <span className="text-sm font-bold text-white">{connection.trades_count || 0}</span>
                   </div>
                   <div className="col-span-2 sm:col-span-1">
-                    <span className="text-xs text-gray-500 block mb-1">Last Import</span>
+                    <span className="text-xs text-gray-500 block mb-1">
+                      {connection.metaapi_account_id && !connection.sync_paused_at
+                        ? 'Last sync'
+                        : 'Last import'}
+                    </span>
                     <span className="text-xs font-medium text-white" title={formatDate(connection.last_synced_at)}>
                       {formatRelativeTime(connection.last_synced_at)}
                     </span>
@@ -504,7 +527,18 @@ export default function BrokerConnectionsList() {
                   />
                   <div className="flex items-center gap-2 text-xs text-gray-400">
                     <Upload size={14} />
-                    <span>Export your broker statement (HTML or CSV) and upload it to import trades</span>
+                    {/*
+                      A syncing account does not need instructions for getting
+                      trades in - they arrive on their own. Leaving the
+                      statement-upload line on every card told somebody whose
+                      account syncs itself that uploading was the way, which
+                      is the same mistake as the Manual Import badge.
+                    */}
+                    <span>
+                      {connection.metaapi_account_id && !connection.sync_paused_at
+                        ? 'Trades arrive on their own. You can still upload an older statement if you want history from before you connected.'
+                        : 'Export your broker statement (HTML or CSV) and upload it to import trades'}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -514,7 +548,7 @@ export default function BrokerConnectionsList() {
               <button
                 onClick={() => fileInputRefs.current[connection.id]?.click()}
                 disabled={uploadingIds.has(connection.id)}
-                className="px-4 py-2 bg-gold-400/20 hover:bg-gold-400/30 text-gold-400 rounded-lg text-sm font-medium transition-all flex items-center gap-2 border border-gold-400/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-brand-blue/10 hover:bg-brand-blue/20 text-brand-blue-light rounded-lg text-sm font-medium transition-all flex items-center gap-2 border border-brand-blue/20 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Upload className="w-4 h-4" />
                 {uploadingIds.has(connection.id) ? 'Uploading...' : 'Import'}
@@ -583,7 +617,7 @@ export default function BrokerConnectionsList() {
         */}
         <button
           onClick={() => setShowAddAccount(true)}
-          className="px-6 py-3 bg-gradient-to-r from-gold-400/20 to-blue-500/20 hover:from-gold-400/30 hover:to-blue-500/30 text-gold-400 rounded-lg text-sm font-medium transition-all flex items-center gap-2 border border-gold-400/30"
+          className="px-6 py-3 bg-gradient-to-r from-brand-blue/15 to-blue-500/20 hover:from-brand-blue/25 hover:to-blue-500/30 text-brand-blue-light rounded-lg text-sm font-medium transition-all flex items-center gap-2 border border-brand-blue/25"
         >
           <Plus size={16} />
           Add Another Account
