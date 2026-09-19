@@ -326,17 +326,21 @@ const TIER_BY_PRICE_ID: Record<string, string> = {
   price_1UGqrcP9mqFWeYrvwfanVeKY: 'elite',
 
   /*
-    The plans sold before tiers existed, mapped to Starter.
+    The plans sold before tiers existed, mapped to their own 'legacy' tier.
 
-    These people pay $24.99 or $14.99, both below Starter's $29.99, and were
-    promised in writing that the rate they joined at is the rate they keep.
-    Starter is what that money buys now, and it takes nothing away from them:
-    accounts added by hand or by CSV stay unlimited on every plan, which is
-    all they ever had. The one synced account is something they gain.
+    Starter in every way that costs money - one synced account, because sync
+    did not exist when they subscribed and one is what $24.99 supports - and
+    Pro in the one way that was already theirs: 100 Nova questions a day
+    rather than Starter's 25. The pricing page promised twice that nothing
+    they already had would move behind a higher tier, and keeping that costs
+    nothing.
+
+    See 20260919060000_put_existing_members_on_a_tier.sql, which defines the
+    tier and must agree with this map.
   */
-  price_1ScJiLP9mqFWeYrvAf1mt8kh: 'starter',  /* $24.99 monthly  */
-  price_1ScyAlP9mqFWeYrvEAo0WOhT: 'starter',  /* $249.90 annual  */
-  price_1U6eAKP9mqFWeYrv2D7cKdz6: 'starter',  /* $14.99 founder  */
+  price_1ScJiLP9mqFWeYrvAf1mt8kh: 'legacy',  /* $24.99 monthly  */
+  price_1ScyAlP9mqFWeYrvEAo0WOhT: 'legacy',  /* $249.90 annual  */
+  price_1U6eAKP9mqFWeYrv2D7cKdz6: 'legacy',  /* $14.99 founder  */
 };
 
 /*
