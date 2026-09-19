@@ -38,7 +38,21 @@ Deno.serve(async (req: Request) => {
       throw new Error('Unauthorized');
     }
 
-    const { priceId } = await req.json();
+    const body = await req.json();
+    const priceId = body?.priceId;
+    /*
+      Embedded checkout keeps the card form on our own page instead of
+      sending people to checkout.stripe.com. Same Checkout Session either
+      way - the card fields are still Stripe's iframe, so card numbers never
+      touch us and PCI scope does not move.
+
+      Requested by the caller rather than switched on here, because this
+      function deploys the moment it is saved while the frontend ships on a
+      push. For however long those are out of step, an old bundle asks for
+      the redirect it knows how to handle and gets exactly what it got
+      yesterday.
+    */
+    const embedded = body?.embedded === true;
 
     if (!priceId) {
       throw new Error('Price ID is required');
@@ -106,8 +120,22 @@ Deno.serve(async (req: Request) => {
         },
       ],
       mode: 'subscription',
-      success_url: `${origin}/dashboard?success=true`,
-      cancel_url: `${origin}/payment?canceled=true`,
+      /*
+        An embedded session has no hosted page to send anyone to, so it takes
+        a return_url and rejects success_url/cancel_url. Stripe puts the real
+        session id into {CHECKOUT_SESSION_ID} on the way back, which is what
+        lets the landing page tell a completed checkout from someone who
+        simply typed the URL.
+      */
+      ...(embedded
+        ? {
+          ui_mode: 'embedded' as const,
+          return_url: `${origin}/dashboard?success=true&session_id={CHECKOUT_SESSION_ID}`,
+        }
+        : {
+          success_url: `${origin}/dashboard?success=true`,
+          cancel_url: `${origin}/payment?canceled=true`,
+        }),
       // Kept from the previously-deployed version, which had automatic tax
       // when this file didn't - redeploying without it would have quietly
       // switched off tax calculation on every future checkout.
@@ -138,12 +166,22 @@ Deno.serve(async (req: Request) => {
       },
     });
 
-    // sessionId is what the current frontend consumes via Stripe.js
-    // redirectToCheckout; url is Stripe's current recommendation (that
-    // helper is deprecated). Returning both keeps today's frontend working
-    // untouched while allowing a straight redirect later.
+    /*
+      sessionId is what the current frontend consumes via Stripe.js
+      redirectToCheckout; url is Stripe's current recommendation (that
+      helper is deprecated). Returning both keeps today's frontend working
+      untouched while allowing a straight redirect later.
+
+      clientSecret is the embedded path, and is null on a hosted session -
+      so a caller that asked for embedded and got null knows to fall back
+      rather than mounting an empty iframe.
+    */
     return new Response(
-      JSON.stringify({ sessionId: session.id, url: session.url }),
+      JSON.stringify({
+        sessionId: session.id,
+        url: session.url,
+        clientSecret: session.client_secret ?? null,
+      }),
       {
         headers: {
           ...corsHeaders,

@@ -296,6 +296,62 @@ async function sendPaymentFailedEmail(
   }
 }
 
+/*
+  Which tier a Stripe price sells.
+
+  Until this existed, plan_type was never written by anything - the webhook
+  stored stripe_price_id and stopped there. subscription_tier_for() falls back
+  to 'pro' when plan_type is null, which meant every paying subscriber got
+  Pro's allowance whatever they had actually bought: a Starter customer at
+  $29.99 received the two synced accounts Pro charges $49.99 for, and an Elite
+  customer at $99.99 received two instead of five.
+
+  The first direction costs real money - a synced account is about $8.64 a
+  month in MetaApi hosting - and the second is worse, because it silently
+  under-delivers to the people paying most.
+
+  Mapped from the price id rather than the amount. The amount changes with
+  discounts, coupons, proration and tax; the id is what the customer actually
+  bought and never moves.
+*/
+const TIER_BY_PRICE_ID: Record<string, string> = {
+  /* Starter - monthly, annual */
+  price_1UGqG0P9mqFWeYrvtPMZvsk6: 'starter',
+  price_1UGqFzP9mqFWeYrvwxpKrL7T: 'starter',
+  /* Pro */
+  price_1UGqGwP9mqFWeYrvzMUUTkyY: 'pro',
+  price_1UGqGwP9mqFWeYrvkph5vtn3: 'pro',
+  /* Elite */
+  price_1UGqq1P9mqFWeYrvfkgvSpDn: 'elite',
+  price_1UGqrcP9mqFWeYrvwfanVeKY: 'elite',
+
+  /*
+    The plans sold before tiers existed, mapped to Starter.
+
+    These people pay $24.99 or $14.99, both below Starter's $29.99, and were
+    promised in writing that the rate they joined at is the rate they keep.
+    Starter is what that money buys now, and it takes nothing away from them:
+    accounts added by hand or by CSV stay unlimited on every plan, which is
+    all they ever had. The one synced account is something they gain.
+  */
+  price_1ScJiLP9mqFWeYrvAf1mt8kh: 'starter',  /* $24.99 monthly  */
+  price_1ScyAlP9mqFWeYrvEAo0WOhT: 'starter',  /* $249.90 annual  */
+  price_1U6eAKP9mqFWeYrv2D7cKdz6: 'starter',  /* $14.99 founder  */
+};
+
+/*
+  An unrecognised price returns null, which leaves plan_type alone rather than
+  overwriting it. A price id this file has not been told about is far more
+  likely to be a new plan nobody has mapped yet than a reason to demote
+  somebody, and subscription_tier_for()'s own 'pro' fallback already covers
+  the null case generously. Erring toward the customer is the right error
+  here; it shows up on an invoice, not in a support ticket.
+*/
+function tierForPrice(priceId: string | null | undefined): string | null {
+  if (!priceId) return null;
+  return TIER_BY_PRICE_ID[priceId] ?? null;
+}
+
 export async function syncSubscription(supabase: SupabaseClient, userId: string, subscription: Stripe.Subscription) {
   const { data: current, error: lookupError } = await supabase
     .from('subscriptions')
@@ -336,6 +392,13 @@ export async function syncSubscription(supabase: SupabaseClient, userId: string,
     stripe_price_id: subscription.items.data[0]?.price?.id ?? null,
     unit_amount: subscription.items.data[0]?.price?.unit_amount ?? null,
     billing_interval: subscription.items.data[0]?.price?.recurring?.interval ?? null,
+    /*
+      Spread rather than set, so an unmapped price leaves whatever plan_type
+      is already on the row instead of nulling it. See tierForPrice above.
+    */
+    ...(tierForPrice(subscription.items.data[0]?.price?.id)
+      ? { plan_type: tierForPrice(subscription.items.data[0]?.price?.id) }
+      : {}),
     /*
       Always null. Kept as a column, and written on every sync, purely so a
       deadline from the old policy is cleared rather than left sitting there.

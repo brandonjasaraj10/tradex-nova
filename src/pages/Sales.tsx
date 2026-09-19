@@ -2,6 +2,8 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Plus, Check } from 'lucide-react';
 import Footer from '../components/layout/Footer';
+import Mascot from '../components/shared/Mascot';
+import { TIERS, IN_EVERY_PLAN, ALSO_INCLUDED } from '../lib/pricingTiers';
 import TranscriptToEntry from '../components/sales/TranscriptToEntry';
 import ProductTabs from '../components/sales/ProductTabs';
 import Wordmark from '../components/shared/Wordmark';
@@ -136,9 +138,43 @@ export default function Sales() {
           <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[820px] h-[520px] rounded-full bg-white/[0.04] blur-3xl" />
         </div>
 
-        <div className="relative max-w-3xl mx-auto px-5 sm:px-8 pt-14 sm:pt-16
+        {/*
+          Top padding clears the FIXED header, which is 57px tall, and it has
+          to clear it with room to spare rather than exactly.
+
+          It used to be pt-14 - 56px - which put the first element 1px under
+          the header's own bottom edge. That was invisible while the first
+          element was a line of small grey uppercase text, because grey text
+          tucked against a border reads as deliberate. It stopped being
+          invisible the moment a 161px character led the page and appeared to
+          be wearing the header as a hat.
+
+          Two pt- classes were also fighting here: pt-14 sm:pt-16 at the start
+          and a stray pt-10 at the end, so which one won came down to the
+          order Tailwind happened to emit them in rather than anything
+          intended. One value now.
+        */}
+        <div className="relative max-w-3xl mx-auto px-5 sm:px-8
+          pt-24 sm:pt-28
           min-h-[calc(88svh-3.5rem)] sm:min-h-[calc(84svh-4rem)]
-          flex flex-col justify-center text-center pb-6 pt-10">
+          flex flex-col justify-center text-center pb-6">
+
+          {/*
+            He opens the page.
+
+            This was held back for a while on the theory that a character
+            next to "Stop guessing why you lose" would undercut it. The
+            research points the other way: consistent character assets carry
+            about 37% higher recall and 24% higher purchase intent than
+            abstract visuals, Duolingo's mascot is front and centre rather
+            than tucked into corners, and the whole reason to have one is to
+            be recognised on the second visit. A mascot nobody notices is
+            just a file in the repo.
+
+            Above the eyebrow rather than beside the headline, so the
+            headline still lands alone and he reads as having shown you in.
+          */}
+          <Mascot pose="wave" height={168} className="mx-auto mb-4 sm:mb-5" />
 
           <p className="text-[9.5px] sm:text-[10px] tracking-[0.16em] uppercase text-gray-600 mb-4">
             Trading journal &middot; Built around psychology
@@ -331,9 +367,38 @@ export default function Sales() {
             <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
               Thirty seconds a trade
             </h2>
+            {/*
+              This said "The reason journals die is the typing. So TradeX
+              takes it off you." Brandon doubted the pain point was typing and
+              he was right, for a reason sharper than taste: convenience is
+              the one claim this product cannot win on. Tradespad already owns
+              simple-and-clean AND a free tier, so a section whose whole
+              argument is "less effort" is picking the fight we lose - while
+              psychology, which none of the four competitors mention at all,
+              is sitting uncontested.
+
+              It was also feature-led where it should be outcome-led. Benefit
+              headlines beat feature headlines by about 27% and concrete
+              numbers add another 15%, so "thirty seconds" stays - it is the
+              number that makes the promise checkable - and the sentence under
+              it now ends on what the reader gets rather than on what they are
+              spared.
+
+              The quitting objection is not lost by this. It is answered
+              directly in the FAQ below, by name: "I have tried journals
+              before and quit. Why is this different?"
+            */}
             <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-sm sm:max-w-md mx-auto text-balance">
-              The reason journals die is the typing. So TradeX takes it off you.
+              You quit the last journal because it was work. This one is thirty
+              seconds of talking, and it still catches what your head was doing.
             </p>
+            {/*
+              He introduces the three steps. Below the copy rather than above
+              it so the section still opens on its own words, and small enough
+              to read as a presenter beside the list rather than a second
+              headline over it.
+            */}
+            <Mascot pose="present" height={96} className="mx-auto mt-7 sm:mt-8" />
           </div>
 
           <div className="flex flex-col gap-4 sm:gap-5">
@@ -593,6 +658,21 @@ export default function Sales() {
               Rate your head before the trade. TradeX matches it against what
               actually happened, and turns it into one score you can watch move.
             </p>
+
+            {/*
+              The slumped pose, and the only section on the page it can go in.
+
+              Everywhere else he is selling - waving, presenting, leaning on a
+              price - and this is the one part that names the problem rather
+              than the answer. "Your P&L is the symptom" is about the bad day,
+              so the character under it is the one having one. He is the reader
+              here, not the product.
+
+              The render has a flat line where the smile is, which is why this
+              pose has to stay out of the hero, the pricing and the CTA: a
+              mascot pulling that face next to a price reads as a warning.
+            */}
+            <Mascot pose="slump" height={104} className="mx-auto mt-8 sm:mt-9" />
           </div>
 
           <div className="rounded-2xl border border-white/[0.07] bg-brand-surface p-5 sm:p-8">
@@ -739,7 +819,20 @@ export default function Sales() {
       */}
       <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
         <div className="max-w-3xl mx-auto px-5 sm:px-8">
-          <div className="text-center mb-12 sm:mb-14">
+          {/*
+            He turns up beside the objection rather than above it.
+
+            This is the only heading on the page written in somebody else's
+            voice - it is the reader's own line, quoted back at them - so a
+            character standing next to it reads as the one saying it, and the
+            section becomes a conversation instead of a rebuttal. Centred
+            above, like the closing CTA, he would just be a second badge on a
+            second heading.
+
+            Small, and beside the text rather than over it: the joke is that
+            he is standing there, not that he is announcing anything.
+          */}
+          <div className="text-center mb-24 sm:mb-14">
             <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
               &ldquo;I already have a spreadsheet&rdquo;
             </h2>
@@ -762,7 +855,57 @@ export default function Sales() {
                 ))}
               </ul>
             </div>
-            <div className="rounded-2xl border border-white/15 bg-brand-surface p-4 sm:p-6">
+            {/*
+              He is looking over the top of the TradeX card.
+
+              Standing next to a heading is a sticker; leaning on the furniture
+              is a character. The clip window is what sells it - the wrapper is
+              as tall as the part of him that should show, so the rest is cut
+              off behind the card's edge and he reads as being BEHIND it rather
+              than pasted on top.
+
+              Arms crossed, turned to face the spreadsheet column he is
+            unimpressed by - the pose carries the head tilt, so no rotation
+            is added on top of it.
+
+            Over the TradeX card and not the spreadsheet one, deliberately.
+              The spreadsheet is the reader's, and this section already takes
+              care not to mock them for it - "You do. Be honest about how up to
+              date it is." A character sneering over that column would undo the
+              one line on the page that grants them some dignity.
+            */}
+            <div className="relative rounded-2xl border border-white/15 bg-brand-surface p-4 sm:p-6">
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute right-3 sm:right-5 overflow-hidden
+                  -top-[84px] h-[84px] sm:-top-[110px] sm:h-[110px]"
+              >
+                {/*
+                  The window is 56.8% of his height, which is where the
+                  underside of his crossed arms sits - so the card's edge
+                  lands under the arms rather than through them. It shows his
+                  head AND his crossed arms, which is
+                  the whole reason this pose is here - clipped at head height
+                  he would just be the idle pose again and the skepticism
+                  would be invisible. It lands so the card's edge cuts just
+                  under the arms, which reads as him leaning on it.
+
+                  Shorter on a phone, because the gap over a card is smaller
+                  when the text above it wraps - at full height his head sat
+                  across the word "date" in "how up to date it is".
+
+                  Static, by choice. A bob was tried and removed: the effect
+                  here is the clip, not the movement, and a loop that runs
+                  forever on a marketing page is one more thing to get right
+                  on a slow phone for something the still frame already does.
+                */}
+                {/* Two sizes so the PROPORTION shown stays the same: 54 of
+                    110 and 72 of 150 are both a touch under half, which is
+                    head, eyes and smile. Shrinking only the window cut him
+                    off above the smile on a phone. */}
+                <Mascot pose="arms" height={124} facing="left" className="sm:hidden" />
+                <Mascot pose="arms" height={162} facing="left" className="hidden sm:block" />
+              </div>
               <p className="text-[11px] uppercase tracking-[0.14em] text-gray-400 mb-4">TradeX</p>
               <ul className="flex flex-col gap-3">
                 {[
@@ -864,117 +1007,157 @@ export default function Sales() {
       */}
       <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
         <div className="max-w-xl mx-auto px-5 sm:px-8">
-          <div className="text-center mb-10 sm:mb-12">
+          <div className="text-center mb-24 sm:mb-24">
             <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
               Pricing
             </p>
             <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
-              One plan. Everything in it.
+              Everything in every plan
             </h2>
             <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-sm mx-auto text-balance">
               {launched
-                ? 'No tiers, no add-ons, no trade limits.'
+                ? 'What changes is how many accounts sync themselves.'
                 : 'Join the waitlist before launch and lock in founding member pricing.'}
             </p>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-brand-surface p-6 sm:p-8">
-            <div className="text-center pb-7 mb-7 border-b border-white/[0.07]">
-              {!launched && (
-                <p className="text-[11px] uppercase tracking-[0.14em] text-gray-400 mb-3">
-                  Founding member pricing
-                </p>
-              )}
-              <p className="flex items-baseline justify-center gap-1.5">
-                {!launched && (
-                  <span className="text-xl text-gray-600 line-through mr-1 tabular-nums">$24.99</span>
+          {/*
+            And he is leaning on the price.
+
+            The money is the most guarded moment on the page, which is exactly
+            why a familiar face belongs at it - by this point the reader has
+            met him four times, and recognition is the whole return on having
+            a mascot at all.
+
+            The leaning pose, propped against the card's top edge, which is
+            what that pose was generated for. Same clip trick as the
+            objection: he is behind the edge rather than pasted over it.
+
+            The window height is not a look-right guess - it is measured. The
+            underside of his propped arm sits at 53.1% of his height in the
+            render, so the window is 53.1% of whatever height he is given,
+            which puts the card's edge exactly where his arm comes down. Cut
+            lower and the arm rests on nothing, which is what a taller window
+            did here and what Brandon spotted immediately.
+          */}
+          {/*
+            Three tiers, not one price with a link.
+
+            This showed a single card reading "From $29.99", on the theory
+            that choosing a plan belongs on /pricing. The research says
+            otherwise and is specific about it: below $25K annual contract
+            value, show pricing in full, and displaying all three tiers with
+            a highlighted middle beats a starting price. Top-quartile pricing
+            pages convert at 6.5-12% against a 2.8% average, and three tiers
+            with a highlighted middle account for most of that gap.
+
+            The named conversion killer is a visitor who cannot tell the
+            tiers apart - so these cards carry only what DIFFERS, which for
+            this product is how many accounts sync themselves. Everything
+            shared sits underneath once, rather than being repeated down
+            three columns where it reads as a wall.
+
+            No comparison table. The hybrid pattern - cards on top, matrix
+            below - earns its 15-30% in multi-stakeholder B2B, where a buyer
+            has to justify the choice to finance. A trader buying their own
+            journal has nobody to justify it to, and /pricing carries the
+            detail for the minority who want it.
+          */}
+          {/*
+            Above the row, not leaning on the featured card.
+
+            The lean was tried there and measured: at this breakpoint a card
+            is 160px wide, the Most Popular badge is 114 and he is 81, so they
+            overlapped by 73px - and they will at every width until the cards
+            are wide enough for both, which is only large desktop. The badge
+            is worth 25-35% on its own; a decorative character does not get to
+            sit on top of it.
+
+            Centred above the three, presenting them, which is the same thing
+            he does on /pricing and works at every width including a phone.
+          */}
+          <Mascot pose="present" height={92} className="mx-auto mb-7" />
+
+          <div className="grid gap-4 sm:grid-cols-3 sm:gap-4">
+            {TIERS.map((tier) => (
+              <div
+                key={tier.name}
+                className={`relative flex flex-col rounded-2xl border p-5 sm:p-6 ${
+                  tier.featured
+                    ? 'border-brand-blue-light/40 bg-brand-blue/[0.06]'
+                    : 'border-white/10 bg-brand-surface'
+                }`}
+              >
+                {tier.featured && (
+                  <span
+                    className="absolute -top-2.5 left-5 rounded-full bg-brand-blue-light px-2.5 py-1
+                      text-[10px] font-medium uppercase tracking-[0.12em] text-black"
+                  >
+                    Most popular
+                  </span>
                 )}
-                <span className="text-[44px] sm:text-5xl font-semibold text-white tracking-[-0.03em] tabular-nums">
-                  {launched ? '$24.99' : '$14.99'}
-                </span>
-                <span className="text-[15px] text-gray-500">/month</span>
-              </p>
-              <p className="mt-2 text-[12.5px] text-gray-500">
-                {launched ? '14-day money back guarantee \u00b7 Cancel anytime' : 'Locked in forever \u00b7 Cancel anytime'}
-              </p>
-            </div>
-
-            {/*
-              This block used to carry the pre-launch urgency: sync was days
-              away, and the price went up with it. Sync has now shipped, so
-              that lever has been spent. An urgency line that outlives the
-              thing it was counting down to is exactly the copy a sceptical
-              reader notices, and once they catch one claim going stale they
-              stop believing the others.
-
-              What replaces it is the announcement itself. "It is live" is a
-              weaker pull than "the price goes up on Friday" and a far
-              stronger one than a promise that has visibly expired - and it
-              is the only one of the three that is true today. Whether the
-              price actually rises is a pricing decision and belongs with the
-              tier work, not in a copy edit.
-
-              Read-only is said here rather than left to the FAQ because this
-              is the moment the objection lands: the reader has just decided
-              they want it and is now wondering what it can do to their
-              account.
-            */}
-            {launched && (
-              <div className="mb-7 rounded-xl border border-brand-blue-light/25 bg-brand-blue/[0.06] px-4 py-3.5">
-                <p className="text-[12.5px] sm:text-[13px] text-gray-300 leading-relaxed">
-                  <span className="text-white font-medium">MT4 &amp; MT5 sync is live</span>
-                  {' \u2014 '}connect an account once and closed trades land in your journal on their own. Read-only, always.
+                <p className="text-[12px] uppercase tracking-[0.14em] text-gray-400">{tier.name}</p>
+                <p className="mt-2 flex items-baseline gap-1">
+                  <span className="text-[30px] font-semibold text-white tracking-[-0.03em] tabular-nums">
+                    {tier.price}
+                  </span>
+                  <span className="text-[13px] text-gray-500">/mo</span>
                 </p>
-              </div>
-            )}
+                <p className="mt-2 text-[12.5px] text-gray-500 leading-relaxed">{tier.who}</p>
 
-            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-2.5 mb-7">
-              {[
-                /*
-                  This list, not the product tour, is where "is it complete
-                  enough?" gets answered. The research on landing pages is
-                  consistent that clarity beats completeness - piling every
-                  feature into the tour turns three clear ideas into twelve
-                  competing ones - but somebody reading a price is checking
-                  for gaps, and that is the right moment to show there are
-                  none. Everything here exists today.
-                */
-                'Voice journaling',
-                'Nova AI analysis',
-                'Psychology scoring',
-                'NOVA Score',
-                'Pre-trade checklists',
-                'Weekly & monthly reports',
-                'Trading rules & confluences',
-                'Performance analytics',
-                'Unlimited trades',
-                'Up to 5 accounts',
-                'MT4 & MT5 sync',
-                'CSV import',
-                'Notes',
-              ].map((feature) => (
-                <li key={feature} className="flex items-center gap-2.5 text-[13.5px] text-gray-300">
-                  {/* Blue, matching the same list on /pricing and /features.
-                      Grey here and blue there made one list look like a
-                      lesser version of the other. The hero's three checks
-                      stay grey on purpose - that block is deliberately
-                      monochrome so the first blue on the page is the product
-                      panel, where it means something. */}
-                  <Check className="w-3.5 h-3.5 flex-shrink-0 text-brand-blue-light" strokeWidth={3} />
-                  {feature}
+                {/* Only the lines that differ between plans. */}
+                <ul className="mt-4 flex flex-col gap-2">
+                  {tier.lines.filter((l) => l.included).slice(0, 2).map((line) => (
+                    <li key={line.text} className="flex gap-2 text-[12.5px] text-gray-300 leading-snug">
+                      <Check className="mt-[3px] w-3.5 h-3.5 flex-shrink-0 text-brand-blue-light" strokeWidth={3} />
+                      {line.text}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+
+          {/*
+            What every plan contains, once. Same six outcomes as /pricing,
+            from the same module, so the two pages cannot drift.
+          */}
+          <div className="mt-5 rounded-2xl border border-white/[0.07] bg-brand-surface p-5 sm:p-6">
+            <p className="text-[11px] uppercase tracking-[0.14em] text-gray-400 mb-4">
+              In every plan
+            </p>
+            <ul className="grid gap-x-8 gap-y-2.5 sm:grid-cols-2">
+              {IN_EVERY_PLAN.map((item) => (
+                <li key={item} className="flex gap-2.5 text-[13px] text-gray-300 leading-relaxed">
+                  <Check className="mt-[3px] w-3.5 h-3.5 flex-shrink-0 text-brand-blue-light" strokeWidth={2.5} />
+                  {item}
                 </li>
               ))}
             </ul>
+            <p className="mt-4 text-[12px] text-gray-500 leading-relaxed">{ALSO_INCLUDED}</p>
+          </div>
 
+          <div className="mt-7 flex flex-col items-center gap-3">
             {launched ? (
-              <Link
-                to="/auth?mode=signup"
-                className="w-full inline-flex items-center justify-center gap-2 px-7 py-3.5
-                  rounded-full bg-white text-black text-[14px] font-medium hover:bg-gray-200 transition-colors"
-              >
-                Start journaling
-                <ArrowRight className="w-4 h-4" />
-              </Link>
+              <>
+                <Link
+                  to="/auth?mode=signup"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5
+                    rounded-full bg-white text-black text-[14px] font-medium hover:bg-gray-200 transition-colors"
+                >
+                  Start journaling
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+                <p className="text-[12px] text-gray-500">
+                  14-day money back guarantee &middot; Cancel anytime
+                </p>
+                <Link
+                  to="/pricing"
+                  className="text-[13px] text-gray-500 hover:text-white transition-colors underline underline-offset-[3px] decoration-white/20 hover:decoration-white/50"
+                >
+                  Full plan comparison
+                </Link>
+              </>
             ) : (
               <SignupOrWaitlist
                 preLaunchFootnote={
@@ -1161,6 +1344,21 @@ export default function Sales() {
       */}
       <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
         <div className="max-w-xl mx-auto px-5 sm:px-8 text-center">
+          {/*
+            He appears once, here, and not anywhere above.
+
+            Everything before this point is the argument - what it costs you,
+            what the numbers say, why the spreadsheet is not enough - and that
+            argument is what justifies the price. A character standing next to
+            it competes with it. By this section the case is made and the only
+            thing left is the decision, which is the one moment on the page
+            where warmth helps rather than undercuts.
+
+            Sized so he reads as a small presence rather than a banner: he is
+            greeting the reader at the door, not blocking it.
+          */}
+          <Mascot height={150} className="mx-auto mb-6 sm:mb-7" />
+
           <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
             Stop guessing why you lose
           </h2>

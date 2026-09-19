@@ -38,7 +38,28 @@ export default function PasswordStrengthIndicator({ password }: PasswordStrength
     return score === 4 ? 'Strong' : 'Weak';
   };
 
-  if (!password) return null;
+  /*
+    Shown before anything is typed, not after.
+
+    This returned null on an empty field, so the rules only appeared once
+    somebody had already guessed at one - and a rule you learn by failing it
+    is an error message wearing a different hat. Empty, it reads as plain
+    grey helper text; as the field fills, each line ticks off.
+  */
+  if (!password) {
+    return (
+      <ul className="mt-2 space-y-1">
+        {requirements.map((req) => (
+          <li key={req.label} className="flex items-center gap-2 text-xs text-gray-500">
+            <span aria-hidden="true" className="w-3.5 h-3.5 flex items-center justify-center">
+              <span className="w-1 h-1 rounded-full bg-gray-600" />
+            </span>
+            {req.label}
+          </li>
+        ))}
+      </ul>
+    );
+  }
 
   return (
     <div className="mt-2 space-y-3">
