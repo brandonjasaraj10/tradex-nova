@@ -1150,22 +1150,21 @@ export default function Dashboard() {
           splitting would only make it scroll sooner.
         */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mt-6 items-stretch">
-          <motion.div variants={fadeInUp} className="min-w-0">
-            <ProgressGrid userId={userId ?? ''} accountId={selectedAccount?.id ?? null} />
-          </motion.div>
-          <motion.div variants={fadeInUp} className="min-w-0" data-tour="psychology-score">
-            <PsychologyScore />
-          </motion.div>
-        </div>
+          {/*
+            The grid and the calendar share the left column, stacked.
 
-        <div className="grid grid-cols-1 gap-4 mt-6">
-          {/* The calendar has the row to itself now that psychology sits beside
-              the progress grid above. */}
-          <div className="space-y-4">
-
-            {/* Calendar - Full Width */}
-            <motion.div variants={fadeInUp} className="h-full" data-tour="calendar">
-              <Card variant="default" className="bg-[#111]/80 p-3 sm:p-4 lg:p-5 h-full flex flex-col">
+            The psychology panel is about three times the height of the grid,
+            so when the grid had the column to itself the left half of the row
+            was mostly empty and the calendar started below all of it. Stacking
+            them fills that space with the thing that was going to come next
+            anyway.
+          */}
+          <div className="min-w-0 space-y-4">
+            <motion.div variants={fadeInUp}>
+              <ProgressGrid userId={userId ?? ''} accountId={selectedAccount?.id ?? null} />
+            </motion.div>
+            <motion.div variants={fadeInUp} data-tour="calendar">
+              <Card variant="default" className="bg-[#111]/80 p-3 sm:p-4 lg:p-5 flex flex-col">
                 {/*
                   Stacked on a phone. The month, the arrows, the P&L/Psych
                   toggle, the eye and Today do not fit on one line at 390px,
@@ -1283,7 +1282,7 @@ export default function Dashboard() {
                           transition-all overflow-hidden
                         `}
                       >
-                        <div className="h-full flex flex-col justify-between min-w-0">
+                        <div className="flex flex-col justify-between min-w-0">
                           <span className="text-[8px] sm:text-[9px] lg:text-[10px] xl:text-xs font-medium">{day.day}</span>
                           {calendarViewMode === 'pnl' && !day.isEmpty && !day.future && (
                             <div className="text-[7px] sm:text-[8px] lg:text-[9px] xl:text-[10px] font-medium mt-0.5 sm:mt-1 min-w-0 leading-tight">
@@ -1325,33 +1324,43 @@ export default function Dashboard() {
               </Card>
             </motion.div>
           </div>
+          {/*
+            Stretches to the calendar beside it rather than stopping short.
 
+            Psychology on its own ended about 150px above the bottom of the
+            left column, leaving a hole in the right of the page. Letting the
+            card fill the row is the whole fix - no rearranging, just the
+            panel using the height it already had available.
+          */}
+          <motion.div variants={fadeInUp} className="min-w-0 h-full" data-tour="psychology-score">
+            <PsychologyScore />
+          </motion.div>
         </div>
 
         {/* NOVAScore Detailed Breakdown */}
         <motion.div variants={fadeInUp} className="mt-6">
-          <Card variant="gradient" className="bg-gradient-to-br from-gold-400/10 to-gold-400/5 p-5 border border-gold-400/20">
-            <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gold-400/10 flex items-center justify-center">
-                  <Brain className="w-5 h-5 text-gold-400" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-medium">Your NOVA Score</h2>
-                  <p className="text-sm text-gray-400">Comprehensive performance analysis</p>
-                </div>
-              </div>
-            </div>
-            <div className="w-full">
-              <NOVAScore
-                breakdown={novaScore}
-                size="md"
-                showBreakdown={true}
-                periodLabel={formatPeriodLabel(dateRange.startDate, dateRange.endDate)}
-              />
-            </div>
-          </Card>
-        </motion.div>
+  <Card variant="gradient" className="bg-gradient-to-br from-gold-400/10 to-gold-400/5 p-5 border border-gold-400/20">
+    <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl bg-gold-400/10 flex items-center justify-center">
+          <Brain className="w-5 h-5 text-gold-400" />
+        </div>
+        <div>
+          <h2 className="text-lg font-medium">Your NOVA Score</h2>
+          <p className="text-sm text-gray-400">Comprehensive performance analysis</p>
+        </div>
+      </div>
+    </div>
+    <div className="w-full">
+      <NOVAScore
+        breakdown={novaScore}
+        size="md"
+        showBreakdown={true}
+        periodLabel={formatPeriodLabel(dateRange.startDate, dateRange.endDate)}
+      />
+    </div>
+  </Card>
+</motion.div>
 
         {/* Main Content Grid */}
         <motion.div variants={fadeInUp} className="grid grid-cols-1 xl:grid-cols-2 gap-4 mt-6">
