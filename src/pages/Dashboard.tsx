@@ -17,6 +17,7 @@ import { calculateNOVAScore, type NOVAScoreBreakdown } from '../services/novaSco
 import { getPsychologyAggregate } from '../services/psychologyChecks';
 import { useDataSync } from '../lib/dataSync';
 import PsychologyScore from '../components/shared/PsychologyScore';
+import ProgressGrid from '../components/dashboard/ProgressGrid';
 import {
   getUserConfluences,
   getTradingPlanSettings,
@@ -98,6 +99,17 @@ function WinningDaysCard({ winningDays }: { winningDays: number }) {
 export default function Dashboard() {
   const navigate = useNavigate();
   const { accounts, selectedAccount, setSelectedAccount, refreshAccounts } = useAccount();
+
+  /*
+    The grid is scoped per account and needs the user id to ask for it. The
+    page resolves the user in five separate handlers already and keeps none
+    of it, so this holds it once.
+  */
+  useEffect(() => {
+    let cancelled = false;
+    getCurrentUser().then((u) => { if (!cancelled) setUserId(u?.id ?? null); });
+    return () => { cancelled = true; };
+  }, []);
   /*
     Everything this page loads comes from these four. Notably not
     user_profiles - completing the tour or editing a profile used to re-run
@@ -118,6 +130,7 @@ export default function Dashboard() {
   const [newConfluence, setNewConfluence] = useState({ name: '', description: '' });
   const [loading, setLoading] = useState(true);
   const [novaScore, setNovaScore] = useState<NOVAScoreBreakdown | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [recentTrades, setRecentTrades] = useState<Trade[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [showAddNote, setShowAddNote] = useState(false);
@@ -1119,9 +1132,36 @@ export default function Dashboard() {
         )}
 
         {/* Second Section - Calendar and NOVA AI */}
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 mt-6">
-          {/* Left Column - Calendar */}
-          <div className="xl:col-span-6 space-y-4">
+        {/*
+          Sits above the calendar rather than beside it: a year of weeks is a
+          wide, short shape, and the calendar below answers a different
+          question - this one is "am I doing the work", that one is "what
+          happened on the 17th".
+        */}
+        {/*
+          Half and half on a wide screen.
+
+          The grid is 53 weeks of 13px, about 690px, so full width left most of
+          a 1920 monitor empty to its right - a card mostly made of nothing.
+          Psychology fills that space and belongs there: both answer "how am I
+          doing", where the calendar below answers "what happened on the 17th".
+
+          Stacked below xl, where half a screen is narrower than the grid and
+          splitting would only make it scroll sooner.
+        */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mt-6 items-stretch">
+          <motion.div variants={fadeInUp} className="min-w-0">
+            <ProgressGrid userId={userId ?? ''} accountId={selectedAccount?.id ?? null} />
+          </motion.div>
+          <motion.div variants={fadeInUp} className="min-w-0" data-tour="psychology-score">
+            <PsychologyScore />
+          </motion.div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 mt-6">
+          {/* The calendar has the row to itself now that psychology sits beside
+              the progress grid above. */}
+          <div className="space-y-4">
 
             {/* Calendar - Full Width */}
             <motion.div variants={fadeInUp} className="h-full" data-tour="calendar">
@@ -1286,12 +1326,6 @@ export default function Dashboard() {
             </motion.div>
           </div>
 
-          {/* Right Column - Psychology Score */}
-          <div className="xl:col-span-6 space-y-4">
-            <motion.div variants={fadeInUp} className="h-full" data-tour="psychology-score">
-              <PsychologyScore />
-            </motion.div>
-          </div>
         </div>
 
         {/* NOVAScore Detailed Breakdown */}
