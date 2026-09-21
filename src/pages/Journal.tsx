@@ -2089,11 +2089,6 @@ export default function Journal() {
                               ) : (
                                 <h4 className="font-medium text-gray-400 truncate">Untitled Entry</h4>
                               )}
-                              {selectedFolder?.template_type !== 'notes' && (editingEntryId === entry.id ? entryForm.symbol : entry.symbol) && (
-                                <span className="px-2 py-0.5 bg-blue-400/10 text-blue-400 text-xs rounded">
-                                  {editingEntryId === entry.id ? entryForm.symbol : entry.symbol}
-                                </span>
-                              )}
                               {selectedFolder?.template_type !== 'notes' && (editingEntryId === entry.id ? entryForm.mood : entry.mood) && (
                                 <span className="px-2 py-0.5 bg-blue-400/10 text-blue-400 text-xs rounded" title="Mood">
                                   {editingEntryId === entry.id ? entryForm.mood : entry.mood}
@@ -2105,14 +2100,52 @@ export default function Journal() {
                                 </span>
                               )}
                             </div>
-                            {selectedFolder?.template_type !== 'notes' && ((editingEntryId === entry.id && entryForm.manual_pnl) || entry.manual_pnl) && (
-                              <div className={`text-sm font-medium ${parseFloat((editingEntryId === entry.id ? entryForm.manual_pnl : entry.manual_pnl?.toString()) || '0') >= 0 ? 'text-blue-400' : 'text-gray-400'}`}>
-                                {parseFloat((editingEntryId === entry.id ? entryForm.manual_pnl : entry.manual_pnl?.toString()) || '0') >= 0 ? '+' : ''}${parseFloat((editingEntryId === entry.id ? entryForm.manual_pnl : entry.manual_pnl?.toString()) || '0').toFixed(2)}
-                              </div>
-                            )}
-                            {((editingEntryId === entry.id ? entryForm.content : entry.content) && (editingEntryId === entry.id ? entryForm.content : entry.content).length > 0) && (
-                              <p className="text-sm text-gray-400 mt-1 line-clamp-2">{(editingEntryId === entry.id ? entryForm.content : entry.content).replace(/<[^>]*>/g, '').substring(0, 100)}...</p>
-                            )}
+                            {/*
+                              The facts, in the same shape and the same
+                              colours as everywhere else, because they all
+                              render from buildEntryStats.
+
+                              Every value reads from entryForm while this is
+                              the entry being edited and from the saved row
+                              otherwise - the same pattern the title above
+                              uses - so the card fills in live as Nova
+                              streams an entry in rather than going stale
+                              until the next save.
+                            */}
+                            {(() => {
+                              const live = editingEntryId === entry.id;
+                              const content = (live ? entryForm.content : entry.content) || '';
+                              const isNote = selectedFolder?.template_type === 'notes';
+                              const stats = isNote ? [] : buildEntryStats({
+                                symbol: live ? entryForm.symbol : entry.symbol,
+                                direction: live ? entryForm.direction : entry.direction,
+                                manualPnl: live ? entryForm.manual_pnl : entry.manual_pnl,
+                                positionSize: live ? entryForm.position_size : entry.position_size,
+                                riskReward: extractRiskReward(content),
+                              });
+
+                              /*
+                                A note has no facts to show and never will,
+                                so it keeps the preview it always had rather
+                                than rendering an empty card.
+                              */
+                              if (stats.length === 0) {
+                                return content.length > 0 ? (
+                                  <p className="text-sm text-gray-400 mt-1 line-clamp-2">{content.replace(/<[^>]*>/g, '').substring(0, 100)}...</p>
+                                ) : null;
+                              }
+
+                              return (
+                                <EntryStatRow
+                                  bare
+                                  symbol={live ? entryForm.symbol : entry.symbol}
+                                  direction={live ? entryForm.direction : entry.direction}
+                                  manualPnl={live ? entryForm.manual_pnl : entry.manual_pnl}
+                                  positionSize={live ? entryForm.position_size : entry.position_size}
+                                  riskReward={extractRiskReward(content)}
+                                />
+                              );
+                            })()}
                           </div>
                           {editingEntryId === entry.id && (
                             <div className="flex-shrink-0">
@@ -2431,15 +2464,6 @@ export default function Journal() {
                     </div>
                   )}
                 </div>
-
-                <EntryStatRow
-                  symbol={entryForm.symbol}
-                  direction={entryForm.direction}
-                  positionSize={entryForm.position_size}
-                  manualPnl={entryForm.manual_pnl}
-                  tradeDuration={entryForm.trade_duration}
-                  riskReward={extractRiskReward(entryForm.content)}
-                />
 
                 <div className="relative">
                   <RichTextEditor

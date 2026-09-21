@@ -134,14 +134,21 @@ export function buildEntryStats(input: EntryStatInput): EntryStat[] {
   The labelled row, for the editor. Labels earn their space here because the
   column is wide and the values are being entered rather than scanned.
 */
-export function EntryStatRow(props: EntryStatInput) {
+export function EntryStatRow({ bare = false, ...props }: EntryStatInput & { bare?: boolean }) {
   const stats = buildEntryStats(props);
 
   // Nothing stated yet - an empty bar would just be a line of dead chrome.
   if (stats.length === 0) return null;
 
+  /*
+    `bare` drops the box. Inside the entry card the border and fill are
+    already there, and nesting a second bordered panel inside the first
+    reads as two objects when it is one.
+  */
   return (
-    <div className="mb-3 rounded-lg border border-white/10 bg-brand-elevated px-4 py-3">
+    <div
+      className={bare ? 'mt-2' : 'mb-3 rounded-lg border border-white/10 bg-brand-elevated px-4 py-3'}
+    >
       {/*
         Wraps rather than scrolls. A trade can carry six facts and a phone is
         narrow, so on a small screen these fall onto a second line instead of
