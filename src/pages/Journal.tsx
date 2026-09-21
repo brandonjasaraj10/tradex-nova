@@ -272,6 +272,32 @@ export default function Journal() {
     speech rather than land underneath it. Both need the text from before.
   */
   const voiceBaselineRef = React.useRef<string>('');
+
+  /*
+    Organizing happens while the words are still being spoken, not after.
+
+    liveOrganizedHtmlRef holds the organized note as it stands; organizedUpToRef
+    is the transcript that produced it. Anything said since that point is shown
+    as raw speech underneath, so the box always reads as
+    [organized so far] + [words not folded in yet] - which is what makes it look
+    like it is being written as you talk.
+  */
+  const liveTranscriptRef = React.useRef<string>('');
+  const liveOrganizedHtmlRef = React.useRef<string>('');
+  const organizedUpToRef = React.useRef<string>('');
+  const liveOrganizeInFlightRef = React.useRef(false);
+  const liveOrganizeTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastLiveOrganizeAtRef = React.useRef(0);
+
+  /*
+    Every organize is a billed call against a per-minute cap of 20, so two
+    fences: never more than one in flight, and never closer together than
+    this. A pass takes 8-10 seconds anyway, which on its own holds the rate
+    to about six a minute.
+  */
+  const MIN_MS_BETWEEN_LIVE_ORGANIZES = 5000;
+  // Below this, there is not enough new speech to be worth a call.
+  const MIN_NEW_CHARS_TO_ORGANIZE = 40;
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     title: string;
@@ -281,6 +307,123 @@ export default function Journal() {
     onConfirm: () => void;
   }>({ isOpen: false, title: '', message: '', confirmLabel: 'Confirm', variant: 'danger', onConfirm: () => {} });
 
+  /*
+    Paints the box: what has been organized, then whatever has been said
+    since, still raw.
+
+    Always rebuilt from the baseline captured when the mic started, never
+    from current state - appending to current state would append to the text
+    the previous repaint just wrote, and the entry would multiply.
+  */
+  const renderLiveEntry = React.useCallback((transcript: string, force = false) => {
+    /*
+      While a pass is streaming in, it owns the box.
+
+      Recognition results keep arriving the whole time Nova is writing - the
+      person has not stopped talking - and repainting raw speech over a
+      half-streamed note makes the two flicker against each other. The
+      repaint after the pass finishes passes force, because by then the
+      stream is done but the flag has not been cleared yet.
+    */
+    if (liveOrganizeInFlightRef.current && !force) return;
+
+    const baseline = voiceBaselineRef.current;
+    const organized = liveOrganizedHtmlRef.current;
+    const tail = transcript.slice(organizedUpToRef.current.length).trim();
+
+    let content = baseline;
+    if (organized) content += organized;
+    if (tail) content += `<p>${tail}</p>`;
+
+    setEntryForm(prev => ({ ...prev, content }));
+  }, []);
+
+  /*
+    One organize pass over everything said so far, run while the person is
+    still talking.
+
+    It re-reads the whole transcript rather than only the new part, because a
+    trade note is not additive - a later sentence routinely changes the
+    summary, the P&L or the direction of an earlier one. Re-running on the
+    whole thing keeps one coherent note instead of a pile of fragments, and
+    the result simply replaces what was there.
+  */
+  const runLiveOrganize = React.useCallback(async (transcript: string) => {
+    if (!transcript) return;
+    if (liveOrganizeInFlightRef.current) return;
+    if (Date.now() - lastLiveOrganizeAtRef.current < MIN_MS_BETWEEN_LIVE_ORGANIZES) return;
+
+    const unorganized = transcript.slice(organizedUpToRef.current.length).trim();
+    if (unorganized.length < MIN_NEW_CHARS_TO_ORGANIZE) return;
+
+    liveOrganizeInFlightRef.current = true;
+    lastLiveOrganizeAtRef.current = Date.now();
+
+    const baseline = voiceBaselineRef.current;
+    const isNotes = selectedFolderRef.current?.template_type === 'notes';
+
+    try {
+      const data = await processVoiceJournalEntry(
+        correctTradingTerms(transcript),
+        undefined,
+        isNotes ? [] : namedConfluences(),
+        isNotes ? [] : namedRules(),
+        selectedAccountIdRef.current ?? null,
+        isNotes ? [] : namedPsychChecks(),
+        isNotes ? 'notes' : 'trade',
+        /*
+          Streamed in as Nova writes it. The raw tail is dropped for the
+          duration - showing both at once would display the same sentences
+          twice, once rough and once rewritten.
+        */
+        (partial) => {
+          if (!partial.content) return;
+          setEntryForm(prev => ({ ...prev, content: baseline + partial.content }));
+        }
+      );
+
+      if (data.content) {
+        liveOrganizedHtmlRef.current = data.content;
+        organizedUpToRef.current = transcript;
+      }
+
+      /*
+        The fields fill in while talking too, which is what feeds the stat
+        row above the note. Only ever written when Nova actually returned a
+        value - a later pass that does not mention the P&L must not wipe one
+        an earlier pass established.
+      */
+      if (!isNotes) {
+        setEntryForm(prev => ({
+          ...prev,
+          title: data.title || prev.title,
+          symbol: data.symbol || prev.symbol,
+          direction: data.direction || prev.direction,
+          trade_duration: data.trade_duration || prev.trade_duration,
+          position_size: data.position_size || prev.position_size,
+          manual_pnl:
+            data.manual_pnl !== undefined && data.manual_pnl !== null
+              ? String(data.manual_pnl)
+              : prev.manual_pnl,
+        }));
+      } else if (data.title) {
+        setEntryForm(prev => ({ ...prev, title: data.title || prev.title }));
+      }
+
+      // Words spoken during the pass are not in it - show them under it.
+      renderLiveEntry(liveTranscriptRef.current, true);
+    } catch (error) {
+      /*
+        A failed pass must not interrupt someone mid-sentence. The words are
+        still in the box as raw text and the next pause tries again.
+      */
+      console.error('Live organize failed:', error);
+      renderLiveEntry(liveTranscriptRef.current, true);
+    } finally {
+      liveOrganizeInFlightRef.current = false;
+    }
+  }, [renderLiveEntry]);
+
   const { isListening, isSupported, transcript, startListening, stopListening } = useVoice({
     /*
       The words appear as they are spoken. Nothing here is saved or sent -
@@ -289,13 +432,39 @@ export default function Journal() {
       organized entry when the recording ends.
     */
     onInterim: (text) => {
-      const baseline = voiceBaselineRef.current;
-      setEntryForm(prev => ({
-        ...prev,
-        content: baseline.trim().length > 0 ? `${baseline}<p>${text}</p>` : `<p>${text}</p>`,
-      }));
+      liveTranscriptRef.current = text;
+      renderLiveEntry(text);
+
+      /*
+        Organize on a short pause rather than on every word. A recogniser
+        result arrives several times a second and an organize takes eight,
+        so firing on each one would queue dozens of calls for one sentence.
+        1.2s is long enough to mean "finished that thought" and far short of
+        the 3s that means "finished talking".
+      */
+      if (liveOrganizeTimerRef.current) clearTimeout(liveOrganizeTimerRef.current);
+      liveOrganizeTimerRef.current = setTimeout(() => {
+        void runLiveOrganize(liveTranscriptRef.current);
+      }, 1200);
     },
     onTranscript: async (text) => {
+      if (liveOrganizeTimerRef.current) {
+        clearTimeout(liveOrganizeTimerRef.current);
+        liveOrganizeTimerRef.current = null;
+      }
+
+      /*
+        The three second pause only means "they have stopped talking". By
+        now the note has been organized several times over while they spoke,
+        so this is not a reorganize - it is the last few words that had not
+        been folded in yet, and when there are none it does nothing at all.
+      */
+      const unorganized = text.slice(organizedUpToRef.current.length).trim();
+      if (liveOrganizedHtmlRef.current && unorganized.length < MIN_NEW_CHARS_TO_ORGANIZE) {
+        renderLiveEntry(text, true);
+        return;
+      }
+
       // Apply trading term corrections before processing
       const correctedText = correctTradingTerms(text);
       /*
@@ -1404,6 +1573,15 @@ export default function Journal() {
       stopListening();
     } else {
       voiceBaselineRef.current = entryForm.content ?? '';
+      /*
+        Cleared per recording. Left over from the last one, the organized
+        note and the transcript that produced it would make the next session
+        open with somebody else's entry already in the box.
+      */
+      liveTranscriptRef.current = '';
+      liveOrganizedHtmlRef.current = '';
+      organizedUpToRef.current = '';
+      lastLiveOrganizeAtRef.current = 0;
       startListening();
     }
   };
