@@ -4,10 +4,20 @@ import { useToast } from '../lib/toastContext';
 
 interface UseVoiceOptions {
   onTranscript?: (text: string) => void;
+  /*
+    Fires on every recognition result, including the unconfirmed ones, so a
+    caller can show the words while they are still being spoken.
+
+    Separate from onTranscript on purpose: onTranscript means "this is
+    finished, act on it" and fires once, whereas this fires constantly and
+    the text it carries can still change as the recogniser revises what it
+    heard. A caller must treat it as a preview, never as something to save.
+  */
+  onInterim?: (text: string) => void;
   autoSpeak?: boolean;
 }
 
-export function useVoice({ onTranscript, autoSpeak = false }: UseVoiceOptions = {}) {
+export function useVoice({ onTranscript, onInterim, autoSpeak = false }: UseVoiceOptions = {}) {
   const { showToast } = useToast();
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -18,6 +28,7 @@ export function useVoice({ onTranscript, autoSpeak = false }: UseVoiceOptions = 
   const recognitionRef = useRef<any>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const onTranscriptRef = useRef(onTranscript);
+  const onInterimRef = useRef(onInterim);
   const conversationModeRef = useRef(false);
   const isSpeakingRef = useRef(false);
   const cooldownTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -28,6 +39,10 @@ export function useVoice({ onTranscript, autoSpeak = false }: UseVoiceOptions = 
   useEffect(() => {
     onTranscriptRef.current = onTranscript;
   }, [onTranscript]);
+
+  useEffect(() => {
+    onInterimRef.current = onInterim;
+  }, [onInterim]);
 
   /*
     How long a pause has to be before we decide the sentence is finished.
@@ -87,6 +102,21 @@ export function useVoice({ onTranscript, autoSpeak = false }: UseVoiceOptions = 
         }
 
         const fullTranscript = (currentTranscriptRef.current + ' ' + interimTranscript).trim();
+
+        /*
+          The words go out now, not in three seconds.
+
+          This value was already being computed and then used only as a
+          truthiness check, so everything spoken was on the floor until the
+          silence timer fired - which is why speaking produced nothing on
+          screen at all, then an entry appeared all at once. The pause before
+          processing stays where it is: 3 seconds is there because a shorter
+          one cut people off mid-thought, and showing the text live is what
+          makes that wait stop feeling like a wait.
+        */
+        if (fullTranscript && onInterimRef.current) {
+          onInterimRef.current(fullTranscript);
+        }
 
         if (fullTranscript && !isSpeakingRef.current) {
           speechDebounceTimerRef.current = setTimeout(() => {
