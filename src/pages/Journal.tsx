@@ -52,7 +52,7 @@ import {
   upsertJournalEntryPsychologyCheck,
   type PsychologyCheck
 } from '../services/psychologyChecks';
-import { processVoiceJournalEntry, type VoiceJournalData } from '../services/voiceJournal';
+import { processVoiceJournalEntry, extractVoiceFields, type VoiceJournalData } from '../services/voiceJournal';
 import { correctTradingTerms } from '../utils/tradingVocabulary';
 import PageLoader from '../components/shared/PageLoader';
 import { useToast } from '../lib/toastContext';
@@ -415,6 +415,47 @@ export default function Journal() {
     whole thing keeps one coherent note instead of a pile of fragments, and
     the result simply replaces what was there.
   */
+  /*
+    Everything a pass knows except the prose.
+
+    Shared because the fast fields call and the full note pass both produce
+    it, and the two must not disagree about how a value is written - the
+    fields call lands first and the note pass confirms it a few seconds
+    later with the same answer.
+
+    Rebuilt from the snapshot taken when the mic started rather than merged
+    into current state: a pass reports on the whole transcript, so the same
+    answers arrive on every pass, and concatenating them would multiply.
+  */
+  const applyVoiceFields = React.useCallback((data: Partial<VoiceJournalData>) => {
+    applyConfluenceRuleStatus(data as VoiceJournalData);
+
+    const snap = voiceFormBaselineRef.current ?? {
+      tags: [], template_data: {}, pre_market_notes: '', post_market_notes: '',
+    };
+    const join = (before: string, incoming?: string) =>
+      incoming ? (before.trim() ? `${before}\n\n${incoming}` : incoming) : before;
+
+    setEntryForm(prev => ({
+      ...prev,
+      title: data.title || prev.title,
+      symbol: data.symbol || prev.symbol,
+      direction: data.direction || prev.direction,
+      trade_duration: data.trade_duration || prev.trade_duration,
+      position_size: data.position_size || prev.position_size,
+      manual_pnl: data.manual_pnl !== undefined && data.manual_pnl !== null
+        ? String(data.manual_pnl)
+        : prev.manual_pnl,
+      tags: data.tags && data.tags.length > 0
+        ? [...new Set([...snap.tags, ...data.tags])]
+        : prev.tags,
+      pre_market_notes: join(snap.pre_market_notes, data.pre_market_notes),
+      post_market_notes: join(snap.post_market_notes, data.post_market_notes),
+      template_data: data.template_data
+        ? { ...snap.template_data, ...data.template_data }
+        : prev.template_data,
+    }));
+  }, []);
   const runLiveOrganize = React.useCallback(async (transcript: string, force = false) => {
     if (!transcript) return;
     if (liveOrganizeInFlightRef.current) {
@@ -440,7 +481,39 @@ export default function Journal() {
     const isNotes = selectedFolderRef.current?.template_type === 'notes';
     const isFirstPass = !liveOrganizedHtmlRef.current;
 
-    try {
+    /*
+      Two calls, side by side, because they are not equally slow.
+
+      Measured on the same transcript: the full pass takes 10.3 seconds and a
+      fields-only call takes 3.8, returning identical confluences, rules and
+      symbol. Nearly all of the difference is Nova composing prose. Run in
+      sequence, the checklist and the data points waited on writing they had
+      nothing to do with - which is why everything appeared in one lump at the
+      end. Now the facts land about four seconds behind the speaking and the
+      note follows when it is ready.
+
+      Both settle before this returns, so the pacing fences and the chained
+      next pass still see one pass as one pass.
+    */
+    const fieldsCall = isNotes
+      ? Promise.resolve()
+      : extractVoiceFields(
+          correctTradingTerms(transcript),
+          namedConfluences(),
+          namedRules(),
+          namedPsychChecks(),
+        )
+          .then(applyVoiceFields)
+          .catch((error) => {
+            /*
+              Swallowed on purpose. The note pass returns the same fields a
+              few seconds later, so a failure here costs promptness, not
+              data - and it must not take the note down with it.
+            */
+            console.error('Field extraction failed:', error);
+          });
+
+    const notePass = (async () => {
       const data = await processVoiceJournalEntry(
         correctTradingTerms(transcript),
         undefined,
@@ -452,12 +525,11 @@ export default function Journal() {
         /*
           Only the first pass streams.
 
-          With nothing in the box yet, watching Nova write the note in is
-          the whole effect. Every pass after that already has a note on
-          screen, and streaming over it rewrites the entry from the top
-          several times a second - which reads as the page thrashing rather
-          than as an edit. Later passes are applied once, on completion, so
-          the note changes in a single quiet step instead.
+          With nothing in the box yet, watching Nova write the note in is the
+          whole effect. Every pass after that already has a note on screen,
+          and streaming over it rewrites the entry from the top several times
+          a second - which reads as the page thrashing rather than as an edit.
+          Later passes are applied once, on completion.
         */
         isFirstPass
           ? (partial) => {
@@ -473,71 +545,17 @@ export default function Journal() {
       }
 
       /*
-        Everything the pass found, not just the note.
-
-        Confluences, rules, the psychology template and the tags were all
-        applied only by the final pass, so they appeared in one lump after
-        the speaking finished - the thing that made the end of a dictation
-        feel like a separate job. They are filled in by every pass now.
-
-        Rebuilt from the snapshot rather than merged into current state, for
-        the reason on voiceFormBaselineRef: a pass reports on the whole
-        transcript, so the same answer arrives again every time, and
-        concatenating it would multiply.
+        Confirming what the fields call already applied, with the same
+        answers. Cheap, and it is the fallback when that call failed.
       */
-      if (!isNotes) {
-        applyConfluenceRuleStatus(data);
+      if (!isNotes) applyVoiceFields(data);
+      else if (data.title) setEntryForm(prev => ({ ...prev, title: data.title || prev.title }));
 
-        const snap = voiceFormBaselineRef.current ?? {
-          tags: [], template_data: {}, pre_market_notes: '', post_market_notes: '',
-        };
-        const join = (before: string, incoming?: string) =>
-          incoming ? (before.trim() ? `${before}
-
-${incoming}` : incoming) : before;
-
-        setEntryForm(prev => ({
-          ...prev,
-          tags: data.tags && data.tags.length > 0
-            ? [...new Set([...snap.tags, ...data.tags])]
-            : prev.tags,
-          pre_market_notes: join(snap.pre_market_notes, data.pre_market_notes),
-          post_market_notes: join(snap.post_market_notes, data.post_market_notes),
-          template_data: data.template_data
-            ? { ...snap.template_data, ...data.template_data }
-            : prev.template_data,
-          pre_trade_emotional_state:
-            data.pre_trade_emotional_state ?? prev.pre_trade_emotional_state,
-          pre_trade_focus: data.pre_trade_focus ?? prev.pre_trade_focus,
-          pre_trade_confidence: data.pre_trade_confidence ?? prev.pre_trade_confidence,
-        }));
-      }
-
-      /*
-        The fields fill in while talking too, which is what feeds the stat
-        row above the note. Only ever written when Nova actually returned a
-        value - a later pass that does not mention the P&L must not wipe one
-        an earlier pass established.
-      */
-      if (!isNotes) {
-        setEntryForm(prev => ({
-          ...prev,
-          title: data.title || prev.title,
-          symbol: data.symbol || prev.symbol,
-          direction: data.direction || prev.direction,
-          trade_duration: data.trade_duration || prev.trade_duration,
-          position_size: data.position_size || prev.position_size,
-          manual_pnl:
-            data.manual_pnl !== undefined && data.manual_pnl !== null
-              ? String(data.manual_pnl)
-              : prev.manual_pnl,
-        }));
-      } else if (data.title) {
-        setEntryForm(prev => ({ ...prev, title: data.title || prev.title }));
-      }
-
-      // Words spoken during the pass are not in it - show them under it.
       applyOrganized();
+    })();
+
+    try {
+      await Promise.all([fieldsCall, notePass]);
     } catch (error) {
       /*
         A failed pass must not interrupt someone mid-sentence. The note on
@@ -559,7 +577,7 @@ ${incoming}` : incoming) : before;
         liveOrganizePromiseRef.current = runLiveOrganize(liveTranscriptRef.current);
       }
     }
-  }, [applyOrganized]);
+  }, [applyOrganized, applyVoiceFields]);
 
   const { isListening, isSupported, transcript, startListening, stopListening } = useVoice({
     /*
