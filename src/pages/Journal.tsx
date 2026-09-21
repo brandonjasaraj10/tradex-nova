@@ -260,6 +260,12 @@ export default function Journal() {
   );
   const [showPsychologyTemplate, setShowPsychologyTemplate] = useState(false);
   const [isProcessingVoice, setIsProcessingVoice] = useState(false);
+  /*
+    Distinct from isProcessingVoice, which blocks the mic and announces
+    itself. This one only says Nova is writing while the person keeps
+    talking, and disables nothing.
+  */
+  const [isLiveOrganizing, setIsLiveOrganizing] = useState(false);
   const [isAutoFilling, setIsAutoFilling] = useState(false);
   const lastOrganizedContentRef = React.useRef<string>('');
   const justOrganizedRef = React.useRef(false);
@@ -286,6 +292,17 @@ export default function Journal() {
   const liveOrganizedHtmlRef = React.useRef<string>('');
   const organizedUpToRef = React.useRef<string>('');
   const liveOrganizeInFlightRef = React.useRef(false);
+  /*
+    The pass currently running, so the end of speech can wait for it.
+
+    Stopping talking fires two things a couple of seconds apart: the 1s
+    fallback starts a pass, then the 3s silence decides whether a final one
+    is needed. Without this the second could not see the first - it read an
+    organizedUpTo that had not been updated yet, concluded there was
+    unorganized speech, and ran the whole note again. That is the duplicate
+    pass at the end of every dictation.
+  */
+  const liveOrganizePromiseRef = React.useRef<Promise<void> | null>(null);
   const liveOrganizeTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastLiveOrganizeAtRef = React.useRef(0);
 
@@ -295,9 +312,31 @@ export default function Journal() {
     this. A pass takes 8-10 seconds anyway, which on its own holds the rate
     to about six a minute.
   */
-  const MIN_MS_BETWEEN_LIVE_ORGANIZES = 5000;
+  const MIN_MS_BETWEEN_LIVE_ORGANIZES = 4000;
   // Below this, there is not enough new speech to be worth a call.
   const MIN_NEW_CHARS_TO_ORGANIZE = 40;
+  /*
+    Enough new speech to organize without waiting for a pause.
+
+    Pausing was the only trigger, and a recogniser result arrives several
+    times a second while somebody talks, so the debounce reset on every one
+    of them and never expired until they actually slowed down. Continuous
+    speech therefore produced no organizing at all - which is exactly what
+    it looked like: raw text the whole way, then everything at the end.
+  */
+  const ORGANIZE_ON_NEW_CHARS = 140;
+  /*
+    The first pass goes early on purpose.
+
+    Speech runs about 15 characters a second, so 140 is roughly nine seconds
+    of talking - and with raw dictation no longer shown, that would be nine
+    seconds of empty box before anything appeared, which reads as broken.
+    Sixty characters is about four seconds: enough for Nova to have
+    something real to organize, soon enough that the note starts writing
+    itself while the first sentence is still being said. Later passes can
+    afford to wait, because by then there is already a note to look at.
+  */
+  const FIRST_ORGANIZE_CHARS = 60;
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     title: string;
@@ -315,27 +354,23 @@ export default function Journal() {
     from current state - appending to current state would append to the text
     the previous repaint just wrote, and the entry would multiply.
   */
-  const renderLiveEntry = React.useCallback((transcript: string, force = false) => {
-    /*
-      While a pass is streaming in, it owns the box.
+  /*
+    Shows the organized note, and only ever the organized note.
 
-      Recognition results keep arriving the whole time Nova is writing - the
-      person has not stopped talking - and repainting raw speech over a
-      half-streamed note makes the two flicker against each other. The
-      repaint after the pass finishes passes force, because by then the
-      stream is done but the flag has not been cleared yet.
-    */
-    if (liveOrganizeInFlightRef.current && !force) return;
+    Raw speech used to be painted underneath it while waiting for the next
+    pass. That is the plain dictation nobody wants to look at - the point of
+    this feature is that the words arrive already written - so the box now
+    holds nothing but Nova's version, and stays as it was until the next
+    pass replaces it.
 
-    const baseline = voiceBaselineRef.current;
+    No-ops when the content has not changed, so a pass that produces the
+    same HTML does not reset the editor and throw the cursor around.
+  */
+  const applyOrganized = React.useCallback(() => {
     const organized = liveOrganizedHtmlRef.current;
-    const tail = transcript.slice(organizedUpToRef.current.length).trim();
-
-    let content = baseline;
-    if (organized) content += organized;
-    if (tail) content += `<p>${tail}</p>`;
-
-    setEntryForm(prev => ({ ...prev, content }));
+    if (!organized) return;
+    const next = voiceBaselineRef.current + organized;
+    setEntryForm(prev => (prev.content === next ? prev : { ...prev, content: next }));
   }, []);
 
   /*
@@ -357,10 +392,12 @@ export default function Journal() {
     if (unorganized.length < MIN_NEW_CHARS_TO_ORGANIZE) return;
 
     liveOrganizeInFlightRef.current = true;
+    setIsLiveOrganizing(true);
     lastLiveOrganizeAtRef.current = Date.now();
 
     const baseline = voiceBaselineRef.current;
     const isNotes = selectedFolderRef.current?.template_type === 'notes';
+    const isFirstPass = !liveOrganizedHtmlRef.current;
 
     try {
       const data = await processVoiceJournalEntry(
@@ -372,20 +409,37 @@ export default function Journal() {
         isNotes ? [] : namedPsychChecks(),
         isNotes ? 'notes' : 'trade',
         /*
-          Streamed in as Nova writes it. The raw tail is dropped for the
-          duration - showing both at once would display the same sentences
-          twice, once rough and once rewritten.
+          Only the first pass streams.
+
+          With nothing in the box yet, watching Nova write the note in is
+          the whole effect. Every pass after that already has a note on
+          screen, and streaming over it rewrites the entry from the top
+          several times a second - which reads as the page thrashing rather
+          than as an edit. Later passes are applied once, on completion, so
+          the note changes in a single quiet step instead.
         */
-        (partial) => {
-          if (!partial.content) return;
-          setEntryForm(prev => ({ ...prev, content: baseline + partial.content }));
-        }
+        isFirstPass
+          ? (partial) => {
+              if (!partial.content) return;
+              setEntryForm(prev => ({ ...prev, content: baseline + partial.content }));
+            }
+          : undefined
       );
 
       if (data.content) {
         liveOrganizedHtmlRef.current = data.content;
         organizedUpToRef.current = transcript;
       }
+
+      /*
+        Ticked live, not left to the end.
+
+        These used to be applied only by the final pass. Now that the final
+        pass is skipped whenever the live ones already covered the speech,
+        leaving them there meant a dictated entry could finish with its
+        confluences and rules never marked at all.
+      */
+      if (!isNotes) applyConfluenceRuleStatus(data);
 
       /*
         The fields fill in while talking too, which is what feeds the stat
@@ -411,46 +465,75 @@ export default function Journal() {
       }
 
       // Words spoken during the pass are not in it - show them under it.
-      renderLiveEntry(liveTranscriptRef.current, true);
+      applyOrganized();
     } catch (error) {
       /*
-        A failed pass must not interrupt someone mid-sentence. The words are
-        still in the box as raw text and the next pause tries again.
+        A failed pass must not interrupt someone mid-sentence. The note on
+        screen stays as it was, the speech is still held in the transcript,
+        and the next trigger tries again over all of it.
       */
       console.error('Live organize failed:', error);
-      renderLiveEntry(liveTranscriptRef.current, true);
+      applyOrganized();
     } finally {
       liveOrganizeInFlightRef.current = false;
+      setIsLiveOrganizing(false);
     }
-  }, [renderLiveEntry]);
+  }, [applyOrganized]);
 
   const { isListening, isSupported, transcript, startListening, stopListening } = useVoice({
     /*
-      The words appear as they are spoken. Nothing here is saved or sent -
-      the recogniser revises what it heard as it goes, so this is a preview
-      that gets overwritten on every result and replaced wholesale by the
-      organized entry when the recording ends.
+      Speech arrives here continuously and is never shown as-is. It only
+      feeds the decision about when to organize; the box shows Nova's
+      version or nothing.
     */
     onInterim: (text) => {
       liveTranscriptRef.current = text;
-      renderLiveEntry(text);
 
       /*
-        Organize on a short pause rather than on every word. A recogniser
-        result arrives several times a second and an organize takes eight,
-        so firing on each one would queue dozens of calls for one sentence.
-        1.2s is long enough to mean "finished that thought" and far short of
-        the 3s that means "finished talking".
+        Two triggers, because a pause on its own is not one.
+
+        Somebody describing a trade without stopping produced no organizing
+        at all - the debounce reset on every recogniser result, and results
+        arrive several times a second. Enough new speech now fires a pass on
+        its own, and the pause is only the fallback for somebody who says a
+        little and stops. The in-flight and minimum-gap guards inside
+        runLiveOrganize are what keep this from flooding.
+
+        Nothing is painted here. The box shows the last organized version
+        until the next one replaces it, never the raw dictation.
       */
+      const newChars = text.length - organizedUpToRef.current.length;
+      const threshold = liveOrganizedHtmlRef.current
+        ? ORGANIZE_ON_NEW_CHARS
+        : FIRST_ORGANIZE_CHARS;
       if (liveOrganizeTimerRef.current) clearTimeout(liveOrganizeTimerRef.current);
-      liveOrganizeTimerRef.current = setTimeout(() => {
-        void runLiveOrganize(liveTranscriptRef.current);
-      }, 1200);
+
+      if (newChars >= threshold) {
+        liveOrganizePromiseRef.current = runLiveOrganize(text);
+      } else {
+        liveOrganizeTimerRef.current = setTimeout(() => {
+          liveOrganizePromiseRef.current = runLiveOrganize(liveTranscriptRef.current);
+        }, 1000);
+      }
     },
     onTranscript: async (text) => {
       if (liveOrganizeTimerRef.current) {
         clearTimeout(liveOrganizeTimerRef.current);
         liveOrganizeTimerRef.current = null;
+      }
+
+      /*
+        Wait for whatever is already running before deciding anything.
+
+        A pass started a second or two ago is usually still going, and it is
+        very likely the one that covers these final words. Judging without
+        waiting for it is what produced a second full pass over the same
+        speech at the end of every dictation.
+      */
+      try {
+        await liveOrganizePromiseRef.current;
+      } catch {
+        // a failed pass just means there is still speech to organize below
       }
 
       /*
@@ -461,7 +544,7 @@ export default function Journal() {
       */
       const unorganized = text.slice(organizedUpToRef.current.length).trim();
       if (liveOrganizedHtmlRef.current && unorganized.length < MIN_NEW_CHARS_TO_ORGANIZE) {
-        renderLiveEntry(text, true);
+        applyOrganized();
         return;
       }
 
@@ -472,7 +555,7 @@ export default function Journal() {
         the box now - what is in the box now is the raw dictation this is
         about to replace.
       */
-      await handleVoiceTranscript(correctedText, voiceBaselineRef.current);
+      await handleVoiceTranscript(correctedText, voiceBaselineRef.current, true);
     }
   });
 
@@ -1162,8 +1245,20 @@ export default function Journal() {
     }
   };
 
-  const handleVoiceTranscript = async (text: string, baselineOverride?: string) => {
-    setIsProcessingVoice(true);
+  const handleVoiceTranscript = async (
+    text: string,
+    baselineOverride?: string,
+    /*
+      Dictation passes this. By the time speech ends the note has already
+      been organized several times over, so the last pass is a refinement of
+      something the user is already reading - putting "Processing voice..."
+      over the top of it announces work they did not ask about and makes a
+      finished note look unfinished. The typed paths still show it, because
+      there the banner is the only sign anything is happening.
+    */
+    quiet = false,
+  ) => {
+    if (!quiet) setIsProcessingVoice(true);
     try {
       /*
         Dictating into the Notes folder goes through the notes prompt, the
@@ -1343,7 +1438,7 @@ export default function Journal() {
         content: prev.content ? `${prev.content}\n\n${text}` : text
       }));
     } finally {
-      setIsProcessingVoice(false);
+      if (!quiet) setIsProcessingVoice(false);
     }
   };
 
@@ -2435,6 +2530,9 @@ export default function Journal() {
                   </span>
                   {isProcessingVoice && (
                     <span className="text-xs text-blue-400 animate-pulse">Processing voice...</span>
+                  )}
+                  {isLiveOrganizing && !isProcessingVoice && (
+                    <span className="text-xs text-gray-400 animate-pulse">Nova is writing...</span>
                   )}
                   {isSupported && (
                     <button
