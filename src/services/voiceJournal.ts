@@ -950,8 +950,14 @@ CRITICAL RULES:
       account balance is only there so a stated risk percentage can be turned
       into money, which has no meaning on a general note.
     */
-    const systemPromptWithBalance =
-      mode === 'notes' ? notesSystemPrompt : systemPrompt + balanceContext;
+    /*
+      Sent as two fields rather than one concatenated string so the server
+      can cache the prompt and not the balance. The prompt is identical on
+      every call; the balance changes as the account does, and a single
+      string would break the cache every time it moved.
+    */
+    const promptForMode = mode === 'notes' ? notesSystemPrompt : systemPrompt;
+    const balanceForMode = mode === 'notes' ? '' : balanceContext;
 
     const response = await fetch(
       `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-voice-journal`,
@@ -964,7 +970,8 @@ CRITICAL RULES:
         },
         body: JSON.stringify({
           transcript,
-          systemPrompt: systemPromptWithBalance,
+          systemPrompt: promptForMode,
+          balanceContext: balanceForMode,
           stream: !!onPartial
         }),
       }

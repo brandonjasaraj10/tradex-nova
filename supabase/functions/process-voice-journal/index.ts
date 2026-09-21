@@ -35,7 +35,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { transcript, systemPrompt, existingEntry, stream } = await req.json();
+    const { transcript, systemPrompt, balanceContext, existingEntry, stream } = await req.json();
 
     if (!transcript) {
       return new Response(
@@ -108,23 +108,22 @@ Deno.serve(async (req: Request) => {
     }
 
     /*
-      Split in two so the fixed half can be cached.
+      Everything that does not change goes in front of one breakpoint.
 
-      The trading vocabulary and instrument knowledge are about 4,700 tokens
-      and are byte-identical on every call - the same reference material
-      re-read from scratch every time somebody hits Organize. The caller's
-      own prompt varies, so it goes in an uncached block after them.
+      The first version of this cached only the vocabulary - about 1,965
+      tokens - and left the caller's own prompt, 7,668 tokens and identical
+      on every single call, to be re-read in full every time. That is three
+      quarters of the cost of a call, and it was the half worth caching.
 
-      Order matters: a cache breakpoint only covers the blocks before it, so
-      the stable material has to come first. nova-chat has done this since
-      the caching work in August; this function never got it, which is most
-      of why Organize sits there.
+      The account balance is the only part that genuinely varies, so it goes
+      after the breakpoint in its own block. Nothing else moves: the blocks
+      are concatenated in the same order the single string used to be in, so
+      the model reads exactly the same text it read before.
     */
-    const systemBlocks = [
+    const stableBlocks: Array<Record<string, unknown>> = [
       {
         type: 'text',
         text: TRADING_VOCABULARY_SYSTEM_PROMPT + INSTRUMENT_KNOWLEDGE_SYSTEM_PROMPT,
-        cache_control: { type: 'ephemeral' },
       },
       /*
         Only when there is one. systemPrompt comes off the request body and
@@ -136,9 +135,25 @@ Deno.serve(async (req: Request) => {
         ? [{ type: 'text', text: systemPrompt }]
         : []),
     ];
+
+    /*
+      The breakpoint sits on the LAST stable block, not a fixed one - a
+      breakpoint only covers what precedes it, so pinning it to the
+      vocabulary would leave the prompt after it uncached again. When there
+      is no caller prompt, the vocabulary is the last stable block and takes
+      it instead.
+    */
+    stableBlocks[stableBlocks.length - 1].cache_control = { type: 'ephemeral' };
+
+    const systemBlocks = [
+      ...stableBlocks,
+      ...(typeof balanceContext === 'string' && balanceContext.trim()
+        ? [{ type: 'text', text: balanceContext }]
+        : []),
+    ];
     console.log(
       'System prompt length:',
-      (TRADING_VOCABULARY_SYSTEM_PROMPT + INSTRUMENT_KNOWLEDGE_SYSTEM_PROMPT + (systemPrompt ?? '')).length,
+      (TRADING_VOCABULARY_SYSTEM_PROMPT + INSTRUMENT_KNOWLEDGE_SYSTEM_PROMPT + (systemPrompt ?? '') + (balanceContext ?? '')).length,
     );
 
     /*
