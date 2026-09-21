@@ -74,6 +74,87 @@ export interface NamedItem {
   name: string;
 }
 
+/*
+  Closes off a JSON object that has only been half written.
+
+  A streamed response arrives a few characters at a time, so at any instant
+  the text is almost always invalid JSON - a string left open, a key with no
+  value yet, a brace never closed. Rather than wait for the end, this walks
+  what has arrived, drops whatever fragment is mid-flight, and shuts the
+  containers that are still open, which is enough to parse and show.
+
+  Returns null when there is not yet a usable object.
+*/
+function closeOpenJson(slice: string): string | null {
+  const stack: string[] = [];
+  let inStr = false;
+  let esc = false;
+
+  for (let i = 0; i < slice.length; i++) {
+    const c = slice[i];
+    if (esc) { esc = false; continue; }
+    if (c === '\\') { if (inStr) esc = true; continue; }
+    if (c === '"') { inStr = !inStr; continue; }
+    if (inStr) continue;
+    if (c === '{') stack.push('}');
+    else if (c === '[') stack.push(']');
+    else if (c === '}' || c === ']') { if (stack.pop() === undefined) return null; }
+  }
+
+  let out = esc ? slice.slice(0, -1) : slice;
+  if (inStr) out += '"';
+
+  // Drop whatever was still being written when the text ran out.
+  out = out.replace(/\s+$/, '');
+  out = out.replace(/,\s*$/, '');
+  out = out.replace(/,?\s*"(?:[^"\\]|\\.)*"\s*:\s*$/, '');
+  out = out.replace(/,\s*"(?:[^"\\]|\\.)*"\s*$/, '');
+  out = out.replace(/\{\s*"(?:[^"\\]|\\.)*"\s*$/, '{');
+  out = out.replace(/,\s*$/, '');
+
+  return out + stack.reverse().join('');
+}
+
+/*
+  Best effort parse of a partial stream. Tries the repaired text, and if that
+  still will not parse, falls back to cutting at the last top-level comma -
+  which sacrifices the field in flight to keep every completed one.
+*/
+function parsePartialJson(raw: string): Record<string, unknown> | null {
+  let t = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+  const start = t.indexOf('{');
+  if (start < 0) return null;
+  t = t.slice(start);
+
+  const attempts = [closeOpenJson(t)];
+
+  let depth = 0, inStr = false, esc = false, lastTopComma = -1;
+  for (let i = 0; i < t.length; i++) {
+    const c = t[i];
+    if (esc) { esc = false; continue; }
+    if (c === '\\') { if (inStr) esc = true; continue; }
+    if (c === '"') { inStr = !inStr; continue; }
+    if (inStr) continue;
+    if (c === '{' || c === '[') depth++;
+    else if (c === '}' || c === ']') depth--;
+    else if (c === ',' && depth === 1) lastTopComma = i;
+  }
+  if (lastTopComma > 0) attempts.push(closeOpenJson(t.slice(0, lastTopComma)));
+
+  for (const candidate of attempts) {
+    if (!candidate) continue;
+    try {
+      const parsed = JSON.parse(candidate);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return parsed as Record<string, unknown>;
+      }
+    } catch {
+      // try the next, more conservative, candidate
+    }
+  }
+  return null;
+}
+
 export async function processVoiceJournalEntry(
   transcript: string,
   existingEntry?: any,
@@ -87,7 +168,15 @@ export async function processVoiceJournalEntry(
     reshapes whatever it is given into a trade entry - pointed at a reading
     list or a plan for the week, it invents a trade that was never taken.
   */
-  mode: 'trade' | 'notes' = 'trade'
+  mode: 'trade' | 'notes' = 'trade',
+  /*
+    Supplying this switches the request to a stream and calls back with the
+    entry as it is written. Organize takes 8-10 seconds no matter what, so
+    this is not about finishing sooner - it is about the fields appearing as
+    Nova writes them instead of after. Callers that leave it out get the
+    same single response they always did.
+  */
+  onPartial?: (partial: Partial<VoiceJournalData>) => void
 ): Promise<VoiceJournalData> {
   try {
     const user = await getCurrentUser();
@@ -775,7 +864,8 @@ CRITICAL RULES:
         },
         body: JSON.stringify({
           transcript,
-          systemPrompt: systemPromptWithBalance
+          systemPrompt: systemPromptWithBalance,
+          stream: !!onPartial
         }),
       }
     );
@@ -806,7 +896,69 @@ CRITICAL RULES:
       throw new Error(`Failed to process voice input: ${response.status} - ${errorText}`);
     }
 
-    const data = await response.json();
+    /*
+      Both paths end up handing the same { result } shape to the parsing
+      below, so streaming cannot quietly drift from the normal path - the
+      cleanup, the number coercion and the fallbacks all stay in one place.
+    */
+    let data: { result: string };
+
+    if (onPartial && response.body) {
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let accumulated = '';
+      let streamError: string | null = null;
+
+      /*
+        Parsing on every delta would re-scan the whole object hundreds of
+        times and repaint faster than anyone can read. Once every 120ms is
+        well under the eye's threshold for 'live' and costs almost nothing.
+      */
+      let lastEmit = 0;
+      const emit = (force = false) => {
+        const now = Date.now();
+        if (!force && now - lastEmit < 120) return;
+        lastEmit = now;
+        const partial = parsePartialJson(accumulated);
+        if (partial) onPartial(partial as Partial<VoiceJournalData>);
+      };
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        /*
+          A chunk boundary can land anywhere, including the middle of a
+          multi-byte character or an SSE frame, so only whole frames are
+          taken and the remainder is left in the buffer.
+        */
+        const frames = buffer.split('\n\n');
+        buffer = frames.pop() ?? '';
+
+        for (const frame of frames) {
+          const line = frame.trim();
+          if (!line.startsWith('data:')) continue;
+          let event: { text?: string; done?: boolean; error?: string };
+          try {
+            event = JSON.parse(line.slice(5).trim());
+          } catch {
+            continue;
+          }
+          if (event.error) streamError = event.error;
+          if (event.text) accumulated += event.text;
+        }
+        emit();
+      }
+
+      if (streamError) throw new Error(streamError);
+      emit(true);
+      data = { result: accumulated };
+    } else {
+      data = await response.json();
+    }
+
     console.log('Raw API response:', data);
     let parsedData: VoiceJournalData;
 

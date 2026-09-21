@@ -35,7 +35,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { transcript, systemPrompt, existingEntry } = await req.json();
+    const { transcript, systemPrompt, existingEntry, stream } = await req.json();
 
     if (!transcript) {
       return new Response(
@@ -140,6 +140,83 @@ Deno.serve(async (req: Request) => {
       'System prompt length:',
       (TRADING_VOCABULARY_SYSTEM_PROMPT + INSTRUMENT_KNOWLEDGE_SYSTEM_PROMPT + (systemPrompt ?? '')).length,
     );
+
+    /*
+      Streaming is opt-in, and deliberately so.
+
+      Organize takes 8-10 seconds against a real transcript, and the
+      measurement said almost all of it is Claude writing the answer, not
+      reading the prompt - so there is no version of this that finishes
+      quickly. What streaming changes is the waiting: the client can parse
+      the JSON as it arrives and fill the entry in as it is written, instead
+      of showing a spinner until the whole object lands.
+
+      The flag matters because the edge function deploys to everyone the
+      moment it ships, while the frontend that understands a stream does
+      not. Without an opt-in, a deploy would hand the live site a response
+      shape it cannot read. Old clients send no flag and get the same
+      single JSON body they always did.
+    */
+    if (stream === true) {
+      const claudeStream = anthropic.messages.stream({
+        model: MODEL,
+        max_tokens: 2048,
+        output_config: { effort: 'low' },
+        system: systemBlocks,
+        messages: [{ role: 'user', content: correctedTranscript }],
+      });
+
+      const encoder = new TextEncoder();
+      const body = new ReadableStream({
+        async start(controller) {
+          const send = (obj: unknown) =>
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
+          try {
+            for await (const event of claudeStream) {
+              if (
+                event.type === 'content_block_delta' &&
+                (event.delta as { type?: string }).type === 'text_delta'
+              ) {
+                send({ text: (event.delta as { text: string }).text });
+              }
+            }
+
+            /*
+              The final message carries the usage numbers, which is the only
+              place the cache can be checked on a streamed call.
+            */
+            const final = await claudeStream.finalMessage();
+            console.log('cache', JSON.stringify({
+              created: (final.usage as { cache_creation_input_tokens?: number }).cache_creation_input_tokens ?? 0,
+              read: (final.usage as { cache_read_input_tokens?: number }).cache_read_input_tokens ?? 0,
+              input: final.usage.input_tokens,
+              output: final.usage.output_tokens,
+            }));
+            send({ done: true });
+          } catch (streamError) {
+            /*
+              An error partway through cannot change the status code - the
+              200 and the headers are long gone. It has to travel as an
+              event so the client can tell a failure from a short answer,
+              rather than silently keeping half an entry.
+            */
+            console.error('Streaming error:', streamError);
+            send({ error: (streamError as Error).message ?? 'stream failed' });
+          } finally {
+            controller.close();
+          }
+        },
+      });
+
+      return new Response(body, {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+        },
+      });
+    }
 
     /*
       Tuned for latency - "Organize with Nova" was taking well over 20

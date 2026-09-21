@@ -980,22 +980,72 @@ export default function Journal() {
         not belong.
       */
       if (selectedFolder?.template_type === 'notes') {
+        /*
+          Captured before the call because the note is streamed in as it is
+          written, and each update has to be built from what was in the box
+          beforehand. Reading prev.content instead would append to the text
+          the previous update just wrote, and the note would multiply.
+        */
+        const baseline = entryForm.content ?? '';
+        const merge = (incoming?: string) =>
+          incoming
+            ? (baseline.trim().length > 0 ? `${baseline}\n\n${incoming}` : incoming)
+            : undefined;
+
         const noteData = await processVoiceJournalEntry(
-          text, undefined, [], [], selectedAccount?.id ?? null, [], 'notes'
+          text, undefined, [], [], selectedAccount?.id ?? null, [], 'notes',
+          (partial) => {
+            setEntryForm(prev => ({
+              ...prev,
+              title: partial.title || prev.title,
+              content: merge(partial.content) ?? prev.content,
+            }));
+          }
         );
         setEntryForm(prev => ({
           ...prev,
           title: noteData.title || prev.title,
-          content: noteData.content
-            ? (prev.content && prev.content.trim().length > 0
-                ? `${prev.content}\n\n${noteData.content}`
-                : noteData.content)
-            : prev.content,
+          content: merge(noteData.content) ?? prev.content,
         }));
         return;
       }
 
-      const voiceData: VoiceJournalData = await processVoiceJournalEntry(text, entryForm, namedConfluences(), namedRules(), selectedAccount?.id ?? null, namedPsychChecks());
+      /*
+        Same reason as the notes path: content is appended to, so every
+        streamed update is built from the text that was there before Nova
+        started, not from whatever the last update wrote.
+      */
+      const contentBaseline = entryForm.content ?? '';
+      const mergeContent = (incoming?: string) =>
+        incoming
+          ? (contentBaseline.trim().length > 0
+              ? `${contentBaseline}\n\n${incoming}`
+              : incoming)
+          : undefined;
+
+      const voiceData: VoiceJournalData = await processVoiceJournalEntry(
+        text, entryForm, namedConfluences(), namedRules(), selectedAccount?.id ?? null, namedPsychChecks(), 'trade',
+        /*
+          Only the fields that replace what is there are filled in live. The
+          ones that merge with existing data - tags, the two notes fields and
+          the psychology template - are left to the final apply below, where
+          the whole answer is known; half a merge is worse than a late one.
+        */
+        (partial) => {
+          setEntryForm(prev => ({
+            ...prev,
+            title: partial.title || prev.title,
+            symbol: partial.symbol || prev.symbol,
+            direction: partial.direction || prev.direction,
+            trade_duration: partial.trade_duration || prev.trade_duration,
+            position_size: partial.position_size || prev.position_size,
+            manual_pnl: partial.manual_pnl !== undefined && partial.manual_pnl !== null
+              ? String(partial.manual_pnl)
+              : prev.manual_pnl,
+            content: mergeContent(partial.content) ?? prev.content,
+          }));
+        }
+      );
       applyConfluenceRuleStatus(voiceData);
 
       setEntryForm(prev => ({
@@ -1006,12 +1056,7 @@ export default function Journal() {
         trade_duration: voiceData.trade_duration || prev.trade_duration,
         position_size: voiceData.position_size || prev.position_size,
         manual_pnl: voiceData.manual_pnl !== undefined ? String(voiceData.manual_pnl) : prev.manual_pnl,
-        content: voiceData.content
-          ? (prev.content && prev.content.trim().length > 0
-              ? `${prev.content}\n\n${voiceData.content}`
-              : voiceData.content
-            )
-          : prev.content,
+        content: mergeContent(voiceData.content) ?? prev.content,
         tags: voiceData.tags && voiceData.tags.length > 0
           ? [...new Set([...prev.tags, ...voiceData.tags])]
           : prev.tags,
