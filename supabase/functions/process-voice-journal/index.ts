@@ -5,7 +5,27 @@ import { correctTradingTerms, TRADING_VOCABULARY_SYSTEM_PROMPT, INSTRUMENT_KNOWL
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY ?? '' });
-const MODEL = 'claude-sonnet-5';
+const DEFAULT_MODEL = 'claude-sonnet-5';
+
+/*
+  Only these two, and only by exact name.
+
+  The model is chosen by the caller so the live passes during dictation can
+  use a faster one than a considered rewrite needs. It arrives in a request
+  body, which is not trusted - an open field here would let anyone point
+  this project's key at whatever model they liked and bill it to us.
+*/
+const ALLOWED_MODELS = new Set(['claude-sonnet-5', 'claude-haiku-4-5']);
+
+/*
+  Not every model takes it.
+
+  Haiku 4.5 rejects output_config.effort outright - a 400 back from the API,
+  which surfaced here as a 500 one second into the call. Sending the
+  parameter unconditionally made the model field look broken when the model
+  was fine.
+*/
+const MODELS_WITH_EFFORT = new Set(['claude-sonnet-5']);
 
 /*
   Every call here bills Anthropic (~$0.023 - the instrument vocabulary makes
@@ -35,7 +55,11 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { transcript, systemPrompt, balanceContext, existingEntry, stream } = await req.json();
+    const { transcript, systemPrompt, balanceContext, existingEntry, stream, model } = await req.json();
+
+    const selectedModel = typeof model === 'string' && ALLOWED_MODELS.has(model)
+      ? model
+      : DEFAULT_MODEL;
 
     if (!transcript) {
       return new Response(
@@ -174,9 +198,9 @@ Deno.serve(async (req: Request) => {
     */
     if (stream === true) {
       const claudeStream = anthropic.messages.stream({
-        model: MODEL,
+        model: selectedModel,
         max_tokens: 2048,
-        output_config: { effort: 'low' },
+        ...(MODELS_WITH_EFFORT.has(selectedModel) ? { output_config: { effort: 'low' as const } } : {}),
         system: systemBlocks,
         messages: [{ role: 'user', content: correctedTranscript }],
       });
@@ -246,9 +270,9 @@ Deno.serve(async (req: Request) => {
       and generation length is the dominant cost here.
     */
     const response = await anthropic.messages.create({
-      model: MODEL,
+      model: selectedModel,
       max_tokens: 2048,
-      output_config: { effort: 'low' },
+      ...(MODELS_WITH_EFFORT.has(selectedModel) ? { output_config: { effort: 'low' as const } } : {}),
       system: systemBlocks,
       messages: [{ role: 'user', content: correctedTranscript }],
     });
