@@ -556,6 +556,14 @@ work in plain text. Use them; do not reach past them into ornament.
    Write the arrow as &rarr;. Only for genuine order - never between things
    that merely co-exist.
 
+   THIS IS NOT OPTIONAL WHEN THE ORDER EXISTS. If the trader described a
+   confirmation sequence - a sweep, then a break, then a tap, then a shift,
+   then an entry - the chain goes in as its own line directly under the
+   What happened heading, BEFORE the prose. Writing that order out as a
+   sentence instead is the single most common way one of these notes ends
+   up looking like every other one. The prose that follows then explains
+   why each step mattered, rather than re-listing the steps.
+
 2. KEY LEVELS ON ONE LINE - separated by &middot;
    <p><strong>Entry</strong> 20150 &middot; <strong>Stop</strong> 20130
    &middot; <strong>Target</strong> 20200</p>
