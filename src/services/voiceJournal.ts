@@ -126,9 +126,7 @@ function parsePartialJson(raw: string): Record<string, unknown> | null {
   if (start < 0) return null;
   t = t.slice(start);
 
-  const attempts = [closeOpenJson(t)];
-
-  let depth = 0, inStr = false, esc = false, lastTopComma = -1;
+  let depth = 0, inStr = false, esc = false, lastTopComma = -1, objectEnd = -1;
   for (let i = 0; i < t.length; i++) {
     const c = t[i];
     if (esc) { esc = false; continue; }
@@ -136,9 +134,26 @@ function parsePartialJson(raw: string): Record<string, unknown> | null {
     if (c === '"') { inStr = !inStr; continue; }
     if (inStr) continue;
     if (c === '{' || c === '[') depth++;
-    else if (c === '}' || c === ']') depth--;
+    else if (c === '}' || c === ']') {
+      depth--;
+      if (depth === 0 && objectEnd < 0) objectEnd = i;
+    }
     else if (c === ',' && depth === 1) lastTopComma = i;
   }
+
+  /*
+    Anything after the object closes is not ours.
+
+    Nova sometimes signs off in prose after the JSON - "Got it, logged!" and
+    a sentence about the session - because the shared trading vocabulary tells
+    it to confirm a log that way. That instruction is meant for the chat, it
+    arrives in an earlier system block than this prompt, and telling it not to
+    here has not stopped it. Trailing text is cheap to ignore and expensive to
+    keep arguing with, so the object is simply cut at its own closing brace.
+  */
+  if (objectEnd >= 0) t = t.slice(0, objectEnd + 1);
+
+  const attempts = [closeOpenJson(t)];
   if (lastTopComma > 0) attempts.push(closeOpenJson(t.slice(0, lastTopComma)));
 
   for (const candidate of attempts) {
@@ -536,15 +551,11 @@ real content for it, and let the writing run in the order the trade happened.
 <p><em>Summary.</em> Two or three sentences: what was taken, what happened,
 what it means. Prose.</p>
 
-<h3>The trade</h3>
-<ul>
-<li><strong>Symbol:</strong> ...</li>
-<li><strong>Direction:</strong> ...</li>
-<li><strong>Position Size / Risk:</strong> ...</li>
-<li><strong>P&L:</strong> ...</li>
-</ul>
-Only the facts that were stated. This is the one place a list is right,
-because these genuinely are separate values.
+Do not open with a facts list. Symbol, direction, size and P&L are already
+captured as their own fields on the entry, and repeating them at the top of
+the note only duplicates what the form holds. State them inside the prose
+where they carry meaning - "four micros on NQ, stop twenty points below" -
+and leave the structured fields to do the rest.
 
 <h3>What happened</h3>
 <p>The setup, the entry, how it was managed and how it ended, written as
@@ -605,22 +616,26 @@ POSITION SIZE - always keep the unit, never reduce it to a bare number:
 • "Asian session" → "<li><strong>Session:</strong> Asian</li>"
 • "bearish candle break" → "<li>Primary setup type: Bearish breakout</li>"
 • "I was super stressed" → "<li>Elevated stress levels affecting decision clarity</li>"
-• "totally nailed the entry" → "<li>Entry executed with precision at optimal price level</li>"
-• "kinda messed up" → "<li>Entry timing suboptimal, requires refinement</li>"
+• "totally nailed the entry" → "The entry was executed precisely at the level."
+• "kinda messed up" → "The entry was mistimed and needs refining."
+Raise the register, keep it a sentence. Turning a phrase into a list item is
+what produced pages of bullets in the first place.
 
 ---
 
 FORMATTING RULES (HTML):
-1. NEVER output single paragraph blocks - ALWAYS use proper HTML structure
-2. ALWAYS use <h2> for main sections and <h3> for subsections
-3. ALWAYS use <ul><li> for bullet lists
-4. ALWAYS use <strong> to bold critical metrics (Symbol, P&L, Risk, etc.)
-5. ALWAYS wrap list items in <li> tags inside <ul> tags
-6. ALWAYS keep each list item concise (1-2 sentences max)
-7. ALWAYS highlight actionable insights
-8. ALWAYS make it instantly scannable with proper HTML structure
-9. ALWAYS use professional trading terminology
-10. NEVER use markdown syntax (##, **, •) - ONLY use HTML tags
+1. Prose is the default. A list is allowed only when it holds separate items
+   the prose has NOT already said - and it may never restate, summarise or
+   index a paragraph that sits near it. If a sentence already reports the
+   stop, the target and the confluences, a list repeating them underneath is
+   duplication, not structure. When in doubt, no list.
+2. <h3> only when there is enough material under it to need a heading. Two
+   sentences do not need one. A note with no headings at all is fine.
+3. <p> for paragraphs, <strong> sparingly for a figure that matters inside a
+   sentence - not to label every value.
+4. Never use markdown syntax (##, **, bullets) - only HTML tags.
+5. Never invent a section to have something to put under it. If the trader
+   said nothing about psychology, the note has no psychology section.
 
 SUMMARIZATION INTELLIGENCE:
 • Extract the essence of long rambling thoughts
