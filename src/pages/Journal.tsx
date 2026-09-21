@@ -8,7 +8,7 @@ import Button from '../components/shared/Button';
 import ConfirmModal from '../components/shared/ConfirmModal';
 import MiniCalendar from '../components/journal/MiniCalendar';
 import { LazyRichTextEditor as RichTextEditor } from '../components/journal/LazyRichTextEditor';
-import { EntryStatRow, extractRiskReward } from '../components/journal/EntryStatRow';
+import { EntryStatRow, EntryStatStrip, buildEntryStats, extractRiskReward } from '../components/journal/EntryStatRow';
 import { PsychologyTemplate } from '../components/journal/PsychologyTemplate';
 import NovaJournalAssistant from '../components/journal/NovaJournalAssistant';
 import AccountSelector from '../components/shared/AccountSelector';
@@ -1738,7 +1738,41 @@ export default function Journal() {
                     {entry.title && (
                       <div className="text-sm font-medium mt-1 truncate">{entry.title}</div>
                     )}
-                    <div className="text-xs text-gray-500 mt-1 line-clamp-2">{entry.content?.replace(/<[^>]*>/g, '')}</div>
+                    {/*
+                      The facts if this entry has any, the opening of the note
+                      if it does not.
+
+                      A trade's numbers say more at a glance than the first
+                      two lines of its prose, which are usually a summary
+                      sentence that reads the same on every entry. But a note
+                      in the Notes folder has no symbol or P&L at all, and an
+                      entry showing nothing under its title would be worse
+                      than the preview ever was - so the preview stays as the
+                      fallback rather than being deleted.
+                    */}
+                    {buildEntryStats({
+                      /*
+                        Symbol is left out of this count on purpose, and it
+                        has to match the strip's own omit list below.
+                        Counting it meant an entry that had a symbol and
+                        nothing else passed this check, then rendered a strip
+                        that omitted the only stat it had - so the card
+                        showed no facts and no preview either, just a title.
+                      */
+                      direction: entry.direction,
+                      manualPnl: entry.manual_pnl,
+                      riskReward: extractRiskReward(entry.content || ''),
+                    }).length > 0 ? (
+                      <EntryStatStrip
+                        symbol={entry.symbol}
+                        direction={entry.direction}
+                        manualPnl={entry.manual_pnl}
+                        riskReward={extractRiskReward(entry.content || '')}
+                        omit={['symbol']}
+                      />
+                    ) : (
+                      <div className="text-xs text-gray-500 mt-1 line-clamp-2">{entry.content?.replace(/<[^>]*>/g, '')}</div>
+                    )}
                     {showAccountLabels && (
                       <div className="mt-1.5">
                         <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-gray-400 border border-white/10">

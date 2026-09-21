@@ -7,10 +7,15 @@ import { valueColorClass } from '../../utils/formatMetrics';
   column of prose - so a note had only one dimension no matter how it was
   written. Bullets did not fix that, because a bullet list is still a column.
 
-  These are the same values the form already holds further down the page, so
-  nothing here is new data or a second source of truth. What changes is that
-  they are legible at a glance instead of buried in a sentence, which is the
-  part that made an organized entry look organized.
+  These are the same values the form already holds, so nothing here is new
+  data or a second source of truth. What changes is that they are legible at
+  a glance instead of buried in a sentence, which is the part that made an
+  organized entry look organized.
+
+  Two renderers, one set of stats: EntryStatRow for the editor, where there
+  is room for labels, and EntryStatStrip for the entry list, where there is
+  not. Both read from buildEntryStats so a value can never format one way in
+  the list and another way in the editor.
 */
 
 /*
@@ -38,88 +43,99 @@ export function extractRiskReward(html: string): string | null {
   return null;
 }
 
-interface EntryStatRowProps {
-  symbol: string;
-  direction: string;
-  positionSize: string;
-  manualPnl: string;
-  tradeDuration: string;
+export interface EntryStatInput {
+  symbol?: string | null;
+  direction?: string | null;
+  positionSize?: string | null;
   /*
-    Not a form field - it only ever exists inside Nova's prose, so it is
-    lifted out by the caller rather than stored. Optional for that reason.
+    A string in the editor, where it is a text input a person types into, and
+    a number once it has been saved to the database. Accepting both is what
+    lets the list and the editor share this.
   */
+  manualPnl?: string | number | null;
+  tradeDuration?: string | null;
   riskReward?: string | null;
 }
 
-interface Stat {
+export interface EntryStat {
+  key: string;
   label: string;
   value: string;
   className?: string;
 }
 
-export function EntryStatRow({
-  symbol,
-  direction,
-  positionSize,
-  manualPnl,
-  tradeDuration,
-  riskReward,
-}: EntryStatRowProps) {
-  const stats: Stat[] = [];
+const text = (v: string | number | null | undefined) => (v ?? '').toString().trim();
 
-  if (symbol.trim()) {
-    stats.push({ label: 'Symbol', value: symbol.trim().toUpperCase() });
+export function buildEntryStats(input: EntryStatInput): EntryStat[] {
+  const stats: EntryStat[] = [];
+
+  if (text(input.symbol)) {
+    stats.push({ key: 'symbol', label: 'Symbol', value: text(input.symbol).toUpperCase() });
   }
 
-  if (direction.trim()) {
+  if (text(input.direction)) {
     stats.push({
+      key: 'direction',
       label: 'Direction',
-      value: direction.trim().toUpperCase(),
+      value: text(input.direction).toUpperCase(),
       /*
         Long reads as the accent, short as plain grey - the same pairing the
         brand guide uses for gains and losses, so direction and P&L do not
         compete for meaning with two different colour languages.
       */
-      className: direction.trim().toLowerCase() === 'long' ? 'text-brand-blue-light' : 'text-gray-300',
+      className:
+        text(input.direction).toLowerCase() === 'long' ? 'text-brand-blue-light' : 'text-gray-300',
     });
   }
 
-  if (riskReward && riskReward.trim()) {
-    stats.push({ label: 'R:R', value: riskReward.trim() });
+  if (text(input.riskReward)) {
+    stats.push({ key: 'rr', label: 'R:R', value: text(input.riskReward) });
   }
 
-  if (positionSize.trim()) {
-    stats.push({ label: 'Size / Risk', value: positionSize.trim() });
+  if (text(input.positionSize)) {
+    stats.push({ key: 'size', label: 'Size / Risk', value: text(input.positionSize) });
   }
 
   /*
-    Parsed rather than trusted: manual_pnl is a text input, so it can hold
-    anything a person typed. An unparseable value still shows - it is what
-    they meant - but only a real number gets the gain/loss colour.
+    Parsed rather than trusted: in the editor manual_pnl is a text input, so
+    it can hold anything a person typed. An unparseable value still shows -
+    it is what they meant - but only a real number gets the gain/loss colour.
   */
-  if (manualPnl.trim()) {
-    const parsed = Number(manualPnl.replace(/[$,\s]/g, ''));
+  if (text(input.manualPnl)) {
+    const parsed = Number(text(input.manualPnl).replace(/[$,\s]/g, ''));
     const isNumber = Number.isFinite(parsed);
     stats.push({
+      key: 'pnl',
       label: 'P&L',
       /*
         Whole amounts stay whole, anything else gets both decimal places.
         Money with a single decimal - "-$420.5" - reads as a typo, while
-        forcing ".00" onto every round number is noise on a page full of them.
+        forcing ".00" onto every round number is noise on a page full of
+        them. Breakeven takes no sign at all.
       */
       value: isNumber
         ? `${parsed === 0 ? '' : parsed > 0 ? '+' : '-'}$${Math.abs(parsed).toLocaleString(undefined, {
             minimumFractionDigits: Number.isInteger(parsed) ? 0 : 2,
             maximumFractionDigits: 2,
           })}`
-        : manualPnl.trim(),
+        : text(input.manualPnl),
       className: isNumber ? valueColorClass(parsed) : undefined,
     });
   }
 
-  if (tradeDuration.trim()) {
-    stats.push({ label: 'Duration', value: tradeDuration.trim() });
+  if (text(input.tradeDuration)) {
+    stats.push({ key: 'duration', label: 'Duration', value: text(input.tradeDuration) });
   }
+
+  return stats;
+}
+
+/*
+  The labelled row, for the editor. Labels earn their space here because the
+  column is wide and the values are being entered rather than scanned.
+*/
+export function EntryStatRow(props: EntryStatInput) {
+  const stats = buildEntryStats(props);
 
   // Nothing stated yet - an empty bar would just be a line of dead chrome.
   if (stats.length === 0) return null;
@@ -133,7 +149,7 @@ export function EntryStatRow({
       */}
       <dl className="flex flex-wrap items-start gap-x-6 gap-y-3">
         {stats.map((stat) => (
-          <div key={stat.label} className="min-w-0">
+          <div key={stat.key} className="min-w-0">
             <dt className="text-[10px] font-medium uppercase tracking-wider text-gray-500">
               {stat.label}
             </dt>
@@ -147,6 +163,37 @@ export function EntryStatRow({
           </div>
         ))}
       </dl>
+    </div>
+  );
+}
+
+/*
+  The unlabelled strip, for the entry list.
+
+  Same values, same colours, no labels - the list sits in a column narrow
+  enough that six label/value stacks would wrap into a mess, and in a list
+  the reader is comparing entries rather than reading one, so the shape of
+  "+$1,796.92" in blue carries the meaning that "P&L" would have.
+
+  `omit` exists because the list already shows the symbol as its own badge in
+  the corner; repeating it in the strip would be the duplication this whole
+  change was meant to remove.
+*/
+export function EntryStatStrip({ omit = [], ...props }: EntryStatInput & { omit?: string[] }) {
+  const stats = buildEntryStats(props).filter((s) => !omit.includes(s.key));
+
+  if (stats.length === 0) return null;
+
+  return (
+    <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+      {stats.map((stat, i) => (
+        <span key={stat.key} className="flex items-center gap-2">
+          {i > 0 && <span aria-hidden className="text-gray-700">·</span>}
+          <span className={`text-xs font-semibold tabular-nums ${stat.className ?? 'text-gray-300'}`}>
+            {stat.value}
+          </span>
+        </span>
+      ))}
     </div>
   );
 }
