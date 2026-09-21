@@ -377,3 +377,27 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus {
 .prose-invert hr {
   @apply border-0 border-t border-white/10 my-6;
 }
+/*
+  Nova replacing the note.
+
+  The document is swapped wholesale, so without this the note cuts to the new
+  version with nothing to connect the two. A brief dip and recovery reads as
+  the note changing rather than as the page glitching.
+*/
+.ProseMirror {
+  transition: opacity 180ms ease-out;
+}
+
+.ProseMirror.is-rewriting {
+  opacity: 0.45;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ProseMirror {
+    transition: none;
+  }
+
+  .ProseMirror.is-rewriting {
+    opacity: 1;
+  }
+}

@@ -10,7 +10,7 @@ import {
   Heading2,
   Heading3
 } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 interface RichTextEditorProps {
   content: string;
@@ -20,6 +20,14 @@ interface RichTextEditorProps {
 }
 
 export function RichTextEditor({ content, onChange, placeholder = "Start writing...", label }: RichTextEditorProps) {
+  /*
+    Held in a ref so the sync-back below does not have to go in the effect's
+    dependencies - the parent passes a fresh function on every render, and
+    depending on it would re-run the effect constantly.
+  */
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -77,7 +85,47 @@ export function RichTextEditor({ content, onChange, placeholder = "Start writing
       // not mounted yet - there is no scroll position or caret to keep
     }
 
+    /*
+      A short dip in opacity across the swap.
+
+      Replacing the document is instantaneous, which is exactly why it reads
+      badly: the note is simply gone and then simply different, with no
+      moment that says one became the other. Easing it out and back turns
+      that cut into a change. It is deliberately slight and deliberately
+      quick - long enough to register, too short to wait on.
+
+      Skipped when the editor is not mounted, and by the CSS for anyone who
+      asks for reduced motion.
+    */
+    if (canRestore && scroller !== undefined) {
+      try {
+        const dom = editor.view.dom as HTMLElement;
+        dom.classList.add('is-rewriting');
+        window.setTimeout(() => dom.classList.remove('is-rewriting'), 180);
+      } catch {
+        // not mounted - nothing to animate
+      }
+    }
+
     editor.commands.setContent(content, { emitUpdate: false });
+
+    /*
+      Tell the parent what the editor actually ended up holding.
+
+      TipTap normalises what it is given - "&rarr;" comes back as "→", among
+      others - so the HTML handed in is never byte-identical to the HTML
+      handed back. The guard at the top of this effect compares those two,
+      which meant it was true on every single render and the whole document
+      was being rebuilt continuously: the note visibly cutting and
+      reappearing, and the caret snatched away from anyone who clicked into
+      it. Before emitUpdate was turned off, onUpdate happened to push the
+      normalised HTML back up and the two converged by accident.
+
+      One sync makes that deliberate. The next render finds them equal and
+      the effect stops.
+    */
+    const normalised = editor.getHTML();
+    if (normalised !== content) onChangeRef.current(normalised);
 
     /*
       Only when the caret was already in the editor. Restoring focus the
