@@ -39,8 +39,62 @@ export function RichTextEditor({ content, onChange, placeholder = "Start writing
   });
 
   useEffect(() => {
-    if (editor && content !== editor.getHTML()) {
-      editor.commands.setContent(content);
+    if (!editor || editor.isDestroyed || content === editor.getHTML()) return;
+
+    /*
+      Replacing the document is the only way to apply an outside change, and
+      it is violent: ProseMirror rebuilds the whole tree, the scroll position
+      snaps back to the top and the selection is thrown away. Once, on
+      loading an entry, nobody notices. Several times while Nova rewrites a
+      note during dictation, it reads as the page lurching.
+
+      So the two things that actually jump are put back. emitUpdate is off
+      because this change came FROM the parent - letting it fire onUpdate
+      sends the same HTML straight back up and runs the round trip again for
+      nothing.
+    */
+    /*
+      Reading the view throws outright when the editor has been created but
+      not yet mounted, which is the case on the very first render - it took
+      the whole Journal page down behind the error boundary. There is also
+      nothing to preserve at that point, so failing to read it is fine:
+      setContent still runs, and only the restoring is skipped.
+    */
+    let scroller: HTMLElement | null = null;
+    let scrollTop = 0;
+    let hadFocus = false;
+    let previousSelection = 0;
+    let canRestore = false;
+
+    try {
+      const dom = editor.view.dom as HTMLElement;
+      scroller = dom.closest('.overflow-y-auto') as HTMLElement | null;
+      scrollTop = scroller ? scroller.scrollTop : window.scrollY;
+      hadFocus = editor.isFocused;
+      previousSelection = editor.state.selection.from;
+      canRestore = true;
+    } catch {
+      // not mounted yet - there is no scroll position or caret to keep
+    }
+
+    editor.commands.setContent(content, { emitUpdate: false });
+
+    /*
+      Only when the caret was already in the editor. Restoring focus the
+      person had not given it would steal it away from whatever they were
+      typing in elsewhere on the page.
+    */
+    if (!canRestore) return;
+
+    if (hadFocus) {
+      const max = editor.state.doc.content.size;
+      editor.commands.setTextSelection(Math.min(previousSelection, max));
+    }
+
+    if (scroller) {
+      scroller.scrollTop = scrollTop;
+    } else {
+      window.scrollTo({ top: scrollTop });
     }
   }, [content, editor]);
 

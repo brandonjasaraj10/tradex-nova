@@ -280,6 +280,24 @@ export default function Journal() {
   const voiceBaselineRef = React.useRef<string>('');
 
   /*
+    The mergeable fields as they were before the mic started.
+
+    Every pass re-reads the whole transcript, so what comes back is the
+    complete picture and not an increment. Merging it into current state the
+    way the typed Organize does would fold the same answer in again on every
+    pass - tags survive that because they are a Set, but affirmations,
+    emotions and trigger lists are plain concatenations and would multiply
+    once per pass. Rebuilding from this snapshot each time keeps a pass
+    idempotent, which is what lets it run five times during one sentence.
+  */
+  const voiceFormBaselineRef = React.useRef<{
+    tags: string[];
+    template_data: any;
+    pre_market_notes: string;
+    post_market_notes: string;
+  } | null>(null);
+
+  /*
     Organizing happens while the words are still being spoken, not after.
 
     liveOrganizedHtmlRef holds the organized note as it stands; organizedUpToRef
@@ -383,13 +401,20 @@ export default function Journal() {
     whole thing keeps one coherent note instead of a pile of fragments, and
     the result simply replaces what was there.
   */
-  const runLiveOrganize = React.useCallback(async (transcript: string) => {
+  const runLiveOrganize = React.useCallback(async (transcript: string, force = false) => {
     if (!transcript) return;
     if (liveOrganizeInFlightRef.current) return;
-    if (Date.now() - lastLiveOrganizeAtRef.current < MIN_MS_BETWEEN_LIVE_ORGANIZES) return;
 
-    const unorganized = transcript.slice(organizedUpToRef.current.length).trim();
-    if (unorganized.length < MIN_NEW_CHARS_TO_ORGANIZE) return;
+    /*
+      The pacing fences exist to stop a pass firing on every syllable. The
+      last pass of a dictation is not that - it is the one that has to
+      include the final sentence - so it skips them.
+    */
+    if (!force) {
+      if (Date.now() - lastLiveOrganizeAtRef.current < MIN_MS_BETWEEN_LIVE_ORGANIZES) return;
+      const unorganized = transcript.slice(organizedUpToRef.current.length).trim();
+      if (unorganized.length < MIN_NEW_CHARS_TO_ORGANIZE) return;
+    }
 
     liveOrganizeInFlightRef.current = true;
     setIsLiveOrganizing(true);
@@ -432,14 +457,45 @@ export default function Journal() {
       }
 
       /*
-        Ticked live, not left to the end.
+        Everything the pass found, not just the note.
 
-        These used to be applied only by the final pass. Now that the final
-        pass is skipped whenever the live ones already covered the speech,
-        leaving them there meant a dictated entry could finish with its
-        confluences and rules never marked at all.
+        Confluences, rules, the psychology template and the tags were all
+        applied only by the final pass, so they appeared in one lump after
+        the speaking finished - the thing that made the end of a dictation
+        feel like a separate job. They are filled in by every pass now.
+
+        Rebuilt from the snapshot rather than merged into current state, for
+        the reason on voiceFormBaselineRef: a pass reports on the whole
+        transcript, so the same answer arrives again every time, and
+        concatenating it would multiply.
       */
-      if (!isNotes) applyConfluenceRuleStatus(data);
+      if (!isNotes) {
+        applyConfluenceRuleStatus(data);
+
+        const snap = voiceFormBaselineRef.current ?? {
+          tags: [], template_data: {}, pre_market_notes: '', post_market_notes: '',
+        };
+        const join = (before: string, incoming?: string) =>
+          incoming ? (before.trim() ? `${before}
+
+${incoming}` : incoming) : before;
+
+        setEntryForm(prev => ({
+          ...prev,
+          tags: data.tags && data.tags.length > 0
+            ? [...new Set([...snap.tags, ...data.tags])]
+            : prev.tags,
+          pre_market_notes: join(snap.pre_market_notes, data.pre_market_notes),
+          post_market_notes: join(snap.post_market_notes, data.post_market_notes),
+          template_data: data.template_data
+            ? { ...snap.template_data, ...data.template_data }
+            : prev.template_data,
+          pre_trade_emotional_state:
+            data.pre_trade_emotional_state ?? prev.pre_trade_emotional_state,
+          pre_trade_focus: data.pre_trade_focus ?? prev.pre_trade_focus,
+          pre_trade_confidence: data.pre_trade_confidence ?? prev.pre_trade_confidence,
+        }));
+      }
 
       /*
         The fields fill in while talking too, which is what feeds the stat
@@ -548,14 +604,21 @@ export default function Journal() {
         return;
       }
 
-      // Apply trading term corrections before processing
-      const correctedText = correctTradingTerms(text);
       /*
-        Organize builds on the text from before the mic, not on what is in
-        the box now - what is in the box now is the raw dictation this is
-        about to replace.
+        The same pass as every other one, forced past the pacing fences.
+
+        This used to go through handleVoiceTranscript, which is the typed
+        Organize path - a different code path, with cumulative merges that
+        would have folded the answer in on top of what the live passes had
+        already applied, concatenating affirmations and emotions a second
+        time. Running it as one more live pass means the last words are
+        organized the same way the rest were, and the entry simply updates
+        once more.
+
+        There is nothing left for handleVoiceTranscript to do here, so it is
+        no longer called from dictation at all.
       */
-      await handleVoiceTranscript(correctedText, voiceBaselineRef.current, true);
+      await runLiveOrganize(text, true);
     }
   });
 
@@ -1668,6 +1731,12 @@ export default function Journal() {
       stopListening();
     } else {
       voiceBaselineRef.current = entryForm.content ?? '';
+      voiceFormBaselineRef.current = {
+        tags: [...(entryForm.tags ?? [])],
+        template_data: entryForm.template_data ?? {},
+        pre_market_notes: entryForm.pre_market_notes ?? '',
+        post_market_notes: entryForm.post_market_notes ?? '',
+      };
       /*
         Cleared per recording. Left over from the last one, the organized
         note and the transcript that produced it would make the next session
