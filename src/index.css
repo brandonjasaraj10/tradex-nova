@@ -313,6 +313,26 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus {
   @apply bg-white/10 text-blue-400 px-1.5 py-0.5 rounded text-sm;
 }
 
+/*
+  The takeaway, set apart.
+
+  A blockquote here is not a quotation - it is the one line the trader
+  actually comes back for, so it reads at full strength rather than as
+  muted italic marginalia. The blue rule down the left is the only piece
+  of colour in the note, which is what makes it the thing the eye lands on.
+*/
 .prose-invert blockquote {
-  @apply border-l-4 border-blue-400/50 pl-4 italic text-gray-400 my-4;
+  @apply border-l-4 border-brand-blue-light/50 pl-4 text-gray-200 my-4 not-italic;
+}
+
+.prose-invert blockquote p {
+  @apply text-gray-200 mb-0;
+}
+
+/*
+  A divider between the trade and the review of it. Faint on purpose -
+  it separates two parts of one note, it is not a section break.
+*/
+.prose-invert hr {
+  @apply border-0 border-t border-white/10 my-6;
 }

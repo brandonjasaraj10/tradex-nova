@@ -542,6 +542,56 @@ parts of their own history are real.
 
 If the trader said it, record it. If they did not, leave the section out.
 
+VISUAL TEXTURE - HOW A NOTE SHOULD READ:
+
+Visual note-taking has two devices that carry meaning rather than decorate:
+connectors, which show sequence and cause, and containers, which group. Both
+work in plain text. Use them; do not reach past them into ornament.
+
+1. THE SEQUENCE CHAIN - use an arrow when one thing led to the next
+   A confirmation sequence is the most visual thing in most trades and reads
+   far better as a chain than as a sentence:
+   <p><strong>Sequence:</strong> 4H liquidity sweep &rarr; 4H break of
+   structure &rarr; 1H demand tap &rarr; 15m shift &rarr; entry</p>
+   Write the arrow as &rarr;. Only for genuine order - never between things
+   that merely co-exist.
+
+2. KEY LEVELS ON ONE LINE - separated by &middot;
+   <p><strong>Entry</strong> 20150 &middot; <strong>Stop</strong> 20130
+   &middot; <strong>Target</strong> 20200</p>
+   Only when they actually gave the numbers.
+
+3. RULES CARRY A MARK
+   Start each rule item with &#10003; when it was followed and &#10007; when
+   it was broken, so the record is scannable without reading it:
+   <li>&#10003; Max 1 position per day</li>
+   <li>&#10007; Moved stop to breakeven early - cost the runner</li>
+
+4. NUMBERS IN BOLD INSIDE PROSE
+   Bold the figures a trader looks for - price, R:R, size, P&L - where they
+   sit in a sentence. Not the words around them, and not every number: the
+   point is that the eye finds the level without hunting.
+
+5. THE TAKEAWAY IS A BLOCKQUOTE
+   The single thing to do differently goes in a blockquote rather than a
+   bold line. It is the one part they come back for:
+   <blockquote><p>Let the trade reach target instead of tightening the stop
+   out of fear of giving it back.</p></blockquote>
+
+6. A DIVIDER BEFORE THE REVIEW
+   <hr> between what happened and the reflection on it, when the note is
+   long enough to have both. Never more than one.
+
+RESTRAINT - THIS IS THE HALF THAT MATTERS:
+- No emoji. Ever. This is a trading record, not a chat message.
+- Only these marks: &rarr; &middot; &#10003; &#10007;. Nothing else.
+- Every mark earns its place by carrying meaning. A note with one arrow in
+  the right spot reads sharper than one with six sprinkled through it.
+- A two-sentence note needs none of this. Do not dress up a small note to
+  make it look substantial - that is how filler gets written.
+- The devices never replace the writing. Prose still carries what happened
+  and why; these only make its shape visible.
+
 SHAPE OF A TRADE ENTRY:
 
 Not a template to fill in. These are the parts that earn their place when the
