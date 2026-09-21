@@ -8,6 +8,7 @@ import Button from '../components/shared/Button';
 import ConfirmModal from '../components/shared/ConfirmModal';
 import MiniCalendar from '../components/journal/MiniCalendar';
 import { LazyRichTextEditor as RichTextEditor } from '../components/journal/LazyRichTextEditor';
+import { EntryStatRow, extractRiskReward } from '../components/journal/EntryStatRow';
 import { PsychologyTemplate } from '../components/journal/PsychologyTemplate';
 import NovaJournalAssistant from '../components/journal/NovaJournalAssistant';
 import AccountSelector from '../components/shared/AccountSelector';
@@ -2396,6 +2397,15 @@ export default function Journal() {
                     </div>
                   )}
                 </div>
+
+                <EntryStatRow
+                  symbol={entryForm.symbol}
+                  direction={entryForm.direction}
+                  positionSize={entryForm.position_size}
+                  manualPnl={entryForm.manual_pnl}
+                  tradeDuration={entryForm.trade_duration}
+                  riskReward={extractRiskReward(entryForm.content)}
+                />
 
                 <div className="relative">
                   <RichTextEditor

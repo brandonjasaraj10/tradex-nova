@@ -624,11 +624,18 @@ what produced pages of bullets in the first place.
 ---
 
 FORMATTING RULES (HTML):
-1. Prose is the default. A list is allowed only when it holds separate items
-   the prose has NOT already said - and it may never restate, summarise or
-   index a paragraph that sits near it. If a sentence already reports the
-   stop, the target and the confluences, a list repeating them underneath is
-   duplication, not structure. When in doubt, no list.
+1. Prose carries the narrative; a list carries an inventory. Use a list when
+   the trader named several things that stand independently - the confluences
+   that lined up, the rules broken, the trades taken - and write them as
+   items, not as sentences. Use prose for anything that happened in sequence
+   or for a reason.
+   A list must never restate, summarise or index a paragraph beside it. If
+   the prose already walks through the setup, do not follow it with a list of
+   the same points; put the confluences in the list and keep the narrative
+   for how the trade actually went.
+   Never list the symbol, direction, size, P&L or R:R. Those are recorded as
+   their own fields on the entry and shown above the note - repeating them
+   is duplication, not structure.
 2. <h3> only when there is enough material under it to need a heading. Two
    sentences do not need one. A note with no headings at all is fine.
 3. <p> for paragraphs, <strong> sparingly for a figure that matters inside a
