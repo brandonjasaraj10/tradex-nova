@@ -55,6 +55,13 @@ export interface EntryStatInput {
   manualPnl?: string | number | null;
   tradeDuration?: string | null;
   riskReward?: string | null;
+  /*
+    Which account this entry belongs to. Sits with the figures rather than
+    as a chip of its own because it answers the same kind of question they
+    do - which account, which pair, which direction - and a trader running
+    several accounts reads it as part of the same glance.
+  */
+  account?: string | null;
 }
 
 export interface EntryStat {
@@ -125,6 +132,15 @@ export function buildEntryStats(input: EntryStatInput): EntryStat[] {
 
   if (text(input.tradeDuration)) {
     stats.push({ key: 'duration', label: 'Duration', value: text(input.tradeDuration) });
+  }
+
+  /*
+    Last, and never the reason a row renders. An entry always belongs to some
+    account, so counting it would mean a card with nothing stated still drew
+    a row saying only which account it was filed under.
+  */
+  if (text(input.account)) {
+    stats.push({ key: 'account', label: 'Account', value: text(input.account), className: 'text-gray-400' });
   }
 
   return stats;

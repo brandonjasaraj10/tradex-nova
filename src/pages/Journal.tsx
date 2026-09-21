@@ -263,6 +263,15 @@ export default function Journal() {
   const [isAutoFilling, setIsAutoFilling] = useState(false);
   const lastOrganizedContentRef = React.useRef<string>('');
   const justOrganizedRef = React.useRef(false);
+  /*
+    What was in the entry before the mic was switched on.
+
+    Live dictation writes into the same box the entry lives in, so every
+    update has to be rebuilt from this rather than from current state - and
+    when the recording finishes, the organized version has to replace the raw
+    speech rather than land underneath it. Both need the text from before.
+  */
+  const voiceBaselineRef = React.useRef<string>('');
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     title: string;
@@ -273,10 +282,28 @@ export default function Journal() {
   }>({ isOpen: false, title: '', message: '', confirmLabel: 'Confirm', variant: 'danger', onConfirm: () => {} });
 
   const { isListening, isSupported, transcript, startListening, stopListening } = useVoice({
+    /*
+      The words appear as they are spoken. Nothing here is saved or sent -
+      the recogniser revises what it heard as it goes, so this is a preview
+      that gets overwritten on every result and replaced wholesale by the
+      organized entry when the recording ends.
+    */
+    onInterim: (text) => {
+      const baseline = voiceBaselineRef.current;
+      setEntryForm(prev => ({
+        ...prev,
+        content: baseline.trim().length > 0 ? `${baseline}<p>${text}</p>` : `<p>${text}</p>`,
+      }));
+    },
     onTranscript: async (text) => {
       // Apply trading term corrections before processing
       const correctedText = correctTradingTerms(text);
-      await handleVoiceTranscript(correctedText);
+      /*
+        Organize builds on the text from before the mic, not on what is in
+        the box now - what is in the box now is the raw dictation this is
+        about to replace.
+      */
+      await handleVoiceTranscript(correctedText, voiceBaselineRef.current);
     }
   });
 
@@ -966,7 +993,7 @@ export default function Journal() {
     }
   };
 
-  const handleVoiceTranscript = async (text: string) => {
+  const handleVoiceTranscript = async (text: string, baselineOverride?: string) => {
     setIsProcessingVoice(true);
     try {
       /*
@@ -987,7 +1014,7 @@ export default function Journal() {
           beforehand. Reading prev.content instead would append to the text
           the previous update just wrote, and the note would multiply.
         */
-        const baseline = entryForm.content ?? '';
+        const baseline = baselineOverride ?? entryForm.content ?? '';
         const merge = (incoming?: string) =>
           incoming
             ? (baseline.trim().length > 0 ? `${baseline}\n\n${incoming}` : incoming)
@@ -1016,7 +1043,7 @@ export default function Journal() {
         streamed update is built from the text that was there before Nova
         started, not from whatever the last update wrote.
       */
-      const contentBaseline = entryForm.content ?? '';
+      const contentBaseline = baselineOverride ?? entryForm.content ?? '';
       const mergeContent = (incoming?: string) =>
         incoming
           ? (contentBaseline.trim().length > 0
@@ -1376,6 +1403,7 @@ export default function Journal() {
     if (isListening) {
       stopListening();
     } else {
+      voiceBaselineRef.current = entryForm.content ?? '';
       startListening();
     }
   };
@@ -2010,7 +2038,7 @@ export default function Journal() {
                         onClick={() => loadEntryForEditing(entry)}
                         className={`${entry.trade_id ? 'p-3' : 'p-4'} rounded-lg border transition-all cursor-pointer ${
                           editingEntryId === entry.id
-                            ? 'border-blue-400 bg-blue-400/5'
+                            ? 'border-brand-blue-light/30 bg-brand-blue-light/[0.03]'
                             : 'border-white/10 hover:border-white/20 bg-white/5'
                         }`}
                       >
@@ -2081,25 +2109,13 @@ export default function Journal() {
                         ) : (
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              {editingEntryId === entry.id && entryForm.title ? (
-                                <h4 className="font-medium text-white truncate">{entryForm.title}</h4>
-                              ) : entry.title ? (
-                                <h4 className="font-medium text-white truncate">{entry.title}</h4>
-                              ) : (
-                                <h4 className="font-medium text-gray-400 truncate">Untitled Entry</h4>
-                              )}
-                              {selectedFolder?.template_type !== 'notes' && (editingEntryId === entry.id ? entryForm.mood : entry.mood) && (
+                            {selectedFolder?.template_type !== 'notes' && (editingEntryId === entry.id ? entryForm.mood : entry.mood) && (
+                              <div className="mb-1">
                                 <span className="px-2 py-0.5 bg-blue-400/10 text-blue-400 text-xs rounded" title="Mood">
                                   {editingEntryId === entry.id ? entryForm.mood : entry.mood}
                                 </span>
-                              )}
-                              {showAccountLabels && (
-                                <span className="px-2 py-0.5 bg-white/5 text-gray-400 text-xs rounded border border-white/10">
-                                  {entry.account_id ? (accountNameById.get(entry.account_id) || 'Unknown Account') : 'No Account'}
-                                </span>
-                              )}
-                            </div>
+                              </div>
+                            )}
                             {/*
                               The facts, in the same shape and the same
                               colours as everywhere else, because they all
@@ -2143,6 +2159,9 @@ export default function Journal() {
                                   manualPnl={live ? entryForm.manual_pnl : entry.manual_pnl}
                                   positionSize={live ? entryForm.position_size : entry.position_size}
                                   riskReward={extractRiskReward(content)}
+                                  account={showAccountLabels
+                                    ? (entry.account_id ? (accountNameById.get(entry.account_id) || 'Unknown Account') : 'No Account')
+                                    : null}
                                 />
                               );
                             })()}
