@@ -279,6 +279,20 @@ export default function Journal() {
     when the recording finishes, the organized version has to replace the raw
     speech rather than land underneath it. Both need the text from before.
   */
+  /*
+    An empty editor does not serialise to an empty string.
+
+    TipTap gives back "<p></p>" for a blank document, and that was being kept
+    as the baseline every note gets built on top of - so every dictated entry
+    started with an empty paragraph nobody asked for. Invisible until the
+    summary panel styling landed on it and drew an empty bordered box above
+    the note.
+
+    Anything with no text in it counts as nothing to preserve.
+  */
+  const blankHtml = (html: string | null | undefined) =>
+    !html || html.replace(/<[^>]*>/g, '').replace(/&nbsp;|\u00a0/g, '').trim().length === 0;
+
   const voiceBaselineRef = React.useRef<string>('');
 
   /*
@@ -1397,7 +1411,8 @@ export default function Journal() {
           beforehand. Reading prev.content instead would append to the text
           the previous update just wrote, and the note would multiply.
         */
-        const baseline = baselineOverride ?? entryForm.content ?? '';
+        const rawBaseline = baselineOverride ?? entryForm.content ?? '';
+        const baseline = blankHtml(rawBaseline) ? '' : rawBaseline;
         const merge = (incoming?: string) =>
           incoming
             ? (baseline.trim().length > 0 ? `${baseline}\n\n${incoming}` : incoming)
@@ -1426,7 +1441,8 @@ export default function Journal() {
         streamed update is built from the text that was there before Nova
         started, not from whatever the last update wrote.
       */
-      const contentBaseline = baselineOverride ?? entryForm.content ?? '';
+      const rawContentBaseline = baselineOverride ?? entryForm.content ?? '';
+      const contentBaseline = blankHtml(rawContentBaseline) ? '' : rawContentBaseline;
       const mergeContent = (incoming?: string) =>
         incoming
           ? (contentBaseline.trim().length > 0
@@ -1786,7 +1802,7 @@ export default function Journal() {
     if (isListening) {
       stopListening();
     } else {
-      voiceBaselineRef.current = entryForm.content ?? '';
+      voiceBaselineRef.current = blankHtml(entryForm.content) ? '' : entryForm.content;
       voiceFormBaselineRef.current = {
         tags: [...(entryForm.tags ?? [])],
         template_data: entryForm.template_data ?? {},

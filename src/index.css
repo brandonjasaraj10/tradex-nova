@@ -269,14 +269,16 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus {
   is the sketchnote move - the box is what marks it as the summary, so the
   italics it used to lean on are dropped.
 
-  Scoped to the first child so it only ever catches the summary; a note
-  that opens with a heading instead is untouched.
+  Scoped to a first paragraph that actually contains the summary's emphasis,
+  not merely to whatever comes first. A stray empty paragraph ahead of the
+  note was being drawn as an empty bordered box, and a note opening with a
+  heading is untouched either way.
 */
-.prose-invert > p:first-child {
+.prose-invert > p:first-child:has(em) {
   @apply text-[15px] leading-relaxed text-gray-100 bg-white/[0.03] border border-white/5 rounded-lg px-4 py-3 mb-5;
 }
 
-.prose-invert > p:first-child em {
+.prose-invert > p:first-child:has(em) em {
   @apply not-italic text-gray-100;
 }
 
