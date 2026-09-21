@@ -309,6 +309,18 @@ ${userConfluences.length > 0 ? `Confluences (id: name):\n${userConfluences.map(c
 ${userRules.length > 0 ? `Rules (id: name):\n${userRules.map(r => `- ${r.id}: ${r.name}`).join('\n')}` : 'No rules defined.'}
 
 If the user explicitly says they followed, used, saw, or hit one of these by name (or a rule wasn't followed/was broken), include it in confluences_status / rules_status using its exact id from the list above - never invent a new one, and never include an item just because the trade generally matches that pattern. Only include ones the user actually spoke about.
+
+A BLANKET STATEMENT COVERS EVERY ITEM IN THE LIST. "all my confluences were
+there", "I had all of them", "followed all my rules", "everything was there"
+- these are explicit statements about the whole list, so return EVERY id
+from it with present/followed true. The same in reverse: "I broke all my
+rules" returns every rule id as false. This is the most common way a trader
+actually says it - nobody reads their checklist out loud item by item - and
+treating it as "nothing was named" leaves the entry blank when they just
+told you the answer for all of them.
+
+A partial blanket works the same way: "had all my confluences except the 4H
+tap" is every id true apart from that one, which is false.
 ` : '';
 
     const psychologyPrompt = `
@@ -888,6 +900,14 @@ CRITICAL RULES:
 4. If no psychology data is mentioned, omit template_data entirely
 5. Be generous with inference but conservative with assumptions
 6. Extract ALL relevant trading details from natural speech
+7c. **Never invent a number.** A rating is returned only when the trader
+   gave one ("confidence was an eight") or used a plainly scaled word
+   ("terrible", "excellent"). Vague approval - "everything was good", "felt
+   fine" - is NOT a rating; leave those fields out entirely rather than
+   picking a number that looks reasonable. A trader who says everything was
+   good and finds 4 out of 5 in the box has been put words in their mouth,
+   and it is a number they will later read back as their own.
+
 7b. **psychology_status and the three pre_trade_* ratings**: only from what the
    user actually said about their own state. Never infer them from the trade's
    outcome - a loss does not mean they were unfocused, and a win does not mean
