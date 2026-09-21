@@ -2484,25 +2484,394 @@ export default function Journal() {
                   )}
                 </div>
 
-                <div className="relative">
-                  <RichTextEditor
-                    label="Main Content"
-                    content={entryForm.content}
-                    onChange={(content) => setEntryForm({ ...entryForm, content })}
-                    placeholder="Write your thoughts here..."
-                  />
-                  {entryForm.content.replace(/<[^>]*>/g, '').trim().length > 0 && (
-                    <button
-                      data-tour="journal-organize-nova"
-                      onClick={handleAutoFillFromText}
-                      disabled={isAutoFilling || isProcessingVoice}
-                      className="absolute bottom-3 right-3 flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-xs shadow-lg transition-all bg-blue-400/10 text-blue-400 border border-blue-400/20 backdrop-blur-sm hover:bg-blue-400/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Have Nova organize what you've typed and fill in the details"
-                    >
-                      <Brain size={14} className={isAutoFilling ? 'animate-pulse' : ''} />
-                      {isAutoFilling ? 'Organizing...' : 'Organize with Nova'}
-                    </button>
-                  )}
+                {/*
+                  The note and the plan, side by side.
+                
+                  Main Content spanned the full width on its own and the plan sat in
+                  its own row far below it, so the page read as a single column no
+                  matter what was written in it - and the confluences you are meant to
+                  be ticking against what you wrote were off screen while you wrote it.
+                
+                  Splits at xl, not lg. On a 1280 laptop a 7/5 split left the editor
+                  around 305px - narrower than the phone layout - so the split
+                  waits until there is genuinely width to give away, and 8/4
+                  keeps the writing column the larger of the two.
+                */}
+                <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+                  <div className="xl:col-span-8 min-w-0">
+                  <div className="relative">
+                    <RichTextEditor
+                      label="Main Content"
+                      content={entryForm.content}
+                      onChange={(content) => setEntryForm({ ...entryForm, content })}
+                      placeholder="Write your thoughts here..."
+                    />
+                    {entryForm.content.replace(/<[^>]*>/g, '').trim().length > 0 && (
+                      <button
+                        data-tour="journal-organize-nova"
+                        onClick={handleAutoFillFromText}
+                        disabled={isAutoFilling || isProcessingVoice}
+                        className="absolute bottom-3 right-3 flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-xs shadow-lg transition-all bg-blue-400/10 text-blue-400 border border-blue-400/20 backdrop-blur-sm hover:bg-blue-400/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Have Nova organize what you've typed and fill in the details"
+                      >
+                        <Brain size={14} className={isAutoFilling ? 'animate-pulse' : ''} />
+                        {isAutoFilling ? 'Organizing...' : 'Organize with Nova'}
+                      </button>
+                    )}
+                  </div>
+                  </div>
+                  <div className="xl:col-span-4 min-w-0">
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-300 mb-3 flex items-center gap-2">
+                      <CheckSquare size={16} />
+                      Trading Rules & Confluences
+                    </h3>
+                    {/*
+                      Scrolls sideways inside itself on a narrow screen rather
+                      than pushing the page wide. Adding the Psychology tab made
+                      three tabs, which come to 420px on a 375px phone - and
+                      without this the whole document grew to match and every
+                      page could be dragged sideways.
+                    */}
+                    <div className="flex gap-2 mb-4 border-b border-white/10 overflow-x-auto">
+                      <button
+                        onClick={() => setChecklistTab('confluences')}
+                        className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
+                          checklistTab === 'confluences'
+                            ? 'border-blue-400 text-blue-400'
+                            : 'border-transparent text-gray-400 hover:text-white'
+                        }`}
+                      >
+                        Confluences
+                        {userConfluences.length > 0 && (
+                          <span className="ml-2 px-1.5 py-0.5 text-xs bg-white/10 rounded">
+                            {userConfluences.length}
+                          </span>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => setChecklistTab('rules')}
+                        className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
+                          checklistTab === 'rules'
+                            ? 'border-blue-400 text-blue-400'
+                            : 'border-transparent text-gray-400 hover:text-white'
+                        }`}
+                      >
+                        Rules
+                        {userRules.length > 0 && (
+                          <span className="ml-2 px-1.5 py-0.5 text-xs bg-white/10 rounded">
+                            {userRules.length}
+                          </span>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => setChecklistTab('psychology')}
+                        className={`px-4 py-2 text-sm font-medium transition-all border-b-2 -mb-px flex items-center gap-1.5 ${
+                          checklistTab === 'psychology'
+                            ? 'border-blue-400 text-blue-300'
+                            : 'border-transparent text-gray-400 hover:text-white'
+                        }`}
+                        style={
+                          checklistTab === 'psychology'
+                            ? { textShadow: '0 0 12px rgba(59,130,246,0.6)' }
+                            : undefined
+                        }
+                      >
+                        <Brain
+                          size={14}
+                          style={
+                            checklistTab === 'psychology'
+                              ? { filter: 'drop-shadow(0 0 5px rgba(59,130,246,0.9))' }
+                              : undefined
+                          }
+                        />
+                        Psychology
+                      </button>
+                    </div>
+
+                    {checklistTab === 'psychology' && (
+                      <div
+                        className="rounded-xl border border-blue-400/40 bg-gradient-to-br from-blue-500/[0.12] via-blue-500/[0.03] to-transparent p-4"
+                        style={{ boxShadow: 'inset 0 0 60px rgba(59,130,246,0.10), 0 0 30px rgba(59,130,246,0.10)' }}
+                      >
+                        {/*
+                          The score is computed with the same function the
+                          Psychology Score card uses, never a second copy of the
+                          rule - a panel that disagreed with the card it feeds
+                          would be worse than showing nothing.
+                        */}
+                        {(() => {
+                          const score = currentChecklistScore;
+                          return (
+                            <div className="flex items-start justify-between gap-3 mb-4">
+                              {/*
+                                This used to read "Nothing here is scored", which
+                                stopped being true the moment the checklist began
+                                feeding the psychology score. The honesty framing
+                                stays because it is still accurate: answering "no"
+                                costs nothing, since the score counts turning up
+                                and your own ratings, never the answers.
+                              */}
+                              <p className="text-xs text-gray-400">
+                                How are you before this trade? Answer honestly &mdash; a &ldquo;no&rdquo;
+                                never costs you anything.
+                              </p>
+                              {score !== null && (
+                                <span
+                                  /*
+                                    Fixed width and right aligned: without it the
+                                    row reflowed every time the number changed
+                                    digits, so 100 -> 75 nudged the sentence
+                                    beside it.
+                                  */
+                                  className="flex-shrink-0 w-7 text-right text-[11px] font-medium text-blue-300/80 tabular-nums"
+                                  title="Today's psychology score from this checklist"
+                                >
+                                  {Math.round(score)}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
+
+                        <PreTradeScales
+                          values={{
+                            emotional_state: entryForm.pre_trade_emotional_state,
+                            focus: entryForm.pre_trade_focus,
+                            confidence: entryForm.pre_trade_confidence,
+                          }}
+                          onChange={(key, value) =>
+                            setEntryForm((prev) => ({
+                              ...prev,
+                              pre_trade_emotional_state: key === 'emotional_state' ? value : prev.pre_trade_emotional_state,
+                              pre_trade_focus: key === 'focus' ? value : prev.pre_trade_focus,
+                              pre_trade_confidence: key === 'confidence' ? value : prev.pre_trade_confidence,
+                            }))
+                          }
+                        />
+
+                        {psychChecks.length > 0 && (
+                          <div className="mt-5 pt-4 border-t border-blue-400/15 space-y-1">
+                            {psychChecks.map((check) => {
+                              const value = psychStatus.get(check.id) ?? null;
+                              return (
+                                <button
+                                  key={check.id}
+                                  type="button"
+                                  onClick={() => {
+                                    /*
+                                      Functional update, not new Map(psychStatus).
+                                      Reading the map from the render closure means
+                                      two ticks in the same tick of the event loop
+                                      both start from the same snapshot, and the
+                                      second silently discards the first - ticking
+                                      two boxes quickly saved only one of them.
+                                    */
+                                    /*
+                                      Three states, cycling the same way
+                                      confluences and rules do: unanswered -> yes
+                                      -> no -> unanswered. "I was not calm" is the
+                                      most useful thing on this list to be able to
+                                      record, and a two-state tick can only say yes
+                                      or stay silent, which quietly encourages
+                                      skipping the ones you would rather not admit.
+                                    */
+                                    setPsychStatus((prev) => {
+                                      const next = new Map(prev);
+                                      const current = prev.get(check.id) ?? null;
+                                      if (current === null) next.set(check.id, true);
+                                      else if (current === true) next.set(check.id, false);
+                                      else next.set(check.id, null);
+                                      return next;
+                                    });
+                                  }}
+                                  className="w-full flex items-center gap-3 text-left py-2 px-2 -mx-2 rounded-lg hover:bg-white/[0.03] transition-colors"
+                                >
+                                  <span
+                                    className={`flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-md border-2 transition-all ${
+                                      value === true
+                                        ? 'bg-blue-500 border-blue-400'
+                                        : value === false
+                                        ? 'border-gray-400 bg-gray-400/15'
+                                        : 'border-gray-600'
+                                    }`}
+                                    style={
+                                      value === true
+                                        ? { boxShadow: '0 0 16px rgba(59,130,246,0.9), 0 0 4px rgba(59,130,246,1)' }
+                                        : undefined
+                                    }
+                                  >
+                                    {value === true && <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />}
+                                    {value === false && <X className="w-3.5 h-3.5 text-gray-300" strokeWidth={3} />}
+                                  </span>
+                                  <span className={`text-sm ${
+                                    value === true ? 'text-white'
+                                    : value === false ? 'text-gray-300'
+                                    : 'text-gray-400'
+                                  }`}>
+                                    {check.name}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {psychChecks.length === 0 && (
+                          <p className="mt-4 pt-4 border-t border-blue-400/15 text-xs text-gray-500">
+                            No checks set up yet &mdash; add them under Checklists &rarr; Pre-Trade Psychology.
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {checklistTab === 'confluences' && (
+                      <div>
+                        {userConfluences.length > 0 ? (
+                          <>
+                            <p className="text-xs text-gray-400 mb-3">
+                              Mark each confluence (blue = present, grey = absent)
+                            </p>
+                            <div className="space-y-2">
+                              {userConfluences.map((confluence) => (
+                                <button
+                                  key={confluence.id}
+                                  onClick={() => {
+                                    const newMap = new Map(confluenceStatus);
+                                    const currentValue = newMap.get(confluence.id);
+                                    if (currentValue === undefined || currentValue === null) {
+                                      newMap.set(confluence.id, true);
+                                    } else if (currentValue === true) {
+                                      newMap.set(confluence.id, false);
+                                    } else {
+                                      newMap.set(confluence.id, null);
+                                    }
+                                    setConfluenceStatus(newMap);
+                                  }}
+                                  className={`flex items-center gap-3 p-3 rounded-lg border transition-colors text-left w-full ${
+                                    confluenceStatus.get(confluence.id) === true
+                                      ? 'border-blue-400 bg-blue-400/10'
+                                      : confluenceStatus.get(confluence.id) === false
+                                      ? 'border-gray-400 bg-gray-400/10'
+                                      : 'border-white/10 hover:border-white/20'
+                                  }`}
+                                >
+                                  <div className="flex-shrink-0">
+                                    {confluenceStatus.get(confluence.id) === true ? (
+                                      <CheckSquare size={18} className="text-blue-400" />
+                                    ) : confluenceStatus.get(confluence.id) === false ? (
+                                      <X size={18} className="text-gray-400" />
+                                    ) : (
+                                      <Square size={18} className="text-gray-400" />
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-white">{confluence.name}</p>
+                                    {confluence.description && (
+                                      <p className="text-xs text-gray-400 mt-0.5">{confluence.description}</p>
+                                    )}
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                            <div className="mt-3 pt-3 border-t border-white/10">
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-gray-400">Present:</span>
+                                <span className="text-blue-400 font-medium">
+                                  {Array.from(confluenceStatus.values()).filter(v => v === true).length} / {userConfluences.length}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between text-sm mt-1">
+                                <span className="text-gray-400">Absent:</span>
+                                <span className="text-gray-400 font-medium">
+                                  {Array.from(confluenceStatus.values()).filter(v => v === false).length} / {userConfluences.length}
+                                </span>
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="text-center py-6 text-gray-400 text-sm bg-white/5 rounded-lg">
+                            <p className="mb-2">No confluences set up yet.</p>
+                            <p className="text-xs">Visit Settings to create your trading confluences.</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {checklistTab === 'rules' && (
+                      <div>
+                        {userRules.length > 0 ? (
+                          <>
+                            <p className="text-xs text-gray-400 mb-3">
+                              Mark each rule (blue = followed, grey = not followed)
+                            </p>
+                            <div className="space-y-2">
+                              {userRules.map((rule) => (
+                                <button
+                                  key={rule.id}
+                                  onClick={() => {
+                                    const newMap = new Map(ruleStatus);
+                                    const currentValue = newMap.get(rule.id);
+                                    if (currentValue === undefined || currentValue === null) {
+                                      newMap.set(rule.id, true);
+                                    } else if (currentValue === true) {
+                                      newMap.set(rule.id, false);
+                                    } else {
+                                      newMap.set(rule.id, null);
+                                    }
+                                    setRuleStatus(newMap);
+                                  }}
+                                  className={`flex items-center gap-3 p-3 rounded-lg border transition-colors text-left w-full ${
+                                    ruleStatus.get(rule.id) === true
+                                      ? 'border-blue-400 bg-blue-400/10'
+                                      : ruleStatus.get(rule.id) === false
+                                      ? 'border-gray-400 bg-gray-400/10'
+                                      : 'border-white/10 hover:border-white/20'
+                                  }`}
+                                >
+                                  <div className="flex-shrink-0">
+                                    {ruleStatus.get(rule.id) === true ? (
+                                      <CheckSquare size={18} className="text-blue-400" />
+                                    ) : ruleStatus.get(rule.id) === false ? (
+                                      <X size={18} className="text-gray-400" />
+                                    ) : (
+                                      <Square size={18} className="text-gray-400" />
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-white">{rule.name}</p>
+                                    {rule.description && (
+                                      <p className="text-xs text-gray-400 mt-0.5">{rule.description}</p>
+                                    )}
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                            <div className="mt-3 pt-3 border-t border-white/10">
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-gray-400">Followed:</span>
+                                <span className="text-blue-400 font-medium">
+                                  {Array.from(ruleStatus.values()).filter(v => v === true).length} / {userRules.length}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between text-sm mt-1">
+                                <span className="text-gray-400">Not Followed:</span>
+                                <span className="text-gray-400 font-medium">
+                                  {Array.from(ruleStatus.values()).filter(v => v === false).length} / {userRules.length}
+                                </span>
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="text-center py-6 text-gray-400 text-sm bg-white/5 rounded-lg">
+                            <p className="mb-2">No rules set up yet.</p>
+                            <p className="text-xs">Visit Settings to create your trading rules.</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6" data-tour="journal-screenshots">
@@ -2738,356 +3107,6 @@ export default function Journal() {
                   </div>
                 )}
 
-                <div>
-                  <h3 className="text-sm font-medium text-gray-300 mb-3 flex items-center gap-2">
-                    <CheckSquare size={16} />
-                    Trading Rules & Confluences
-                  </h3>
-                  {/*
-                    Scrolls sideways inside itself on a narrow screen rather
-                    than pushing the page wide. Adding the Psychology tab made
-                    three tabs, which come to 420px on a 375px phone - and
-                    without this the whole document grew to match and every
-                    page could be dragged sideways.
-                  */}
-                  <div className="flex gap-2 mb-4 border-b border-white/10 overflow-x-auto">
-                    <button
-                      onClick={() => setChecklistTab('confluences')}
-                      className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
-                        checklistTab === 'confluences'
-                          ? 'border-blue-400 text-blue-400'
-                          : 'border-transparent text-gray-400 hover:text-white'
-                      }`}
-                    >
-                      Confluences
-                      {userConfluences.length > 0 && (
-                        <span className="ml-2 px-1.5 py-0.5 text-xs bg-white/10 rounded">
-                          {userConfluences.length}
-                        </span>
-                      )}
-                    </button>
-                    <button
-                      onClick={() => setChecklistTab('rules')}
-                      className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
-                        checklistTab === 'rules'
-                          ? 'border-blue-400 text-blue-400'
-                          : 'border-transparent text-gray-400 hover:text-white'
-                      }`}
-                    >
-                      Rules
-                      {userRules.length > 0 && (
-                        <span className="ml-2 px-1.5 py-0.5 text-xs bg-white/10 rounded">
-                          {userRules.length}
-                        </span>
-                      )}
-                    </button>
-                    <button
-                      onClick={() => setChecklistTab('psychology')}
-                      className={`px-4 py-2 text-sm font-medium transition-all border-b-2 -mb-px flex items-center gap-1.5 ${
-                        checklistTab === 'psychology'
-                          ? 'border-blue-400 text-blue-300'
-                          : 'border-transparent text-gray-400 hover:text-white'
-                      }`}
-                      style={
-                        checklistTab === 'psychology'
-                          ? { textShadow: '0 0 12px rgba(59,130,246,0.6)' }
-                          : undefined
-                      }
-                    >
-                      <Brain
-                        size={14}
-                        style={
-                          checklistTab === 'psychology'
-                            ? { filter: 'drop-shadow(0 0 5px rgba(59,130,246,0.9))' }
-                            : undefined
-                        }
-                      />
-                      Psychology
-                    </button>
-                  </div>
-
-                  {checklistTab === 'psychology' && (
-                    <div
-                      className="rounded-xl border border-blue-400/40 bg-gradient-to-br from-blue-500/[0.12] via-blue-500/[0.03] to-transparent p-4"
-                      style={{ boxShadow: 'inset 0 0 60px rgba(59,130,246,0.10), 0 0 30px rgba(59,130,246,0.10)' }}
-                    >
-                      {/*
-                        The score is computed with the same function the
-                        Psychology Score card uses, never a second copy of the
-                        rule - a panel that disagreed with the card it feeds
-                        would be worse than showing nothing.
-                      */}
-                      {(() => {
-                        const score = currentChecklistScore;
-                        return (
-                          <div className="flex items-start justify-between gap-3 mb-4">
-                            {/*
-                              This used to read "Nothing here is scored", which
-                              stopped being true the moment the checklist began
-                              feeding the psychology score. The honesty framing
-                              stays because it is still accurate: answering "no"
-                              costs nothing, since the score counts turning up
-                              and your own ratings, never the answers.
-                            */}
-                            <p className="text-xs text-gray-400">
-                              How are you before this trade? Answer honestly &mdash; a &ldquo;no&rdquo;
-                              never costs you anything.
-                            </p>
-                            {score !== null && (
-                              <span
-                                /*
-                                  Fixed width and right aligned: without it the
-                                  row reflowed every time the number changed
-                                  digits, so 100 -> 75 nudged the sentence
-                                  beside it.
-                                */
-                                className="flex-shrink-0 w-7 text-right text-[11px] font-medium text-blue-300/80 tabular-nums"
-                                title="Today's psychology score from this checklist"
-                              >
-                                {Math.round(score)}
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })()}
-
-                      <PreTradeScales
-                        values={{
-                          emotional_state: entryForm.pre_trade_emotional_state,
-                          focus: entryForm.pre_trade_focus,
-                          confidence: entryForm.pre_trade_confidence,
-                        }}
-                        onChange={(key, value) =>
-                          setEntryForm((prev) => ({
-                            ...prev,
-                            pre_trade_emotional_state: key === 'emotional_state' ? value : prev.pre_trade_emotional_state,
-                            pre_trade_focus: key === 'focus' ? value : prev.pre_trade_focus,
-                            pre_trade_confidence: key === 'confidence' ? value : prev.pre_trade_confidence,
-                          }))
-                        }
-                      />
-
-                      {psychChecks.length > 0 && (
-                        <div className="mt-5 pt-4 border-t border-blue-400/15 space-y-1">
-                          {psychChecks.map((check) => {
-                            const value = psychStatus.get(check.id) ?? null;
-                            return (
-                              <button
-                                key={check.id}
-                                type="button"
-                                onClick={() => {
-                                  /*
-                                    Functional update, not new Map(psychStatus).
-                                    Reading the map from the render closure means
-                                    two ticks in the same tick of the event loop
-                                    both start from the same snapshot, and the
-                                    second silently discards the first - ticking
-                                    two boxes quickly saved only one of them.
-                                  */
-                                  /*
-                                    Three states, cycling the same way
-                                    confluences and rules do: unanswered -> yes
-                                    -> no -> unanswered. "I was not calm" is the
-                                    most useful thing on this list to be able to
-                                    record, and a two-state tick can only say yes
-                                    or stay silent, which quietly encourages
-                                    skipping the ones you would rather not admit.
-                                  */
-                                  setPsychStatus((prev) => {
-                                    const next = new Map(prev);
-                                    const current = prev.get(check.id) ?? null;
-                                    if (current === null) next.set(check.id, true);
-                                    else if (current === true) next.set(check.id, false);
-                                    else next.set(check.id, null);
-                                    return next;
-                                  });
-                                }}
-                                className="w-full flex items-center gap-3 text-left py-2 px-2 -mx-2 rounded-lg hover:bg-white/[0.03] transition-colors"
-                              >
-                                <span
-                                  className={`flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-md border-2 transition-all ${
-                                    value === true
-                                      ? 'bg-blue-500 border-blue-400'
-                                      : value === false
-                                      ? 'border-gray-400 bg-gray-400/15'
-                                      : 'border-gray-600'
-                                  }`}
-                                  style={
-                                    value === true
-                                      ? { boxShadow: '0 0 16px rgba(59,130,246,0.9), 0 0 4px rgba(59,130,246,1)' }
-                                      : undefined
-                                  }
-                                >
-                                  {value === true && <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />}
-                                  {value === false && <X className="w-3.5 h-3.5 text-gray-300" strokeWidth={3} />}
-                                </span>
-                                <span className={`text-sm ${
-                                  value === true ? 'text-white'
-                                  : value === false ? 'text-gray-300'
-                                  : 'text-gray-400'
-                                }`}>
-                                  {check.name}
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-
-                      {psychChecks.length === 0 && (
-                        <p className="mt-4 pt-4 border-t border-blue-400/15 text-xs text-gray-500">
-                          No checks set up yet &mdash; add them under Checklists &rarr; Pre-Trade Psychology.
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  {checklistTab === 'confluences' && (
-                    <div>
-                      {userConfluences.length > 0 ? (
-                        <>
-                          <p className="text-xs text-gray-400 mb-3">
-                            Mark each confluence (blue = present, grey = absent)
-                          </p>
-                          <div className="space-y-2">
-                            {userConfluences.map((confluence) => (
-                              <button
-                                key={confluence.id}
-                                onClick={() => {
-                                  const newMap = new Map(confluenceStatus);
-                                  const currentValue = newMap.get(confluence.id);
-                                  if (currentValue === undefined || currentValue === null) {
-                                    newMap.set(confluence.id, true);
-                                  } else if (currentValue === true) {
-                                    newMap.set(confluence.id, false);
-                                  } else {
-                                    newMap.set(confluence.id, null);
-                                  }
-                                  setConfluenceStatus(newMap);
-                                }}
-                                className={`flex items-center gap-3 p-3 rounded-lg border transition-colors text-left w-full ${
-                                  confluenceStatus.get(confluence.id) === true
-                                    ? 'border-blue-400 bg-blue-400/10'
-                                    : confluenceStatus.get(confluence.id) === false
-                                    ? 'border-gray-400 bg-gray-400/10'
-                                    : 'border-white/10 hover:border-white/20'
-                                }`}
-                              >
-                                <div className="flex-shrink-0">
-                                  {confluenceStatus.get(confluence.id) === true ? (
-                                    <CheckSquare size={18} className="text-blue-400" />
-                                  ) : confluenceStatus.get(confluence.id) === false ? (
-                                    <X size={18} className="text-gray-400" />
-                                  ) : (
-                                    <Square size={18} className="text-gray-400" />
-                                  )}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-medium text-white">{confluence.name}</p>
-                                  {confluence.description && (
-                                    <p className="text-xs text-gray-400 mt-0.5">{confluence.description}</p>
-                                  )}
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                          <div className="mt-3 pt-3 border-t border-white/10">
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-gray-400">Present:</span>
-                              <span className="text-blue-400 font-medium">
-                                {Array.from(confluenceStatus.values()).filter(v => v === true).length} / {userConfluences.length}
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between text-sm mt-1">
-                              <span className="text-gray-400">Absent:</span>
-                              <span className="text-gray-400 font-medium">
-                                {Array.from(confluenceStatus.values()).filter(v => v === false).length} / {userConfluences.length}
-                              </span>
-                            </div>
-                          </div>
-                        </>
-                      ) : (
-                        <div className="text-center py-6 text-gray-400 text-sm bg-white/5 rounded-lg">
-                          <p className="mb-2">No confluences set up yet.</p>
-                          <p className="text-xs">Visit Settings to create your trading confluences.</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {checklistTab === 'rules' && (
-                    <div>
-                      {userRules.length > 0 ? (
-                        <>
-                          <p className="text-xs text-gray-400 mb-3">
-                            Mark each rule (blue = followed, grey = not followed)
-                          </p>
-                          <div className="space-y-2">
-                            {userRules.map((rule) => (
-                              <button
-                                key={rule.id}
-                                onClick={() => {
-                                  const newMap = new Map(ruleStatus);
-                                  const currentValue = newMap.get(rule.id);
-                                  if (currentValue === undefined || currentValue === null) {
-                                    newMap.set(rule.id, true);
-                                  } else if (currentValue === true) {
-                                    newMap.set(rule.id, false);
-                                  } else {
-                                    newMap.set(rule.id, null);
-                                  }
-                                  setRuleStatus(newMap);
-                                }}
-                                className={`flex items-center gap-3 p-3 rounded-lg border transition-colors text-left w-full ${
-                                  ruleStatus.get(rule.id) === true
-                                    ? 'border-blue-400 bg-blue-400/10'
-                                    : ruleStatus.get(rule.id) === false
-                                    ? 'border-gray-400 bg-gray-400/10'
-                                    : 'border-white/10 hover:border-white/20'
-                                }`}
-                              >
-                                <div className="flex-shrink-0">
-                                  {ruleStatus.get(rule.id) === true ? (
-                                    <CheckSquare size={18} className="text-blue-400" />
-                                  ) : ruleStatus.get(rule.id) === false ? (
-                                    <X size={18} className="text-gray-400" />
-                                  ) : (
-                                    <Square size={18} className="text-gray-400" />
-                                  )}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-medium text-white">{rule.name}</p>
-                                  {rule.description && (
-                                    <p className="text-xs text-gray-400 mt-0.5">{rule.description}</p>
-                                  )}
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                          <div className="mt-3 pt-3 border-t border-white/10">
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-gray-400">Followed:</span>
-                              <span className="text-blue-400 font-medium">
-                                {Array.from(ruleStatus.values()).filter(v => v === true).length} / {userRules.length}
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between text-sm mt-1">
-                              <span className="text-gray-400">Not Followed:</span>
-                              <span className="text-gray-400 font-medium">
-                                {Array.from(ruleStatus.values()).filter(v => v === false).length} / {userRules.length}
-                              </span>
-                            </div>
-                          </div>
-                        </>
-                      ) : (
-                        <div className="text-center py-6 text-gray-400 text-sm bg-white/5 rounded-lg">
-                          <p className="mb-2">No rules set up yet.</p>
-                          <p className="text-xs">Visit Settings to create your trading rules.</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
               </div>
               )}
 
