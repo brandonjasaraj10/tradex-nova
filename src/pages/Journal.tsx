@@ -261,11 +261,13 @@ export default function Journal() {
   const [showPsychologyTemplate, setShowPsychologyTemplate] = useState(false);
   const [isProcessingVoice, setIsProcessingVoice] = useState(false);
   /*
-    Distinct from isProcessingVoice, which blocks the mic and announces
-    itself. This one only says Nova is writing while the person keeps
-    talking, and disables nothing.
+    No indicator while dictating, deliberately.
+
+    "Nova is writing..." appeared mid-sentence and read as a finished
+    signal - it stopped somebody mid-thought because they assumed it meant
+    she was done. The mic button already pulses to say it is listening, and
+    the note visibly rewriting itself is the only progress anyone needs.
   */
-  const [isLiveOrganizing, setIsLiveOrganizing] = useState(false);
   const [isAutoFilling, setIsAutoFilling] = useState(false);
   const lastOrganizedContentRef = React.useRef<string>('');
   const justOrganizedRef = React.useRef(false);
@@ -321,6 +323,18 @@ export default function Journal() {
     pass at the end of every dictation.
   */
   const liveOrganizePromiseRef = React.useRef<Promise<void> | null>(null);
+  /*
+    Speech that arrived while a pass was running.
+
+    A trigger raised mid-pass used to be dropped on the floor and never
+    retried, so anything said during those nine seconds stayed unorganized
+    until the end - which is the entire reason there was a final pass to
+    complain about. It is a queued flag now: the pass that is running
+    finishes, sees it, and immediately starts another over everything said
+    since. Passes chain instead of being skipped, and by the time somebody
+    stops talking there is usually nothing left over at all.
+  */
+  const pendingOrganizeRef = React.useRef(false);
   const liveOrganizeTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastLiveOrganizeAtRef = React.useRef(0);
 
@@ -403,7 +417,10 @@ export default function Journal() {
   */
   const runLiveOrganize = React.useCallback(async (transcript: string, force = false) => {
     if (!transcript) return;
-    if (liveOrganizeInFlightRef.current) return;
+    if (liveOrganizeInFlightRef.current) {
+      pendingOrganizeRef.current = true;
+      return;
+    }
 
     /*
       The pacing fences exist to stop a pass firing on every syllable. The
@@ -417,7 +434,6 @@ export default function Journal() {
     }
 
     liveOrganizeInFlightRef.current = true;
-    setIsLiveOrganizing(true);
     lastLiveOrganizeAtRef.current = Date.now();
 
     const baseline = voiceBaselineRef.current;
@@ -532,7 +548,16 @@ ${incoming}` : incoming) : before;
       applyOrganized();
     } finally {
       liveOrganizeInFlightRef.current = false;
-      setIsLiveOrganizing(false);
+
+      /*
+        Straight into the next one if speech arrived during this pass. No
+        force: the ordinary guards decide, so this stops on its own as soon
+        as there is too little new speech to be worth a call.
+      */
+      if (pendingOrganizeRef.current) {
+        pendingOrganizeRef.current = false;
+        liveOrganizePromiseRef.current = runLiveOrganize(liveTranscriptRef.current);
+      }
     }
   }, [applyOrganized]);
 
@@ -586,10 +611,23 @@ ${incoming}` : incoming) : before;
         waiting for it is what produced a second full pass over the same
         speech at the end of every dictation.
       */
-      try {
-        await liveOrganizePromiseRef.current;
-      } catch {
-        // a failed pass just means there is still speech to organize below
+      /*
+        Drain whatever is still running, including anything it chains into.
+
+        A pass finishing can start another immediately, so awaiting once is
+        not enough - the promise being awaited may have spawned its
+        successor. This follows the chain to the end, with a bound so a
+        pathological case cannot spin here forever.
+      */
+      for (let i = 0; i < 5; i++) {
+        const running = liveOrganizePromiseRef.current;
+        if (!running) break;
+        try {
+          await running;
+        } catch {
+          // a failed pass just means there is still speech to organize below
+        }
+        if (liveOrganizePromiseRef.current === running) break;
       }
 
       /*
@@ -1743,6 +1781,7 @@ ${incoming}` : incoming) : before;
         open with somebody else's entry already in the box.
       */
       liveTranscriptRef.current = '';
+      pendingOrganizeRef.current = false;
       liveOrganizedHtmlRef.current = '';
       organizedUpToRef.current = '';
       lastLiveOrganizeAtRef.current = 0;
@@ -2599,9 +2638,6 @@ ${incoming}` : incoming) : before;
                   </span>
                   {isProcessingVoice && (
                     <span className="text-xs text-blue-400 animate-pulse">Processing voice...</span>
-                  )}
-                  {isLiveOrganizing && !isProcessingVoice && (
-                    <span className="text-xs text-gray-400 animate-pulse">Nova is writing...</span>
                   )}
                   {isSupported && (
                     <button
