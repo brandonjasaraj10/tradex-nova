@@ -266,6 +266,41 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus {
   @apply pl-1;
 }
 
+/*
+  Lists flow into two columns when there is room for two.
+
+  A trade note is mostly short items - a confluence, a timeframe, a rule -
+  and each one was taking a full row of a very wide editor, so a five-item
+  setup list ran down the page with most of the line empty beside it.
+
+  'columns: 20rem 2' reads as "about 20rem per column, never more than two":
+  a narrow editor or a phone gets one column because a second will not fit,
+  and a wide one gets two. No breakpoint to keep in sync with the layout,
+  since it responds to the space the list actually has.
+*/
+.prose-invert ul,
+.prose-invert ol {
+  columns: 20rem 2;
+  column-gap: 2.5rem;
+}
+
+/*
+  An item is never split down the middle across the column break, and a
+  nested list stays in its parent's column rather than starting its own
+  pair inside one.
+*/
+.prose-invert li {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.prose-invert ul ul,
+.prose-invert ul ol,
+.prose-invert ol ul,
+.prose-invert ol ol {
+  columns: auto;
+}
+
 .prose-invert strong {
   @apply font-bold text-white;
 }
