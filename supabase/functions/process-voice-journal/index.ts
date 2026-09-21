@@ -107,9 +107,39 @@ Deno.serve(async (req: Request) => {
       throw new Error('Anthropic API key not configured');
     }
 
-    // Enhance system prompt with trading vocabulary instructions
-    const enhancedSystemPrompt = systemPrompt + TRADING_VOCABULARY_SYSTEM_PROMPT + INSTRUMENT_KNOWLEDGE_SYSTEM_PROMPT;
-    console.log('System prompt length:', enhancedSystemPrompt.length);
+    /*
+      Split in two so the fixed half can be cached.
+
+      The trading vocabulary and instrument knowledge are about 4,700 tokens
+      and are byte-identical on every call - the same reference material
+      re-read from scratch every time somebody hits Organize. The caller's
+      own prompt varies, so it goes in an uncached block after them.
+
+      Order matters: a cache breakpoint only covers the blocks before it, so
+      the stable material has to come first. nova-chat has done this since
+      the caching work in August; this function never got it, which is most
+      of why Organize sits there.
+    */
+    const systemBlocks = [
+      {
+        type: 'text',
+        text: TRADING_VOCABULARY_SYSTEM_PROMPT + INSTRUMENT_KNOWLEDGE_SYSTEM_PROMPT,
+        cache_control: { type: 'ephemeral' },
+      },
+      /*
+        Only when there is one. systemPrompt comes off the request body and
+        can be absent; concatenating it used to make the string "undefined..."
+        which was ugly but harmless, whereas an empty text block is rejected
+        outright by the API.
+      */
+      ...(typeof systemPrompt === 'string' && systemPrompt.trim()
+        ? [{ type: 'text', text: systemPrompt }]
+        : []),
+    ];
+    console.log(
+      'System prompt length:',
+      (TRADING_VOCABULARY_SYSTEM_PROMPT + INSTRUMENT_KNOWLEDGE_SYSTEM_PROMPT + (systemPrompt ?? '')).length,
+    );
 
     /*
       Tuned for latency - "Organize with Nova" was taking well over 20
@@ -127,9 +157,21 @@ Deno.serve(async (req: Request) => {
       model: MODEL,
       max_tokens: 2048,
       output_config: { effort: 'low' },
-      system: enhancedSystemPrompt,
+      system: systemBlocks,
       messages: [{ role: 'user', content: correctedTranscript }],
     });
+
+    /*
+      Logged so the cache can be checked rather than believed. A cold call
+      reports cache_creation_input_tokens and a warm one reports
+      cache_read_input_tokens; if the warm number never appears, the
+      breakpoint is in the wrong place.
+    */
+    console.log('cache', JSON.stringify({
+      created: (response.usage as { cache_creation_input_tokens?: number }).cache_creation_input_tokens ?? 0,
+      read: (response.usage as { cache_read_input_tokens?: number }).cache_read_input_tokens ?? 0,
+      input: response.usage.input_tokens,
+    }));
 
     const textBlock = response.content.find((b): b is Anthropic.TextBlock => b.type === 'text');
     const jsonResponse = textBlock?.text;
