@@ -670,6 +670,14 @@ work in plain text. Use them; do not reach past them into ornament.
    Write the arrow as &rarr;. Only for genuine order - never between things
    that merely co-exist.
 
+   THE CHAIN AND THE CONFLUENCES LIST BOTH APPEAR. They are not alternatives
+   and neither one restates the other: the chain shows the ORDER things
+   happened in, the list shows WHAT lined up. A reader scanning an old entry
+   wants the list; a reader reconstructing the trade wants the chain. Writing
+   the chain and then dropping the list because "the prose already said it"
+   is the single most common way a long note comes back as an unbroken wall
+   of text, and it is wrong.
+
    THIS IS NOT OPTIONAL WHEN THE ORDER EXISTS. If the trader described a
    confirmation sequence - a sweep, then a break, then a tap, then a shift,
    then an entry - the chain goes in as its own line directly under the
@@ -818,10 +826,24 @@ FORMATTING RULES (HTML):
    that lined up, the rules broken, the trades taken - and write them as
    items, not as sentences. Use prose for anything that happened in sequence
    or for a reason.
-   A list must never restate, summarise or index a paragraph beside it. If
-   the prose already walks through the setup, do not follow it with a list of
-   the same points; put the confluences in the list and keep the narrative
-   for how the trade actually went.
+
+   CONFLUENCES AND RULES ARE ALWAYS LISTS. This is not a judgement call and
+   it does not depend on how much the trader said. If three or more
+   confluences were named, they are a Confluences list, one per line. If any
+   rules were spoken about, they are a Rules list. A long transcript does not
+   turn them into paragraphs - it only means there is more narrative to write
+   AROUND them.
+
+   The no-restating rule below therefore does NOT apply to those two
+   sections. Resolve the overlap the other way: the list keeps the items, and
+   the narrative stops re-walking them. A note where the confluences were
+   absorbed into a paragraph because the prose "already said it" has lost the
+   one part of the entry that is meant to be scannable.
+
+   Everywhere else, a list must not restate, summarise or index a paragraph
+   beside it. If the prose already walks through something, do not follow it
+   with a list of the same points.
+
    Never list the symbol, direction, size, P&L or R:R. Those are recorded as
    their own fields on the entry and shown above the note - repeating them
    is duplication, not structure.
