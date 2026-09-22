@@ -1653,6 +1653,39 @@ export default function Journal() {
     if (!newTextOnly) return;
 
     setIsAutoFilling(true);
+
+    /*
+      The same snapshot the mic takes. applyVoiceFields rebuilds the
+      mergeable fields from it, and with nothing here it would rebuild them
+      from empty - dropping tags the user had already added.
+    */
+    voiceFormBaselineRef.current = {
+      tags: [...(entryForm.tags ?? [])],
+      template_data: entryForm.template_data ?? {},
+      pre_market_notes: entryForm.pre_market_notes ?? '',
+      post_market_notes: entryForm.post_market_notes ?? '',
+    };
+
+    /*
+      Typed Organize gets the fast fields call too, so the checklist and the
+      data points land in about four seconds rather than waiting on the note
+      - the same split dictation uses.
+
+      Only on a fresh organize. An incremental one can decide the new text is
+      a SECOND position and reset the form to start another entry, and
+      applying fields before that decision is made would write them into the
+      entry being left behind.
+    */
+    const typedFieldsCall = isIncrementalUpdate
+      ? Promise.resolve()
+      : extractVoiceFields(newTextOnly, namedConfluences(), namedRules(), namedPsychChecks())
+          .then(applyVoiceFields)
+          .catch((error) => {
+            // The note pass returns the same fields shortly after, so a
+            // failure here costs promptness rather than data.
+            console.error('Field extraction failed:', error);
+          });
+
     try {
       let voiceData: VoiceJournalData;
       let isNewPositionEntry = false;
@@ -1696,7 +1729,25 @@ export default function Journal() {
           }
         }
       } else {
-        voiceData = await processVoiceJournalEntry(newTextOnly, undefined, namedConfluences(), namedRules(), selectedAccount?.id ?? null, namedPsychChecks());
+        /*
+          Streamed in, the same as the first pass of a dictation - there is
+          nothing on screen to disturb, so watching Nova write is strictly
+          better than watching a spinner. The incremental branch above is
+          left alone: it appends to text the user is still looking at.
+        */
+        voiceData = await processVoiceJournalEntry(
+          newTextOnly,
+          undefined,
+          namedConfluences(),
+          namedRules(),
+          selectedAccount?.id ?? null,
+          namedPsychChecks(),
+          'trade',
+          (partial) => {
+            if (!partial.content) return;
+            setEntryForm(prev => ({ ...prev, content: partial.content! }));
+          }
+        );
       }
 
       applyConfluenceRuleStatus(voiceData);
@@ -1794,6 +1845,9 @@ export default function Journal() {
         : 'Nova could not read that. Please try again in a moment.';
       showToast(message, 'error');
     } finally {
+      // Settled here so "Organizing..." covers both halves, and a slow
+      // fields call cannot land after the button says it has finished.
+      await typedFieldsCall.catch(() => {});
       setIsAutoFilling(false);
     }
   };
