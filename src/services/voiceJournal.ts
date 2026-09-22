@@ -230,6 +230,19 @@ export async function extractVoiceFields(
     `  were there", "followed all my rules" means return EVERY id with true.`,
     `  "I broke all my rules" means every rule id false. A partial blanket -`,
     `  "all of them except the 4H tap" - is every id true apart from that one.`,
+    `- A psychology check is ticked ONLY when the transcript says something`,
+    `  about that specific thing. Never infer one because it sounds like what`,
+    `  a careful trader would have done. A note that describes a clean`,
+    `  top-down setup with a stop below the low says NOTHING about whether`,
+    `  they reviewed their plan or defined an exit strategy - those stay`,
+    `  blank. This is the trader's own account of their own state of mind, so`,
+    `  an unearned tick is you putting words in their mouth. A blank is`,
+    `  honest; a guess is not.`,
+    `- THE RATING SCALE IS 1 TO 5. Never return a number outside it - the`,
+    `  entry shows five dots and a 6 or an 8 cannot be displayed at all.`,
+    `  Convert anything said on another scale: "eight out of ten" is 4,`,
+    `  "nine out of ten" is 5. 1 is rattled/scattered/unsure, 3 is fine,`,
+    `  5 is steady/sharp/certain.`,
     `- Never invent a rating. Only when they gave a number, or a plainly`,
     `  scaled word like "terrible" or "excellent". Vague approval such as`,
     `  "everything was good" is NOT a rating - leave those three fields out.`,
@@ -531,13 +544,17 @@ EXTRACTION GUIDELINES:
 - Ranges: "between 20-30 minutes" → "20-30 minutes"
 - Scalp: "quick scalp" → "5 minutes", "in and out" → "2 minutes"
 
-**Mood & Psychology (1-10 scale):**
-- Excellent (9-10): "amazing", "fantastic", "on top of the world", "killing it"
-- Great (8): "feeling great", "really good", "confident", "solid"
-- Good (7): "good", "fine", "decent", "okay mood"
-- Average (5-6): "alright", "okay", "so-so", "meh"
-- Below Average (3-4): "not great", "stressed", "anxious", "off"
-- Poor (1-2): "terrible", "awful", "depressed", "horrible"
+**Mood & Psychology - THE SCALE IS 1 TO 5, NEVER 1 TO 10:**
+- 5: "steady", "calm", "clear", "dialled in", "locked in"
+- 4: "good", "confident", "solid"
+- 3: "fine", "normal", "okay"
+- 2: "off", "distracted", "anxious", "unsure"
+- 1: "rattled", "tilted", "terrible", "all over the place"
+
+If the trader gives a number on a different scale, CONVERT it. "eight out of
+ten" is 4, not 8. "nine out of ten" is 5. A bare number with no scale named
+is on this one. Never return a value outside 1-5 - the entry shows five dots
+and a 6 or an 8 cannot be displayed at all.
 
 **Energy Levels:**
 - High: "energized", "pumped", "wired", "full of energy", "ready to go"
@@ -1025,7 +1042,8 @@ CRITICAL RULES:
 5. Be generous with inference but conservative with assumptions
 6. Extract ALL relevant trading details from natural speech
 7c. **Never invent a number.** A rating is returned only when the trader
-   gave one ("confidence was an eight") or used a plainly scaled word
+   gave one ("confidence was a four", or "an eight out of ten" which
+   converts to 4) or used a plainly scaled word
    ("terrible", "excellent"). Vague approval - "everything was good", "felt
    fine" - is NOT a rating; leave those fields out entirely rather than
    picking a number that looks reasonable. A trader who says everything was
