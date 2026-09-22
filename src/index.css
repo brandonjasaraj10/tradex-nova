@@ -262,20 +262,23 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus {
 }
 
 /*
-  The opening summary, as a panel.
+  The opening summary.
 
-  It is the one paragraph that gets reread a month later, and it was
-  indistinguishable from the body text below it. Grouping it in a container
-  is the sketchnote move - the box is what marks it as the summary, so the
-  italics it used to lean on are dropped.
+  It was in a bordered container, on the reasoning that the one paragraph
+  worth rereading a month later should be marked as such. Removed on
+  request - the box read as an interface element sitting inside the note
+  rather than as part of it.
+
+  What is left is weight rather than furniture: a little larger, a little
+  brighter, and the emphasis it already carries. That is enough to separate
+  it from the body without drawing a frame around it.
 
   Scoped to a first paragraph that actually contains the summary's emphasis,
-  not merely to whatever comes first. A stray empty paragraph ahead of the
-  note was being drawn as an empty bordered box, and a note opening with a
-  heading is untouched either way.
+  not merely to whatever comes first - a stray empty paragraph ahead of the
+  note would otherwise pick this up.
 */
 .prose-invert > p:first-child:has(em) {
-  @apply text-[15px] leading-relaxed text-gray-100 bg-white/[0.03] border border-white/5 rounded-lg px-4 py-3 mb-5;
+  @apply text-[15px] leading-relaxed text-gray-100 mb-5;
 }
 
 .prose-invert > p:first-child:has(em) em {
