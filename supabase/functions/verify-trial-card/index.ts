@@ -155,6 +155,41 @@ async function verifyOne(userId: string): Promise<Outcome> {
     } catch (cancelErr) {
       console.error("Could not cancel the trial after a declined card for", userId, cancelErr);
     }
+
+    /*
+      Record WHY, here, rather than letting the webhook infer it.
+
+      has_active_subscription() keeps a cancelled member in until their period
+      ends - which is right for somebody who chose to leave - and only cuts
+      access immediately when cancellation_reason says the money failed. This
+      branch used to cancel in Stripe and write nothing, leaving the reason to
+      arrive from the webhook. Stripe reports an API cancellation as
+      "cancellation_requested", never "payment_failed", so the reason came
+      back null, the guard never fired, and a declined trial kept full paid
+      access for the rest of its window.
+
+      Seen live: a $299.90 annual card check failed twice, Stripe showed no
+      subscription and no spend, and the account still had access for three
+      more days.
+
+      Written directly because this code is the only place that knows the
+      cancellation was a decline. Not conditional on the Stripe cancel above
+      succeeding - if that call failed the card still declined, and the access
+      guard matters more than the two staying in step.
+    */
+    const { error: reasonErr } = await admin
+      .from("subscriptions")
+      .update({
+        status: "canceled",
+        cancellation_reason: "payment_failed",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("user_id", userId);
+
+    if (reasonErr) {
+      console.error("Could not record payment_failed for", userId, reasonErr);
+    }
+
     console.info("Trial card declined for", userId, detail);
     return { userId, result: "declined", detail };
   }
