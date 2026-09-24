@@ -104,7 +104,7 @@ export const STRUGGLE_CARD: Record<Struggle, StruggleCard> = {
       { label: '11 of your last 14 red days started that way', state: 'flagged' },
       { label: 'Average gap between the loss and the next entry: 4 minutes', state: 'flagged' },
     ],
-    outcome: 'It is never the losing trade that does the damage. It is the one you take four minutes later.',
+    outcome: 'Every journal you have tried logged that trade. None of them noticed what it came after.',
   },
   overtrading: {
     title: 'What 30 trades would show you',

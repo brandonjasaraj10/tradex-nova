@@ -44,10 +44,10 @@ type Step = 0 | 1 | 2 | 'thinking' | 3;
   underneath it.
 */
 const PAYOFF_HEADLINE: Record<Struggle, string> = {
-  revenge_trading: 'The three trades after a red one are the ones that cost you.',
-  overtrading: 'Trade four is usually where the day turns.',
-  breaking_rules: 'You keep most of your rules. This is where the rest go.',
-  not_sure: 'Most traders cannot name it either. That is what this finds.',
+  revenge_trading: 'It\u2019s the next trade that costs you.',
+  overtrading: 'Your best days are your quietest.',
+  breaking_rules: 'You keep every rule that costs you nothing.',
+  not_sure: 'You have a pattern. You just haven\u2019t seen it.',
 };
 
 const INSTRUMENTS: { value: Instrument; label: string }[] = [
@@ -348,12 +348,20 @@ export default function Onboarding({ onComplete }: { onComplete: () => void | Pr
 
         {step === 3 && (
           <>
-            <h1 className="text-[26px] sm:text-[32px] leading-[1.15] font-semibold tracking-[-0.03em]
-              text-white text-balance text-center mb-2.5">
+            {/*
+              Bold, and allowed the full column.
+
+              text-balance was evening the line lengths out, which on a
+              headline this short meant breaking a sentence that had room to
+              run - two cramped lines where one wide one fits. Dropped, and
+              the tracking pulled in a notch to hold bold together at size.
+            */}
+            <h1 className="text-[27px] sm:text-[34px] leading-[1.12] font-bold tracking-[-0.038em]
+              text-white text-center mb-3">
               {PAYOFF_HEADLINE[struggle]}
             </h1>
             <p className="text-center text-[13.5px] sm:text-[14.5px] text-gray-400 leading-relaxed
-              max-w-md mx-auto">
+              max-w-lg mx-auto">
               Every journal records what the trade did. This one records what you were like
               before you took it.
             </p>
@@ -396,8 +404,8 @@ export default function Onboarding({ onComplete }: { onComplete: () => void | Pr
               stand behind. The outcome line was always the strongest thing
               in the block and it needs no invented arithmetic to land.
             */}
-            <p className="mt-4 sm:mt-5 text-center text-[15.5px] sm:text-[17px] leading-relaxed
-              text-gray-200 text-balance max-w-md mx-auto">
+            <p className="mt-4 sm:mt-5 text-center text-[15px] sm:text-[16.5px] leading-[1.55]
+              text-gray-200 text-balance max-w-xl mx-auto">
               {card.outcome}
             </p>
 
