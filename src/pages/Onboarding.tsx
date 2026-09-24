@@ -94,7 +94,9 @@ const STRUGGLES: { value: Struggle; label: string }[] = [
 */
 const THINKING_LINES = [
   'Reading your answers',
-  'Picking the right example trades',
+  /* Said "Picking the right example trades" while the example trades were on
+     screen. They are not any more, so it describes what actually happens. */
+  'Matching the pattern you picked',
   'Setting up your checks',
 ];
 
@@ -384,31 +386,20 @@ export default function Onboarding({ onComplete }: { onComplete: () => void | Pr
               </p>
             </div>
 
-            {/* What those ratings turn into, once there are enough of them. */}
-            <div className="mt-3 sm:mt-4 rounded-2xl border border-white/10 bg-brand-surface p-3.5 sm:p-5">
-              <p className="text-[11px] uppercase tracking-[0.14em] text-gray-400 mb-3.5">
-                {card.title}
-              </p>
-              <ul className="flex flex-col gap-2.5">
-                {card.items.map((item) => (
-                  <li key={item.label} className="flex items-start gap-2.5 text-[13.5px] leading-relaxed">
-                    <span className="mt-[3px] flex-shrink-0">
-                      {item.state === 'flagged' && (
-                        <AlertTriangle className="w-3.5 h-3.5 text-brand-blue-light" />
-                      )}
-                      {item.state === 'ok' && <Check className="w-3.5 h-3.5 text-gray-500" />}
-                      {item.state === 'pending' && <Circle className="w-3.5 h-3.5 text-gray-600" />}
-                    </span>
-                    <span className={item.state === 'flagged' ? 'text-white' : 'text-gray-400'}>
-                      {item.label}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-4 pt-3.5 border-t border-white/[0.07] text-[13px] text-gray-300 leading-relaxed">
-                {card.outcome}
-              </p>
-            </div>
+            {/*
+              The answer to the line above it, and nothing else.
+
+              It was the card title, four findings and an outcome. Three of
+              those findings were invented figures - "11 of your last 14 red
+              days", "4 minutes" - on the screen immediately before a price,
+              which is the worst place to be carrying numbers nobody can
+              stand behind. The outcome line was always the strongest thing
+              in the block and it needs no invented arithmetic to land.
+            */}
+            <p className="mt-4 sm:mt-5 text-center text-[15.5px] sm:text-[17px] leading-relaxed
+              text-gray-200 text-balance max-w-md mx-auto">
+              {card.outcome}
+            </p>
 
 
             <div className="mt-5 sm:mt-7 text-center">
