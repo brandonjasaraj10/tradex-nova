@@ -35,6 +35,23 @@ export type Tier = {
   priceIds: { monthly: string; annual: string };
 };
 
+/*
+  The tier buttons say what the paywall's button says.
+
+  Rendered only by /pricing, where each card's button is the last thing in
+  the card with nothing under it - so "Start journaling" was the softest
+  possible words directly beneath $29.99, and two screens from a button that
+  says "Start 3 days free".
+
+  Deliberately NOT changed on the landing page, which renders its own button
+  rather than this one. Every button there goes to signup, and the one under
+  its price block already carries "3 days free - Cancel in two clicks" on the
+  line below it. Putting the same promise on the button as well says it twice,
+  which is the redundancy the paywall's own CTA was just cleaned of. The hero
+  keeps "Start journaling" for a separate reason: it is the top of a cold
+  page, the trial is three screens away, and "free" beside no mention of a
+  card is the surprise people meet at the paywall.
+*/
 export const TIERS: Tier[] = [
   {
     name: 'Starter',
@@ -92,7 +109,7 @@ export const TIERS: Tier[] = [
       { text: '1,000 Nova credits a month', included: true },
       { text: 'Unlimited accounts by hand or CSV', included: true },
     ],
-    cta: 'Start journaling',
+    cta: 'Start 3 days free',
     priceIds: {
       monthly: 'price_1UGqG0P9mqFWeYrvtPMZvsk6',
       annual: 'price_1UGqFzP9mqFWeYrvwxpKrL7T',
@@ -121,7 +138,7 @@ export const TIERS: Tier[] = [
       */
       { text: 'Unlimited accounts by hand or CSV', included: true },
     ],
-    cta: 'Start journaling',
+    cta: 'Start 3 days free',
     featured: true,
     priceIds: {
       monthly: 'price_1UGqGwP9mqFWeYrvzMUUTkyY',
@@ -137,7 +154,7 @@ export const TIERS: Tier[] = [
       { text: '8,000 Nova credits a month', included: true },
       { text: 'Priority support', included: true },
     ],
-    cta: 'Start journaling',
+    cta: 'Start 3 days free',
     priceIds: {
       monthly: 'price_1UGqq1P9mqFWeYrvfkgvSpDn',
       annual: 'price_1UGqrcP9mqFWeYrvwfanVeKY',
