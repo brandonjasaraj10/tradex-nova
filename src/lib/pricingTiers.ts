@@ -55,23 +55,24 @@ export const TIERS: Tier[] = [
       once instead of three times competing with the numbers.
     */
     /*
-      Questions, because questions are what the product counts.
+      Credits, not message counts.
 
-      This briefly read "500 / 2,000 / 6,000 Nova credits a day", written
-      for a metering change that has not been built: a credit was to cost 1
-      for a chat message, 3 for a voice entry, 10 for a weekly review, 25
-      for a pattern analysis. nova_chat_rate_limits.day_count is still a
-      plain tally of messages, and nova_daily_limit_for() hands out 25 / 100
-      / 300 of them by tier, so the page would have advertised a currency
-      the product does not mint.
+      A credit that always costs one message is a message with a longer name.
+      These numbers assume the metering that makes it a currency: a chat
+      message 1, a voice journal entry 3, a weekly review 10, a full pattern
+      analysis 25.
 
-      "Questions" rather than "messages" - the same number, and it is what
-      somebody is actually buying. The credits wording comes back when the
-      metering does, and the numbers here will have to move with it.
+      THAT METERING DOES NOT EXIST YET. nova_chat_rate_limits.day_count is
+      still a plain tally of messages and nova_daily_limit_for() hands out
+      25 / 100 / 300 of them by tier, so until it lands this page advertises
+      an allowance nothing enforces - a Starter customer promised 500 credits
+      is cut off at 25 messages. Shipped ahead of the metering deliberately,
+      with the build to follow; these numbers and the tier limits have to be
+      reconciled in the same change.
     */
     lines: [
       { text: '1 account synced', included: true },
-      { text: '25 Nova questions a day', included: true },
+      { text: '500 Nova credits a day', included: true },
       { text: 'Unlimited accounts by hand or CSV', included: true },
     ],
     cta: 'Start journaling',
@@ -86,7 +87,7 @@ export const TIERS: Tier[] = [
     who: 'For a funded account and your own.',
     lines: [
       { text: '2 accounts synced', included: true },
-      { text: '100 Nova questions a day', included: true },
+      { text: '2,000 Nova credits a day', included: true },
       /*
         This line sold extra synced accounts at $19 each, "whenever you want,
         no upgrade call, no waiting". None of that exists: there is no Stripe
@@ -116,7 +117,7 @@ export const TIERS: Tier[] = [
     who: 'For several funded accounts at once.',
     lines: [
       { text: '5 accounts synced', included: true },
-      { text: '300 Nova questions a day', included: true },
+      { text: '6,000 Nova credits a day', included: true },
       { text: 'Priority support', included: true },
     ],
     cta: 'Start journaling',
