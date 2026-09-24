@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { loadStripe, type StripeEmbeddedCheckout } from '@stripe/stripe-js';
-import { Shield, CheckCircle2, Lock, AlertCircle, ArrowLeft, Zap, Crown, Gift, X } from 'lucide-react';
+import { CalendarClock, CheckCircle2, Lock, AlertCircle, ArrowLeft, Zap, Crown, RotateCcw, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import NOVAScore from '../components/shared/NOVAScore';
 import { TickList } from '../components/marketing/blocks';
@@ -769,7 +769,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
             */}
             <h1 className="text-[26px] sm:text-5xl leading-[1.1] sm:leading-[1.08] font-semibold
               tracking-[-0.035em] text-white text-balance">
-              {isFounder ? 'One plan. Everything in it.' : 'Start tonight. Decide Friday.'}
+              {isFounder ? 'One plan. Everything in it.' : 'Start mastering your trading psychology.'}
             </h1>
             <p className="mt-2.5 sm:mt-4 text-[13.5px] sm:text-base leading-relaxed text-gray-400
               max-w-sm mx-auto text-balance">
@@ -778,11 +778,11 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
                 : (
                   <>
                     <span className="sm:hidden">
-                      Three days to find out if it tells you something new.
+                      The one part of trading nothing else measures.
                     </span>
                     <span className="hidden sm:inline">
-                      Three days to find out whether it tells you something you did not already
-                      know about yourself. Nothing is charged until it has had the chance.
+                      The one part of trading nothing else measures &mdash; and the part that
+                      decides whether you keep the account.
                     </span>
                   </>
                 )}
@@ -797,11 +797,14 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
           */}
           <ul className="flex flex-wrap items-center justify-center gap-x-3.5 sm:gap-x-5 gap-y-2 mb-3.5 sm:mb-10">
             {[
-              [Shield, '3 days free'],
+              /* Each icon means its line. A shield said "secure" next to a
+                 sentence about time, and a gift box said "present" next to
+                 one about cancelling. */
+              [CalendarClock, '3 days free'],
               [Lock, 'Card handled by Stripe'],
-              [Gift, 'Cancel in two clicks'],
+              [RotateCcw, 'Cancel in two clicks'],
             ].map(([Icon, label]) => {
-              const I = Icon as typeof Shield;
+              const I = Icon as typeof Lock;
               return (
                 <li key={label as string} className="inline-flex items-center gap-1.5 text-[11.5px] sm:text-[12.5px] text-gray-400">
                   <I className="w-3.5 h-3.5 text-brand-blue-light flex-shrink-0" />
