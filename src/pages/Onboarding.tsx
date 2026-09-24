@@ -421,11 +421,26 @@ export default function Onboarding({ onComplete }: { onComplete: () => void | Pr
                 className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full
                   bg-white text-black text-[15px] font-medium hover:bg-gray-200 transition-colors"
               >
-                See plans
+                Start 3 days free
                 <ArrowRight size={17} />
               </button>
+              {/*
+                The same words as the button on the screen this leads to.
+
+                It used to say "See plans", which is a navigation label -
+                it asks somebody to go and look at prices, which is the
+                lowest-intent thing a button can ask for, and it promised a
+                comparison the paywall no longer runs. Carrying the paywall's
+                own CTA here makes the two screens one promise rather than
+                two, and the tap that follows is a confirmation instead of a
+                second decision.
+
+                The line under it stops repeating "three days free" now the
+                button says it, and spends itself on the thing somebody is
+                actually weighing at this point instead.
+              */}
               <p className="mt-3 text-[12.5px] text-gray-500">
-                Three days free &middot; Nothing is charged today
+                Nothing charged today &middot; Cancel in two clicks
               </p>
             </div>
           </>
