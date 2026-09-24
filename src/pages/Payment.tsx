@@ -51,6 +51,20 @@ const INCLUDED = [
 /* The specifics a comparison shopper checks, kept but not shouted. */
 const ALSO_INCLUDED = 'Unlimited trades \u00b7 Unlimited manual accounts \u00b7 CSV import \u00b7 Notes';
 
+/*
+  A price string turned into its weekly equivalent.
+
+  Takes the displayed string rather than a number so there is one place that
+  knows how these are formatted, and returns a string for the same reason.
+  An annual total divides by 52; a monthly price is twelve of them over 52.
+*/
+const weeklyFrom = (price: string, annual: boolean) => {
+  const total = Number(price.replace(/[^0-9.]/g, ''));
+  if (!total) return price;
+  const weekly = annual ? total / 52 : (total * 12) / 52;
+  return `$${weekly.toFixed(2)}`;
+};
+
 const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
 const stripeMonthlyPriceId = import.meta.env.VITE_STRIPE_PRICE_ID;
 const stripeAnnualPriceId = import.meta.env.VITE_STRIPE_ANNUAL_PRICE_ID;
@@ -566,12 +580,47 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
         price: billing === 'annual' ? tier.annualPerMonth : tier.monthly,
         period: '/month',
         originalPrice: billing === 'annual' ? tier.monthly : undefined,
+        /*
+          The price said by the week, on a phone only.
+
+          Subscription apps reframe this way and the reason is not
+          decoration: $5.77 gets compared against a coffee, $299.90 against a
+          decision. The sum leaving the account is identical.
+
+          Both intervals, not just the annual one, and that is because this
+          page has a toggle. Apps that quote weeks on the yearly plan alone
+          are listing plans separately, where each can carry its own unit;
+          across a switch, "/week" on one side and "/month" on the other
+          makes the two incomparable at exactly the moment somebody is
+          comparing them. $6.92 against $5.77 is a saving that can be seen.
+
+          Phone only, because that is where the convention lives. A desktop
+          pricing table quoting weeks reads as evasive rather than familiar,
+          so sm and up gets the monthly figure with the old price struck
+          through beside it.
+
+          What keeps it honest is billedAs directly underneath, naming the
+          sum and the interval Stripe will actually take. A page that
+          advertises $5.77 and charges $299.90 without saying so is how
+          chargebacks start.
+        */
+        weeklyPrice: weeklyFrom(billing === 'annual' ? tier.annualTotal : tier.monthly,
+                                billing === 'annual'),
         summary: tier.summary,
         icon: tier.id === 'elite' ? Crown : Zap,
         features: tier.features,
         highlight: !!tier.popular,
         savings: billing === 'annual' ? '2 months free' : null,
-        billedAs: billing === 'annual' ? tier.annualTotal : undefined,
+        /*
+          The real charge, under whichever headline figure is showing.
+
+          On annual it is needed on every screen. On monthly it exists only
+          for the phone, where the headline says $6.92 a week - on a desktop
+          the headline already says $29.99/month and repeating it as "billed
+          monthly" underneath is the same sentence twice.
+        */
+        billedAs: billing === 'annual' ? tier.annualTotal : `${tier.monthly} billed monthly`,
+        billedAsMobileOnly: billing !== 'annual',
         popular: !!tier.popular,
       }));
 
@@ -590,26 +639,12 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
   const isAnnual = isFounder ? selectedPlan === 'annual' : billing === 'annual';
   const activePlan = plans.find((pl) => pl.id === selectedPlan) ?? plans[0];
   const activeBilledAs = 'billedAs' in activePlan ? activePlan.billedAs : undefined;
+
+  /* More than one plan on screen - which decides both what the list renders
+     and whether it renders as rows or as columns. */
+  const showingAll = isFounder || comparing;
   const chargeAmount = activeBilledAs ? activeBilledAs.split(' ')[0] : activePlan.price;
 
-  /*
-    The same charge, said as a weekly number.
-
-    Shrinking the commitment to make it an easier yes gives away the LTV;
-    shrinking the NUMBER does not. Apps doing $100k/month keep the annual
-    default and reframe "$39/year" as "$0.76/week" when somebody hesitates,
-    which is the whole trick: the amount leaving the account is unchanged
-    and the thing being compared is a coffee rather than a car.
-
-    The real charge is still printed beside it, because a page that
-    advertises $5.77 and takes $299.90 is how chargebacks start.
-  */
-  const perWeek = (() => {
-    const total = Number(chargeAmount.replace(/[^0-9.]/g, ''));
-    if (!total) return null;
-    const weekly = isAnnual ? total / 52 : (total * 12) / 52;
-    return `$${weekly.toFixed(2)}`;
-  })();
 
   /*
     A lapsed subscriber is not a prospect. Showing them plans would sell a
@@ -841,7 +876,19 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
             single column, where the order still reads correctly top to
             bottom.
           */}
-          <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)] lg:gap-10 lg:items-start">
+          {/*
+            One column, because there is no longer a second one.
+
+            This was a two-column desktop split - plans on the left, and the
+            score, feature list and guarantee panels down the right. Cutting
+            the page to one screen deleted all three and left the grid, so
+            the right column went on reserving 0.85fr of the width with
+            nothing in it: on a 1512px screen the plans were squeezed into
+            480px, sat left of centre, and the three compare columns came out
+            150px wide each with the prices clipped. An empty column is still
+            a column.
+          */}
+          <div>
             <div>
           {/* ---------------------------------------------------------- */}
           {/* The plans. Two rows, not two tall cards - the choice here is
@@ -910,12 +957,31 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
             </div>
           )}
 
-          <div className="flex flex-col gap-2.5 sm:gap-3 mb-6 sm:mb-8">
-            {(isFounder || comparing
+          {/* One flag for both the layout and the list it lays out. */}
+          {/*
+            Rows on a phone, columns on a desktop - but only when there is
+            something to compare.
+
+            One plan is the normal case and it stays a single wide row. Three
+            stacked rows is what the compare view was, and on a wide screen
+            that put a 990px column down the middle of a 1700px window with
+            the third plan below the fold: the two things a comparison needs -
+            seeing the options at once, and not scrolling - both lost to a
+            layout that had never been given a desktop case.
+          */}
+          <div className={`mb-6 sm:mb-8 ${
+            showingAll
+              ? 'grid grid-cols-1 lg:grid-cols-3 gap-2.5 sm:gap-3 lg:gap-4 lg:items-start'
+              : 'flex flex-col gap-2.5 sm:gap-3'
+          }`}>
+            {(showingAll
               ? plans
               : plans.filter((pl) => pl.id === selectedPlan)
             ).map((plan) => {
               const isSelected = selectedPlan === plan.id;
+              /* Present only on the annual tier rows, absent on the founder
+                 cards, which carry their own two intervals as the choice. */
+              const weekly = 'weeklyPrice' in plan ? plan.weeklyPrice : null;
               /* Nothing to choose between while one plan is showing, so the
                  row stops pretending to be a radio and just states the offer. */
               const choosable = isFounder || comparing;
@@ -929,12 +995,16 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
                   }}
                   aria-pressed={isSelected}
                   className={`w-full text-left rounded-2xl p-3.5 sm:p-5 transition-colors ${
+                    showingAll ? 'lg:h-full' : ''
+                  } ${
                     isSelected
                       ? 'border border-brand-blue-light/40 bg-brand-blue/[0.07]'
                       : 'border border-white/[0.07] bg-brand-surface hover:border-white/20'
                   }`}
                 >
-                  <div className="flex items-center justify-between gap-4">
+                  <div className={`flex items-center justify-between gap-4 ${
+                    showingAll ? 'lg:flex-col lg:items-start lg:gap-2.5' : ''
+                  }`}>
                     <div className="flex items-center gap-3.5 min-w-0">
                       {/* The radio, drawn rather than a real input, so the
                           whole row is the target on a phone. */}
@@ -965,26 +1035,56 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
                       </div>
                     </div>
 
-                    <div className="text-right flex-shrink-0">
-                      <p className="flex items-baseline justify-end gap-1">
+                    <div className={`text-right flex-shrink-0 ${
+                      showingAll ? 'lg:text-left lg:w-full' : ''
+                    }`}>
+                      <p className={`flex items-baseline justify-end gap-1 ${
+                        showingAll ? 'lg:justify-start' : ''
+                      }`}>
                         {plan.originalPrice && (
-                          <span className="text-[13px] text-gray-600 line-through tabular-nums">
+                          <span className={`text-[13px] text-gray-600 line-through tabular-nums ${
+                            weekly ? 'hidden sm:inline' : ''
+                          }`}>
                             {plan.originalPrice}
                           </span>
                         )}
+                        {/* The weekly figure replaces the monthly one below
+                            sm and only when there is one - swapped in CSS
+                            rather than by measuring the viewport, so the
+                            first paint is already right. */}
+                        {weekly && (
+                          <motion.span
+                            key={`${plan.id}-${weekly}`}
+                            initial={{ opacity: 0, y: -6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.22, ease: 'easeOut' }}
+                            className="sm:hidden text-[20px] font-semibold text-white tabular-nums tracking-[-0.02em]"
+                          >
+                            {weekly}
+                          </motion.span>
+                        )}
+                        {weekly && <span className="sm:hidden text-[12px] text-gray-500">/week</span>}
                         <motion.span
                           key={`${plan.id}-${plan.price}`}
                           initial={{ opacity: 0, y: -6 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.22, ease: 'easeOut' }}
-                          className="text-[20px] sm:text-[22px] font-semibold text-white tabular-nums tracking-[-0.02em]"
+                          className={`text-[20px] sm:text-[22px] font-semibold text-white tabular-nums tracking-[-0.02em] ${
+                            weekly ? 'hidden sm:inline' : ''
+                          }`}
                         >
                           {plan.price}
                         </motion.span>
-                        <span className="text-[12px] text-gray-500">{plan.period}</span>
+                        <span className={`text-[12px] text-gray-500 ${weekly ? 'hidden sm:inline' : ''}`}>
+                          {plan.period}
+                        </span>
                       </p>
                       {plan.billedAs && (
-                        <p className="text-[11.5px] text-gray-600 mt-0.5">{plan.billedAs}</p>
+                        <p className={`text-[11.5px] text-gray-600 mt-0.5 ${
+                          ('billedAsMobileOnly' in plan && plan.billedAsMobileOnly) ? 'sm:hidden' : ''
+                        }`}>
+                          {plan.billedAs}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -1147,9 +1247,9 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
             like terms nobody finishes.
           */}
           <p className="text-center text-[11.5px] text-gray-500">
-            {perWeek
-              ? <>Then {chargeAmount}{isAnnual ? '/year' : '/month'} &mdash; about {perWeek} a week &middot; Cancel in two clicks</>
-              : <>3 days free &middot; Cancel in two clicks</>}
+            {/* The weekly figure is the headline on the card now, so this
+                states the real charge and stops saying it twice. */}
+            <>Then {chargeAmount}{isAnnual ? '/year' : '/month'} &middot; Cancel in two clicks</>
           </p>
           <p className="text-center text-[11px] text-gray-600 leading-relaxed mt-2 max-w-sm mx-auto">
             Nothing charged today. Your bank may show a brief hold, released straight away.
