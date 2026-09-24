@@ -80,7 +80,22 @@ export default function CookieConsent() {
       role="dialog"
       aria-live="polite"
       aria-label="Cookie preferences"
-      className="fixed inset-x-0 bottom-0 z-50 p-3 sm:p-5"
+      /*
+        Above the bottom of a phone screen, not on it.
+
+        Paywalls pin their CTA to the bottom on mobile (fixed bottom-0,
+        z-40) and this banner is fixed bottom-0 z-50, so the two occupied
+        the same strip and the banner won. Unlike a button in normal flow,
+        a pinned one never scrolls out from under it: the button that takes
+        the money was unreachable until consent was answered, on the one
+        screen where that costs something.
+
+        Lifted clear on mobile rather than restacked, because a z-index war
+        just moves the problem - putting the CTA on top would bury the
+        Accept button instead, and consent has to stay answerable. Desktop
+        keeps bottom-0; nothing is pinned down there.
+      */
+      className="fixed inset-x-0 bottom-[96px] sm:bottom-0 z-50 p-3 sm:p-5"
     >
       {/*
         Slides up and fades in, 320ms on a gentle ease-out. Small on purpose:

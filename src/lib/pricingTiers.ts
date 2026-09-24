@@ -56,7 +56,7 @@ export const TIERS: Tier[] = [
     */
     lines: [
       { text: '1 account synced', included: true },
-      { text: '25 Nova questions a day', included: true },
+      { text: '25 Nova messages a day', included: true },
       { text: 'Unlimited accounts by hand or CSV', included: true },
     ],
     cta: 'Start journaling',
@@ -71,7 +71,7 @@ export const TIERS: Tier[] = [
     who: 'For a funded account and your own.',
     lines: [
       { text: '2 accounts synced', included: true },
-      { text: '100 Nova questions a day', included: true },
+      { text: '100 Nova messages a day', included: true },
       /*
         This line sold extra synced accounts at $19 each, "whenever you want,
         no upgrade call, no waiting". None of that exists: there is no Stripe
@@ -101,7 +101,7 @@ export const TIERS: Tier[] = [
     who: 'For several funded accounts at once.',
     lines: [
       { text: '5 accounts synced', included: true },
-      { text: '300 Nova questions a day', included: true },
+      { text: '300 Nova messages a day', included: true },
       { text: 'Priority support', included: true },
     ],
     cta: 'Start journaling',

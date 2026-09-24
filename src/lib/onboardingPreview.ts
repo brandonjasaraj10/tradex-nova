@@ -77,44 +77,59 @@ export interface StruggleCard {
   outcome: string;
 }
 
+/*
+  Findings, not a feature tour.
+
+  Three of these four used to describe the interface about to run - "Cooldown
+  suggested - 15 minutes", "Stop loss set before entry" - which is a picture
+  of a checklist rather than a picture of the reader. The fourth, not_sure,
+  was written the other way round: "You lose most after a winning streak",
+  "Thursday is your worst day, consistently". That one lands and the others
+  did not, and the difference is whose behaviour is on screen.
+
+  So all four now read as things this would tell them about themselves. It is
+  the last screen before a price, and its job is to make somebody recognise
+  the habit they just admitted to - not to demonstrate that a checkbox
+  exists.
+
+  The outcome line carries the cost. "TradeX notices the loss and says so"
+  promises a notification, which is a small thing to pay for; naming what the
+  habit actually costs is not.
+*/
 export const STRUGGLE_CARD: Record<Struggle, StruggleCard> = {
   revenge_trading: {
-    title: 'Before your next trade',
+    title: 'What 30 trades would show you',
     items: [
-      { label: 'Last trade was a loss', state: 'flagged' },
-      { label: 'Cooldown suggested — 15 minutes', state: 'flagged' },
-      { label: 'Position size within your usual range', state: 'ok' },
-      { label: 'Reason for this trade written down', state: 'pending' },
+      { label: 'You size up on the trade straight after a red one', state: 'flagged' },
+      { label: '11 of your last 14 red days started that way', state: 'flagged' },
+      { label: 'Average gap between the loss and the next entry: 4 minutes', state: 'flagged' },
     ],
-    outcome: 'TradeX notices the loss before you take the next one, and says so.',
+    outcome: 'It is never the losing trade that does the damage. It is the one you take four minutes later.',
   },
   overtrading: {
-    title: 'Before your next trade',
+    title: 'What 30 trades would show you',
     items: [
-      { label: '6 trades today — your average is 3', state: 'flagged' },
-      { label: 'Win rate drops after trade 4', state: 'flagged' },
-      { label: 'This setup is on your plan', state: 'ok' },
-      { label: 'Reason for this trade written down', state: 'pending' },
+      { label: 'You average 3 trades a day. On your worst days, 7', state: 'flagged' },
+      { label: 'Everything after the fourth trade gives back the first three', state: 'flagged' },
+      { label: 'Your best days are your quietest ones', state: 'ok' },
     ],
-    outcome: 'TradeX counts what you have already taken today, and what it usually costs you.',
+    outcome: 'The extra trades are not a habit you cannot see. They are a number, and nothing you use counts it.',
   },
   breaking_rules: {
-    title: 'Your rules, on this trade',
+    title: 'What 30 trades would show you',
     items: [
-      { label: 'Stop loss set before entry', state: 'ok' },
-      { label: 'Risk under 1% of account', state: 'flagged' },
-      { label: 'Setup is on your approved list', state: 'ok' },
-      { label: 'No trading in the first 15 minutes', state: 'pending' },
+      { label: 'You wrote six rules. You keep four of them', state: 'flagged' },
+      { label: '\u201cRisk under 1%\u201d broken on one in three losing trades', state: 'flagged' },
+      { label: 'Rules go first on the days you are already down', state: 'flagged' },
     ],
-    outcome: 'You write the rules once. TradeX checks them against every trade you take.',
+    outcome: 'You do not need better rules. You need something that notices the moment you drop one.',
   },
   not_sure: {
-    title: 'What TradeX found in 30 trades',
+    title: 'What 30 trades would show you',
     items: [
-      { label: 'You lose most after a winning streak', state: 'flagged' },
+      { label: 'You lose most right after a winning streak', state: 'flagged' },
       { label: 'Your best trades are held twice as long', state: 'ok' },
       { label: 'Thursday is your worst day, consistently', state: 'flagged' },
-      { label: 'Tracking 4 more patterns', state: 'pending' },
     ],
     outcome: 'Not knowing is the normal answer. Finding out is the entire point of this.',
   },

@@ -10,6 +10,7 @@ import {
 } from '../lib/onboardingPreview';
 import { trackEvent } from '../lib/productAnalytics';
 import MascotSays from '../components/shared/MascotSays';
+import PreTradeScales, { type ScaleValues } from '../components/journal/PreTradeScales';
 
 /*
   Three questions and a preview, between signing up and seeing a price.
@@ -32,6 +33,22 @@ import MascotSays from '../components/shared/MascotSays';
 */
 
 type Step = 0 | 1 | 2 | 'thinking' | 3;
+
+/*
+  The payoff screen leads with their answer, not with a product tour.
+
+  It used to open "Here's what tracking forex trades looks like in TradeX"
+  over a list of three trades and their P&L - which is the one thing every
+  rival journal also shows, on the last screen before a price, in a product
+  that is not sold on P&L. The commodity was the hero and the argument was
+  underneath it.
+*/
+const PAYOFF_HEADLINE: Record<Struggle, string> = {
+  revenge_trading: 'The three trades after a red one are the ones that cost you.',
+  overtrading: 'Trade four is usually where the day turns.',
+  breaking_rules: 'You keep most of your rules. This is where the rest go.',
+  not_sure: 'Most traders cannot name it either. That is what this finds.',
+};
 
 const INSTRUMENTS: { value: Instrument; label: string }[] = [
   { value: 'futures', label: 'Futures' },
@@ -209,6 +226,16 @@ function Question({
 */
 export default function Onboarding({ onComplete }: { onComplete: () => void | Promise<void> }) {
   const [step, setStep] = useState<Step>(0);
+  /*
+    Live, not a picture of the control.
+
+    /pricing already argues this for its checklist - an interactive demo
+    beats a screenshot when the point lands in about three seconds, and
+    three taps on three rows is inside that. It is also the one claim a
+    competitor cannot copy by adding an AI: TradeZella infers your state
+    from your tone afterwards, this asks you to declare it before you click.
+  */
+  const [demoScales, setDemoScales] = useState<ScaleValues>({});
   const [instrument, setInstrument] = useState<Instrument>('forex');
   const [struggle, setStruggle] = useState<Struggle>('not_sure');
 
@@ -320,111 +347,75 @@ export default function Onboarding({ onComplete }: { onComplete: () => void | Pr
         {step === 3 && (
           <>
             <h1 className="text-[26px] sm:text-[32px] leading-[1.15] font-semibold tracking-[-0.03em]
-              text-white text-balance text-center mb-2">
-              Here&rsquo;s what tracking {INSTRUMENT_LABEL[instrument]} trades looks like in TradeX.
+              text-white text-balance text-center mb-2.5">
+              {PAYOFF_HEADLINE[struggle]}
             </h1>
+            <p className="text-center text-[13.5px] sm:text-[14.5px] text-gray-400 leading-relaxed
+              max-w-md mx-auto">
+              Every journal records what the trade did. This one records what you were like
+              before you took it.
+            </p>
 
             {/*
-              The trade log first, because it is the familiar half - it is
-              what every journal claims - and it is doing the work of showing
-              the product full rather than empty.
-            */}
-            <div className="mt-5 sm:mt-7 rounded-2xl border border-white/10 bg-brand-surface overflow-hidden">
-              <div className="px-4 sm:px-5 py-3 border-b border-white/[0.07] flex items-center justify-between">
-                <p className="text-[11px] uppercase tracking-[0.14em] text-gray-400">Your trades</p>
-                <p className="text-[11px] text-gray-600">Example</p>
-              </div>
-              {/*
-                Stacked rows, not a table.
+              The differentiator, live, above everything else.
 
-                It WAS a table, and at 375px it measured 520px wide inside a
-                333px container - so reading the P&L meant dragging the
-                trades sideways, on the screen that is meant to sell the
-                product. A row per trade fits any width and says the same
-                thing: what it was, and what it made.
-              */}
-              <ul>
-                {trades.map((t) => (
-                  <li
-                    key={t.symbol}
-                    className="px-4 sm:px-5 py-3 border-b border-white/[0.05] last:border-0"
-                  >
-                    <div className="flex items-baseline justify-between gap-3">
-                      <p className="font-medium text-white text-[14px]">
-                        {t.symbol}
-                        <span className="ml-2 text-[12px] font-normal text-gray-500">
-                          {t.direction} &middot; {t.size}
-                        </span>
-                      </p>
-                      <p className={`text-[14px] font-medium tabular-nums whitespace-nowrap
-                        ${t.pnl >= 0 ? 'text-brand-blue-light' : 'text-gray-400'}`}>
-                        {t.pnl >= 0 ? '+' : '−'}${Math.abs(t.pnl).toLocaleString()}
-                      </p>
-                    </div>
-                    {/*
-                      The note is the point of the whole product, so it stays
-                      on the small screen where the prices do not.
-                    */}
-                    <p className="mt-1 text-[12px] text-gray-500 leading-snug">{t.note}</p>
-                    <p className="mt-0.5 hidden sm:block text-[12px] text-gray-600 tabular-nums">
-                      {t.entry} &rarr; {t.exit}
-                    </p>
-                  </li>
-                ))}
-              </ul>
+              Three taps and the argument is made physically rather than
+              described. Unanswered stays visible as its own state, which is
+              the whole design of the real control - "not rated" is not the
+              same as "rated low".
+            */}
+            <div className="mt-5 sm:mt-7 rounded-2xl border border-brand-blue-light/30
+              bg-brand-blue/[0.06] p-4 sm:p-5">
+              <div className="flex items-baseline justify-between mb-3.5">
+                <p className="text-[11px] uppercase tracking-[0.14em] text-brand-blue-light">
+                  Before the trade
+                </p>
+                <p className="text-[11.5px] text-gray-500">Try it</p>
+              </div>
+              <PreTradeScales
+                values={demoScales}
+                onChange={(key, value) => setDemoScales((prev) => ({ ...prev, [key]: value }))}
+              />
+              <p className="mt-4 pt-3.5 border-t border-brand-blue-light/20 text-[13px]
+                leading-relaxed text-gray-300">
+                {Object.values(demoScales).filter((v) => v !== null && v !== undefined).length === 3
+                  ? 'Three taps. Thirty of those and the pattern stops being an opinion.'
+                  : 'Rate them the way you would before an entry.'}
+              </p>
             </div>
 
-            {/*
-              And the card they actually came for, tied to what they said
-              thirty seconds ago. Given the blue treatment because this is
-              the one thing on the screen that no other journal does.
-            */}
-            <div className="mt-3 sm:mt-4 rounded-2xl border border-brand-blue-light/30 bg-brand-blue/[0.06] p-3.5 sm:p-5">
-              <p className="text-[11px] uppercase tracking-[0.14em] text-brand-blue-light mb-3.5">
+            {/* What those ratings turn into, once there are enough of them. */}
+            <div className="mt-3 sm:mt-4 rounded-2xl border border-white/10 bg-brand-surface p-3.5 sm:p-5">
+              <p className="text-[11px] uppercase tracking-[0.14em] text-gray-400 mb-3.5">
                 {card.title}
               </p>
               <ul className="flex flex-col gap-2.5">
                 {card.items.map((item) => (
                   <li key={item.label} className="flex items-start gap-2.5 text-[13.5px] leading-relaxed">
-                    {item.state === 'flagged' && (
-                      <AlertTriangle size={15} className="mt-[3px] flex-shrink-0 text-brand-blue-light" />
-                    )}
-                    {item.state === 'ok' && (
-                      <Check size={15} className="mt-[3px] flex-shrink-0 text-gray-500" strokeWidth={2.5} />
-                    )}
-                    {item.state === 'pending' && (
-                      <Circle size={15} className="mt-[3px] flex-shrink-0 text-gray-600" />
-                    )}
+                    <span className="mt-[3px] flex-shrink-0">
+                      {item.state === 'flagged' && (
+                        <AlertTriangle className="w-3.5 h-3.5 text-brand-blue-light" />
+                      )}
+                      {item.state === 'ok' && <Check className="w-3.5 h-3.5 text-gray-500" />}
+                      {item.state === 'pending' && <Circle className="w-3.5 h-3.5 text-gray-600" />}
+                    </span>
                     <span className={item.state === 'flagged' ? 'text-white' : 'text-gray-400'}>
                       {item.label}
                     </span>
                   </li>
                 ))}
               </ul>
-              <p className="mt-4 pt-3.5 border-t border-brand-blue-light/20 text-[13px] text-gray-300 leading-relaxed">
+              <p className="mt-4 pt-3.5 border-t border-white/[0.07] text-[13px] text-gray-300 leading-relaxed">
                 {card.outcome}
               </p>
             </div>
 
-            <p className="mt-3 text-center text-[12.5px] text-gray-500 leading-relaxed">
-              This is what you&rsquo;ll be looking at daily. No broker connection needed to start.
-            </p>
 
-            <div className="mt-5 sm:mt-8 text-center">
-              <p className="text-[15px] text-gray-300 mb-3.5">
-                Ready to start tracking your own trades?
-              </p>
+            <div className="mt-5 sm:mt-7 text-center">
               <button
                 type="button"
                 onClick={() => {
                   trackEvent('onboarding_complete', { instrument, struggle });
-                  /*
-                    Stamped here, and not awaited. Awaiting it would hold the
-                    user on a screen they have finished with for the length
-                    of a write; the gate they are moving to is driven by
-                    onComplete refreshing the profile, which reads the same
-                    row a moment later.
-                  */
                   void markOnboardingComplete();
                   void onComplete();
                 }}
@@ -434,6 +425,9 @@ export default function Onboarding({ onComplete }: { onComplete: () => void | Pr
                 See plans
                 <ArrowRight size={17} />
               </button>
+              <p className="mt-3 text-[12.5px] text-gray-500">
+                Three days free &middot; Nothing is charged today
+              </p>
             </div>
           </>
         )}
