@@ -3,6 +3,7 @@ import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { motion } from 'framer-motion';
 import { supabase } from '../../lib/supabase';
 import { User } from '@supabase/supabase-js';
+import MascotSays from '../shared/MascotSays';
 
 interface ProfileSetupProps {
   user: User;
@@ -114,24 +115,30 @@ export default function ProfileSetup({ user, onComplete }: ProfileSetupProps) {
         transition={{ duration: 0.6 }}
         className="max-w-md w-full mx-4 max-h-[calc(100dvh-2rem)] overflow-y-auto"
       >
-        <div className="text-center mb-8">
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.6 }}
-            className="text-2xl md:text-3xl font-medium mb-3"
-          >
-            Complete Your Profile
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.6 }}
-            className="text-gray-400"
-          >
-            Help us personalize your experience
-          </motion.p>
-        </div>
+        {/*
+          He opens here, not one screen later.
+
+          This is the first thing anybody sees after signing up, and it was
+          the only screen in the sequence with no character, no logo and no
+          voice - "Complete Your Profile / Help us personalize your
+          experience", which is the boilerplate every SaaS ships. The flow
+          behind it greets people, asks in plain language and looks like a
+          product; arriving at THIS first made all of that start one screen
+          too late. Traffic from a video is mobile, cold and one tap from
+          leaving, so the first impression is the one worth spending on.
+
+          The same component and pose the next screen uses, so the two read
+          as one conversation rather than two designs.
+        */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15, duration: 0.5 }}
+        >
+          <MascotSays pose="wave" height={84} side="above" className="mb-7">
+            Welcome in. What should I call you?
+          </MascotSays>
+        </motion.div>
 
         <motion.form
           initial={{ opacity: 0, y: 20 }}
@@ -141,16 +148,32 @@ export default function ProfileSetup({ user, onComplete }: ProfileSetupProps) {
           className="space-y-4"
         >
           <div>
-            <label htmlFor="firstName" className="block text-sm text-gray-400 mb-2">
-              First Name *
+            {/*
+              Visible label removed, not the label itself. "First Name *"
+              above a box already saying "First name" is the same word twice
+              and a required marker on the only field on screen. It stays in
+              the DOM for screen readers, which is the part that was doing
+              real work.
+            */}
+            <label htmlFor="firstName" className="sr-only">
+              First name
             </label>
             <input
               id="firstName"
               type="text"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              className="w-full bg-[#0A0A0A] border border-white/10 rounded-2xl px-4 py-3 focus:outline-none focus:border-white/20 transition-colors"
-              placeholder="First Name"
+              /*
+                autoComplete and autoCapitalize because this is a phone: the
+                keyboard should offer their own name and capitalise it
+                without being asked.
+              */
+              autoComplete="given-name"
+              autoCapitalize="words"
+              className="w-full bg-brand-surface border border-white/10 rounded-2xl px-5 py-4 text-[16px]
+                text-white placeholder:text-gray-600
+                focus:outline-none focus:border-brand-blue-light/50 transition-colors"
+              placeholder="First name"
               required
               disabled={isSubmitting}
               autoFocus
@@ -172,12 +195,19 @@ export default function ProfileSetup({ user, onComplete }: ProfileSetupProps) {
             <p className="text-sm text-red-400">{error}</p>
           )}
 
+          {/*
+            Matches the button that ends the flow - same pill, same white,
+            same weight - so the first tap and the last look like the same
+            product. py-4 rather than py-3 for a thumb.
+          */}
           <button
             type="submit"
             disabled={isSubmitting || !firstName.trim()}
-            className="w-full bg-white text-black rounded-2xl px-4 py-3 font-medium hover:bg-white/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-white text-black rounded-full px-5 py-4 text-[15px] font-medium
+              hover:bg-gray-200 transition-colors
+              disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {isSubmitting ? 'Saving...' : 'Continue'}
+            {isSubmitting ? 'Saving\u2026' : 'Continue'}
           </button>
         </motion.form>
       </motion.div>

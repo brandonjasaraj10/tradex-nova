@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, AlertTriangle, Circle, ArrowRight } from 'lucide-react';
 import {
-  saveInstrument, saveExperience, saveStruggle,
+  saveInstrument, saveExperience, saveStruggle, markOnboardingComplete,
   type Instrument, type Experience, type Struggle,
 } from '../services/onboarding';
 import {
@@ -31,7 +31,7 @@ import MascotSays from '../components/shared/MascotSays';
   than an interrogation.
 */
 
-type Step = 0 | 1 | 2 | 3;
+type Step = 0 | 1 | 2 | 'thinking' | 3;
 
 const INSTRUMENTS: { value: Instrument; label: string }[] = [
   { value: 'futures', label: 'Futures' },
@@ -59,6 +59,85 @@ const STRUGGLES: { value: Struggle; label: string }[] = [
   { value: 'not_sure', label: "No idea, that's the problem" },
 ];
 
+/*
+  The beat between the last answer and the preview.
+
+  The preview is assembled from what they just said - their instrument,
+  their struggle - and it used to appear the instant the third answer was
+  tapped. Instant is not free: a screen that is suddenly different reads as
+  a page change rather than as a result, and the work of tailoring it to
+  them goes unnoticed because nothing showed it happening.
+
+  So it says what it is doing, in his voice, and takes long enough to be
+  read. 1.6s is the whole budget - long enough to register as thinking,
+  short enough that nobody taps back out of a twenty-second flow.
+
+  Not a fake loading bar. The lines name the three answers actually being
+  used, so the wait is the product explaining itself rather than stalling.
+*/
+const THINKING_LINES = [
+  'Reading your answers',
+  'Picking the right example trades',
+  'Setting up your checks',
+];
+
+function Thinking({ onDone }: { onDone: () => void }) {
+  const [line, setLine] = useState(0);
+
+  useEffect(() => {
+    /*
+      One timer per line and one to finish, all cleared together - a step
+      that is left behind mid-count must not advance the flow underneath
+      whatever replaced it.
+    */
+    const timers = [
+      window.setTimeout(() => setLine(1), 520),
+      window.setTimeout(() => setLine(2), 1040),
+      window.setTimeout(onDone, 1600),
+    ];
+    return () => timers.forEach(clearTimeout);
+  }, [onDone]);
+
+  return (
+    <div className="flex flex-col items-center text-center">
+      <MascotSays pose="lean" height={84} side="above" className="mb-7">
+        Give me a second, I&rsquo;m setting this up for you.
+      </MascotSays>
+
+      <ul className="flex flex-col gap-3 w-full max-w-[260px]">
+        {THINKING_LINES.map((text, i) => (
+          <li key={text} className="flex items-center gap-3 text-left">
+            {/*
+              Done, doing, or not yet - shown by state rather than by a
+              spinner that says only that something is happening.
+            */}
+            <span className="flex-shrink-0 w-4 h-4 flex items-center justify-center">
+              {i < line ? (
+                <Check size={15} className="text-brand-blue-light" strokeWidth={2.5} />
+              ) : i === line ? (
+                <motion.span
+                  className="block w-1.5 h-1.5 rounded-full bg-brand-blue-light"
+                  animate={{ opacity: [0.35, 1, 0.35] }}
+                  transition={{ duration: 0.9, repeat: Infinity, ease: 'easeInOut' }}
+                />
+              ) : (
+                <span className="block w-1.5 h-1.5 rounded-full bg-white/15" />
+              )}
+            </span>
+            <span
+              className={`text-[14px] transition-colors duration-300 ${
+                i <= line ? 'text-gray-200' : 'text-gray-600'
+              }`}
+            >
+              {text}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function ProgressDots({ step }: { step: Step }) {
   return (
     <div className="flex items-center justify-center gap-2.5 mb-8">
@@ -66,12 +145,12 @@ function ProgressDots({ step }: { step: Step }) {
         <span
           key={i}
           className={`h-1.5 rounded-full transition-all duration-300 ${
-            i === step ? 'w-6 bg-brand-blue-light' : i < step ? 'w-1.5 bg-brand-blue-light/50' : 'w-1.5 bg-white/15'
+            i === step ? 'w-6 bg-brand-blue-light' : i < (step as number) ? 'w-1.5 bg-brand-blue-light/50' : 'w-1.5 bg-white/15'
           }`}
         />
       ))}
       <span className="ml-2 text-[11px] uppercase tracking-[0.14em] text-gray-500">
-        {Math.min(step + 1, 3)} of 3
+        {Math.min((step as number) + 1, 3)} of 3
       </span>
     </div>
   );
@@ -158,7 +237,7 @@ export default function Onboarding({ onComplete }: { onComplete: () => void | Pr
     setStruggle(v);
     void saveStruggle(v);
     trackEvent('onboarding_q3', { struggle: v });
-    setStep(3);
+    setStep('thinking');
   };
 
   const trades = SAMPLE_TRADES[instrument];
@@ -235,6 +314,8 @@ export default function Onboarding({ onComplete }: { onComplete: () => void | Pr
             onChoose={answerThree}
           />
         )}
+
+        {step === 'thinking' && <Thinking onDone={() => setStep(3)} />}
 
         {step === 3 && (
           <>
@@ -337,6 +418,14 @@ export default function Onboarding({ onComplete }: { onComplete: () => void | Pr
                 type="button"
                 onClick={() => {
                   trackEvent('onboarding_complete', { instrument, struggle });
+                  /*
+                    Stamped here, and not awaited. Awaiting it would hold the
+                    user on a screen they have finished with for the length
+                    of a write; the gate they are moving to is driven by
+                    onComplete refreshing the profile, which reads the same
+                    row a moment later.
+                  */
+                  void markOnboardingComplete();
                   void onComplete();
                 }}
                 className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full

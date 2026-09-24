@@ -57,13 +57,29 @@ export const saveInstrument = (value: Instrument) =>
 export const saveExperience = (value: Experience) =>
   save({ onboarding_experience: value });
 
-/*
-  The third answer also stamps the completion time, so a profile carrying
-  answers but no timestamp is somebody who dropped out part-way - which is
-  the number that says whether three questions is one too many.
-*/
 export const saveStruggle = (value: Struggle) =>
-  save({
-    onboarding_struggle: value,
-    onboarding_completed_at: new Date().toISOString(),
-  });
+  save({ onboarding_struggle: value });
+
+/*
+  Stamped when the flow actually ENDS, not when the last question is
+  answered.
+
+  It used to go in with the third answer, and that quietly deleted the best
+  screen in the sequence. The gate in App.tsx renders onboarding only while
+  onboarding_completed_at is null, so the moment the third tap wrote the
+  timestamp the flow was, as far as the app was concerned, over - and the
+  next profile refresh unmounted the component mid-flight, taking the
+  tailored preview with it and dropping the user straight onto the paywall.
+
+  A race, so it did not fail every time, which is the worst way for a funnel
+  step to be broken: it looks fine when you check it.
+
+  Moving the stamp here also makes it mean what its name says. "Completed"
+  now means they reached the end and tapped through, rather than that they
+  answered three questions and were then shown a price by accident. The
+  drop-out measurement the old placement was for still works, and is
+  sharper: answers with no timestamp is somebody who left part-way, and
+  that now includes people who left on the preview.
+*/
+export const markOnboardingComplete = () =>
+  save({ onboarding_completed_at: new Date().toISOString() });

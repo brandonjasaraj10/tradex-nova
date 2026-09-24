@@ -1,5 +1,20 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  /*
+    Hover styles only where hovering is a thing.
+
+    Without this, every hover: class also applies on touch - and a phone
+    leaves that state stuck on the last thing tapped. In onboarding that
+    read as the next question opening with an answer already highlighted
+    blue, because the new button lands under the finger that just tapped
+    the old one. The user has not chosen anything and the screen says they
+    have.
+
+    Tailwind wraps every hover: variant in @media (hover: hover) from here
+    on, so a mouse behaves exactly as before and a finger no longer leaves
+    a mark.
+  */
+  future: { hoverOnlyWhenSupported: true },
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
