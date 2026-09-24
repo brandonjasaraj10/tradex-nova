@@ -54,9 +54,19 @@ export const TIERS: Tier[] = [
       same on every plan, so it sits in IN_EVERY_PLAN below where it is said
       once instead of three times competing with the numbers.
     */
+    /*
+      Credits, not message counts.
+
+      A credit that always costs one message is a message with a longer
+      name. These numbers assume the metering that makes it a currency: a
+      chat message 1, a voice journal entry 3, a weekly review 10, a full
+      pattern analysis 25. nova_chat_rate_limits.day_count is still a plain
+      counter, so THIS COPY MUST NOT DEPLOY BEFORE THAT LANDS - otherwise
+      the page advertises an allowance the product does not meter.
+    */
     lines: [
       { text: '1 account synced', included: true },
-      { text: '25 Nova messages a day', included: true },
+      { text: '500 Nova credits a day', included: true },
       { text: 'Unlimited accounts by hand or CSV', included: true },
     ],
     cta: 'Start journaling',
@@ -71,7 +81,7 @@ export const TIERS: Tier[] = [
     who: 'For a funded account and your own.',
     lines: [
       { text: '2 accounts synced', included: true },
-      { text: '100 Nova messages a day', included: true },
+      { text: '2,000 Nova credits a day', included: true },
       /*
         This line sold extra synced accounts at $19 each, "whenever you want,
         no upgrade call, no waiting". None of that exists: there is no Stripe
@@ -101,7 +111,7 @@ export const TIERS: Tier[] = [
     who: 'For several funded accounts at once.',
     lines: [
       { text: '5 accounts synced', included: true },
-      { text: '300 Nova messages a day', included: true },
+      { text: '6,000 Nova credits a day', included: true },
       { text: 'Priority support', included: true },
     ],
     cta: 'Start journaling',
