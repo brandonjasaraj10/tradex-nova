@@ -222,9 +222,30 @@ export default function Sales() {
             Stop guessing<br className="sm:hidden" /> why you lose
           </h1>
 
+          {/*
+            The difference, not the convenience.
+
+            This led with "Talk through the trade", which sells the input
+            method - and convenience is the one claim this product cannot win.
+            Tradespad already owns simple-and-clean and has a free tier, so a
+            hero whose first promise is "less effort" opens on the fight we
+            lose, while psychology sits uncontested by all four competitors.
+            The section further down already says exactly this in its own
+            comment; the hero had not caught up.
+
+            The line itself is not new. It is what the onboarding payoff
+            screen says after somebody names what is costing them money, and
+            it is the sharpest statement of the position we have - so the ad,
+            the landing page and the screen before the price now make one
+            argument instead of three.
+
+            Voice has not been dropped, it has been demoted: it is still a
+            tick below, where it answers the effort objection without being
+            the reason to care.
+          */}
           <p className="mt-4 text-[14.5px] sm:text-base leading-snug text-gray-400 max-w-sm sm:max-w-md mx-auto text-balance">
-            Talk through the trade. TradeX writes the entry and finds the pattern
-            costing you money.
+            Every journal records what the trade did. TradeX records what you
+            were like before you took it.
           </p>
 
           <div className="mt-6 flex flex-col items-center gap-2.5">
@@ -1258,7 +1279,7 @@ export default function Sales() {
               },
               {
                 q: 'How is this different from a spreadsheet?',
-                a: 'You stop typing. You talk through the trade and TradeX writes the entry, then reads every entry together and tells you what you keep doing \u2014 which a spreadsheet has never once done for anybody.',
+                a: 'A spreadsheet records what the trade did. It cannot record what you were like before you took it \u2014 and it has never once told anybody what they keep doing. TradeX scores the psychology on every trade, reads them together and names the pattern. You can also talk the entry in rather than typing it.',
               },
               {
                 q: 'I have tried journals before and quit. Why is this different?',
@@ -1409,7 +1430,8 @@ export default function Sales() {
             Stop guessing why you lose
           </h2>
           <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-sm mx-auto text-balance">
-            Thirty seconds a trade. The pattern you cannot see from inside it.
+            Your P&amp;L says what happened. It never says what you were like
+            when it did.
           </p>
 
           {launched ? (
