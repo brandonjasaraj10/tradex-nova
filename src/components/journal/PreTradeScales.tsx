@@ -27,12 +27,26 @@ export const PRE_TRADE_SCALES: Scale[] = [
 export type ScaleValues = Partial<Record<Scale['key'], number | null>>;
 
 interface Props {
+  /* 'marketing' uses the deeper public-page blue. See the note below. */
+  accent?: 'app' | 'marketing';
   values: ScaleValues;
   onChange: (key: Scale['key'], value: number | null) => void;
   disabled?: boolean;
 }
 
-export default function PreTradeScales({ values, onChange, disabled = false }: Props) {
+export default function PreTradeScales({ values, onChange, disabled = false, accent = 'app' }: Props) {
+  /*
+    Two blues, and the caller picks.
+
+    The public pages settled on the deeper #3B82F6 - it reads certain, and it
+    matches the ads. In the product the lighter blue stays, because there the
+    job is sustained readability across long sessions rather than making an
+    argument. This component renders on both, so the blue is a prop rather
+    than a decision baked into it, and 'app' is the default so nothing inside
+    the software changes by accident.
+  */
+  const dot = accent === 'marketing' ? 'bg-blue-500' : 'bg-blue-400';
+
   return (
     <div className="space-y-2.5">
       {PRE_TRADE_SCALES.map((scale) => {
@@ -57,7 +71,7 @@ export default function PreTradeScales({ values, onChange, disabled = false }: P
                     onClick={() => onChange(scale.key, current === n ? null : n)}
                     className={`w-3.5 h-3.5 rounded-full transition-all disabled:cursor-not-allowed ${
                       filled
-                        ? 'bg-blue-400 scale-110'
+                        ? `${dot} scale-110`
                         : 'bg-white/10 hover:bg-white/25'
                     }`}
                     style={

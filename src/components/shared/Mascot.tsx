@@ -4,6 +4,8 @@ import mascotPresent from '../../assets/mascot-present.png';
 import mascotArms from '../../assets/mascot-arms.png';
 import mascotLean from '../../assets/mascot-lean.png';
 import mascotSlump from '../../assets/mascot-slump.png';
+import mascotSitting from '../../assets/mascot-sitting.png';
+import mascotPeeking from '../../assets/mascot-peeking.png';
 
 /*
   His poses, and what each one's file needs to be scaled by.
@@ -42,6 +44,22 @@ const POSES = {
     week, an empty journal after a loss.
   */
   slump:   { src: mascotSlump,   scale: 1.166 },  /* head 48.2% */
+  /*
+    Seated, legs hanging. For perching him on top of something - the edge of
+    a card, a row of avatars - where a standing pose would have to float.
+  */
+  sitting: { src: mascotSitting, scale: 0.924 },  /* head 55.5% */
+  /*
+    Head and two hands gripping a ledge, cropped below. For peeking over an
+    edge - the bottom of a header, the top of a card.
+
+    The scale looks extreme next to the others and is correct: these are
+    matched on head width, and this render is almost entirely head, so 0.516
+    is what makes his face the same size as every other pose at the same
+    height prop. The height you pass is a full-figure height; what you get is
+    a bust roughly half of it.
+  */
+  peeking: { src: mascotPeeking, scale: 0.516 },  /* head 99.4% */
 } as const;
 
 export type MascotPose = keyof typeof POSES;

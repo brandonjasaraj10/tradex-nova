@@ -144,7 +144,7 @@ export default function TranscriptToEntry() {
           <p className="col-start-1 row-start-1 text-[12.5px] leading-relaxed text-gray-300">
             {TRANSCRIPT.slice(0, typed)}
             {isTyping && (
-              <span className="inline-block w-[2px] h-[1em] -mb-[2px] ml-[1px] bg-brand-blue-light align-middle animate-pulse" />
+              <span className="inline-block w-[2px] h-[1em] -mb-[2px] ml-[1px] bg-brand-blue align-middle animate-pulse" />
             )}
           </p>
         </div>

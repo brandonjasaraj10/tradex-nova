@@ -56,8 +56,44 @@ export default function Sales() {
         className="fixed top-0 left-0 right-0 z-50 bg-black/50 backdrop-blur-md border-b border-white/5"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Wordmark className="text-lg" />
+          {/*
+            He peeks over the bottom edge of the header, beside the wordmark.
+
+            The render is a head and two hands gripping a ledge, cropped
+            below - so it only works with a real edge under the hands, and the
+            header's bottom border is one. bottom-0 puts his hands on that
+            line; the head clears about 33px of a 56px bar, which is why the
+            header is not taller than he is.
+
+            Positioned rather than in flow so he cannot push the wordmark
+            around, and left-full anchors him to the right of it however wide
+            the wordmark renders.
+
+            aria-hidden and pointer-events-none - he is decoration next to a
+            link, and he sits directly beside the one control in that corner.
+          */}
+          <div className="flex items-end gap-1.5 self-stretch">
+            <div className="flex items-center">
+              <Wordmark className="text-lg" />
+            </div>
+            {/*
+              His hands have to land on the header's bottom border or the
+              pose makes no sense - it is a head and two hands gripping a
+              ledge, cropped below, so without an edge under them he is a
+              face floating in a bar.
+
+              That means the box he is aligned to has to be the full height
+              of the header, not the wordmark. self-stretch on the wrapper
+              does it: the row sets items-center for the wordmark, this
+              overrides to fill, and items-end drops him onto the border.
+              -mb-px so his hands sit on the line rather than a pixel above.
+            */}
+            <Mascot
+              pose="peeking"
+              height={62}
+              aria-hidden="true"
+              className="-mb-px pointer-events-none select-none"
+            />
           </div>
           {/*
             The way back in for people who already have an account.
@@ -178,35 +214,6 @@ export default function Sales() {
             it.
           */}
 
-          {/*
-            Beside the pitch, in the room the centred column was wasting.
-
-            The hero text sits in a 768px column and the controls inside it -
-            the button, the tick row, the avatars - are all far narrower than
-            that, so there is an empty gutter either side doing nothing. He
-            stands in the left one, feet level with the proof line, arm out
-            toward the copy.
-
-            Left, specifically, because the present render gestures to his own
-            left, which is the viewer's right. On the right of the text he
-            would be pointing away from it, off the page.
-
-            aria-hidden and pointer-events-none: he is decoration next to the
-            headline that already says it, and he must never sit between a
-            cursor and the button.
-
-            lg and up only. Below that the gutter does not exist, so he
-            appears at the proof line instead - small, beside the avatars,
-            where he reads as one of the traders rather than as art.
-          */}
-          <Mascot
-            pose="present"
-            height={196}
-            aria-hidden="true"
-            className="hidden lg:block absolute left-0 xl:-left-6 bottom-[78px]
-              lg:scale-[0.88] xl:scale-100 origin-bottom-left
-              pointer-events-none select-none"
-          />
 
           <p className="text-[9.5px] sm:text-[10px] tracking-[0.16em] uppercase text-gray-600 mb-4">
             Trading journal &middot; Built around psychology
@@ -297,26 +304,17 @@ export default function Sales() {
             Social proof, sized to what is actually true.
 
             Competitors put customer logos and five-figure counts here. We have
-            310 signups, so that is what it says. The circles carry initials
+            661 real signups, so that is what it rounds down to - 258 of them
+            in the last seven days and 139 in the last two, off one reel that
+            travelled. The number is checked against auth.users rather than
+            remembered, and it is stated as "600+" so it stays true while it
+            climbs. The circles carry initials
             rather than faces - inventing photographs of customers who have not
             agreed to appear would be the one thing on this page that could not
             be defended.
           */}
           <div className="mt-6 flex flex-col items-center gap-2">
-            {/*
-              His small-screen appearance - see the aside above.
-
-              Sized to be read as a character rather than as a bullet. At 34px
-              he was smaller than the text beside him and came out a smudge,
-              which is worse than leaving him off: the entire argument for a
-              mascot is being recognised on the second visit, and nothing
-              recognisable survives at that size. He stands at the head of the
-              proof row instead, ahead of the initials, which puts him among
-              the traders rather than beside them.
-            */}
-            <div className="flex items-end gap-2 lg:gap-0">
-              <Mascot pose="idle" height={58} aria-hidden="true" className="lg:hidden -mb-1" />
-              <div className="flex -space-x-2 mb-1">
+            <div className="flex -space-x-2">
               {['M', 'J', 'K', 'A', 'R'].map((initial, i) => (
                 <span
                   key={initial}
@@ -327,10 +325,9 @@ export default function Sales() {
                   {initial}
                 </span>
               ))}
-              </div>
             </div>
             <p className="text-[11.5px] text-gray-500">
-              Join <span className="text-gray-300">300+ traders</span> already journaling with TradeX
+              Join <span className="text-gray-300">600+ traders</span> already journaling with TradeX
             </p>
           </div>
         </div>
@@ -361,7 +358,7 @@ export default function Sales() {
                 {[
                   /* The Dashboard's own labels, so the page and the product
                      call the same numbers the same things. */
-                  { label: 'Total P&L', value: '+$4,812', tone: 'text-brand-profit' },
+                  { label: 'Total P&L', value: '+$4,812', tone: 'text-brand-blue' },
                   { label: 'Win Rate', value: '58%', tone: 'text-white' },
                   { label: 'Profit Factor', value: '1.94', tone: 'text-white' },
                 ].map((stat) => (

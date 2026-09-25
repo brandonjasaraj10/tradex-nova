@@ -57,7 +57,7 @@ const PANELS: Panel[] = [
             and Notes - see DEFAULT_FOLDERS in Journal.tsx. */}
         <div className="flex items-center justify-between gap-3 text-[10px] uppercase tracking-[0.12em] text-gray-600">
           <span className="inline-flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-brand-blue-light" />
+            <span className="w-1.5 h-1.5 rounded-full bg-brand-blue" />
             Daily Journal
           </span>
           <span>Thu 11 Sep</span>
@@ -87,8 +87,8 @@ const PANELS: Panel[] = [
           is what makes them evidence rather than hindsight - and the reason
           rattled-but-confident shows up as a pattern later.
         */}
-        <div className="rounded-lg border border-brand-blue-light/20 bg-brand-blue/[0.06] px-3 py-2.5">
-          <p className="text-[9.5px] uppercase tracking-[0.1em] text-brand-blue-light mb-2">
+        <div className="rounded-lg border border-brand-blue/20 bg-brand-blue/[0.06] px-3 py-2.5">
+          <p className="text-[9.5px] uppercase tracking-[0.1em] text-brand-blue mb-2">
             Before you entered
           </p>
           <div className="flex flex-col gap-1.5">
@@ -104,7 +104,7 @@ const PANELS: Panel[] = [
                     <span
                       key={i}
                       className={`w-[7px] h-[7px] rounded-full ${
-                        i <= (score as number) ? 'bg-brand-blue-light' : 'bg-white/10'
+                        i <= (score as number) ? 'bg-brand-blue' : 'bg-white/10'
                       }`}
                     />
                   ))}
@@ -147,10 +147,10 @@ const PANELS: Panel[] = [
 
         <div className="flex flex-wrap gap-1.5">
           {['Moved stop', 'Revenge entry', 'London'].map((t) => (
-            /* Solid blue, the way the Journal renders tags - bg-blue-400/10
-               text-blue-400. The outlined version here was a third treatment
+            /* Solid blue, the way the Journal renders tags - bg-blue-500/10
+               text-blue-500. The outlined version here was a third treatment
                that existed nowhere in the product. */
-            <span key={t} className="text-[11px] font-medium text-brand-blue-light bg-brand-blue-light/10 rounded-full px-2.5 py-1">
+            <span key={t} className="text-[11px] font-medium text-brand-blue bg-brand-blue/10 rounded-full px-2.5 py-1">
               {t}
             </span>
           ))}
@@ -184,7 +184,7 @@ const PANELS: Panel[] = [
           Breakdown dropdown, which is the part that shows the score is
           made of something rather than being a vanity figure.
         */}
-        <NOVAScore breakdown={EXAMPLE_SCORE} size="sm" showBreakdown periodLabel="Last 30 days" />
+        <NOVAScore accent="marketing" breakdown={EXAMPLE_SCORE} size="sm" showBreakdown periodLabel="Last 30 days" />
 
         <div className="flex flex-col gap-2 pt-4 border-t border-white/[0.06]">
         {[

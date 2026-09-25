@@ -97,7 +97,7 @@ export default function PrivacyPolicy() {
           <section>
             <h2>4. How We Share Your Information</h2>
             <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-6 mb-4">
-              <p className="font-semibold text-blue-400 mb-2">Important:</p>
+              <p className="font-semibold text-blue-500 mb-2">Important:</p>
               <p>We do NOT sell your personal trading data to third parties.</p>
             </div>
 
@@ -263,9 +263,9 @@ export default function PrivacyPolicy() {
             </p>
             <p>
               You can opt out of all analytics and session recording on any device by visiting{' '}
-              <span className="text-blue-400">tradexnova.com/?noanalytics=1</span> in that browser. The preference
+              <span className="text-blue-500">tradexnova.com/?noanalytics=1</span> in that browser. The preference
               is stored on your device and applies until you clear your browser data or reverse it with{' '}
-              <span className="text-blue-400">?noanalytics=0</span>.
+              <span className="text-blue-500">?noanalytics=0</span>.
             </p>
           </section>
 

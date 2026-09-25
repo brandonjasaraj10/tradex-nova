@@ -101,7 +101,7 @@ export function EquityPanel() {
     <Frame label="Dashboard">
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: 'Total P&L', value: '+$4,812', tone: 'text-brand-profit' },
+          { label: 'Total P&L', value: '+$4,812', tone: 'text-brand-blue' },
           { label: 'Win Rate', value: '58%', tone: 'text-white' },
           { label: 'Profit Factor', value: '1.94', tone: 'text-white' },
         ].map((s) => (
@@ -354,7 +354,7 @@ export function WeeklyReportPanel() {
       </div>
       <div className="grid grid-cols-3 gap-2.5 mb-4">
         {[
-          { label: 'P&L', value: '+$1,240', tone: 'text-brand-profit' },
+          { label: 'P&L', value: '+$1,240', tone: 'text-brand-blue' },
           { label: 'Win rate', value: '64%', tone: 'text-white' },
           { label: 'Rules kept', value: '9/14', tone: 'text-white' },
         ].map((s) => (
@@ -410,7 +410,7 @@ export function AccountsPanel() {
               <p className="text-[11px] text-gray-600 truncate">{a.sub}</p>
             </div>
             <p className={`text-[13px] font-semibold tabular-nums flex-shrink-0
-              ${a.win ? 'text-brand-profit' : 'text-gray-400'}`}>
+              ${a.win ? 'text-brand-blue' : 'text-gray-400'}`}>
               {a.pnl}
             </p>
           </button>

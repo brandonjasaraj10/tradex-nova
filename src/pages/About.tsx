@@ -51,6 +51,7 @@ function StateDemo() {
   return (
     <Frame label="Before you enter" note="The real thing — try it">
       <PreTradeScales
+            accent="marketing"
         values={values}
         onChange={(key, value) => setValues((v) => ({ ...v, [key]: value }))}
       />

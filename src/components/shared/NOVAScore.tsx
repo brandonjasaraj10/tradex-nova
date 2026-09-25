@@ -5,6 +5,13 @@ import { NOVAScoreBreakdown } from '../../services/novaScore';
 import { formatRatio } from '../../utils/formatMetrics';
 
 interface NOVAScoreProps {
+  /*
+    'marketing' swaps the accent to the deeper #3B82F6 the public pages use.
+    Defaults to 'app', so nothing inside the software moves by accident -
+    this renders on the Dashboard and in Analytics as well as on the landing
+    page, Features and the paywall.
+  */
+  accent?: 'app' | 'marketing';
   breakdown: NOVAScoreBreakdown | null;
   size?: 'sm' | 'md' | 'lg';
   showBreakdown?: boolean;
@@ -43,8 +50,11 @@ export default function NOVAScore({
   breakdown,
   size = 'md',
   showBreakdown = true,
-  periodLabel
+  periodLabel,
+  accent = 'app'
 }: NOVAScoreProps) {
+  /* One blue out front, a lighter one inside. See accent on the props. */
+  const ac = accent === 'marketing' ? 'text-blue-500' : 'text-blue-400';
   const [expanded, setExpanded] = useState(false);
 
   const getSizeClass = (size: string) => {
@@ -371,7 +381,7 @@ export default function NOVAScore({
           >
             <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-blue-500/10 to-blue-500/0 opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="flex items-center gap-2 relative z-10">
-              <Brain className="w-4 h-4 text-blue-400" />
+              <Brain className={`w-4 h-4 ${ac}`} />
               <span className="text-sm font-medium text-gray-200">Score Breakdown</span>
             </div>
             <motion.div
@@ -379,7 +389,7 @@ export default function NOVAScore({
               transition={{ duration: 0.3 }}
               className="relative z-10"
             >
-              <ChevronDown size={16} className="text-blue-400" />
+              <ChevronDown size={16} className={ac} />
             </motion.div>
           </motion.button>
 
@@ -469,7 +479,7 @@ export default function NOVAScore({
                     */}
                     <div className="mb-3">
                       <h4 className="text-xs font-medium text-gray-300 flex items-center gap-2">
-                        <Target size={14} className="text-blue-400" />
+                        <Target size={14} className={ac} />
                         Performance Metrics
                       </h4>
                       {periodLabel && (
@@ -508,13 +518,13 @@ export default function NOVAScore({
                       */}
                       <motion.div whileHover={{ scale: 1.05 }}>
                         <p className="text-gray-400 text-[10px]">Best Trade</p>
-                        <p className={`font-bold mt-1 text-sm ${breakdown.best_trade >= 0 ? 'text-blue-400' : 'text-gray-400'}`}>
+                        <p className={`font-bold mt-1 text-sm ${breakdown.best_trade >= 0 ? ac : 'text-gray-400'}`}>
                           {formatMoney(breakdown.best_trade)}
                         </p>
                       </motion.div>
                       <motion.div whileHover={{ scale: 1.05 }}>
                         <p className="text-gray-400 text-[10px]">Worst Trade</p>
-                        <p className={`font-bold mt-1 text-sm ${breakdown.worst_trade >= 0 ? 'text-blue-400' : 'text-gray-400'}`}>
+                        <p className={`font-bold mt-1 text-sm ${breakdown.worst_trade >= 0 ? ac : 'text-gray-400'}`}>
                           {formatMoney(breakdown.worst_trade)}
                         </p>
                       </motion.div>
