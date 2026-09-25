@@ -5,6 +5,7 @@ import { Section, QA, Steps, ClosingCta } from '../components/marketing/blocks';
 import { PullQuote, StatBand } from '../components/marketing/product';
 import Mascot from '../components/shared/Mascot';
 import { TIERS, IN_EVERY_PLAN, ALSO_INCLUDED, type Tier } from '../lib/pricingTiers';
+import { emphasise } from '../lib/emphasise';
 
 /*
   Pricing, on its own page, because people search for it by name and a price
@@ -63,7 +64,7 @@ function TierCard({ tier }: { tier: Tier }) {
         <span className="text-[14px] text-gray-500">/month</span>
       </p>
 
-      <p className="mt-3 text-[13px] leading-relaxed text-gray-400">{tier.who}</p>
+      <p className="mt-3 text-[13px] leading-relaxed text-gray-400">{emphasise(tier.who)}</p>
 
       <ul className="mt-6 mb-7 flex flex-col gap-2.5">
         {tier.lines.map((line) => (

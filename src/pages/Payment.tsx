@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { loadStripe, type StripeEmbeddedCheckout } from '@stripe/stripe-js';
-import { CalendarClock, CheckCircle2, Lock, AlertCircle, ArrowLeft, Zap, Crown, RotateCcw, X } from 'lucide-react';
+import { CalendarClock, CheckCircle2, Lock, AlertCircle, ArrowLeft, Zap, Crown, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import NOVAScore from '../components/shared/NOVAScore';
 import { TickList } from '../components/marketing/blocks';
@@ -12,6 +12,7 @@ import { EXAMPLE_SCORE } from '../components/marketing/exampleScore';
 import { useAuth } from '../lib/auth';
 import PaymentFailedGate from '../components/billing/PaymentFailedGate';
 import { trackEvent } from '../lib/productAnalytics';
+import { emphasise } from '../lib/emphasise';
 
 /*
   Six, not fourteen, and each one an outcome rather than a feature name.
@@ -713,7 +714,33 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
       {/* Wider from lg up so the two columns have room to be columns. At
           max-w-3xl the split produced two cramped strips in the corner of a
           1280px screen. */}
-      <div className="max-w-3xl lg:max-w-[62rem] mx-auto px-5 sm:px-8 pt-5 sm:pt-12 pb-36 sm:pb-20">
+      {/*
+        Centred in the room above the bar, on a phone.
+
+        The content stacked from the top and the slack all collected in one
+        void between the compare link and the pinned bar - which also left
+        the headline jammed against the top of the screen. Filling the
+        viewport and centring puts half that space above the headline
+        instead, so it reads as placed rather than as fallen to the top.
+
+        100dvh, not 100vh: mobile Safari's vh counts the browser chrome that
+        is actually on screen, which is what would push the bottom of this
+        back under the address bar.
+
+        "safe center" rather than plain centring, and that is the whole
+        safety of it. Ordinary centring overflows equally in both directions
+        when the content is taller than the box, and the top half becomes
+        unreachable - no scroll goes above the start. safe falls back to
+        top-aligned exactly then, so a small phone gets a scroll instead of a
+        headline cut in half.
+
+        pb clears the pinned bar. sm and up is untouched: the bar is static
+        there, everything is in flow, and there is no fold to fight.
+      */}
+      <div className="max-w-3xl lg:max-w-[62rem] mx-auto px-5 sm:px-8 pt-3 sm:pt-12
+        pb-8 sm:pb-20
+        min-h-[100dvh] flex flex-col [justify-content:safe_center]
+        sm:min-h-0 sm:block">
         {/*
           The way out is a corner X on a phone, as it is on every paywall
           worth copying. "Back to Dashboard" is a wide, prominent control
@@ -721,7 +748,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
           while the button that matters sat below it.
         */}
         {!onSubscriptionComplete && (
-          <div className="flex items-center justify-between mb-8 sm:mb-12">
+          <div className="flex items-center justify-between mb-3 sm:mb-12">
             <button
               type="button"
               onClick={() => navigate('/dashboard')}
@@ -758,7 +785,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
             phone. Every reduction below is inside a mobile breakpoint - the
             desktop layout had the room and keeps it.
           */}
-          <div className="text-center mb-3.5 sm:mb-10">
+          <div className="text-center mb-2.5 sm:mb-10">
             <p className="hidden sm:block text-[10px] sm:text-[11px] tracking-[0.18em]
               uppercase text-gray-500 mb-2.5 sm:mb-4">
               {isFounder ? 'Founding member pricing' : 'Choose your plan'}
@@ -835,13 +862,25 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
               /* Each icon means its line. A shield said "secure" next to a
                  sentence about time, and a gift box said "present" next to
                  one about cancelling. */
+              /*
+                Two, not three. "Cancel in two clicks" was the third and it
+                is already on this screen - the line under the button reads
+                "Then $299.90/year - Cancel in two clicks", which is where
+                cancellation belongs anyway, at the moment of committing
+                rather than before the price. What is left is the pair said
+                nowhere else: how long the trial runs, and who holds the
+                card. It also fits one line at any phone width, where three
+                wrapped below about 400px and cost a second row.
+              */
               [CalendarClock, '3 days free'],
               [Lock, 'Card handled by Stripe'],
-              [RotateCcw, 'Cancel in two clicks'],
             ].map(([Icon, label]) => {
               const I = Icon as typeof Lock;
               return (
-                <li key={label as string} className="inline-flex items-center gap-1.5 text-[11.5px] sm:text-[12.5px] text-gray-400">
+                <li
+                  key={label as string}
+                  className="inline-flex items-center gap-1.5 text-[11.5px] sm:text-[12.5px] text-gray-400"
+                >
                   <I className="w-3.5 h-3.5 text-brand-blue-light flex-shrink-0" />
                   {label as string}
                 </li>
@@ -907,7 +946,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
             is the kind people notice afterwards.
           */}
           {!isFounder && (
-            <div className="flex justify-center mb-5 sm:mb-7">
+            <div className="flex justify-center mb-3 sm:mb-7">
               {/*
                 The white pill slides between the two rather than the colour
                 snapping across. framer-motion moves a single shared element
@@ -969,7 +1008,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
             seeing the options at once, and not scrolling - both lost to a
             layout that had never been given a desktop case.
           */}
-          <div className={`mb-6 sm:mb-8 ${
+          <div className={`mb-3 sm:mb-8 ${
             showingAll
               ? 'grid grid-cols-1 lg:grid-cols-3 gap-2.5 sm:gap-3 lg:gap-4 lg:items-start'
               : 'flex flex-col gap-2.5 sm:gap-3'
@@ -1104,7 +1143,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
                     <p className={`mt-2 text-[12.5px] text-gray-400 leading-relaxed ${
                       choosable ? 'pl-[32px]' : ''
                     }`}>
-                      {plan.summary}
+                      {emphasise(plan.summary)}
                     </p>
                   )}
 
@@ -1153,7 +1192,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
                 setComparing(true);
                 trackEvent('paywall_compare_opened');
               }}
-              className="mb-8 -mt-4 w-full text-center text-[12.5px] text-gray-500
+              className="mb-0 sm:mb-8 -mt-4 w-full text-center text-[12.5px] text-gray-500
                 hover:text-gray-300 underline underline-offset-4 decoration-white/20
                 transition-colors"
             >
@@ -1162,17 +1201,24 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
           )}
 
         {/*
-          The button is pinned to the bottom of a phone screen. Measured
-          before this change: it sat 1079px down an 844px screen, so nobody
-          reached it without scrolling past both plans. Static from sm up,
-          where it has always been in view.
+          In the flow, not pinned - and that is a reversal.
+
+          Pinning was measured and right at the time: the button sat 1079px
+          down an 844px screen and nobody reached it without scrolling past
+          both plans. Cutting the page to one screen removed the reason. The
+          content is now around 530px, so the button was already in view, and
+          pinning it to the bottom of the viewport while the content centred
+          itself in the middle left a hole between the two - the screen read
+          as a card floating above a toolbar rather than as one block.
+
+          In the flow it travels with the content and the centring puts the
+          whole group together. If a small enough phone brings the scroll
+          back, the safe-centring above falls back to top-aligned and the
+          button is one short scroll away - which is the same place it would
+          be on any other page, and better than a permanent gap on every
+          phone to protect against it.
         */}
-        <div
-          className="fixed inset-x-0 bottom-0 z-40 max-w-md mx-auto p-4 space-y-3
-            bg-black/95 backdrop-blur-sm border-t border-white/10
-            sm:static sm:z-auto sm:max-w-none sm:p-0 sm:space-y-4 sm:bg-transparent
-            sm:backdrop-blur-none sm:border-0"
-        >
+        <div className="mt-5 space-y-3 sm:mt-0 sm:space-y-4">
           {!stripeConfigured && (
             <div className="p-4 rounded-xl bg-brand-blue/10 border border-brand-blue-light/20 flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-brand-blue-light flex-shrink-0 mt-0.5" />
@@ -1251,8 +1297,50 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
                 states the real charge and stops saying it twice. */}
             <>Then {chargeAmount}{isAnnual ? '/year' : '/month'} &middot; Cancel in two clicks</>
           </p>
+          {/*
+            Two lines on a phone, one everywhere else.
+
+            The hold warning earns its place - the trial authorises the real
+            amount and releases it, and without this the brief pending charge
+            arrives as a support ticket. But it is the longest line in a bar
+            that is pinned over a screen with no room to spare, so the phone
+            gets the half that answers the question and the desktop keeps the
+            full sentence.
+          */}
           <p className="text-center text-[11px] text-gray-600 leading-relaxed mt-2 max-w-sm mx-auto">
-            Nothing charged today. Your bank may show a brief hold, released straight away.
+            Nothing charged today &mdash; your bank may show a brief hold.
+            <span className="hidden sm:inline"> It is released straight away.</span>
+          </p>
+
+          {/*
+            Terms ride in the bar on a phone.
+
+            In the flow they were the only block that did not fit: 86px,
+            because the sentence wraps and each link carries a 44px tap
+            target, which pushed the one screen that is meant to hold one
+            decision into a scroll to reach its own legal copy. Everything
+            above them already cleared the bar.
+
+            So on a phone they sit inside the pinned bar, next to the button
+            they actually qualify, and the shorter sentence holds one line.
+            sm and up keeps the original in place below - it is in flow there,
+            nothing is pinned, and there is no fold to fight.
+          */}
+          <p className="sm:hidden text-center text-[11px] text-gray-600 mt-1.5">
+            By subscribing you agree to our{' '}
+            <button
+              onClick={() => navigate('/terms')}
+              className="text-gray-400 underline underline-offset-2 inline-block py-2 align-middle"
+            >
+              Terms
+            </button>{' '}
+            and{' '}
+            <button
+              onClick={() => navigate('/privacy')}
+              className="text-gray-400 underline underline-offset-2 inline-block py-2 align-middle"
+            >
+              Privacy Policy
+            </button>
           </p>
         </div>
 
@@ -1321,7 +1409,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
           on any phone, and this is the payment screen's only route to what
           someone is agreeing to.
         */}
-        <p className="mt-8 text-center text-[12.5px] text-gray-500">
+        <p className="hidden sm:block mt-8 text-center text-[12.5px] text-gray-500">
           By subscribing, you agree to our{' '}
           <button
             onClick={() => navigate('/terms')}

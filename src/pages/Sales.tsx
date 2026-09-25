@@ -11,6 +11,7 @@ import NovaAnswer from '../components/sales/NovaAnswer';
 import SignupOrWaitlist from '../components/shared/SignupOrWaitlist';
 import { useHasLaunched } from '../lib/launch';
 import { useState, useEffect, useRef } from 'react';
+import { emphasise } from '../lib/emphasise';
 
 export default function Sales() {
   const launched = useHasLaunched();
@@ -1103,7 +1104,7 @@ export default function Sales() {
                   </span>
                   <span className="text-[13px] text-gray-500">/mo</span>
                 </p>
-                <p className="mt-2 text-[12.5px] text-gray-500 leading-relaxed">{tier.who}</p>
+                <p className="mt-2 text-[12.5px] text-gray-500 leading-relaxed">{emphasise(tier.who)}</p>
 
                 {/* Only the lines that differ between plans. */}
                 <ul className="mt-4 flex flex-col gap-2">

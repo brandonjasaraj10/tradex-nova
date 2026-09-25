@@ -12,7 +12,15 @@
 export type Tier = {
   name: string;
   price: string;
-  /* Who this is for, in their words rather than ours. */
+  /*
+    Who this is for, in their words rather than ours.
+
+    *synced* marks the word that carries weight, rendered by emphasise().
+    It is the axis the tiers actually differ on and it was doing that work
+    silently: "For one trading account" beside "Unlimited accounts by hand
+    or CSV" reads as a contradiction until you notice that one is about
+    syncing and the other is not.
+  */
   who: string;
   /*
     What the money actually buys, written as the outcome rather than the
@@ -56,7 +64,7 @@ export const TIERS: Tier[] = [
   {
     name: 'Starter',
     price: '$29.99',
-    who: 'For one trading account.',
+    who: 'For one *synced* trading account.',
     /*
       Three lines, identical shape in every column, in the same order.
 
@@ -118,7 +126,7 @@ export const TIERS: Tier[] = [
   {
     name: 'Pro',
     price: '$49.99',
-    who: 'For a funded account and your own.',
+    who: 'For a funded account and your own, both *synced*.',
     lines: [
       { text: '2 accounts synced', included: true },
       { text: '3,000 Nova credits a month', included: true },
@@ -148,7 +156,7 @@ export const TIERS: Tier[] = [
   {
     name: 'Elite',
     price: '$99.99',
-    who: 'For several funded accounts at once.',
+    who: 'For several *synced* funded accounts at once.',
     lines: [
       { text: '5 accounts synced', included: true },
       { text: '8,000 Nova credits a month', included: true },
