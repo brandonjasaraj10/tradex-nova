@@ -119,12 +119,12 @@ export function EquityPanel() {
         <svg viewBox="0 0 320 72" className="w-full h-16 sm:h-20" preserveAspectRatio="none" aria-hidden="true">
           <defs>
             <linearGradient id="mktEquityFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#60A5FA" stopOpacity="0.28" />
-              <stop offset="100%" stopColor="#60A5FA" stopOpacity="0" />
+              <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.28" />
+              <stop offset="100%" stopColor="#3B82F6" stopOpacity="0" />
             </linearGradient>
           </defs>
           <path d="M0 60 L32 55 L64 58 L96 44 L128 47 L160 33 L192 36 L224 22 L256 26 L288 14 L320 8 L320 72 L0 72 Z" fill="url(#mktEquityFill)" />
-          <path d="M0 60 L32 55 L64 58 L96 44 L128 47 L160 33 L192 36 L224 22 L256 26 L288 14 L320 8" fill="none" stroke="#60A5FA" strokeWidth="1.75" strokeLinejoin="round" strokeLinecap="round" />
+          <path d="M0 60 L32 55 L64 58 L96 44 L128 47 L160 33 L192 36 L224 22 L256 26 L288 14 L320 8" fill="none" stroke="#3B82F6" strokeWidth="1.75" strokeLinejoin="round" strokeLinecap="round" />
         </svg>
       </div>
     </Frame>
@@ -135,9 +135,9 @@ export function EquityPanel() {
 /* Calendar: the real cell colours from src/pages/Calendar.tsx.        */
 /* ------------------------------------------------------------------ */
 
-const WIN = 'bg-gradient-to-br from-blue-500/30 via-blue-400/20 to-blue-600/15 border-blue-400/40';
+const WIN = 'bg-gradient-to-br from-blue-500/30 via-blue-500/20 to-blue-600/15 border-blue-500/40';
 const LOSS = 'bg-gradient-to-br from-slate-600/20 via-gray-600/15 to-zinc-600/10 border-slate-500/40';
-const JOURNAL_ONLY = 'bg-white/5 border-blue-400/70';
+const JOURNAL_ONLY = 'bg-white/5 border-blue-500/70';
 const EMPTY = 'bg-white/[0.03] border-white/10';
 
 /*
@@ -183,7 +183,7 @@ export function CalendarGrid({ compact = false }: { compact?: boolean }) {
               </span>
               {amount && (
                 <span className={`text-[7.5px] sm:text-[9px] font-medium leading-none tabular-nums
-                  ${isWin ? 'text-brand-blue-light' : 'text-gray-400'}`}>
+                  ${isWin ? 'text-brand-blue' : 'text-gray-400'}`}>
                   {amount}
                 </span>
               )}
@@ -285,14 +285,14 @@ export function ChecklistPanel() {
               }`}
               className={`group flex items-start gap-3 text-left rounded-xl border px-3.5 py-3 transition-colors
                 ${state === true
-                  ? 'border-brand-blue-light/40 bg-brand-blue-light/10'
+                  ? 'border-brand-blue/40 bg-brand-blue/10'
                   : state === false
                     ? 'border-gray-500/50 bg-gray-400/10'
                     : 'border-white/[0.07] bg-brand-elevated hover:border-white/20'}`}
             >
               <span className="mt-[1px] flex-shrink-0" aria-hidden="true">
                 {state === true ? (
-                  <CheckSquare size={18} className="text-brand-blue-light" />
+                  <CheckSquare size={18} className="text-brand-blue" />
                 ) : state === false ? (
                   <X size={18} className="text-gray-400" />
                 ) : (
@@ -318,7 +318,7 @@ export function ChecklistPanel() {
       <div className="mt-3.5 pt-3.5 border-t border-white/[0.07] flex flex-col gap-1">
         <div className="flex items-center justify-between text-[12px]">
           <span className="text-gray-500">Followed</span>
-          <span className="text-brand-blue-light font-medium tabular-nums">
+          <span className="text-brand-blue font-medium tabular-nums">
             {followed} / {CHECKS.length}
           </span>
         </div>
@@ -364,8 +364,8 @@ export function WeeklyReportPanel() {
           </div>
         ))}
       </div>
-      <div className="rounded-xl border border-brand-blue-light/20 bg-brand-blue/[0.06] p-3.5">
-        <p className="text-[10px] uppercase tracking-[0.12em] text-brand-blue-light mb-2">What changed</p>
+      <div className="rounded-xl border border-brand-blue/20 bg-brand-blue/[0.06] p-3.5">
+        <p className="text-[10px] uppercase tracking-[0.12em] text-brand-blue mb-2">What changed</p>
         <p className="text-[12.5px] leading-relaxed text-gray-300">
           Your best week since July, and it was not the setups &mdash; your win rate
           on them is flat. You held losers 40% less time than last week, and you
@@ -400,7 +400,7 @@ export function AccountsPanel() {
             aria-pressed={active === i}
             className={`flex items-center justify-between gap-3 rounded-xl border px-3.5 py-3 text-left transition-colors
               ${active === i
-                ? 'border-brand-blue-light/35 bg-brand-blue/[0.07]'
+                ? 'border-brand-blue/35 bg-brand-blue/[0.07]'
                 : 'border-white/[0.07] bg-brand-elevated hover:border-white/15'}`}
           >
             <div className="min-w-0">
@@ -445,7 +445,7 @@ export function PermissionsPanel() {
             <span className={`text-[13px] ${allowed ? 'text-gray-300' : 'text-gray-500'}`}>{label}</span>
             {allowed ? (
               <span className="flex-shrink-0 text-[10.5px] font-medium uppercase tracking-[0.1em]
-                text-brand-blue-light bg-brand-blue-light/10 rounded-full px-2.5 py-1">
+                text-brand-blue bg-brand-blue/10 rounded-full px-2.5 py-1">
                 Read only
               </span>
             ) : (
@@ -481,7 +481,7 @@ export function ImportPathsPanel() {
               <p className="text-[13px] font-medium text-white">{r.k}</p>
               <span className={`flex-shrink-0 text-[9.5px] font-medium uppercase tracking-[0.1em] rounded-full px-2 py-0.5
                 ${r.now
-                  ? 'text-brand-blue-light bg-brand-blue-light/10'
+                  ? 'text-brand-blue bg-brand-blue/10'
                   : 'text-gray-500 border border-white/10'}`}>
                 {r.now ? 'Available now' : 'Days away'}
               </span>
@@ -558,7 +558,7 @@ export function ShippedTimeline() {
           <div className="flex flex-col items-center flex-shrink-0">
             <span
               className={`w-2.5 h-2.5 rounded-full mt-[7px] flex-shrink-0
-                ${item.shipped ? 'bg-brand-blue-light' : 'bg-transparent border border-white/25'}`}
+                ${item.shipped ? 'bg-brand-blue' : 'bg-transparent border border-white/25'}`}
             />
             {i < SHIPPED.length - 1 && <span className="w-px flex-1 bg-white/[0.08] my-1.5" />}
           </div>

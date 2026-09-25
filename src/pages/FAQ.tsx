@@ -243,7 +243,7 @@ function JumpNav() {
               aria-current={active === g.id ? 'true' : undefined}
               className={`inline-block whitespace-nowrap text-[12px] rounded-full px-3 py-1.5 border transition-colors
                 ${active === g.id
-                  ? 'border-brand-blue-light/40 bg-brand-blue/10 text-brand-blue-light'
+                  ? 'border-brand-blue/40 bg-brand-blue/10 text-brand-blue'
                   : 'border-white/10 text-gray-500 hover:text-gray-300 hover:border-white/20'}`}
             >
               {g.nav}

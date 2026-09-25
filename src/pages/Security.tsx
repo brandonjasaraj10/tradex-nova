@@ -108,7 +108,7 @@ export default function Security() {
                   <span className={`text-[13px] ${stored ? 'text-gray-300' : 'text-gray-500'}`}>{label}</span>
                   <span className={`flex-shrink-0 text-[10px] font-medium uppercase tracking-[0.1em] rounded-full px-2.5 py-1
                     ${stored
-                      ? 'text-brand-blue-light bg-brand-blue-light/10'
+                      ? 'text-brand-blue bg-brand-blue/10'
                       : 'text-gray-500 border border-white/10'}`}>
                     {stored ? 'Stored' : 'Never stored'}
                   </span>

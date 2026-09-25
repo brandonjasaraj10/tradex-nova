@@ -25,11 +25,31 @@ the app already uses them almost everywhere:
 | Token | Hex | Tailwind class | Use for |
 |---|---|---|---|
 | `brand-blue` | `#3B82F6` | `bg-brand-blue`, `text-brand-blue` | **Solid fills**: icon backgrounds, glow/shadow effects, gradients, selected/active states |
-| `brand-blue-light` | `#60A5FA` | `bg-brand-blue-light`, `border-brand-blue-light` | **Text, borders, hover/ring states** on dark backgrounds — the lighter shade reads better against black than the solid fill color does |
+| `brand-blue-light` | `#60A5FA` | `bg-brand-blue-light`, `border-brand-blue-light` | **In-app only** — text, borders, hover/ring states on dark backgrounds inside the product. The public pages no longer use it: see "One blue in front" below |
 
 Rule of thumb: if it's a filled shape (an icon's background square, a
 selected calendar day, a button), use `brand-blue`. If it's an outline,
-label, or subtle highlight, use `brand-blue-light`.
+label, or subtle highlight inside the product, use `brand-blue-light`. On the
+public pages, use `brand-blue` for that too.
+
+### One blue in front
+
+Everything a visitor sees before they sign up — the landing page, Features,
+Nova, Pricing, Security, FAQ, Affiliates, the paywall, the legal pages and
+everything in `components/marketing/` — uses **`brand-blue` (`#3B82F6`) for
+text, borders and chart strokes**, not `brand-blue-light`.
+
+The lighter blue is easier on the eye and that is exactly the problem out
+front: it reads tentative. The deeper blue reads bold and certain, which is
+the register the marketing surface is supposed to be in, and it matches what
+the Instagram carousels have been using — the same blue in an ad and on the
+page it links to.
+
+It still passes AA on black at 5.3:1, so this is a confidence choice rather
+than a legibility trade.
+
+Inside the product, `brand-blue-light` stays. There the job is sustained
+readability across long sessions, not making an argument.
 
 ### Backgrounds
 
@@ -69,7 +89,7 @@ color if it's representing a gain or a loss.
   pattern (used ~226 times) and doesn't need a new token, just keep
   using it.
 - Very faint (barely-there dividers): `border-white/5`
-- Accent border (active/focus/hover on something blue): `border-brand-blue-light` at 20–50% opacity depending on how much emphasis it needs (`/20` subtle, `/50` prominent)
+- Accent border (active/focus/hover on something blue): `border-brand-blue-light` in-app / `border-brand-blue` out front, at 20–50% opacity depending on how much emphasis it needs (`/20` subtle, `/50` prominent)
 
 ## Shape
 

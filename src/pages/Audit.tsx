@@ -102,8 +102,8 @@ function Progress({ step }: { step: number }) {
         <span
           key={q.id}
           className={`h-1 rounded-full transition-all duration-300 ${
-            i === step ? 'w-7 bg-brand-blue-light'
-              : i < step ? 'w-3 bg-brand-blue-light/50'
+            i === step ? 'w-7 bg-brand-blue'
+              : i < step ? 'w-3 bg-brand-blue/50'
               : 'w-3 bg-white/12'
           }`}
         />
@@ -245,11 +245,11 @@ export default function Audit() {
                       */
                       className="w-full text-left px-5 py-4 rounded-xl border border-white/10 bg-brand-surface
                         text-[14.5px] leading-relaxed text-gray-200 transition-colors
-                        [@media(hover:hover)]:hover:border-brand-blue-light/40
+                        [@media(hover:hover)]:hover:border-brand-blue/40
                         [@media(hover:hover)]:hover:bg-brand-blue/[0.07]
                         [@media(hover:hover)]:hover:text-white
-                        active:border-brand-blue-light/50 active:bg-brand-blue/[0.07]
-                        focus-visible:outline-none focus-visible:border-brand-blue-light/60"
+                        active:border-brand-blue/50 active:bg-brand-blue/[0.07]
+                        focus-visible:outline-none focus-visible:border-brand-blue/60"
                     >
                       {opt.label}
                     </button>
@@ -278,8 +278,8 @@ export default function Audit() {
                   </p>
                 </div>
 
-                <div className="mt-7 rounded-2xl border border-brand-blue-light/25 bg-brand-blue/[0.06] p-5">
-                  <p className="text-[11px] uppercase tracking-[0.14em] text-brand-blue-light mb-2.5">
+                <div className="mt-7 rounded-2xl border border-brand-blue/25 bg-brand-blue/[0.06] p-5">
+                  <p className="text-[11px] uppercase tracking-[0.14em] text-brand-blue mb-2.5">
                     Where it happens
                   </p>
                   <p className="text-[15px] text-white mb-4">{card.moment}</p>
@@ -305,7 +305,7 @@ export default function Audit() {
                   <ul className="flex flex-col gap-4">
                     {card.whatHelps.map((h) => (
                       <li key={h.title} className="flex gap-3">
-                        <Check className="mt-[3px] w-4 h-4 flex-shrink-0 text-brand-blue-light" strokeWidth={2.5} />
+                        <Check className="mt-[3px] w-4 h-4 flex-shrink-0 text-brand-blue" strokeWidth={2.5} />
                         <div>
                           <p className="text-[14px] font-medium text-white">{h.title}</p>
                           <p className="mt-1 text-[13px] leading-relaxed text-gray-400">{h.detail}</p>
@@ -371,7 +371,7 @@ export default function Audit() {
                           archetype: result.primary, placement: 'post_email',
                         })}
                         className="mt-4 inline-flex items-center justify-center gap-1.5 text-[14px]
-                          text-brand-blue-light hover:text-white transition-colors"
+                          text-brand-blue hover:text-white transition-colors"
                       >
                         {card.cta}
                         <ArrowRight size={15} />
@@ -395,7 +395,7 @@ export default function Audit() {
                           placeholder="you@email.com"
                           className="flex-1 px-4 py-3 rounded-xl bg-brand-surface border border-white/10
                             text-[14px] text-white placeholder:text-gray-600
-                            focus:outline-none focus:border-brand-blue-light/50 transition-colors"
+                            focus:outline-none focus:border-brand-blue/50 transition-colors"
                         />
                         <button
                           type="submit"

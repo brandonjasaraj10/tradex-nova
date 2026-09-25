@@ -89,7 +89,7 @@ function EarningsCalculator() {
         max={200}
         value={referrals}
         onChange={(e) => setReferrals(Number(e.target.value))}
-        className="w-full accent-brand-blue-light cursor-pointer"
+        className="w-full accent-brand-blue cursor-pointer"
       />
 
       <div className="grid grid-cols-2 gap-3 mt-5">
@@ -100,11 +100,11 @@ function EarningsCalculator() {
           </p>
         </div>
         <div
-          className="rounded-xl border border-brand-blue-light/30 bg-brand-blue/[0.07] px-4 py-3.5"
+          className="rounded-xl border border-brand-blue/30 bg-brand-blue/[0.07] px-4 py-3.5"
           style={{ boxShadow: BRAND_GLOW }}
         >
-          <p className="text-[10px] uppercase tracking-[0.12em] text-brand-blue-light">Over 12 months</p>
-          <p className="mt-1.5 text-[22px] sm:text-[26px] font-semibold text-brand-blue-light tabular-nums">
+          <p className="text-[10px] uppercase tracking-[0.12em] text-brand-blue">Over 12 months</p>
+          <p className="mt-1.5 text-[22px] sm:text-[26px] font-semibold text-brand-blue tabular-nums">
             {money(total)}
           </p>
         </div>
@@ -208,10 +208,10 @@ export default function Affiliates() {
           className="max-w-md mx-auto w-full text-center py-8 sm:py-16"
         >
           <div
-            className="w-16 h-16 rounded-full bg-brand-blue/10 border border-brand-blue-light/30 flex items-center justify-center mx-auto mb-6"
+            className="w-16 h-16 rounded-full bg-brand-blue/10 border border-brand-blue/30 flex items-center justify-center mx-auto mb-6"
             style={{ boxShadow: BRAND_GLOW }}
           >
-            <CheckCircle2 className="w-8 h-8 text-brand-blue-light" />
+            <CheckCircle2 className="w-8 h-8 text-brand-blue" />
           </div>
           <h1 className="text-[28px] sm:text-3xl font-semibold tracking-[-0.03em] text-white mb-3">
             Application received
@@ -234,7 +234,7 @@ export default function Affiliates() {
 
   const inputClass =
     'w-full px-4 py-3 bg-brand-elevated border border-white/10 rounded-xl text-[14px] text-white placeholder-gray-600 ' +
-    'focus:outline-none focus:border-brand-blue-light/50 focus:ring-1 focus:ring-brand-blue-light/30 transition-colors';
+    'focus:outline-none focus:border-brand-blue/50 focus:ring-1 focus:ring-brand-blue/30 transition-colors';
 
   return (
     <PageShell
@@ -310,7 +310,7 @@ export default function Affiliates() {
               'Never touches their broker account or their money',
             ].map((point) => (
               <li key={point} className="flex items-start gap-2.5 text-[13.5px] sm:text-[14px] leading-relaxed text-gray-400">
-                <CheckCircle2 className="w-3.5 h-3.5 text-brand-blue-light flex-shrink-0 mt-[3.5px]" />
+                <CheckCircle2 className="w-3.5 h-3.5 text-brand-blue flex-shrink-0 mt-[3.5px]" />
                 <span>{point}</span>
               </li>
             ))}
@@ -380,7 +380,7 @@ export default function Affiliates() {
             <button
               type="button"
               onClick={addUrl}
-              className="mt-2 inline-flex items-center gap-1.5 text-[12px] text-brand-blue-light hover:text-white transition-colors"
+              className="mt-2 inline-flex items-center gap-1.5 text-[12px] text-brand-blue hover:text-white transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
               Add another link

@@ -881,7 +881,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
                   key={label as string}
                   className="inline-flex items-center gap-1.5 text-[11.5px] sm:text-[12.5px] text-gray-400"
                 >
-                  <I className="w-3.5 h-3.5 text-brand-blue-light flex-shrink-0" />
+                  <I className="w-3.5 h-3.5 text-brand-blue flex-shrink-0" />
                   {label as string}
                 </li>
               );
@@ -983,7 +983,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
                         {option.label}
                         {option.id === 'annual' && (
                           <span className={`ml-2 text-[11px] transition-colors duration-200 ${
-                            active ? 'text-black/60' : 'text-brand-blue-light'
+                            active ? 'text-black/60' : 'text-brand-blue'
                           }`}>
                             2 months free
                           </span>
@@ -1037,7 +1037,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
                     showingAll ? 'lg:h-full' : ''
                   } ${
                     isSelected
-                      ? 'border border-brand-blue-light/40 bg-brand-blue/[0.07]'
+                      ? 'border border-brand-blue/40 bg-brand-blue/[0.07]'
                       : 'border border-white/[0.07] bg-brand-surface hover:border-white/20'
                   }`}
                 >
@@ -1051,10 +1051,10 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
                         <span
                           aria-hidden="true"
                           className={`flex-shrink-0 w-[18px] h-[18px] rounded-full border flex items-center justify-center transition-colors ${
-                            isSelected ? 'border-brand-blue-light' : 'border-white/25'
+                            isSelected ? 'border-brand-blue' : 'border-white/25'
                           }`}
                         >
-                          {isSelected && <span className="w-2 h-2 rounded-full bg-brand-blue-light" />}
+                          {isSelected && <span className="w-2 h-2 rounded-full bg-brand-blue" />}
                         </span>
                       )}
                       <div className="min-w-0">
@@ -1062,7 +1062,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
                           <span className="text-[15px] font-medium text-white">{plan.name}</span>
                           {plan.popular && (
                             <span className="text-[10px] font-medium uppercase tracking-[0.1em]
-                              text-brand-blue-light bg-brand-blue-light/10 rounded-full px-2 py-0.5">
+                              text-brand-blue bg-brand-blue/10 rounded-full px-2 py-0.5">
                               Best value
                             </span>
                           )}
@@ -1162,7 +1162,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
                       {plan.features.map((feature) => (
                         <li key={feature} className="flex gap-2.5 text-[12.5px] text-gray-300 leading-relaxed">
                           <CheckCircle2
-                            className="mt-[2px] w-3.5 h-3.5 flex-shrink-0 text-brand-blue-light"
+                            className="mt-[2px] w-3.5 h-3.5 flex-shrink-0 text-brand-blue"
                             strokeWidth={2}
                           />
                           {feature}
@@ -1220,10 +1220,10 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
         */}
         <div className="mt-5 space-y-3 sm:mt-0 sm:space-y-4">
           {!stripeConfigured && (
-            <div className="p-4 rounded-xl bg-brand-blue/10 border border-brand-blue-light/20 flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-brand-blue-light flex-shrink-0 mt-0.5" />
+            <div className="p-4 rounded-xl bg-brand-blue/10 border border-brand-blue/20 flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-brand-blue flex-shrink-0 mt-0.5" />
               <div className="text-[13px]">
-                <p className="font-medium text-brand-blue-light mb-1">Development mode</p>
+                <p className="font-medium text-brand-blue mb-1">Development mode</p>
                 <p className="text-gray-400">Stripe is not configured. Use manual activation for testing.</p>
               </div>
             </div>
@@ -1237,8 +1237,8 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
           )}
 
           {success && (
-            <div className="p-4 rounded-xl bg-brand-blue/10 border border-brand-blue-light/20 flex items-start gap-3">
-              <CheckCircle2 className="w-5 h-5 text-brand-blue-light flex-shrink-0 mt-0.5" />
+            <div className="p-4 rounded-xl bg-brand-blue/10 border border-brand-blue/20 flex items-start gap-3">
+              <CheckCircle2 className="w-5 h-5 text-brand-blue flex-shrink-0 mt-0.5" />
               <div className="text-[13px] leading-relaxed text-gray-300">{success}</div>
             </div>
           )}

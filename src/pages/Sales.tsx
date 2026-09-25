@@ -315,12 +315,12 @@ export default function Sales() {
                 <svg viewBox="0 0 320 72" className="w-full h-16 sm:h-20" preserveAspectRatio="none" aria-hidden="true">
                   <defs>
                     <linearGradient id="heroEquityFill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#60A5FA" stopOpacity="0.28" />
-                      <stop offset="100%" stopColor="#60A5FA" stopOpacity="0" />
+                      <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.28" />
+                      <stop offset="100%" stopColor="#3B82F6" stopOpacity="0" />
                     </linearGradient>
                   </defs>
                   <path d="M0 60 L32 55 L64 58 L96 44 L128 47 L160 33 L192 36 L224 22 L256 26 L288 14 L320 8 L320 72 L0 72 Z" fill="url(#heroEquityFill)" />
-                  <path d="M0 60 L32 55 L64 58 L96 44 L128 47 L160 33 L192 36 L224 22 L256 26 L288 14 L320 8" fill="none" stroke="#60A5FA" strokeWidth="1.75" strokeLinejoin="round" strokeLinecap="round" />
+                  <path d="M0 60 L32 55 L64 58 L96 44 L128 47 L160 33 L192 36 L224 22 L256 26 L288 14 L320 8" fill="none" stroke="#3B82F6" strokeWidth="1.75" strokeLinejoin="round" strokeLinecap="round" />
                 </svg>
               </div>
 
@@ -333,10 +333,10 @@ export default function Sales() {
                 <div className="mt-3 flex flex-wrap gap-1.5">
                   {['Moved stop', 'Revenge entry', 'Focus 4/10'].map((tag) => (
                     /* Blue because tags are blue in the product - the Journal
-                       renders them bg-blue-400/10 text-blue-400. This panel is
+                       renders them bg-blue-500/10 text-blue-500. This panel is
                        a claim about what the app looks like, so it should not
                        invent a greyer version of it. */
-                    <span key={tag} className="text-[11px] font-medium text-brand-blue-light bg-brand-blue-light/10 rounded-full px-2.5 py-1">
+                    <span key={tag} className="text-[11px] font-medium text-brand-blue bg-brand-blue/10 rounded-full px-2.5 py-1">
                       {tag}
                     </span>
                   ))}
@@ -412,8 +412,8 @@ export default function Sales() {
                   <div className="flex items-center gap-3">
                     {/* Blue here on purpose - this is the record button, and it
                         is blue in the product. One accent, where it is literal. */}
-                    <span className="flex-shrink-0 w-9 h-9 rounded-full bg-brand-blue/15 border border-brand-blue-light/30 flex items-center justify-center">
-                      <span className="w-2.5 h-2.5 rounded-full bg-brand-blue-light" />
+                    <span className="flex-shrink-0 w-9 h-9 rounded-full bg-brand-blue/15 border border-brand-blue/30 flex items-center justify-center">
+                      <span className="w-2.5 h-2.5 rounded-full bg-brand-blue" />
                     </span>
                     <div className="flex items-end gap-[3px] h-7" aria-hidden="true">
                       {[7, 14, 22, 12, 26, 18, 9, 20, 28, 15, 8, 19, 24, 11, 6].map((h, i) => (
@@ -434,7 +434,7 @@ export default function Sales() {
                 title: 'It tells you what you keep doing',
                 body: 'Across every entry, not just this one. The pattern you cannot see from inside it.',
                 visual: (
-                  <div className="rounded-lg border border-brand-blue-light/20 bg-brand-blue/[0.06] px-3 py-2.5">
+                  <div className="rounded-lg border border-brand-blue/20 bg-brand-blue/[0.06] px-3 py-2.5">
                     <p className="text-[12.5px] leading-relaxed text-gray-300">
                       You moved your stop on <span className="text-white">4 of your last 6 losers</span>.
                       None of your winners.
@@ -503,13 +503,13 @@ export default function Sales() {
               nothing is lost.
             */}
             <div className="inline-flex items-center gap-2 mb-5 px-3 py-1.5 rounded-full
-              border border-brand-blue-light/25 bg-brand-blue/[0.06]">
+              border border-brand-blue/25 bg-brand-blue/[0.06]">
               <span className="relative flex h-1.5 w-1.5">
                 <span className="motion-reduce:hidden absolute inline-flex h-full w-full
-                  rounded-full bg-brand-blue-light opacity-75 animate-ping" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-brand-blue-light" />
+                  rounded-full bg-brand-blue opacity-75 animate-ping" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-brand-blue" />
               </span>
-              <span className="text-[11px] tracking-[0.1em] uppercase text-brand-blue-light font-medium">
+              <span className="text-[11px] tracking-[0.1em] uppercase text-brand-blue font-medium">
                 Live now
               </span>
             </div>
@@ -557,7 +557,7 @@ export default function Sales() {
                   key={point}
                   className="flex items-start gap-2 text-[12.5px] text-gray-400 leading-relaxed"
                 >
-                  <Check className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-brand-blue-light" strokeWidth={3} />
+                  <Check className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-brand-blue" strokeWidth={3} />
                   {point}
                 </div>
               ))}
@@ -694,7 +694,7 @@ export default function Sales() {
                     {m.value}<span className="text-gray-600 text-sm">/10</span>
                   </p>
                   <div className="mt-2.5 h-1 rounded-full bg-white/[0.07] overflow-hidden">
-                    <div className="h-full rounded-full bg-brand-blue-light/70" style={{ width: `${m.value * 10}%` }} />
+                    <div className="h-full rounded-full bg-brand-blue/70" style={{ width: `${m.value * 10}%` }} />
                   </div>
                 </div>
               ))}
@@ -708,13 +708,13 @@ export default function Sales() {
               when your head does, and it was the one real feature the page
               never mentioned.
             */}
-            <div className="mt-4 rounded-xl border border-brand-blue-light/20 bg-brand-blue/[0.06] p-4 sm:p-5">
+            <div className="mt-4 rounded-xl border border-brand-blue/20 bg-brand-blue/[0.06] p-4 sm:p-5">
               <div className="flex items-center justify-between gap-4 mb-4">
                 <div>
                   <p className="text-[10px] uppercase tracking-[0.12em] text-gray-500">NOVA Score</p>
                   <p className="mt-1 flex items-baseline gap-2">
                     <span className="text-3xl sm:text-4xl font-semibold text-white tabular-nums">68</span>
-                    <span className="text-[13px] text-brand-blue-light">Advanced</span>
+                    <span className="text-[13px] text-brand-blue">Advanced</span>
                   </p>
                 </div>
                 <p className="text-[11px] text-gray-500 text-right max-w-[9rem] leading-relaxed">
@@ -731,7 +731,7 @@ export default function Sales() {
                   <div key={label as string} className="flex items-center gap-3">
                     <span className="w-[104px] sm:w-[124px] flex-shrink-0 text-[11.5px] text-gray-500">{label}</span>
                     <span className="flex-1 h-1 rounded-full bg-white/[0.07] overflow-hidden">
-                      <span className="block h-full rounded-full bg-brand-blue-light/60" style={{ width: `${value}%` }} />
+                      <span className="block h-full rounded-full bg-brand-blue/60" style={{ width: `${value}%` }} />
                     </span>
                     <span className="w-7 text-right text-[11.5px] text-gray-400 tabular-nums">{value}</span>
                   </div>
@@ -1085,13 +1085,13 @@ export default function Sales() {
                 key={tier.name}
                 className={`relative flex flex-col rounded-2xl border p-5 sm:p-6 ${
                   tier.featured
-                    ? 'border-brand-blue-light/40 bg-brand-blue/[0.06]'
+                    ? 'border-brand-blue/40 bg-brand-blue/[0.06]'
                     : 'border-white/10 bg-brand-surface'
                 }`}
               >
                 {tier.featured && (
                   <span
-                    className="absolute -top-2.5 left-5 rounded-full bg-brand-blue-light px-2.5 py-1
+                    className="absolute -top-2.5 left-5 rounded-full bg-brand-blue px-2.5 py-1
                       text-[10px] font-medium uppercase tracking-[0.12em] text-black"
                   >
                     Most popular
@@ -1110,7 +1110,7 @@ export default function Sales() {
                 <ul className="mt-4 flex flex-col gap-2">
                   {tier.lines.filter((l) => l.included).slice(0, 2).map((line) => (
                     <li key={line.text} className="flex gap-2 text-[12.5px] text-gray-300 leading-snug">
-                      <Check className="mt-[3px] w-3.5 h-3.5 flex-shrink-0 text-brand-blue-light" strokeWidth={3} />
+                      <Check className="mt-[3px] w-3.5 h-3.5 flex-shrink-0 text-brand-blue" strokeWidth={3} />
                       {line.text}
                     </li>
                   ))}
@@ -1130,7 +1130,7 @@ export default function Sales() {
             <ul className="grid gap-x-8 gap-y-2.5 sm:grid-cols-2">
               {IN_EVERY_PLAN.map((item) => (
                 <li key={item} className="flex gap-2.5 text-[13px] text-gray-300 leading-relaxed">
-                  <Check className="mt-[3px] w-3.5 h-3.5 flex-shrink-0 text-brand-blue-light" strokeWidth={2.5} />
+                  <Check className="mt-[3px] w-3.5 h-3.5 flex-shrink-0 text-brand-blue" strokeWidth={2.5} />
                   {item}
                 </li>
               ))}

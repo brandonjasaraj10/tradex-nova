@@ -17,10 +17,10 @@ export default function RiskDisclaimer() {
         accent; a red alert box here would be the single loudest thing on the
         whole site.
       */}
-      <div className="mb-10 rounded-2xl border border-brand-blue-light/25 bg-brand-blue/[0.07] p-5 sm:p-6">
+      <div className="mb-10 rounded-2xl border border-brand-blue/25 bg-brand-blue/[0.07] p-5 sm:p-6">
         <div className="flex items-center gap-2.5 mb-3">
-          <AlertTriangle className="w-4 h-4 text-brand-blue-light flex-shrink-0" />
-          <p className="text-[10px] tracking-[0.16em] uppercase text-brand-blue-light font-medium">
+          <AlertTriangle className="w-4 h-4 text-brand-blue flex-shrink-0" />
+          <p className="text-[10px] tracking-[0.16em] uppercase text-brand-blue font-medium">
             Important risk warning
           </p>
         </div>
@@ -296,7 +296,7 @@ export default function RiskDisclaimer() {
           <section>
             <h2>14. No Liability for Trading Losses</h2>
             <div className="bg-blue-500/10 border-2 border-blue-500/30 rounded-lg p-6">
-              <p className="font-bold text-blue-400 mb-4">CRITICAL NOTICE:</p>
+              <p className="font-bold text-blue-500 mb-4">CRITICAL NOTICE:</p>
               <p className="mb-4">
                 TradeX and its operators, employees, and affiliates are NOT liable for any trading losses or damages
                 you may incur, including but not limited to:
