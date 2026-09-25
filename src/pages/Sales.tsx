@@ -161,21 +161,52 @@ export default function Sales() {
           flex flex-col justify-center text-center pb-6">
 
           {/*
-            He opens the page.
+            He is no longer the first thing on the page - see the aside beside
+            the copy below.
 
-            This was held back for a while on the theory that a character
-            next to "Stop guessing why you lose" would undercut it. The
-            research points the other way: consistent character assets carry
-            about 37% higher recall and 24% higher purchase intent than
-            abstract visuals, Duolingo's mascot is front and centre rather
-            than tucked into corners, and the whole reason to have one is to
-            be recognised on the second visit. A mascot nobody notices is
-            just a file in the repo.
+            He led the page for a while on good evidence: consistent character
+            assets carry higher recall and purchase intent than abstract
+            visuals, and a mascot nobody notices is just a file in the repo.
+            What that reasoning did not account for is where the space came
+            from. At 168px above the eyebrow he pushed the headline down a
+            sixth of the screen and stood in a column of his own, which reads
+            as a logo rather than as a character - present, but not doing
+            anything.
 
-            Above the eyebrow rather than beside the headline, so the
-            headline still lands alone and he reads as having shown you in.
+            He is still on the page and still the first character anyone sees.
+            He is just standing beside the argument now instead of on top of
+            it.
           */}
-          <Mascot pose="wave" height={168} className="mx-auto mb-4 sm:mb-5" />
+
+          {/*
+            Beside the pitch, in the room the centred column was wasting.
+
+            The hero text sits in a 768px column and the controls inside it -
+            the button, the tick row, the avatars - are all far narrower than
+            that, so there is an empty gutter either side doing nothing. He
+            stands in the left one, feet level with the proof line, arm out
+            toward the copy.
+
+            Left, specifically, because the present render gestures to his own
+            left, which is the viewer's right. On the right of the text he
+            would be pointing away from it, off the page.
+
+            aria-hidden and pointer-events-none: he is decoration next to the
+            headline that already says it, and he must never sit between a
+            cursor and the button.
+
+            lg and up only. Below that the gutter does not exist, so he
+            appears at the proof line instead - small, beside the avatars,
+            where he reads as one of the traders rather than as art.
+          */}
+          <Mascot
+            pose="present"
+            height={196}
+            aria-hidden="true"
+            className="hidden lg:block absolute left-0 xl:-left-6 bottom-[78px]
+              lg:scale-[0.88] xl:scale-100 origin-bottom-left
+              pointer-events-none select-none"
+          />
 
           <p className="text-[9.5px] sm:text-[10px] tracking-[0.16em] uppercase text-gray-600 mb-4">
             Trading journal &middot; Built around psychology
@@ -251,7 +282,20 @@ export default function Sales() {
             be defended.
           */}
           <div className="mt-6 flex flex-col items-center gap-2">
-            <div className="flex -space-x-2">
+            {/*
+              His small-screen appearance - see the aside above.
+
+              Sized to be read as a character rather than as a bullet. At 34px
+              he was smaller than the text beside him and came out a smudge,
+              which is worse than leaving him off: the entire argument for a
+              mascot is being recognised on the second visit, and nothing
+              recognisable survives at that size. He stands at the head of the
+              proof row instead, ahead of the initials, which puts him among
+              the traders rather than beside them.
+            */}
+            <div className="flex items-end gap-2 lg:gap-0">
+              <Mascot pose="idle" height={58} aria-hidden="true" className="lg:hidden -mb-1" />
+              <div className="flex -space-x-2 mb-1">
               {['M', 'J', 'K', 'A', 'R'].map((initial, i) => (
                 <span
                   key={initial}
@@ -262,6 +306,7 @@ export default function Sales() {
                   {initial}
                 </span>
               ))}
+              </div>
             </div>
             <p className="text-[11.5px] text-gray-500">
               Join <span className="text-gray-300">300+ traders</span> already journaling with TradeX
