@@ -81,21 +81,26 @@ export default function CookieConsent() {
       aria-live="polite"
       aria-label="Cookie preferences"
       /*
-        Above the bottom of a phone screen, not on it.
+        Back on the bottom of the screen.
 
-        Paywalls pin their CTA to the bottom on mobile (fixed bottom-0,
-        z-40) and this banner is fixed bottom-0 z-50, so the two occupied
-        the same strip and the banner won. Unlike a button in normal flow,
-        a pinned one never scrolls out from under it: the button that takes
-        the money was unreachable until consent was answered, on the one
-        screen where that costs something.
+        This sat 96px up on mobile for a real reason: the paywall pinned its
+        CTA to the bottom (fixed bottom-0, z-40) and this banner is fixed
+        bottom-0 z-50, so the two shared a strip and the banner won. Unlike a
+        button in normal flow, a pinned one never scrolls out from under it,
+        so the button that takes the money was unreachable until consent was
+        answered - on the one screen where that costs something.
 
-        Lifted clear on mobile rather than restacked, because a z-index war
-        just moves the problem - putting the CTA on top would bury the
-        Accept button instead, and consent has to stay answerable. Desktop
-        keeps bottom-0; nothing is pinned down there.
+        The paywall no longer pins anything: its page was cut to one screen,
+        the button came back into the flow, and nothing else on the site is
+        fixed to the bottom. So the lift now buys nothing and just floats the
+        banner above the edge it is supposed to sit on.
+
+        If a pinned bottom bar ever comes back, this collides again - and the
+        fix is to lift this, not to restack, because putting the bar on top
+        would bury the Accept button instead and consent has to stay
+        answerable.
       */
-      className="fixed inset-x-0 bottom-[96px] sm:bottom-0 z-50 p-3 sm:p-5"
+      className="fixed inset-x-0 bottom-0 z-50 p-3 sm:p-5"
     >
       {/*
         Slides up and fades in, 320ms on a gentle ease-out. Small on purpose:
