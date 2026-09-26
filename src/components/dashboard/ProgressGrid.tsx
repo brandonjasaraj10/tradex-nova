@@ -16,7 +16,7 @@
   that makes an app feel slow for no gain.
 */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import Card from '../shared/Card';
 import { getProcessScores, type ProcessDay } from '../../services/progressGrid';
@@ -118,6 +118,22 @@ export default function ProgressGrid({ userId, accountId }: Props) {
     Keyed by date so the grid can look each cell up in constant time rather
     than scanning the list 371 times.
   */
+  /*
+    Opens on today, not on a year ago.
+
+    A year does not fit, so the row scrolls - and a scroller starts at its
+    left edge, which here is the oldest week. Every visit therefore began
+    on the emptiest, least useful end and had to be dragged across to reach
+    anything recent. This is a timeline, so the interesting end is the one
+    it should open on.
+
+    Re-run when the range changes as well as when the days arrive: 3M and
+    1Y have different widths, and switching between them would otherwise
+    leave the view wherever the previous range's scroll position happened
+    to land.
+  */
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
+
   const byDay = useMemo(() => {
     const m = new Map<string, ProcessDay>();
     for (const d of days) m.set(d.day, d);
@@ -137,6 +153,34 @@ export default function ProgressGrid({ userId, accountId }: Props) {
     }
     return out;
   }, [start, byDay, range.weeks]);
+
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    /*
+      After paint, because the width is not known until the cells are laid
+      out - setting it in the same tick lands on the old scrollWidth and
+      moves nothing. Jumped rather than smoothly scrolled: this is where
+      the view should have started, not somewhere it travels to.
+    */
+    /*
+      Pinned more than once, because one frame is not enough.
+
+      A single requestAnimationFrame left it at zero: the card animates in
+      and the squares are laid out after that frame, so the width read then
+      was the pre-layout one and moving to it moved nothing. Setting it
+      again on the next frame and once more after the animation has settled
+      costs nothing and survives whichever of them lands last.
+    */
+    const pin = () => { el.scrollLeft = el.scrollWidth; };
+    pin();
+    const frame = requestAnimationFrame(pin);
+    const later = window.setTimeout(pin, 250);
+    return () => {
+      cancelAnimationFrame(frame);
+      clearTimeout(later);
+    };
+  }, [cells.length, range.key, days.length]);
 
   const journalledDays = days.length;
   const avg = journalledDays
@@ -208,7 +252,7 @@ export default function ProgressGrid({ userId, accountId }: Props) {
         nothing. A year does not fit in 375px and pretending otherwise gives
         you 3px cells that cannot be read or tapped.
       */}
-      <div className="overflow-x-auto -mx-1 px-1 pb-1">
+      <div ref={scrollerRef} className="overflow-x-auto -mx-1 px-1 pb-1">
         <div
           className="grid grid-flow-col gap-[2px] w-max"
           style={{ gridTemplateRows: 'repeat(7, minmax(0, 1fr))' }}
