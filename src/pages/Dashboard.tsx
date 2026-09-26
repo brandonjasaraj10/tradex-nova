@@ -817,7 +817,25 @@ export default function Dashboard() {
   return (
     <div className="px-4 sm:px-6 lg:px-8 max-w-[1600px] mx-auto pb-8">
       <motion.div
-        initial="hidden"
+        /*
+          Rendered visible, not animated into view.
+
+          These sections were children of a staggerChildren parent and
+          started in a "hidden" variant at opacity 0. When the stagger did
+          not reach them - a re-render partway through, or a child mounting
+          after the parent had finished - framer left the inline
+          "opacity: 0; transform: translateY(20px)" on them permanently.
+          Scrolling away and back did not fix it because nothing re-ran the
+          animation, so whole cards sat blank: the account balance, Quick
+          Access, the NOVA score, the progress tracker.
+
+          initial={false} renders each child in its visible state straight
+          away. The staggered entrance is gone, which is a fair trade for a
+          dashboard that cannot show an empty card, and it is the rule
+          anyway: nothing that has to be read should depend on an animation
+          having run.
+        */
+        initial={false}
         animate="visible"
         variants={{
           visible: { transition: { staggerChildren: 0.05 } }

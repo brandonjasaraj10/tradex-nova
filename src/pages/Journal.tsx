@@ -2246,7 +2246,15 @@ export default function Journal() {
 
   return (
     <div className="px-4 sm:px-6 lg:px-8">
-      <motion.div initial="hidden" animate="visible" variants={{ visible: { transition: { staggerChildren: 0.1 } } }}>
+      {/*
+        Rendered visible, not animated into view - same change as the
+        Dashboard, where this was reported: children of a staggerChildren
+        parent could be left stranded at opacity 0 with their inline
+        transform still applied, showing a blank section that scrolling away
+        and back did not fix. Nothing that has to be read should depend on an
+        animation having run.
+      */}
+      <motion.div initial={false} animate="visible" variants={{ visible: { transition: { staggerChildren: 0.1 } } }}>
         <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 pt-6 gap-3" data-tour="journal-header">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold">Journal</h1>

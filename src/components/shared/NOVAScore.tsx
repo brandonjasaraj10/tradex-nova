@@ -97,7 +97,7 @@ export default function NOVAScore({
 
         <motion.div
           className="mt-3 flex flex-col items-center gap-1 text-center max-w-xs"
-          initial={{ opacity: 0 }}
+          initial={false}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5 }}
         >
@@ -245,7 +245,7 @@ export default function NOVAScore({
           <motion.svg
             className="absolute w-full h-full -rotate-90"
             viewBox="0 0 120 120"
-            initial={{ opacity: 0, rotate: -90 }}
+            initial={false}
             animate={{ opacity: 1, rotate: -90 }}
             transition={{ duration: 0.5, delay: 0.3 }}
           >
@@ -272,7 +272,7 @@ export default function NOVAScore({
               strokeLinecap="round"
               strokeDasharray={circumference}
               filter="url(#glow)"
-              initial={{ strokeDashoffset: circumference }}
+              initial={false}
               animate={{ strokeDashoffset }}
               transition={{ duration: 1.5, ease: "easeOut", delay: 0.5 }}
             />
@@ -281,7 +281,12 @@ export default function NOVAScore({
           {/* Score display */}
           <motion.div
             className="absolute inset-0 flex flex-col items-center justify-center z-10 gap-0.5"
-            initial={{ opacity: 0, scale: 0.8 }}
+            /*
+              The number itself. A one-second delay before it even began
+              fading in meant the ring could be drawn with a blank middle;
+              if the animation never ran, the score was simply missing.
+            */
+            initial={false}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5, delay: 1 }}
           >
@@ -324,7 +329,7 @@ export default function NOVAScore({
 
         <motion.div
           className="mt-3 flex flex-col items-center gap-1"
-          initial={{ opacity: 0 }}
+          initial={false}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 1.5 }}
         >
@@ -358,7 +363,7 @@ export default function NOVAScore({
       {showBreakdown && (
         <motion.div
           className="mt-6 flex flex-col items-center"
-          initial={{ opacity: 0 }}
+          initial={false}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 1.8 }}
         >

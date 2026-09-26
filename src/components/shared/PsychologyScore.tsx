@@ -235,7 +235,12 @@ export default function PsychologyScore() {
         ) : (
         <div className="flex-1 overflow-y-auto space-y-4 min-h-0">
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
+            /*
+              Same reason as the balance card: the score, the ring and the
+              three figures below it are the content of this card, so none of
+              them start invisible.
+            */
+            initial={false}
             animate={{ opacity: 1, y: 0 }}
             className={`p-6 rounded-xl border ${getScoreBg(data.average)} relative overflow-hidden group`}
           >
@@ -266,7 +271,7 @@ export default function PsychologyScore() {
                 </div>
                 <div className="w-24 h-24 relative">
                   <motion.div
-                    initial={{ rotate: -90, opacity: 0 }}
+                    initial={false}
                     animate={{ rotate: 0, opacity: 1 }}
                     transition={{ duration: 0.8, ease: "easeOut" }}
                   >
@@ -288,7 +293,7 @@ export default function PsychologyScore() {
                         strokeWidth="8"
                         strokeDasharray={`${(data.average / 100) * 251.2} 251.2`}
                         strokeLinecap="round"
-                        initial={{ strokeDasharray: '0 251.2' }}
+                        initial={false}
                         animate={{ strokeDasharray: `${(data.average / 100) * 251.2} 251.2` }}
                         transition={{ duration: 1, delay: 0.3, ease: "easeOut" }}
                       />
@@ -301,7 +306,7 @@ export default function PsychologyScore() {
                     </svg>
                   </motion.div>
                   <motion.div
-                    initial={{ scale: 0 }}
+                    initial={false}
                     animate={{ scale: 1 }}
                     transition={{ delay: 0.5 }}
                     className="absolute inset-0 flex items-center justify-center"
@@ -313,15 +318,15 @@ export default function PsychologyScore() {
 
               <div className="pt-4 border-t border-white/10">
                 <div className="grid grid-cols-3 gap-4">
-                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+                  <motion.div initial={false} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
                     <p className="text-xs text-gray-400 mb-1">Highest</p>
                     <p className={`text-lg font-bold ${getScoreColor(data.highest)}`}>{data.highest}</p>
                   </motion.div>
-                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+                  <motion.div initial={false} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
                     <p className="text-xs text-gray-400 mb-1">Lowest</p>
                     <p className={`text-lg font-bold ${getScoreColor(data.lowest)}`}>{data.lowest}</p>
                   </motion.div>
-                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+                  <motion.div initial={false} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
                     <p className="text-xs text-gray-400 mb-1">Entries</p>
                     <p className="text-lg font-bold text-white">{data.totalEntries}</p>
                   </motion.div>

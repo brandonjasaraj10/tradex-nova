@@ -408,7 +408,15 @@ export default function Analytics() {
   return (
     <div className="px-4 sm:px-6 lg:px-8 max-w-[1600px] mx-auto">
       <motion.div
-        initial="hidden"
+        /*
+          Rendered visible, not animated into view - same change as the
+          Dashboard, where this was reported: children of a staggerChildren
+          parent could be left stranded at opacity 0 with their inline
+          transform still applied, showing a blank section that scrolling
+          away and back did not fix. Nothing that has to be read should
+          depend on an animation having run.
+        */
+        initial={false}
         animate="visible"
         variants={{
           visible: { transition: { staggerChildren: 0.08 } }

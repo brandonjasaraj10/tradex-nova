@@ -187,7 +187,13 @@ export default function BalanceCard() {
         </div>
 
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
+          /*
+            The balance is shown, not faded in. It used to start at opacity 0
+            and rely on the entrance animation to bring it up, so whenever
+            that animation did not run the card rendered as an empty box with
+            a heading and nothing under it - which is how this was reported.
+          */
+          initial={false}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
         >
