@@ -349,6 +349,36 @@ export default function Journal() {
     stops talking there is usually nothing left over at all.
   */
   const pendingOrganizeRef = React.useRef(false);
+  /*
+    Set the moment speech ends, and it closes the door behind it.
+
+    While somebody is talking, a pass finishing starts the next one if more
+    was said during it - that chain is what keeps the note current. Once
+    they stop, the chain is the problem: a pass already running, the 1s
+    fallback queueing another behind it, and then the 3s silence asking for
+    a final one adds up to three rewrites after the last word. Each reads
+    the whole transcript and writes a fresh note, so the entry visibly
+    rewrites itself twice more and whichever version lands last wins,
+    better or worse.
+
+    After this is set there is exactly one more pass: the forced final one.
+  */
+  const speechEndedRef = React.useRef(false);
+
+  /*
+    How much shape a note has: its list items and its headings.
+
+    Every pass re-reads the whole transcript and writes the note again, and
+    the model does not answer identically twice - so two passes over almost
+    the same words can differ in structure, one returning the confluences as
+    a list and the next folding them into a paragraph.
+
+    While somebody is still talking that does not matter; another pass is
+    coming. On the last one it does, because whatever it returns is what
+    they are left looking at.
+  */
+  const noteStructure = (html: string) =>
+    (html.match(/<li>/g)?.length ?? 0) + (html.match(/<h3>/g)?.length ?? 0);
   const liveOrganizeTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastLiveOrganizeAtRef = React.useRef(0);
 
@@ -554,8 +584,37 @@ export default function Journal() {
       );
 
       if (data.content) {
-        liveOrganizedHtmlRef.current = data.content;
-        organizedUpToRef.current = transcript;
+        /*
+          The final pass may not replace a richer note with a poorer one.
+
+          It exists to fold in the last sentence or two - the version
+          already on screen covers everything before that. If the rewrite
+          comes back having lost the bullets and the headings, folding in
+          that last sentence has cost the note its shape, which is a bad
+          trade and exactly what it looked like: a note that was fine
+          through the whole dictation and collapsed into a block at the
+          end.
+
+          Only on the forced pass, and only when it is genuinely poorer.
+          A longer answer is let through even if flatter, because length
+          that large means real content rather than the same note written
+          worse. Mid-dictation passes are never blocked - another one is
+          always coming.
+        */
+        const previous = liveOrganizedHtmlRef.current;
+        const losesShape =
+          force &&
+          previous &&
+          noteStructure(data.content) < noteStructure(previous) &&
+          data.content.length < previous.length * 1.15;
+
+        if (losesShape) {
+          console.info('Final pass returned a flatter note - keeping the fuller one');
+          organizedUpToRef.current = transcript;
+        } else {
+          liveOrganizedHtmlRef.current = data.content;
+          organizedUpToRef.current = transcript;
+        }
       }
 
       /*
@@ -586,7 +645,7 @@ export default function Journal() {
         force: the ordinary guards decide, so this stops on its own as soon
         as there is too little new speech to be worth a call.
       */
-      if (pendingOrganizeRef.current) {
+      if (pendingOrganizeRef.current && !speechEndedRef.current) {
         pendingOrganizeRef.current = false;
         liveOrganizePromiseRef.current = runLiveOrganize(liveTranscriptRef.current);
       }
@@ -630,6 +689,14 @@ export default function Journal() {
       }
     },
     onTranscript: async (text) => {
+      /*
+        Set first, before the timer is cleared and before anything is
+        awaited. A pass finishing during the drain below would otherwise
+        read the flag as still-talking and chain into another.
+      */
+      speechEndedRef.current = true;
+      pendingOrganizeRef.current = false;
+
       if (liveOrganizeTimerRef.current) {
         clearTimeout(liveOrganizeTimerRef.current);
         liveOrganizeTimerRef.current = null;
@@ -1870,6 +1937,7 @@ export default function Journal() {
       */
       liveTranscriptRef.current = '';
       pendingOrganizeRef.current = false;
+      speechEndedRef.current = false;
       liveOrganizedHtmlRef.current = '';
       organizedUpToRef.current = '';
       lastLiveOrganizeAtRef.current = 0;
