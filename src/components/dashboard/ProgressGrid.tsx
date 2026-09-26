@@ -68,12 +68,19 @@ interface Props {
 
   Blue rather than the usual green: green means profit everywhere else in
   trading, and this grid is deliberately not about profit.
+
+  The thresholds sit at 70/85/95 rather than 55/75/90 because the score can
+  no longer go below 60 - a journalled day with nothing to grade scores
+  exactly that, and a graded day is floored there so recording a broken rule
+  never scores worse than recording nothing. Against the old thresholds the
+  bottom two shades would have been unreachable and the scale would have
+  been four steps pretending to be five.
 */
 function toneFor(score: number | undefined): string {
   if (score === undefined) return 'bg-white/[0.04]';
-  if (score >= 90) return 'bg-brand-blue';
-  if (score >= 75) return 'bg-brand-blue/70';
-  if (score >= 55) return 'bg-brand-blue/45';
+  if (score >= 95) return 'bg-brand-blue';
+  if (score >= 85) return 'bg-brand-blue/70';
+  if (score >= 70) return 'bg-brand-blue/45';
   return 'bg-brand-blue/25';
 }
 
