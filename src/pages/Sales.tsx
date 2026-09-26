@@ -11,6 +11,7 @@ import NovaAnswer from '../components/sales/NovaAnswer';
 import SignupOrWaitlist from '../components/shared/SignupOrWaitlist';
 import { useHasLaunched } from '../lib/launch';
 import { useState, useEffect, useRef } from 'react';
+import { emphasise } from '../lib/emphasise';
 
 export default function Sales() {
   const launched = useHasLaunched();
@@ -55,8 +56,44 @@ export default function Sales() {
         className="fixed top-0 left-0 right-0 z-50 bg-black/50 backdrop-blur-md border-b border-white/5"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Wordmark className="text-lg" />
+          {/*
+            He peeks over the bottom edge of the header, beside the wordmark.
+
+            The render is a head and two hands gripping a ledge, cropped
+            below - so it only works with a real edge under the hands, and the
+            header's bottom border is one. bottom-0 puts his hands on that
+            line; the head clears about 33px of a 56px bar, which is why the
+            header is not taller than he is.
+
+            Positioned rather than in flow so he cannot push the wordmark
+            around, and left-full anchors him to the right of it however wide
+            the wordmark renders.
+
+            aria-hidden and pointer-events-none - he is decoration next to a
+            link, and he sits directly beside the one control in that corner.
+          */}
+          <div className="flex items-end gap-1.5 self-stretch">
+            <div className="flex items-center">
+              <Wordmark className="text-lg" />
+            </div>
+            {/*
+              His hands have to land on the header's bottom border or the
+              pose makes no sense - it is a head and two hands gripping a
+              ledge, cropped below, so without an edge under them he is a
+              face floating in a bar.
+
+              That means the box he is aligned to has to be the full height
+              of the header, not the wordmark. self-stretch on the wrapper
+              does it: the row sets items-center for the wordmark, this
+              overrides to fill, and items-end drops him onto the border.
+              -mb-px so his hands sit on the line rather than a pixel above.
+            */}
+            <Mascot
+              pose="peeking"
+              height={62}
+              aria-hidden="true"
+              className="-mb-px pointer-events-none select-none"
+            />
           </div>
           {/*
             The way back in for people who already have an account.
@@ -160,21 +197,23 @@ export default function Sales() {
           flex flex-col justify-center text-center pb-6">
 
           {/*
-            He opens the page.
+            He is no longer the first thing on the page - see the aside beside
+            the copy below.
 
-            This was held back for a while on the theory that a character
-            next to "Stop guessing why you lose" would undercut it. The
-            research points the other way: consistent character assets carry
-            about 37% higher recall and 24% higher purchase intent than
-            abstract visuals, Duolingo's mascot is front and centre rather
-            than tucked into corners, and the whole reason to have one is to
-            be recognised on the second visit. A mascot nobody notices is
-            just a file in the repo.
+            He led the page for a while on good evidence: consistent character
+            assets carry higher recall and purchase intent than abstract
+            visuals, and a mascot nobody notices is just a file in the repo.
+            What that reasoning did not account for is where the space came
+            from. At 168px above the eyebrow he pushed the headline down a
+            sixth of the screen and stood in a column of his own, which reads
+            as a logo rather than as a character - present, but not doing
+            anything.
 
-            Above the eyebrow rather than beside the headline, so the
-            headline still lands alone and he reads as having shown you in.
+            He is still on the page and still the first character anyone sees.
+            He is just standing beside the argument now instead of on top of
+            it.
           */}
-          <Mascot pose="wave" height={168} className="mx-auto mb-4 sm:mb-5" />
+
 
           <p className="text-[9.5px] sm:text-[10px] tracking-[0.16em] uppercase text-gray-600 mb-4">
             Trading journal &middot; Built around psychology
@@ -190,9 +229,30 @@ export default function Sales() {
             Stop guessing<br className="sm:hidden" /> why you lose
           </h1>
 
+          {/*
+            The difference, not the convenience.
+
+            This led with "Talk through the trade", which sells the input
+            method - and convenience is the one claim this product cannot win.
+            Tradespad already owns simple-and-clean and has a free tier, so a
+            hero whose first promise is "less effort" opens on the fight we
+            lose, while psychology sits uncontested by all four competitors.
+            The section further down already says exactly this in its own
+            comment; the hero had not caught up.
+
+            The line itself is not new. It is what the onboarding payoff
+            screen says after somebody names what is costing them money, and
+            it is the sharpest statement of the position we have - so the ad,
+            the landing page and the screen before the price now make one
+            argument instead of three.
+
+            Voice has not been dropped, it has been demoted: it is still a
+            tick below, where it answers the effort objection without being
+            the reason to care.
+          */}
           <p className="mt-4 text-[14.5px] sm:text-base leading-snug text-gray-400 max-w-sm sm:max-w-md mx-auto text-balance">
-            Talk through the trade. TradeX writes the entry and finds the pattern
-            costing you money.
+            Every journal records what the trade did. TradeX records what you
+            were like before you took it.
           </p>
 
           <div className="mt-6 flex flex-col items-center gap-2.5">
@@ -244,7 +304,11 @@ export default function Sales() {
             Social proof, sized to what is actually true.
 
             Competitors put customer logos and five-figure counts here. We have
-            310 signups, so that is what it says. The circles carry initials
+            661 real signups, so that is what it rounds down to - 258 of them
+            in the last seven days and 139 in the last two, off one reel that
+            travelled. The number is checked against auth.users rather than
+            remembered, and it is stated as "600+" so it stays true while it
+            climbs. The circles carry initials
             rather than faces - inventing photographs of customers who have not
             agreed to appear would be the one thing on this page that could not
             be defended.
@@ -263,7 +327,7 @@ export default function Sales() {
               ))}
             </div>
             <p className="text-[11.5px] text-gray-500">
-              Join <span className="text-gray-300">300+ traders</span> already journaling with TradeX
+              Join <span className="text-gray-300">600+ traders</span> already journaling with TradeX
             </p>
           </div>
         </div>
@@ -294,7 +358,7 @@ export default function Sales() {
                 {[
                   /* The Dashboard's own labels, so the page and the product
                      call the same numbers the same things. */
-                  { label: 'Total P&L', value: '+$4,812', tone: 'text-brand-profit' },
+                  { label: 'Total P&L', value: '+$4,812', tone: 'text-brand-blue' },
                   { label: 'Win Rate', value: '58%', tone: 'text-white' },
                   { label: 'Profit Factor', value: '1.94', tone: 'text-white' },
                 ].map((stat) => (
@@ -314,12 +378,12 @@ export default function Sales() {
                 <svg viewBox="0 0 320 72" className="w-full h-16 sm:h-20" preserveAspectRatio="none" aria-hidden="true">
                   <defs>
                     <linearGradient id="heroEquityFill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#60A5FA" stopOpacity="0.28" />
-                      <stop offset="100%" stopColor="#60A5FA" stopOpacity="0" />
+                      <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.28" />
+                      <stop offset="100%" stopColor="#3B82F6" stopOpacity="0" />
                     </linearGradient>
                   </defs>
                   <path d="M0 60 L32 55 L64 58 L96 44 L128 47 L160 33 L192 36 L224 22 L256 26 L288 14 L320 8 L320 72 L0 72 Z" fill="url(#heroEquityFill)" />
-                  <path d="M0 60 L32 55 L64 58 L96 44 L128 47 L160 33 L192 36 L224 22 L256 26 L288 14 L320 8" fill="none" stroke="#60A5FA" strokeWidth="1.75" strokeLinejoin="round" strokeLinecap="round" />
+                  <path d="M0 60 L32 55 L64 58 L96 44 L128 47 L160 33 L192 36 L224 22 L256 26 L288 14 L320 8" fill="none" stroke="#3B82F6" strokeWidth="1.75" strokeLinejoin="round" strokeLinecap="round" />
                 </svg>
               </div>
 
@@ -332,10 +396,10 @@ export default function Sales() {
                 <div className="mt-3 flex flex-wrap gap-1.5">
                   {['Moved stop', 'Revenge entry', 'Focus 4/10'].map((tag) => (
                     /* Blue because tags are blue in the product - the Journal
-                       renders them bg-blue-400/10 text-blue-400. This panel is
+                       renders them bg-blue-500/10 text-blue-500. This panel is
                        a claim about what the app looks like, so it should not
                        invent a greyer version of it. */
-                    <span key={tag} className="text-[11px] font-medium text-brand-blue-light bg-brand-blue-light/10 rounded-full px-2.5 py-1">
+                    <span key={tag} className="text-[11px] font-medium text-brand-blue bg-brand-blue/10 rounded-full px-2.5 py-1">
                       {tag}
                     </span>
                   ))}
@@ -411,8 +475,8 @@ export default function Sales() {
                   <div className="flex items-center gap-3">
                     {/* Blue here on purpose - this is the record button, and it
                         is blue in the product. One accent, where it is literal. */}
-                    <span className="flex-shrink-0 w-9 h-9 rounded-full bg-brand-blue/15 border border-brand-blue-light/30 flex items-center justify-center">
-                      <span className="w-2.5 h-2.5 rounded-full bg-brand-blue-light" />
+                    <span className="flex-shrink-0 w-9 h-9 rounded-full bg-brand-blue/15 border border-brand-blue/30 flex items-center justify-center">
+                      <span className="w-2.5 h-2.5 rounded-full bg-brand-blue" />
                     </span>
                     <div className="flex items-end gap-[3px] h-7" aria-hidden="true">
                       {[7, 14, 22, 12, 26, 18, 9, 20, 28, 15, 8, 19, 24, 11, 6].map((h, i) => (
@@ -433,7 +497,7 @@ export default function Sales() {
                 title: 'It tells you what you keep doing',
                 body: 'Across every entry, not just this one. The pattern you cannot see from inside it.',
                 visual: (
-                  <div className="rounded-lg border border-brand-blue-light/20 bg-brand-blue/[0.06] px-3 py-2.5">
+                  <div className="rounded-lg border border-brand-blue/20 bg-brand-blue/[0.06] px-3 py-2.5">
                     <p className="text-[12.5px] leading-relaxed text-gray-300">
                       You moved your stop on <span className="text-white">4 of your last 6 losers</span>.
                       None of your winners.
@@ -502,13 +566,13 @@ export default function Sales() {
               nothing is lost.
             */}
             <div className="inline-flex items-center gap-2 mb-5 px-3 py-1.5 rounded-full
-              border border-brand-blue-light/25 bg-brand-blue/[0.06]">
+              border border-brand-blue/25 bg-brand-blue/[0.06]">
               <span className="relative flex h-1.5 w-1.5">
                 <span className="motion-reduce:hidden absolute inline-flex h-full w-full
-                  rounded-full bg-brand-blue-light opacity-75 animate-ping" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-brand-blue-light" />
+                  rounded-full bg-brand-blue opacity-75 animate-ping" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-brand-blue" />
               </span>
-              <span className="text-[11px] tracking-[0.1em] uppercase text-brand-blue-light font-medium">
+              <span className="text-[11px] tracking-[0.1em] uppercase text-brand-blue font-medium">
                 Live now
               </span>
             </div>
@@ -556,7 +620,7 @@ export default function Sales() {
                   key={point}
                   className="flex items-start gap-2 text-[12.5px] text-gray-400 leading-relaxed"
                 >
-                  <Check className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-brand-blue-light" strokeWidth={3} />
+                  <Check className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-brand-blue" strokeWidth={3} />
                   {point}
                 </div>
               ))}
@@ -693,7 +757,7 @@ export default function Sales() {
                     {m.value}<span className="text-gray-600 text-sm">/10</span>
                   </p>
                   <div className="mt-2.5 h-1 rounded-full bg-white/[0.07] overflow-hidden">
-                    <div className="h-full rounded-full bg-brand-blue-light/70" style={{ width: `${m.value * 10}%` }} />
+                    <div className="h-full rounded-full bg-brand-blue/70" style={{ width: `${m.value * 10}%` }} />
                   </div>
                 </div>
               ))}
@@ -707,13 +771,13 @@ export default function Sales() {
               when your head does, and it was the one real feature the page
               never mentioned.
             */}
-            <div className="mt-4 rounded-xl border border-brand-blue-light/20 bg-brand-blue/[0.06] p-4 sm:p-5">
+            <div className="mt-4 rounded-xl border border-brand-blue/20 bg-brand-blue/[0.06] p-4 sm:p-5">
               <div className="flex items-center justify-between gap-4 mb-4">
                 <div>
                   <p className="text-[10px] uppercase tracking-[0.12em] text-gray-500">NOVA Score</p>
                   <p className="mt-1 flex items-baseline gap-2">
                     <span className="text-3xl sm:text-4xl font-semibold text-white tabular-nums">68</span>
-                    <span className="text-[13px] text-brand-blue-light">Advanced</span>
+                    <span className="text-[13px] text-brand-blue">Advanced</span>
                   </p>
                 </div>
                 <p className="text-[11px] text-gray-500 text-right max-w-[9rem] leading-relaxed">
@@ -730,7 +794,7 @@ export default function Sales() {
                   <div key={label as string} className="flex items-center gap-3">
                     <span className="w-[104px] sm:w-[124px] flex-shrink-0 text-[11.5px] text-gray-500">{label}</span>
                     <span className="flex-1 h-1 rounded-full bg-white/[0.07] overflow-hidden">
-                      <span className="block h-full rounded-full bg-brand-blue-light/60" style={{ width: `${value}%` }} />
+                      <span className="block h-full rounded-full bg-brand-blue/60" style={{ width: `${value}%` }} />
                     </span>
                     <span className="w-7 text-right text-[11.5px] text-gray-400 tabular-nums">{value}</span>
                   </div>
@@ -1084,13 +1148,13 @@ export default function Sales() {
                 key={tier.name}
                 className={`relative flex flex-col rounded-2xl border p-5 sm:p-6 ${
                   tier.featured
-                    ? 'border-brand-blue-light/40 bg-brand-blue/[0.06]'
+                    ? 'border-brand-blue/40 bg-brand-blue/[0.06]'
                     : 'border-white/10 bg-brand-surface'
                 }`}
               >
                 {tier.featured && (
                   <span
-                    className="absolute -top-2.5 left-5 rounded-full bg-brand-blue-light px-2.5 py-1
+                    className="absolute -top-2.5 left-5 rounded-full bg-brand-blue px-2.5 py-1
                       text-[10px] font-medium uppercase tracking-[0.12em] text-black"
                   >
                     Most popular
@@ -1103,13 +1167,13 @@ export default function Sales() {
                   </span>
                   <span className="text-[13px] text-gray-500">/mo</span>
                 </p>
-                <p className="mt-2 text-[12.5px] text-gray-500 leading-relaxed">{tier.who}</p>
+                <p className="mt-2 text-[12.5px] text-gray-500 leading-relaxed">{emphasise(tier.who)}</p>
 
                 {/* Only the lines that differ between plans. */}
                 <ul className="mt-4 flex flex-col gap-2">
                   {tier.lines.filter((l) => l.included).slice(0, 2).map((line) => (
                     <li key={line.text} className="flex gap-2 text-[12.5px] text-gray-300 leading-snug">
-                      <Check className="mt-[3px] w-3.5 h-3.5 flex-shrink-0 text-brand-blue-light" strokeWidth={3} />
+                      <Check className="mt-[3px] w-3.5 h-3.5 flex-shrink-0 text-brand-blue" strokeWidth={3} />
                       {line.text}
                     </li>
                   ))}
@@ -1129,7 +1193,7 @@ export default function Sales() {
             <ul className="grid gap-x-8 gap-y-2.5 sm:grid-cols-2">
               {IN_EVERY_PLAN.map((item) => (
                 <li key={item} className="flex gap-2.5 text-[13px] text-gray-300 leading-relaxed">
-                  <Check className="mt-[3px] w-3.5 h-3.5 flex-shrink-0 text-brand-blue-light" strokeWidth={2.5} />
+                  <Check className="mt-[3px] w-3.5 h-3.5 flex-shrink-0 text-brand-blue" strokeWidth={2.5} />
                   {item}
                 </li>
               ))}
@@ -1212,7 +1276,7 @@ export default function Sales() {
               },
               {
                 q: 'How is this different from a spreadsheet?',
-                a: 'You stop typing. You talk through the trade and TradeX writes the entry, then reads every entry together and tells you what you keep doing \u2014 which a spreadsheet has never once done for anybody.',
+                a: 'A spreadsheet records what the trade did. It cannot record what you were like before you took it \u2014 and it has never once told anybody what they keep doing. TradeX scores the psychology on every trade, reads them together and names the pattern. You can also talk the entry in rather than typing it.',
               },
               {
                 q: 'I have tried journals before and quit. Why is this different?',
@@ -1363,7 +1427,8 @@ export default function Sales() {
             Stop guessing why you lose
           </h2>
           <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-sm mx-auto text-balance">
-            Thirty seconds a trade. The pattern you cannot see from inside it.
+            Your P&amp;L says what happened. It never says what you were like
+            when it did.
           </p>
 
           {launched ? (

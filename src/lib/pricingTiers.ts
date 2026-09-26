@@ -12,7 +12,15 @@
 export type Tier = {
   name: string;
   price: string;
-  /* Who this is for, in their words rather than ours. */
+  /*
+    Who this is for, in their words rather than ours.
+
+    *synced* marks the word that carries weight, rendered by emphasise().
+    It is the axis the tiers actually differ on and it was doing that work
+    silently: "For one trading account" beside "Unlimited accounts by hand
+    or CSV" reads as a contradiction until you notice that one is about
+    syncing and the other is not.
+  */
   who: string;
   /*
     What the money actually buys, written as the outcome rather than the
@@ -35,31 +43,81 @@ export type Tier = {
   priceIds: { monthly: string; annual: string };
 };
 
+/*
+  The tier buttons say what the paywall's button says.
+
+  Rendered only by /pricing, where each card's button is the last thing in
+  the card with nothing under it - so "Start journaling" was the softest
+  possible words directly beneath $29.99, and two screens from a button that
+  says "Start 3 days free".
+
+  Deliberately NOT changed on the landing page, which renders its own button
+  rather than this one. Every button there goes to signup, and the one under
+  its price block already carries "3 days free - Cancel in two clicks" on the
+  line below it. Putting the same promise on the button as well says it twice,
+  which is the redundancy the paywall's own CTA was just cleaned of. The hero
+  keeps "Start journaling" for a separate reason: it is the top of a cold
+  page, the trial is three screens away, and "free" beside no mention of a
+  card is the surprise people meet at the paywall.
+*/
 export const TIERS: Tier[] = [
   {
     name: 'Starter',
     price: '$29.99',
-    who: 'For one trading account.',
+    who: 'For one *synced* trading account.',
     /*
       Three lines, identical shape in every column, in the same order.
 
       This replaced a version where each tier had its own sentence structure
       and its own em-dashed aside. It read better and compared worse, which
       is the wrong trade on a pricing table - nobody reads these, they diff
-      them. When the columns line up, 1 / 2 / 5 and 25 / 100 / 300 do the
-      selling on their own and the eye finds the difference without being
+      them. When the columns line up, 1 / 2 / 5 and 1,000 / 3,000 / 8,000 do
+      the selling on their own and the eye finds the difference without being
       told what it is.
 
       What the product actually DOES is not in here on purpose. It is the
       same on every plan, so it sits in IN_EVERY_PLAN below where it is said
       once instead of three times competing with the numbers.
     */
+    /*
+      Credits a month, not messages a day.
+
+      Monthly because that is the period somebody is billed for, and because
+      journalling is bursty - heavy on trading days, a long review on a
+      Sunday, nothing for a week. A daily cap is at its tightest during
+      exactly the session worth encouraging.
+
+      A credit is not a message: a chat message costs 1, a voice journal
+      entry 3, a weekly review 10, a full pattern analysis 25. That is what
+      makes it a currency rather than a longer word for "message".
+
+      The SIZE of these comes from what people actually do, not from what
+      sounds generous. Across every account that has ever used Nova chat the
+      median day is 1 message, the average active day 6.3, and the busiest
+      day anybody has ever had is 47; no day has ever passed 100. An earlier
+      draft offered 500 a day, roughly eighty times the heaviest day on
+      record, which is not generosity - it is a number nobody can read as
+      meaning anything. 1,000 a month is about 33 a day, still clear of the
+      busiest day ever recorded.
+
+      It also has to survive being used. A message costs around a cent once
+      the cached system prompt is counted, so Starter's 1,000 caps exposure
+      near $11 against $29.99 of revenue. The 500-a-day version was 15,000 a
+      month, or about $165 against the same $29.99.
+
+      THE METERING DOES NOT EXIST YET. nova_chat_rate_limits.day_count is
+      still a plain daily tally of messages and nova_daily_limit_for() hands
+      out 25 / 100 / 300 by tier, so this page currently advertises an
+      allowance nothing enforces, in a period nothing measures. Shipped ahead
+      of the build deliberately; the metering has to introduce a monthly
+      window and reconcile these numbers with those limits in one change.
+    */
     lines: [
       { text: '1 account synced', included: true },
-      { text: '25 Nova questions a day', included: true },
+      { text: '1,000 Nova credits a month', included: true },
       { text: 'Unlimited accounts by hand or CSV', included: true },
     ],
-    cta: 'Start journaling',
+    cta: 'Start 3 days free',
     priceIds: {
       monthly: 'price_1UGqG0P9mqFWeYrvtPMZvsk6',
       annual: 'price_1UGqFzP9mqFWeYrvwxpKrL7T',
@@ -68,10 +126,10 @@ export const TIERS: Tier[] = [
   {
     name: 'Pro',
     price: '$49.99',
-    who: 'For a funded account and your own.',
+    who: 'For a funded account and your own, both *synced*.',
     lines: [
       { text: '2 accounts synced', included: true },
-      { text: '100 Nova questions a day', included: true },
+      { text: '3,000 Nova credits a month', included: true },
       /*
         This line sold extra synced accounts at $19 each, "whenever you want,
         no upgrade call, no waiting". None of that exists: there is no Stripe
@@ -82,13 +140,13 @@ export const TIERS: Tier[] = [
 
         Replaced with the line Starter already carries, which is true on every
         plan and keeps the three columns parallel - the comparison is what
-        makes them readable, and 1/2/5 against 25/100/300 does the selling
-        without a fourth idea competing. Worth building properly later; not
+        makes them readable, and 1/2/5 against 1,000/3,000/8,000 does the
+        selling without a fourth idea competing. Worth building properly later; not
         worth advertising before it is.
       */
       { text: 'Unlimited accounts by hand or CSV', included: true },
     ],
-    cta: 'Start journaling',
+    cta: 'Start 3 days free',
     featured: true,
     priceIds: {
       monthly: 'price_1UGqGwP9mqFWeYrvzMUUTkyY',
@@ -98,13 +156,13 @@ export const TIERS: Tier[] = [
   {
     name: 'Elite',
     price: '$99.99',
-    who: 'For several funded accounts at once.',
+    who: 'For several *synced* funded accounts at once.',
     lines: [
       { text: '5 accounts synced', included: true },
-      { text: '300 Nova questions a day', included: true },
+      { text: '8,000 Nova credits a month', included: true },
       { text: 'Priority support', included: true },
     ],
-    cta: 'Start journaling',
+    cta: 'Start 3 days free',
     priceIds: {
       monthly: 'price_1UGqq1P9mqFWeYrvfkgvSpDn',
       annual: 'price_1UGqrcP9mqFWeYrvwfanVeKY',

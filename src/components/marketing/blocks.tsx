@@ -61,7 +61,7 @@ export function Card({
     <div
       className={`rounded-2xl p-5 sm:p-6 ${
         accent
-          ? 'border border-brand-blue-light/25 bg-brand-blue/[0.06]'
+          ? 'border border-brand-blue/25 bg-brand-blue/[0.06]'
           : 'border border-white/[0.07] bg-brand-surface'
       }`}
     >
@@ -84,7 +84,7 @@ export function TickList({ items }: { items: string[] }) {
     <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2.5">
       {items.map((item) => (
         <li key={item} className="flex items-start gap-2.5 text-[13.5px] sm:text-[14px] text-gray-300">
-          <Check className="w-3.5 h-3.5 text-brand-blue-light flex-shrink-0 mt-[3px]" />
+          <Check className="w-3.5 h-3.5 text-brand-blue flex-shrink-0 mt-[3px]" />
           {item}
         </li>
       ))}
@@ -198,7 +198,7 @@ export function Split({
             <ul className="mt-5 flex flex-col gap-2.5">
               {points.map((p) => (
                 <li key={p} className="flex items-start gap-2.5 text-[13.5px] sm:text-[14px] leading-relaxed text-gray-400">
-                  <Check className="w-3.5 h-3.5 text-brand-blue-light flex-shrink-0 mt-[3.5px]" />
+                  <Check className="w-3.5 h-3.5 text-brand-blue flex-shrink-0 mt-[3.5px]" />
                   <span>{p}</span>
                 </li>
               ))}

@@ -54,7 +54,7 @@ function AskNova() {
             aria-pressed={active === i}
             className={`text-[11.5px] rounded-full px-3 py-1.5 border transition-colors text-left
               ${active === i
-                ? 'border-brand-blue-light/40 bg-brand-blue/10 text-brand-blue-light'
+                ? 'border-brand-blue/40 bg-brand-blue/10 text-brand-blue'
                 : 'border-white/10 text-gray-500 hover:text-gray-300 hover:border-white/20'}`}
           >
             {c.q}
@@ -70,11 +70,11 @@ function AskNova() {
           </p>
         </div>
         <div className="flex gap-2.5">
-          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-brand-blue/15 border border-brand-blue-light/30
-            flex items-center justify-center text-[11px] font-medium text-brand-blue-light">
+          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-brand-blue/15 border border-brand-blue/30
+            flex items-center justify-center text-[11px] font-medium text-brand-blue">
             N
           </span>
-          <p className="max-w-[92%] rounded-2xl rounded-bl-sm bg-brand-blue/[0.07] border border-brand-blue-light/20
+          <p className="max-w-[92%] rounded-2xl rounded-bl-sm bg-brand-blue/[0.07] border border-brand-blue/20
             px-4 py-3 text-[13px] leading-relaxed text-gray-300">
             {CONVERSATIONS[active].a}
           </p>

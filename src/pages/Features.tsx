@@ -48,6 +48,7 @@ function ScalesDemo() {
   return (
     <Frame label="Before you enter" note="Try it — this is the real thing">
       <PreTradeScales
+            accent="marketing"
         values={values}
         onChange={(key, value) => setValues((v) => ({ ...v, [key]: value }))}
       />
@@ -123,7 +124,7 @@ export default function Features() {
         ]}
         visual={
           <Frame label="Dashboard — NOVA Score">
-            <NOVAScore breakdown={EXAMPLE_SCORE} size="md" showBreakdown periodLabel="Last 30 days" />
+            <NOVAScore accent="marketing" breakdown={EXAMPLE_SCORE} size="md" showBreakdown periodLabel="Last 30 days" />
           </Frame>
         }
       />

@@ -5,6 +5,7 @@ import { Section, QA, Steps, ClosingCta } from '../components/marketing/blocks';
 import { PullQuote, StatBand } from '../components/marketing/product';
 import Mascot from '../components/shared/Mascot';
 import { TIERS, IN_EVERY_PLAN, ALSO_INCLUDED, type Tier } from '../lib/pricingTiers';
+import { emphasise } from '../lib/emphasise';
 
 /*
   Pricing, on its own page, because people search for it by name and a price
@@ -42,13 +43,13 @@ function TierCard({ tier }: { tier: Tier }) {
     <div
       className={`relative flex flex-col rounded-2xl border p-6 sm:p-7 ${
         tier.featured
-          ? 'border-brand-blue-light/40 bg-brand-blue/[0.06]'
+          ? 'border-brand-blue/40 bg-brand-blue/[0.06]'
           : 'border-white/10 bg-brand-surface'
       }`}
     >
       {tier.featured && (
         <span
-          className="absolute -top-2.5 left-6 rounded-full bg-brand-blue-light px-2.5 py-1
+          className="absolute -top-2.5 left-6 rounded-full bg-brand-blue px-2.5 py-1
             text-[10px] font-medium uppercase tracking-[0.12em] text-black"
         >
           Most popular
@@ -63,7 +64,7 @@ function TierCard({ tier }: { tier: Tier }) {
         <span className="text-[14px] text-gray-500">/month</span>
       </p>
 
-      <p className="mt-3 text-[13px] leading-relaxed text-gray-400">{tier.who}</p>
+      <p className="mt-3 text-[13px] leading-relaxed text-gray-400">{emphasise(tier.who)}</p>
 
       <ul className="mt-6 mb-7 flex flex-col gap-2.5">
         {tier.lines.map((line) => (
@@ -74,7 +75,7 @@ function TierCard({ tier }: { tier: Tier }) {
               tier up, and the row is greyed rather than struck through.
             */}
             {line.included ? (
-              <Check className="mt-[3px] w-3.5 h-3.5 flex-shrink-0 text-brand-blue-light" strokeWidth={2.5} />
+              <Check className="mt-[3px] w-3.5 h-3.5 flex-shrink-0 text-brand-blue" strokeWidth={2.5} />
             ) : (
               <Minus className="mt-[3px] w-3.5 h-3.5 flex-shrink-0 text-gray-600" strokeWidth={2.5} />
             )}
@@ -153,7 +154,7 @@ export default function Pricing() {
         <ul className="grid gap-x-8 gap-y-2.5 sm:grid-cols-2 lg:grid-cols-3">
           {IN_EVERY_PLAN.map((item) => (
             <li key={item} className="flex gap-2.5 text-[13.5px] text-gray-300 leading-relaxed">
-              <Check className="mt-[3px] w-3.5 h-3.5 flex-shrink-0 text-brand-blue-light" strokeWidth={2.5} />
+              <Check className="mt-[3px] w-3.5 h-3.5 flex-shrink-0 text-brand-blue" strokeWidth={2.5} />
               {item}
             </li>
           ))}

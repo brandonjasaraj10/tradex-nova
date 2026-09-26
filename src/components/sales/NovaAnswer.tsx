@@ -89,8 +89,8 @@ export default function NovaAnswer() {
 
   return (
     <div ref={hostRef} className="flex gap-2.5">
-      <span className="flex-shrink-0 w-7 h-7 rounded-full bg-brand-blue/15 border border-brand-blue-light/30
-        flex items-center justify-center text-[10px] font-medium text-brand-blue-light">
+      <span className="flex-shrink-0 w-7 h-7 rounded-full bg-brand-blue/15 border border-brand-blue/30
+        flex items-center justify-center text-[10px] font-medium text-brand-blue">
         N
       </span>
       {/*
@@ -107,7 +107,7 @@ export default function NovaAnswer() {
         aria-hidden on the spacer and aria-live on the visible copy, so a
         screen reader gets the answer once rather than twice.
       */}
-      <div className="grid rounded-2xl rounded-tl-sm bg-brand-blue/[0.06] border border-brand-blue-light/20
+      <div className="grid rounded-2xl rounded-tl-sm bg-brand-blue/[0.06] border border-brand-blue/20
         px-4 py-3 text-[13px] sm:text-sm text-gray-300 leading-relaxed">
         <p className="col-start-1 row-start-1 invisible" aria-hidden="true">
           {ANSWER}
@@ -118,7 +118,7 @@ export default function NovaAnswer() {
               {[0, 1, 2].map((i) => (
                 <span
                   key={i}
-                  className="w-1.5 h-1.5 rounded-full bg-brand-blue-light/60 animate-pulse"
+                  className="w-1.5 h-1.5 rounded-full bg-brand-blue/60 animate-pulse"
                   style={{ animationDelay: `${i * 160}ms` }}
                 />
               ))}

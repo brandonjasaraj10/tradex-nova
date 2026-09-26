@@ -333,7 +333,7 @@ export default function Auth() {
       )}
 
       {success && (
-        <div className="text-sm text-blue-400 bg-blue-400/10 p-3 rounded-lg">
+        <div className="text-sm text-blue-500 bg-blue-500/10 p-3 rounded-lg">
           {success}
         </div>
       )}
@@ -410,15 +410,15 @@ export default function Auth() {
           id="terms"
           checked={termsAccepted}
           onChange={(e) => setTermsAccepted(e.target.checked)}
-          className="mt-1 w-4 h-4 rounded border-white/20 bg-white/5 text-blue-400 focus:ring-blue-400/50"
+          className="mt-1 w-4 h-4 rounded border-white/20 bg-white/5 text-blue-500 focus:ring-blue-500/50"
         />
         <label htmlFor="terms" className="text-sm text-gray-400">
           I agree to the{' '}
-          <Link to="/terms" className="text-blue-400 hover:underline" target="_blank">
+          <Link to="/terms" className="text-blue-500 hover:underline" target="_blank">
             Terms of Service
           </Link>{' '}
           and{' '}
-          <Link to="/privacy" className="text-blue-400 hover:underline" target="_blank">
+          <Link to="/privacy" className="text-blue-500 hover:underline" target="_blank">
             Privacy Policy
           </Link>
         </label>
@@ -472,7 +472,7 @@ export default function Auth() {
       )}
 
       {success && (
-        <div className="text-sm text-blue-400 bg-blue-400/10 p-3 rounded-lg">
+        <div className="text-sm text-blue-500 bg-blue-500/10 p-3 rounded-lg">
           {success}
         </div>
       )}
@@ -523,7 +523,7 @@ export default function Auth() {
       )}
 
       {success && (
-        <div className="text-sm text-blue-400 bg-blue-400/10 p-3 rounded-lg">
+        <div className="text-sm text-blue-500 bg-blue-500/10 p-3 rounded-lg">
           {success}
         </div>
       )}
@@ -549,7 +549,7 @@ export default function Auth() {
           type="button"
           onClick={handleResendCode}
           disabled={loading}
-          className="text-sm text-blue-400 hover:text-blue-400/80 transition-colors disabled:opacity-50"
+          className="text-sm text-blue-500 hover:text-blue-500/80 transition-colors disabled:opacity-50"
         >
           Resend code
         </button>
@@ -601,7 +601,7 @@ export default function Auth() {
           <p className="mt-1 text-xs text-red-400">Passwords do not match</p>
         )}
         {confirmNewPassword && newPassword === confirmNewPassword && (
-          <p className="mt-1 text-xs text-blue-400">Passwords match</p>
+          <p className="mt-1 text-xs text-blue-500">Passwords match</p>
         )}
       </div>
 
@@ -612,7 +612,7 @@ export default function Auth() {
       )}
 
       {success && (
-        <div className="text-sm text-blue-400 bg-blue-400/10 p-3 rounded-lg">
+        <div className="text-sm text-blue-500 bg-blue-500/10 p-3 rounded-lg">
           {success}
         </div>
       )}
@@ -682,7 +682,7 @@ export default function Auth() {
           >
             <div className="text-center mb-6 sm:mb-8">
               <div className="w-16 h-16 rounded-2xl bg-blue-500/10 flex items-center justify-center mx-auto mb-4">
-                <Lock className="text-blue-400" size={32} />
+                <Lock className="text-blue-500" size={32} />
               </div>
               <h1 className="text-2xl sm:text-3xl font-bold mb-2">Early Access Required</h1>
               <p className="text-sm sm:text-base text-gray-400">
@@ -701,7 +701,7 @@ export default function Auth() {
 
               <p className="mt-6 text-sm text-gray-400">
                 Don't have an access code?{' '}
-                <Link to="/" className="text-blue-400 hover:text-blue-300 transition-colors">
+                <Link to="/" className="text-blue-500 hover:text-blue-500 transition-colors">
                   Join our waitlist
                 </Link>
               </p>

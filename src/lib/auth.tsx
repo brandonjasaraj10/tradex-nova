@@ -24,6 +24,15 @@ type UserProfile = {
     the rest of the profile rather than fetched separately.
   */
   onboarding_completed_at?: string | null;
+  /*
+    Which of the four struggles they picked on question three.
+
+    Selected here rather than fetched where it is used because the paywall
+    headline depends on it, and a second round trip on the screen that takes
+    the money is a second chance to be slow. Null for every account that
+    predates the questions, and for anyone who closed the tab before three.
+  */
+  onboarding_struggle?: string | null;
 };
 
 type AuthContextType = {
@@ -119,7 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { data, error } = await supabase
         .from('user_profiles')
-        .select('first_name, last_name, tour_completed, onboarding_completed_at')
+        .select('first_name, last_name, tour_completed, onboarding_completed_at, onboarding_struggle')
         .eq('user_id', userId)
         .maybeSingle();
 

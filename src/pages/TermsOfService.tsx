@@ -34,7 +34,7 @@ export default function TermsOfService() {
           <section>
             <h2>3. Trading Disclaimer</h2>
             <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-6 mb-4">
-              <p className="font-semibold text-blue-400 mb-2">IMPORTANT NOTICE:</p>
+              <p className="font-semibold text-blue-500 mb-2">IMPORTANT NOTICE:</p>
               <p className="mb-4">
                 TradeX is a journaling and analytics tool ONLY. We do not provide investment advice, trading signals,
                 or recommendations to buy or sell any financial instruments.
