@@ -2976,7 +2976,20 @@ export default function Journal() {
                         onClick={() => loadEntryForEditing(entry)}
                         className={`${entry.trade_id ? 'p-3' : 'p-4'} rounded-lg border transition-all cursor-pointer ${
                           editingEntryId === entry.id
-                            ? 'border-brand-blue-light/30 bg-brand-blue-light/[0.03]'
+                            /*
+                              Neutral grey, not a blue wash.
+
+                              The open entry was marked with the accent at 30%
+                              border and 3% fill. A blue that faint over a
+                              near-black card loses most of its saturation and
+                              comes back reading green - and it was carrying no
+                              meaning anyway, since the Editing badge already
+                              says which entry is open. A brighter neutral edge
+                              does the same job without putting a hue on the
+                              container. The blue stays where it means
+                              something: LONG, and the badge.
+                            */
+                            ? 'border-white/25 bg-white/[0.055]'
                             : 'border-white/10 hover:border-white/20 bg-white/5'
                         }`}
                       >
