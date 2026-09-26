@@ -43,14 +43,17 @@ const RANGES = [
 type RangeKey = typeof RANGES[number]['key'];
 
 /*
-  Three months, not the year.
+  The full year, because the wall of squares IS the thing.
 
-  The year is the more impressive picture and the wrong default: this app
-  is weeks old, so a new account opens on a wall of empty squares, and the
-  screen meant to build a habit opens by saying you have not got one. Three
-  months is also the window somebody actually reviews.
+  Three months was the better argument on paper - a new account opens on
+  mostly empty squares, and the year is a lot of nothing for somebody two
+  weeks in. Looked at side by side it was the worse screen: the density is
+  what makes this read as a record of a habit rather than a small chart,
+  and at thirteen columns it stops looking like one.
+
+  The shorter ranges stay available for somebody reviewing a quarter.
 */
-const DEFAULT_RANGE: RangeKey = '3m';
+const DEFAULT_RANGE: RangeKey = '1y';
 
 interface Props {
   userId: string;
