@@ -21,8 +21,36 @@ import { motion } from 'framer-motion';
 import Card from '../shared/Card';
 import { getProcessScores, type ProcessDay } from '../../services/progressGrid';
 
-/* 53 columns of 7 covers a year with room for the partial weeks at each end. */
-const WEEKS = 53;
+/*
+  How far back to look, and how big the squares are at that distance.
+
+  The grid is seven rows deep, so the range decides the column count - and
+  the column count is what makes this readable or not. Thirteen columns of
+  18px fills a phone without scrolling; fifty-three of the same would be
+  950px wide. So the squares shrink as the window grows, which is the
+  trade every one of these graphs makes.
+
+  Nothing shorter than three months. A month is five columns, which in a
+  card this wide is a narrow block floating in space - it reads as broken
+  rather than as less data.
+*/
+const RANGES = [
+  { key: '3m', label: '3M', weeks: 13, cell: 18 },
+  { key: '6m', label: '6M', weeks: 26, cell: 13 },
+  { key: '1y', label: '1Y', weeks: 53, cell: 10 },
+] as const;
+
+type RangeKey = typeof RANGES[number]['key'];
+
+/*
+  Three months, not the year.
+
+  The year is the more impressive picture and the wrong default: this app
+  is weeks old, so a new account opens on a wall of empty squares, and the
+  screen meant to build a habit opens by saying you have not got one. Three
+  months is also the window somebody actually reviews.
+*/
+const DEFAULT_RANGE: RangeKey = '3m';
 
 interface Props {
   userId: string;
@@ -46,10 +74,10 @@ function toneFor(score: number | undefined): string {
   return 'bg-brand-blue/25';
 }
 
-function startOfGrid(): Date {
+function startOfGrid(weeks: number): Date {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() - (WEEKS * 7 - 1));
+  d.setDate(d.getDate() - (weeks * 7 - 1));
   /* Back up to Sunday so every column is a clean week. */
   d.setDate(d.getDate() - d.getDay());
   return d;
@@ -58,8 +86,10 @@ function startOfGrid(): Date {
 export default function ProgressGrid({ userId, accountId }: Props) {
   const [days, setDays] = useState<ProcessDay[]>([]);
   const [loading, setLoading] = useState(true);
+  const [rangeKey, setRangeKey] = useState<RangeKey>(DEFAULT_RANGE);
 
-  const start = useMemo(startOfGrid, []);
+  const range = RANGES.find((r) => r.key === rangeKey) ?? RANGES[0];
+  const start = useMemo(() => startOfGrid(range.weeks), [range.weeks]);
 
   useEffect(() => {
     if (!userId) return;
@@ -88,7 +118,7 @@ export default function ProgressGrid({ userId, accountId }: Props) {
     const out: { key: string; date: Date; day?: ProcessDay }[] = [];
     const today = new Date();
     today.setHours(23, 59, 59, 999);
-    for (let i = 0; i < WEEKS * 7; i++) {
+    for (let i = 0; i < range.weeks * 7; i++) {
       const date = new Date(start);
       date.setDate(start.getDate() + i);
       if (date > today) break;
@@ -96,7 +126,7 @@ export default function ProgressGrid({ userId, accountId }: Props) {
       out.push({ key, date, day: byDay.get(key) });
     }
     return out;
-  }, [start, byDay]);
+  }, [start, byDay, range.weeks]);
 
   const journalledDays = days.length;
   const avg = journalledDays
@@ -104,25 +134,14 @@ export default function ProgressGrid({ userId, accountId }: Props) {
     : 0;
 
   /*
-    The current run of consecutive journalled days, counted back from today.
-    Yesterday is allowed to be the most recent one, because somebody looking
-    at this in the morning has not journalled today yet and should not be
-    told their streak is over.
+    Streak removed, not hidden.
+
+    It was the one number here that punishes: a missed day sets it to zero
+    and the grid then says nothing about the eleven good days before it. The
+    squares already show consistency, and they show it honestly - a gap is a
+    gap rather than a reset. Worth reintroducing if it can reward the
+    pattern instead of the unbroken chain.
   */
-  const streak = useMemo(() => {
-    if (!byDay.size) return 0;
-    const probe = new Date();
-    probe.setHours(0, 0, 0, 0);
-    if (!byDay.has(probe.toISOString().slice(0, 10))) {
-      probe.setDate(probe.getDate() - 1);
-    }
-    let n = 0;
-    while (byDay.has(probe.toISOString().slice(0, 10))) {
-      n++;
-      probe.setDate(probe.getDate() - 1);
-    }
-    return n;
-  }, [byDay]);
 
   return (
     <Card variant="default" className="bg-brand-elevated/80 p-4 sm:p-5">
@@ -134,6 +153,33 @@ export default function ProgressGrid({ userId, accountId }: Props) {
           </p>
         </div>
         <div className="flex items-center gap-5">
+          {/*
+            The range sits with the numbers rather than above the grid, so
+            the header reads as one row of controls-and-figures instead of
+            two competing bars.
+          */}
+          <div
+            role="group"
+            aria-label="How far back to show"
+            className="flex items-center gap-0.5 p-0.5 rounded-lg bg-black/40 border border-white/10"
+          >
+            {RANGES.map((r) => (
+              <button
+                key={r.key}
+                type="button"
+                onClick={() => setRangeKey(r.key)}
+                aria-pressed={r.key === rangeKey}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-medium tabular-nums transition-colors ${
+                  r.key === rangeKey
+                    ? 'bg-brand-blue-light/15 text-brand-blue-light'
+                    : 'text-gray-500 hover:text-gray-300'
+                }`}
+              >
+                {r.label}
+              </button>
+            ))}
+          </div>
+
           <div>
             <p className="text-[11px] text-gray-500">Days journalled</p>
             <p className="text-lg font-semibold text-white tabular-nums">{journalledDays}</p>
@@ -143,10 +189,6 @@ export default function ProgressGrid({ userId, accountId }: Props) {
             <p className="text-lg font-semibold text-brand-blue-light tabular-nums">
               {journalledDays ? avg : '—'}
             </p>
-          </div>
-          <div>
-            <p className="text-[11px] text-gray-500">Streak</p>
-            <p className="text-lg font-semibold text-white tabular-nums">{streak}</p>
           </div>
         </div>
       </div>
@@ -165,7 +207,8 @@ export default function ProgressGrid({ userId, accountId }: Props) {
             <motion.div
               key={key}
               initial={false}
-              className={`w-[10px] h-[10px] rounded-[2px] ${toneFor(day?.score)}`}
+              style={{ width: range.cell, height: range.cell }}
+              className={`rounded-[2px] ${toneFor(day?.score)}`}
               title={
                 day
                   ? `${date.toDateString()} — ${day.score}/100 from ${day.entries} ${day.entries === 1 ? 'entry' : 'entries'}`
@@ -183,7 +226,7 @@ export default function ProgressGrid({ userId, accountId }: Props) {
         <div className="flex items-center gap-1.5">
           <span className="text-[11px] text-gray-500">Less</span>
           {['bg-white/[0.04]', 'bg-brand-blue/25', 'bg-brand-blue/45', 'bg-brand-blue/70', 'bg-brand-blue'].map((c) => (
-            <span key={c} className={`w-[10px] h-[10px] rounded-[2px] ${c}`} />
+            <span key={c} style={{ width: 10, height: 10 }} className={`rounded-[2px] ${c}`} />
           ))}
           <span className="text-[11px] text-gray-500">More</span>
         </div>
