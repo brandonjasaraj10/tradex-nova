@@ -26,6 +26,17 @@ export function RichTextEditor({ content, onChange, placeholder = "Start writing
     depending on it would re-run the effect constantly.
   */
   const onChangeRef = useRef(onChange);
+  /*
+    When the last outside change landed.
+
+    The dip below is meant for a discrete replacement - one note becoming
+    another. During the first pass of a dictation the note STREAMS, so
+    content changes several times a second, and a 180ms fade restarting on
+    each one never completes: the text sits half-faded and jitters, which
+    is the flicker. Anything arriving on the heels of the last change is
+    part of a stream and gets no fade at all.
+  */
+  const lastOutsideChangeRef = useRef(0);
   onChangeRef.current = onChange;
 
   const editor = useEditor({
@@ -97,7 +108,11 @@ export function RichTextEditor({ content, onChange, placeholder = "Start writing
       Skipped when the editor is not mounted, and by the CSS for anyone who
       asks for reduced motion.
     */
-    if (canRestore && scroller !== undefined) {
+    const now = Date.now();
+    const isStreaming = now - lastOutsideChangeRef.current < 400;
+    lastOutsideChangeRef.current = now;
+
+    if (canRestore && !isStreaming) {
       try {
         const dom = editor.view.dom as HTMLElement;
         dom.classList.add('is-rewriting');

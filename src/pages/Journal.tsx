@@ -364,6 +364,9 @@ export default function Journal() {
     After this is set there is exactly one more pass: the forced final one.
   */
   const speechEndedRef = React.useRef(false);
+  const userConfluencesRef = React.useRef<typeof userConfluences>([]);
+  const userRulesRef = React.useRef<typeof userRules>([]);
+  const psychChecksRef = React.useRef<typeof psychChecks>([]);
 
   /*
     How much shape a note has: its list items and its headings.
@@ -543,9 +546,9 @@ export default function Journal() {
       ? Promise.resolve()
       : extractVoiceFields(
           correctTradingTerms(transcript),
-          namedConfluences(),
-          namedRules(),
-          namedPsychChecks(),
+          liveConfluences(),
+          liveRules(),
+          livePsychChecks(),
         )
           .then(applyVoiceFields)
           .catch((error) => {
@@ -561,10 +564,10 @@ export default function Journal() {
       const data = await processVoiceJournalEntry(
         correctTradingTerms(transcript),
         undefined,
-        isNotes ? [] : namedConfluences(),
-        isNotes ? [] : namedRules(),
+        isNotes ? [] : liveConfluences(),
+        isNotes ? [] : liveRules(),
         selectedAccountIdRef.current ?? null,
-        isNotes ? [] : namedPsychChecks(),
+        isNotes ? [] : livePsychChecks(),
         isNotes ? 'notes' : 'trade',
         /*
           Only the first pass streams.
@@ -760,6 +763,24 @@ export default function Journal() {
   });
 
   currentEntryRef.current = currentEntry;
+  /*
+    The checklists a dictation pass sends to Nova.
+
+    runLiveOrganize is a useCallback whose dependencies never change, so it
+    is built once on mount and keeps whatever it closed over then - and on
+    the first render the confluences, rules and psychology checks have not
+    loaded yet. Dictation was therefore handing Nova three empty lists on
+    every pass, so there were no ids to match and nothing could ever be
+    ticked. Typed Organize reads them straight out of the handler, which is
+    why the same words worked through the button and not through the mic.
+
+    Kept in refs rather than added to the dependency array on purpose:
+    rebuilding that callback mid-dictation would swap the function the
+    in-flight guards and the chaining are holding on to.
+  */
+  userConfluencesRef.current = userConfluences;
+  userRulesRef.current = userRules;
+  psychChecksRef.current = psychChecks;
   selectedFolderRef.current = selectedFolder;
   selectedDateRef.current = selectedDate;
   selectedAccountIdRef.current = selectedAccount?.id;
@@ -1402,6 +1423,15 @@ export default function Journal() {
   const namedConfluences = () => userConfluences.map(c => ({ id: c.id, name: c.name }));
   const namedRules = () => userRules.map(r => ({ id: r.id, name: r.name }));
   const namedPsychChecks = () => psychChecks.map(c => ({ id: c.id, name: c.name }));
+
+  /*
+    The same three lists, read through refs so a callback built on mount
+    still sees what has loaded since. Used by the dictation passes; the
+    typed paths call the plain versions above, which are already current.
+  */
+  const liveConfluences = () => userConfluencesRef.current.map(c => ({ id: c.id, name: c.name }));
+  const liveRules = () => userRulesRef.current.map(r => ({ id: r.id, name: r.name }));
+  const livePsychChecks = () => psychChecksRef.current.map(c => ({ id: c.id, name: c.name }));
 
   const applyConfluenceRuleStatus = (voiceData: VoiceJournalData) => {
     if (voiceData.confluences_status && voiceData.confluences_status.length > 0) {
@@ -2294,16 +2324,26 @@ export default function Journal() {
                     Trading Rules & Confluences
                   </h3>
                   {/*
-                    Scrolls sideways inside itself on a narrow screen rather
-                    than pushing the page wide. Adding the Psychology tab made
-                    three tabs, which come to 420px on a 375px phone - and
-                    without this the whole document grew to match and every
-                    page could be dragged sideways.
+                    Sized to fit rather than scrolled.
+
+                    These used to scroll sideways, which was the right answer
+                    when the panel sat in the wide editor column and three
+                    tabs came to 420px on a 375px phone. It is in the left
+                    column now, 245px wide, so the scroll was permanent
+                    rather than a phone edge case - and because the row
+                    overflowed its own height by a single pixel it grew a
+                    vertical scrollbar too, which is the bar down the side of
+                    the card.
+
+                    Three tabs share the width instead. The type is smaller,
+                    the padding is tighter and the counts are plain figures
+                    rather than pills, which together bring the row under the
+                    column width with nothing clipped.
                   */}
-                  <div className="flex gap-2 mb-4 border-b border-white/10 overflow-x-auto">
+                  <div className="flex gap-1 mb-4 border-b border-white/10">
                     <button
                       onClick={() => setChecklistTab('confluences')}
-                      className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
+                      className={`flex-1 min-w-0 px-1 py-2 text-[11px] font-medium whitespace-nowrap transition-colors border-b-2 -mb-px ${
                         checklistTab === 'confluences'
                           ? 'border-blue-400 text-blue-400'
                           : 'border-transparent text-gray-400 hover:text-white'
@@ -2311,14 +2351,14 @@ export default function Journal() {
                     >
                       Confluences
                       {userConfluences.length > 0 && (
-                        <span className="ml-2 px-1.5 py-0.5 text-xs bg-white/10 rounded">
+                        <span className="ml-1 text-[10px] text-gray-500 tabular-nums">
                           {userConfluences.length}
                         </span>
                       )}
                     </button>
                     <button
                       onClick={() => setChecklistTab('rules')}
-                      className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
+                      className={`flex-1 min-w-0 px-1 py-2 text-[11px] font-medium whitespace-nowrap transition-colors border-b-2 -mb-px ${
                         checklistTab === 'rules'
                           ? 'border-blue-400 text-blue-400'
                           : 'border-transparent text-gray-400 hover:text-white'
@@ -2326,14 +2366,14 @@ export default function Journal() {
                     >
                       Rules
                       {userRules.length > 0 && (
-                        <span className="ml-2 px-1.5 py-0.5 text-xs bg-white/10 rounded">
+                        <span className="ml-1 text-[10px] text-gray-500 tabular-nums">
                           {userRules.length}
                         </span>
                       )}
                     </button>
                     <button
                       onClick={() => setChecklistTab('psychology')}
-                      className={`px-4 py-2 text-sm font-medium transition-all border-b-2 -mb-px flex items-center gap-1.5 ${
+                      className={`flex-1 min-w-0 px-1 py-2 text-[11px] font-medium whitespace-nowrap transition-all border-b-2 -mb-px flex items-center justify-center gap-1 ${
                         checklistTab === 'psychology'
                           ? 'border-blue-400 text-blue-300'
                           : 'border-transparent text-gray-400 hover:text-white'
@@ -2345,7 +2385,7 @@ export default function Journal() {
                       }
                     >
                       <Brain
-                        size={14}
+                        size={12}
                         style={
                           checklistTab === 'psychology'
                             ? { filter: 'drop-shadow(0 0 5px rgba(59,130,246,0.9))' }
@@ -3608,16 +3648,16 @@ export default function Journal() {
                   </div>
                 </div>
 
-                {!showNovaAssistant && (
-                  <button
-                    type="button"
-                    onClick={() => setShowNovaAssistant(true)}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-400/10 hover:bg-blue-400/20 text-blue-400 rounded-xl text-sm font-medium transition-colors border border-blue-400/20"
-                  >
-                    <Brain size={16} />
-                    Ask Nova About This Entry
-                  </button>
-                )}
+                {/*
+                  The "Ask Nova About This Entry" button was here.
+
+                  Removed on request. Nova is already on this page twice -
+                  she writes the note through Organize and through the mic -
+                  and a third way in, sitting under the screenshots, was the
+                  least used of the three and the furthest from anything she
+                  helps with. The panel itself is untouched, so bringing the
+                  button back is one element.
+                */}
 
                 {showNovaAssistant && (
                   <div>
