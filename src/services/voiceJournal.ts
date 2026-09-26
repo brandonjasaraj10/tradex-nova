@@ -607,8 +607,11 @@ HOW TO WRITE IT:
    several confluences, a set of levels. Never more than five in a run.
 3. Everything else is prose. What happened, why they entered, what they felt
    is a story, and a story chopped into fragments loses its thread.
-4. Close with the cue: the one thing they would do differently. A single
-   sentence, not a section.
+4. Do NOT end with advice. No "next time", no lesson, no thing to do
+   differently - the note records what happened and the trader draws their
+   own conclusion from it. An entry that finishes by telling them what to
+   fix is a coach they did not ask for, and it is the same sentence every
+   time once there are fifty of them.
 5. Remove filler, repetition and casual phrasing.
 6. Normalize terminology (risk, R:R, session, bias, execution).
 7. Preserve accuracy absolutely. Improve readability, never invent content.
@@ -719,11 +722,10 @@ work in plain text. Use them; do not reach past them into ornament.
    sit in a sentence. Not the words around them, and not every number: the
    point is that the eye finds the level without hunting.
 
-5. THE TAKEAWAY IS A BLOCKQUOTE
-   The single thing to do differently goes in a blockquote rather than a
-   bold line. It is the one part they come back for:
-   <blockquote><p>Let the trade reach target instead of tightening the stop
-   out of fear of giving it back.</p></blockquote>
+5. NO CLOSING ADVICE, AND SO NO BLOCKQUOTE
+   The blockquote existed to carry the one thing to do differently. There
+   is no such line any more, so there is nothing to put in one - do not
+   reach for it to give some other sentence importance it has not earned.
 
 6. A DIVIDER BEFORE THE REVIEW
    <hr> between what happened and the reflection on it, when the note is
@@ -781,8 +783,8 @@ they review later to see whether they are keeping their own plan, so losing
 it costs them the thing the journal is for - never drop a rule they named
 just because it reads tidily without it.
 
-<p><strong>Next time:</strong> one sentence, the single thing they would do
-differently.</p>
+The note ends where the trader's account of it ends. No closing line, no
+"next time", no lesson drawn on their behalf.
 
 PSYCHOLOGY, WHEN THEY MENTION IT:
 
@@ -912,8 +914,7 @@ distance. Held for two days and closed for +$5,000.</p>
 <p>Felt good about the setup going in, and that confidence showed in the
 willingness to wait for confirmation instead of chasing the break.</p>
 
-<p><strong>Next time:</strong> nothing to change here - the patience before
-entry is the part worth repeating.</p>"
+"
 
 Notice what this does NOT do: it does not open eight headings and put two
 bullets under each. Session, levels, stop placement and target all appear
