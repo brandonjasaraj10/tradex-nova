@@ -89,6 +89,12 @@ Deno.serve(async (req: Request) => {
     }
 
     let customerId: string | undefined;
+    /*
+      Whether this customer could already be holding subscriptions. A customer
+      created a line below cannot, so the check further down is skipped for
+      them rather than spending a Stripe call to be told nothing.
+    */
+    let existingCustomer = false;
 
     const { data: existingSub } = await supabase
       .from('subscriptions')
@@ -98,6 +104,7 @@ Deno.serve(async (req: Request) => {
 
     if (existingSub?.stripe_customer_id) {
       customerId = existingSub.stripe_customer_id;
+      existingCustomer = true;
     } else {
       const customer = await stripe.customers.create({
         email: user.email,
@@ -106,6 +113,61 @@ Deno.serve(async (req: Request) => {
         },
       });
       customerId = customer.id;
+    }
+
+    /*
+      One live subscription per customer. This is where duplicates were born.
+
+      The customer is reused above, correctly, but nothing stopped a second
+      subscription being created on it. Every completed checkout made another
+      one, and people do go through checkout more than once - a card that
+      fails the first time, a back button, a second look at the annual price.
+      One customer reached five subscriptions in three minutes that way.
+
+      Everything downstream then has to cope: the app stores one subscription
+      row per user, so the duplicates fight over it, and cancelling picks
+      between them. A customer was charged $299.90 two days after cancelling
+      because of exactly that. Those are both fixed, but they are fixes for a
+      situation that should not arise.
+
+      Only a LIVE subscription blocks. Somebody whose subscription genuinely
+      ended is resubscribing, which is the one case where a second
+      subscription is the right answer, and they fall straight through.
+
+      Checked against Stripe rather than our own table, because our table is
+      the thing that goes stale - it holds one row and the duplicate may be
+      the one it is not holding.
+    */
+    if (existingCustomer) {
+      const existing = await stripe.subscriptions.list({
+        customer: customerId,
+        status: 'all',
+        limit: 100,
+      });
+
+      const live = existing.data.filter((s) =>
+        ['active', 'trialing', 'past_due'].includes(s.status),
+      );
+
+      if (live.length > 0) {
+        console.info(
+          `Refused a second subscription for user ${user.id}: ${live.length} already live ` +
+            `(${live.map((s) => `${s.id}/${s.status}`).join(', ')})`,
+        );
+
+        /*
+          A failing card is a different problem from already being subscribed,
+          and sending somebody "you already have one" when what they wanted
+          was to pay is how support tickets are made.
+        */
+        const needsCard = live.every((s) => s.status === 'past_due');
+
+        throw new Error(
+          needsCard
+            ? 'Your subscription needs a working card rather than a new subscription. Update it in Settings and your access comes straight back.'
+            : 'You already have a subscription on this account. Manage it in Settings - starting a second one would charge you twice.',
+        );
+      }
     }
 
     const origin = req.headers.get('origin') || 'http://localhost:5173';
