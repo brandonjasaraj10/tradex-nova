@@ -210,14 +210,14 @@ Deno.serve(async (req: Request) => {
         Always collect a card, even though the first invoice is $0.
 
         The whole trial design rests on having a card to authorise. Stripe
-        will happily run a trial without one and then discover at day three
+        will happily run a trial without one and then discover at the end
         that there is nothing to charge, which is the failure this is built
         to avoid.
       */
       payment_method_collection: 'always' as const,
       subscription_data: {
         /*
-          Three days, card required, converts on its own.
+          Fourteen days, card required, converts on its own.
 
           The trial came back after the numbers were actually looked at. Both
           models ran in the same window: 22 people took the 7-day trial and 3
@@ -236,12 +236,20 @@ Deno.serve(async (req: Request) => {
           today will not pay $29.99 on Thursday, and it is far better for
           everyone to find that out now.
 
-          Three rather than seven: the point is to find out whether they will
-          journal at all, which shows up on day one or not at all, and a
-          shorter window is a shorter time for us to be carrying somebody
-          who has already decided.
+          Fourteen rather than three. The three-day window was reasoned from
+          first principles - whether somebody journals shows up on day one -
+          and the consumer data disagrees flatly. Across 17,000+ subscription
+          apps, trials of four days or less convert at 24%, 5-9 days at 33%,
+          and 10-16 days at 43%. Three days sat in the worst bucket available.
+
+          The first-principles argument was not wrong about when intent
+          appears; it was wrong about what the trial is for. Somebody who
+          signs up on a Tuesday has not necessarily traded by Friday, and a
+          journal is only worth anything once there is something to journal.
+          Three days can expire before the user has had a single trade to
+          write about, which is a strange thing to charge a decision on.
         */
-        trial_period_days: 3,
+        trial_period_days: 14,
         trial_settings: {
           /*
             No card, no trial. Belt and braces alongside

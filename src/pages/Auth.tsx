@@ -441,7 +441,7 @@ export default function Auth() {
         nothing if it only appears after they have already committed.
       */}
       <p className="text-center text-[12px] text-gray-500">
-        3 days free &middot; Cancel in two clicks
+        14 days free &middot; Cancel in two clicks
       </p>
     </form>
   );

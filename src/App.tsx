@@ -120,7 +120,7 @@ function PrivateLayout() {
     nothing on it passes. The last cohort is what that costs: 17 of 22 trials
     never reached a successful charge. So the real amount is authorised and
     released the moment they land back, and a decline is said now - while
-    they still have another card to hand - rather than three days later in a
+    they still have another card to hand - rather than a fortnight later in a
     failed-payment email.
 
     Deliberately not awaited by the render, and everything except an outright

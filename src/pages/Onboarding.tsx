@@ -421,7 +421,7 @@ export default function Onboarding({ onComplete }: { onComplete: () => void | Pr
                 className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full
                   bg-white text-black text-[15px] font-medium hover:bg-gray-200 transition-colors"
               >
-                Start 3 days free
+                Start 14 days free
                 <ArrowRight size={17} />
               </button>
               {/*
@@ -435,7 +435,7 @@ export default function Onboarding({ onComplete }: { onComplete: () => void | Pr
                 two, and the tap that follows is a confirmation instead of a
                 second decision.
 
-                The line under it stops repeating "three days free" now the
+                The line under it stops repeating the trial length now the
                 button says it, and spends itself on the thing somebody is
                 actually weighing at this point instead.
               */}

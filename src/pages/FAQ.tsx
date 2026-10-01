@@ -171,11 +171,11 @@ const GROUPS: {
     items: [
       {
         q: 'What if it is not for me?',
-        a: 'Take the three days and find out. Cancelling is two clicks in Settings — no email, no retention call, no chain of "are you sure". Do it inside the three days and you are never charged at all.',
+        a: 'Take the fourteen days and find out. Cancelling is two clicks in Settings — no email, no retention call, no chain of "are you sure". Do it inside the fourteen days and you are never charged at all.',
       },
       {
         q: 'Is there a free trial?',
-        a: 'Three days, free. Your card is authorised for the plan price and released straight away \u2014 nothing is taken \u2014 so a card that will not work shows up on day one rather than day three. Syncing is the one thing a trial does not include: that is what subscribing turns on, and you can subscribe the moment you want it rather than waiting the three days out. Cancel inside the three days, in two clicks, and you are never charged at all.',
+        a: 'Fourteen days, free. Your card is authorised for the plan price and released straight away \u2014 nothing is taken \u2014 so a card that will not work shows up on day one rather than two weeks in. Syncing is the one thing a trial does not include: that is what subscribing turns on, and you can subscribe the moment you want it rather than waiting the fortnight out. Cancel inside the fourteen days, in two clicks, and you are never charged at all.',
       },
       {
         q: 'Will my price go up?',

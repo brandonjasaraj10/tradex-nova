@@ -872,7 +872,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
                 card. It also fits one line at any phone width, where three
                 wrapped below about 400px and cost a second row.
               */
-              [CalendarClock, '3 days free'],
+              [CalendarClock, '14 days free'],
               [Lock, 'Card handled by Stripe'],
             ].map(([Icon, label]) => {
               const I = Icon as typeof Lock;
@@ -1255,7 +1255,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
             >
               {loading
                 ? 'Processing…'
-                : 'Start 3 days free'}
+                : 'Start 14 days free'}
             </button>
           ) : (
             <>
@@ -1280,7 +1280,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
 
             The card is authorised for the full plan price and released a
             moment later, which is what stops a dead card becoming a failed
-            charge on day three. It still shows as pending on a statement for
+            charge when the trial ends. It still shows as pending on a statement for
             a few days, and an unexplained pending charge the size of the
             subscription is how you earn a chargeback from somebody who was
             about to become a customer. Cheaper to say it here.

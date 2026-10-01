@@ -219,7 +219,7 @@ export default function Pricing() {
             },
             {
               q: 'Is there a free trial?',
-              a: 'Three days, free. Your card is authorised for the plan price and released straight away \u2014 nothing is taken \u2014 so a card that will not work shows up on day one rather than day three. Syncing is the one thing a trial does not include: that is what subscribing turns on, and you can subscribe the moment you want it rather than waiting the three days out. Cancel inside the three days, in two clicks, and you are never charged at all.',
+              a: 'Fourteen days, free. Your card is authorised for the plan price and released straight away \u2014 nothing is taken \u2014 so a card that will not work shows up on day one rather than two weeks in. Syncing is the one thing a trial does not include: that is what subscribing turns on, and you can subscribe the moment you want it rather than waiting the fortnight out. Cancel inside the fourteen days, in two clicks, and you are never charged at all.',
             },
             {
               q: 'How do I cancel?',

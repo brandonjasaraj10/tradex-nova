@@ -12,10 +12,10 @@
   So the card is authorised for the REAL subscription amount and released a
   moment later. The bank decides against the actual available balance, which is
   the only question that matters, and it is the same question that will be
-  asked on day three.
+  asked when the trial ends.
 
   A decline cancels the trial there and then. That reads harsh written down and
-  is much kinder in practice: the alternative is three days of using something
+  is much kinder in practice: the alternative is a fortnight of using something
   that was always going to be taken away, ending in a failed-payment email.
 
   Called twice on purpose:
@@ -207,7 +207,7 @@ async function verifyOne(userId: string): Promise<Outcome> {
         requires_action means the bank wants 3-D Secure, which cannot be done
         off-session. Not treated as a decline: the card may be perfectly good
         and we simply cannot ask here. The trial is allowed to proceed and the
-        charge on day three will do the asking properly, on-session.
+        charge at the end of the trial will do the asking properly, on-session.
       */
       await stripe.paymentIntents.cancel(intent.id).catch(() => {});
       await admin

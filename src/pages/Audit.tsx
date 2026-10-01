@@ -328,7 +328,7 @@ export default function Audit() {
                     <ArrowRight size={17} />
                   </Link>
                   <p className="mt-3 text-[12px] text-gray-500">
-                    3 days free &middot; Cancel in two clicks
+                    14 days free &middot; Cancel in two clicks
                   </p>
                 </div>
 

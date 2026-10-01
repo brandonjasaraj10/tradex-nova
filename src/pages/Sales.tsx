@@ -266,7 +266,7 @@ export default function Sales() {
               <ArrowRight className="w-4 h-4" />
             </Link>
             <p className="text-[11.5px] text-gray-500">
-              3 days free &middot; Cancel in two clicks
+              14 days free &middot; Cancel in two clicks
             </p>
             {/* Watched by the header - see showHeaderCta above. */}
             <div ref={heroCtaRef} aria-hidden="true" className="h-px w-full" />
@@ -1213,7 +1213,7 @@ export default function Sales() {
                   <ArrowRight className="w-4 h-4" />
                 </Link>
                 <p className="text-[12px] text-gray-500">
-                  3 days free &middot; Cancel in two clicks
+                  14 days free &middot; Cancel in two clicks
                 </p>
                 <Link
                   to="/pricing"
@@ -1292,7 +1292,7 @@ export default function Sales() {
               },
               {
                 q: 'What if it is not for me?',
-                a: 'Take the three days and find out. Talk a few trades through, let Nova read them back, and see whether you actually keep doing it \u2014 that is the only question that matters, and it answers itself fast. Cancel inside the three days in two clicks and you are never charged.',
+                a: 'Take the fourteen days and find out. Talk a few trades through, let Nova read them back, and see whether you actually keep doing it \u2014 that is the only question that matters, and it answers itself fast. Cancel inside the fourteen days in two clicks and you are never charged.',
               },
             ].map((item) => (
               <details
@@ -1443,7 +1443,7 @@ export default function Sales() {
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <p className="text-[11.5px] text-gray-500">
-                3 days free &middot; Cancel in two clicks
+                14 days free &middot; Cancel in two clicks
               </p>
             </div>
           ) : (
