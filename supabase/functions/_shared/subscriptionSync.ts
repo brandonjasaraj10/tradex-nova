@@ -409,7 +409,7 @@ function addonQuantity(subscription: Stripe.Subscription): number {
 export async function syncSubscription(supabase: SupabaseClient, userId: string, subscription: Stripe.Subscription) {
   const { data: current, error: lookupError } = await supabase
     .from('subscriptions')
-    .select('status, grace_period_end')
+    .select('status, grace_period_end, current_period_end, stripe_subscription_id')
     .eq('user_id', userId)
     .maybeSingle();
 
@@ -420,7 +420,56 @@ export async function syncSubscription(supabase: SupabaseClient, userId: string,
   */
   if (lookupError) throw lookupError;
 
-  const existingRow = current as { status: string; grace_period_end: string | null } | null;
+  const existingRow = current as {
+    status: string;
+    grace_period_end: string | null;
+    current_period_end: string | null;
+    stripe_subscription_id: string | null;
+  } | null;
+
+  /*
+    A dead duplicate must not bury a live subscription.
+
+    There is one row per user, and every Stripe event overwrites it. That is
+    fine while somebody has one subscription, and wrong the moment they have
+    two: tidying up a leftover subscription fires a cancellation event, it
+    resolves to the same user, and it stamps "canceled" over the one they
+    are actually paying for.
+
+    That is not hypothetical. A customer held an annual subscription running
+    to September 2027 and a duplicate three-day trial. Cancelling the trial
+    in Stripe flipped his row to canceled, period ending in three days, and
+    took away the year he had paid for - within seconds, and silently. It
+    was put back by hand.
+
+    So: ignore an event that is about a DIFFERENT subscription than the row
+    holds, is reporting that subscription dead, and would pull the end date
+    nearer than what the row already has. Everything else still writes.
+    Cancelling the subscription the row actually tracks works as before,
+    because the ids match. Anything that extends access writes, because only
+    dead statuses are filtered. The rule only ever refuses to make a paying
+    user's access shorter on the word of some other subscription.
+  */
+  const DEAD_STATUSES = ['canceled', 'incomplete_expired', 'unpaid'];
+  const LIVE_STATUSES = ['active', 'trialing', 'past_due'];
+  const incomingEnd = new Date(subscription.current_period_end * 1000);
+
+  if (
+    existingRow &&
+    existingRow.stripe_subscription_id &&
+    existingRow.stripe_subscription_id !== subscription.id &&
+    DEAD_STATUSES.includes(subscription.status) &&
+    LIVE_STATUSES.includes(existingRow.status) &&
+    existingRow.current_period_end &&
+    new Date(existingRow.current_period_end) > incomingEnd
+  ) {
+    console.info(
+      `Ignored ${subscription.status} for ${subscription.id} (user ${userId}): the row holds ` +
+        `${existingRow.stripe_subscription_id} (${existingRow.status}) running to ` +
+        `${existingRow.current_period_end}, which outlasts it.`,
+    );
+    return { previousStatus: existingRow.status, newStatus: existingRow.status, changed: false };
+  }
   /*
     Always null now. Written on every sync rather than left alone, so any
     deadline surviving from the old policy is cleared the next time Stripe
