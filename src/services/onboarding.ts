@@ -61,6 +61,35 @@ export const saveStruggle = (value: Struggle) =>
   save({ onboarding_struggle: value });
 
 /*
+  The same question, asked as multi-select.
+
+  Headspace found that letting people pick more than one goal lifted free
+  trial conversion by 10%, and forcing one choice here was never honest
+  anyway - somebody who revenge trades after a loss is usually also
+  overtrading, and making them rank it teaches us nothing.
+
+  Both columns are written. The singular one keeps the first pick because
+  PAYOFF_HEADLINE, the paywall and 400 existing rows all read it, and there
+  is no version of this worth breaking those for.
+*/
+export const saveStruggles = (values: Struggle[]) =>
+  save({
+    onboarding_struggles: values,
+    ...(values[0] ? { onboarding_struggle: values[0] } : {}),
+  });
+
+/*
+  The behavioural answers, written once at the end rather than per question.
+
+  Five separate writes during a flow somebody is actively tapping through is
+  five chances to be mid-request when they advance; one write of the whole
+  object when the set is finished is simpler and loses nothing, because
+  nothing reads these until the plan screen renders from them in memory.
+*/
+export const saveProfileAnswers = (answers: Record<string, string>) =>
+  save({ onboarding_profile: answers });
+
+/*
   Stamped when the flow actually ENDS, not when the last question is
   answered.
 

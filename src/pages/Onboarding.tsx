@@ -1,54 +1,75 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, AlertTriangle, Circle, ArrowRight } from 'lucide-react';
+import { Check, ArrowRight } from 'lucide-react';
 import {
-  saveInstrument, saveExperience, saveStruggle, markOnboardingComplete,
+  saveInstrument, saveExperience, saveStruggles, saveProfileAnswers,
+  markOnboardingComplete,
   type Instrument, type Experience, type Struggle,
 } from '../services/onboarding';
+import { STRUGGLE_CARD } from '../lib/onboardingPreview';
 import {
-  SAMPLE_TRADES, STRUGGLE_CARD, INSTRUMENT_LABEL,
-} from '../lib/onboardingPreview';
+  PROFILE_QUESTIONS, buildPlan, type ProfileAnswers,
+} from '../lib/onboardingPlan';
 import { trackEvent } from '../lib/productAnalytics';
 import MascotSays from '../components/shared/MascotSays';
 import PreTradeScales, { type ScaleValues } from '../components/journal/PreTradeScales';
 
 /*
-  Three questions and a preview, between signing up and seeing a price.
+  Eight questions and a plan, between signing up and seeing a price.
 
-  The whole sequence is meant to take under twenty seconds of clicking, so
-  every screen is one tap and nothing here has a Next button - choosing IS
-  advancing. A question that needs a selection and then a confirmation is
-  two taps for one decision, and three of those is most of the twenty
-  seconds spent on ceremony.
+  WHAT THIS REPLACED, AND WHY
 
-  Nothing is typed. Free text would collect better answers from the handful
-  of people who write them and cost the rest their patience, and these
-  answers exist to be counted rather than read.
+  Three taps and a preview. It was built to take under twenty seconds, on the
+  reasoning that a short flow loses fewer people. It did lose almost nobody -
+  and it also convinced almost nobody: 762 signups in thirty days, 49 of whom
+  ever reached a card. Roughly seven hundred people saw the price and said
+  no. The flow was not failing to hold them, it was failing to make a case.
 
-  The third question is the one that earns its place: somebody who has just
-  said "revenge trading after a loss" is then shown the cooldown check, and
-  the connection between the two is the argument for paying. The first two
-  are cheap to answer and make the third feel like a conversation rather
-  than an interrogation.
+  Across 1,460 onboarding flows the average app runs 25 screens, finance is
+  the longest category, and several of the longest belong to the most
+  successful apps. The founder of a $40k/month app puts it plainly: "we want
+  the onboarding to be long... users feel like they are building value for
+  themselves." Length is not the cost it looks like, as long as every screen
+  is about the person answering it.
+
+  So this is longer on purpose, and every question is about them.
+
+  THE SHAPE
+
+    welcome     one screen confirming they made a good decision
+    3 x basics  instrument, experience, what is costing them money
+    5 x profile the gap between what they know and what they do
+    thinking    the beat where their answers become something
+    plan        what the next fortnight produces, with a date on it
+
+  Still one tap per screen, except the multi-select and the plan. Nothing is
+  typed: free text collects better answers from the few who write them and
+  costs everyone else their patience.
+
+  THE PLAN SCREEN IS THE POINT. The strongest flows studied do not just
+  collect answers, they show what the answers unlocked - Speak names what you
+  will be able to do in two months, Byte Pal names the date you hit your
+  goal. Everything before it exists to make that screen land.
 */
 
-type Step = 0 | 1 | 2 | 'thinking' | 3;
+type Step =
+  | 'welcome'
+  | 'instrument'
+  | 'experience'
+  | 'struggles'
+  | { profile: number }
+  | 'thinking'
+  | 'plan';
 
-/*
-  The payoff screen leads with their answer, not with a product tour.
+const QUESTION_COUNT = 3 + PROFILE_QUESTIONS.length;
 
-  It used to open "Here's what tracking forex trades looks like in TradeX"
-  over a list of three trades and their P&L - which is the one thing every
-  rival journal also shows, on the last screen before a price, in a product
-  that is not sold on P&L. The commodity was the hero and the argument was
-  underneath it.
-*/
-const PAYOFF_HEADLINE: Record<Struggle, string> = {
-  revenge_trading: 'It\u2019s the next trade that costs you.',
-  overtrading: 'Your best days are your quietest.',
-  breaking_rules: 'You keep every rule that costs you nothing.',
-  not_sure: 'You have a pattern. You just haven\u2019t seen it.',
-};
+function questionIndex(step: Step): number | null {
+  if (step === 'instrument') return 0;
+  if (step === 'experience') return 1;
+  if (step === 'struggles') return 2;
+  if (typeof step === 'object') return 3 + step.profile;
+  return null;
+}
 
 const INSTRUMENTS: { value: Instrument; label: string }[] = [
   { value: 'futures', label: 'Futures' },
@@ -73,31 +94,13 @@ const STRUGGLES: { value: Struggle; label: string }[] = [
   { value: 'revenge_trading', label: 'Revenge trading after a loss' },
   { value: 'overtrading', label: 'Overtrading, no patience' },
   { value: 'breaking_rules', label: 'Breaking my own rules' },
-  { value: 'not_sure', label: "No idea, that's the problem" },
+  { value: 'not_sure', label: 'No idea. That’s the problem.' },
 ];
 
-/*
-  The beat between the last answer and the preview.
-
-  The preview is assembled from what they just said - their instrument,
-  their struggle - and it used to appear the instant the third answer was
-  tapped. Instant is not free: a screen that is suddenly different reads as
-  a page change rather than as a result, and the work of tailoring it to
-  them goes unnoticed because nothing showed it happening.
-
-  So it says what it is doing, in his voice, and takes long enough to be
-  read. 1.6s is the whole budget - long enough to register as thinking,
-  short enough that nobody taps back out of a twenty-second flow.
-
-  Not a fake loading bar. The lines name the three answers actually being
-  used, so the wait is the product explaining itself rather than stalling.
-*/
 const THINKING_LINES = [
   'Reading your answers',
-  /* Said "Picking the right example trades" while the example trades were on
-     screen. They are not any more, so it describes what actually happens. */
   'Matching the pattern you picked',
-  'Setting up your checks',
+  'Building your first two weeks',
 ];
 
 function Thinking({ onDone }: { onDone: () => void }) {
@@ -106,13 +109,13 @@ function Thinking({ onDone }: { onDone: () => void }) {
   useEffect(() => {
     /*
       One timer per line and one to finish, all cleared together - a step
-      that is left behind mid-count must not advance the flow underneath
-      whatever replaced it.
+      left behind mid-count must not advance the flow underneath whatever
+      replaced it.
     */
     const timers = [
-      window.setTimeout(() => setLine(1), 520),
-      window.setTimeout(() => setLine(2), 1040),
-      window.setTimeout(onDone, 1600),
+      window.setTimeout(() => setLine(1), 560),
+      window.setTimeout(() => setLine(2), 1120),
+      window.setTimeout(onDone, 1750),
     ];
     return () => timers.forEach(clearTimeout);
   }, [onDone]);
@@ -120,16 +123,12 @@ function Thinking({ onDone }: { onDone: () => void }) {
   return (
     <div className="flex flex-col items-center text-center">
       <MascotSays pose="lean" height={84} side="above" className="mb-7">
-        Give me a second, I&rsquo;m setting this up for you.
+        Give me a second, I&rsquo;m putting this together.
       </MascotSays>
 
-      <ul className="flex flex-col gap-3 w-full max-w-[260px]">
+      <ul className="flex flex-col gap-3 w-full max-w-[280px]">
         {THINKING_LINES.map((text, i) => (
           <li key={text} className="flex items-center gap-3 text-left">
-            {/*
-              Done, doing, or not yet - shown by state rather than by a
-              spinner that says only that something is happening.
-            */}
             <span className="flex-shrink-0 w-4 h-4 flex items-center justify-center">
               {i < line ? (
                 <Check size={15} className="text-brand-blue-light" strokeWidth={2.5} />
@@ -157,20 +156,30 @@ function Thinking({ onDone }: { onDone: () => void }) {
   );
 }
 
-function ProgressDots({ step }: { step: Step }) {
+/*
+  A bar rather than three dots, now the flow is eight questions long.
+
+  Dots stop meaning anything past about five, and the count matters here: a
+  flow that is visibly nearly finished is one people finish.
+*/
+function Progress({ step }: { step: Step }) {
+  const index = questionIndex(step);
+  if (index === null) return null;
+  const pct = ((index + 1) / QUESTION_COUNT) * 100;
+
   return (
-    <div className="flex items-center justify-center gap-2.5 mb-8">
-      {[0, 1, 2].map((i) => (
-        <span
-          key={i}
-          className={`h-1.5 rounded-full transition-all duration-300 ${
-            i === step ? 'w-6 bg-brand-blue-light' : i < (step as number) ? 'w-1.5 bg-brand-blue-light/50' : 'w-1.5 bg-white/15'
-          }`}
+    <div className="mb-8">
+      <div className="h-1 rounded-full bg-white/10 overflow-hidden">
+        <motion.div
+          className="h-full rounded-full bg-brand-blue-light"
+          initial={false}
+          animate={{ width: `${pct}%` }}
+          transition={{ duration: 0.3, ease: 'easeOut' }}
         />
-      ))}
-      <span className="ml-2 text-[11px] uppercase tracking-[0.14em] text-gray-500">
-        {Math.min((step as number) + 1, 3)} of 3
-      </span>
+      </div>
+      <p className="mt-2.5 text-[11px] uppercase tracking-[0.14em] text-gray-500 text-center">
+        {index + 1} of {QUESTION_COUNT}
+      </p>
     </div>
   );
 }
@@ -178,40 +187,54 @@ function ProgressDots({ step }: { step: Step }) {
 /*
   One tap, full width, generous target.
 
-  These are read on a phone by somebody who has just typed a password, so
-  the rows are large and there is nothing else on screen to hit by mistake.
+  These are read on a phone by somebody who has just typed a password, so the
+  rows are large and there is nothing else on screen to hit by mistake.
 */
-function Choice({ label, onClick }: { label: string; onClick: () => void }) {
+function Choice({
+  label, onClick, selected = false,
+}: {
+  label: string;
+  onClick: () => void;
+  selected?: boolean;
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="w-full text-left px-5 py-4 rounded-xl border border-white/10 bg-brand-surface
-        text-[15px] text-gray-200 transition-colors
-        hover:border-brand-blue-light/40 hover:bg-brand-blue/[0.07] hover:text-white
-        focus-visible:outline-none focus-visible:border-brand-blue-light/60"
+      className={`w-full text-left px-5 py-4 rounded-xl border text-[15px] transition-colors
+        flex items-center justify-between gap-3
+        focus-visible:outline-none focus-visible:border-brand-blue-light/60 ${
+        selected
+          ? 'border-brand-blue-light/60 bg-brand-blue/[0.12] text-white'
+          : 'border-white/10 bg-brand-surface text-gray-200 hover:border-brand-blue-light/40 hover:bg-brand-blue/[0.07] hover:text-white'
+      }`}
     >
-      {label}
+      <span>{label}</span>
+      {selected && <Check size={17} className="flex-shrink-0 text-brand-blue-light" strokeWidth={2.5} />}
     </button>
   );
 }
 
 function Question({
-  step, title, options, onChoose,
+  step, title, subtitle, options, onChoose,
 }: {
   step: Step;
   title: string;
+  subtitle?: string;
   options: { value: string; label: string }[];
   onChoose: (value: string) => void;
 }) {
   return (
     <>
-      <ProgressDots step={step} />
+      <Progress step={step} />
       <h1 className="text-[26px] sm:text-[32px] leading-[1.15] font-semibold tracking-[-0.03em]
-        text-white text-balance text-center mb-7">
+        text-white text-balance text-center mb-2">
         {title}
       </h1>
-      <div className="flex flex-col gap-2.5">
+      {subtitle && (
+        <p className="text-center text-[13.5px] text-gray-500 mb-6">{subtitle}</p>
+      )}
+      <div className={`flex flex-col gap-2.5 ${subtitle ? '' : 'mt-5'}`}>
         {options.map((o) => (
           <Choice key={o.value} label={o.label} onClick={() => onChoose(o.value)} />
         ))}
@@ -220,232 +243,333 @@ function Question({
   );
 }
 
-/*
-  onComplete hands control back to the layout, which then shows whatever
-  comes next - the paywall for somebody who has not paid, the app for
-  somebody who has. This screen deliberately does not decide that itself;
-  it has no business knowing about subscriptions.
-*/
 export default function Onboarding({ onComplete }: { onComplete: () => void | Promise<void> }) {
-  const [step, setStep] = useState<Step>(0);
-  /*
-    Live, not a picture of the control.
+  const [step, setStep] = useState<Step>('welcome');
+  const [instrument, setInstrument] = useState<Instrument>('forex');
+  const [struggles, setStruggles] = useState<Struggle[]>([]);
+  const [profile, setProfile] = useState<ProfileAnswers>({});
 
-    /pricing already argues this for its checklist - an interactive demo
-    beats a screenshot when the point lands in about three seconds, and
-    three taps on three rows is inside that. It is also the one claim a
-    competitor cannot copy by adding an AI: TradeZella infers your state
-    from your tone afterwards, this asks you to declare it before you click.
+  /*
+    Live, not a picture of the control - the real component, so this cannot
+    drift from the product it is selling.
   */
   const [demoScales, setDemoScales] = useState<ScaleValues>({});
-  const [instrument, setInstrument] = useState<Instrument>('forex');
-  const [struggle, setStruggle] = useState<Struggle>('not_sure');
 
   /*
-    Saved and advanced together, and the save is not awaited. A write that
-    takes 300ms should not be 300ms of a twenty-second flow spent watching a
-    button that has already been pressed - and the answer is stored on a
-    best-effort basis by design (see services/onboarding).
+    Fourteen days from the moment they see the plan, which is what the trial
+    actually gives them. Computed once so it cannot shift between renders.
   */
-  const answerOne = (value: string) => {
+  const trialEnds = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 14);
+    return d;
+  }, []);
+
+  const plan = useMemo(
+    () => buildPlan(struggles, profile, trialEnds),
+    [struggles, profile, trialEnds],
+  );
+
+  const primaryStruggle: Struggle = struggles[0] ?? 'not_sure';
+  const card = STRUGGLE_CARD[primaryStruggle];
+
+  const answerInstrument = (value: string) => {
     const v = value as Instrument;
     setInstrument(v);
     void saveInstrument(v);
     trackEvent('onboarding_q1', { instrument: v });
-    setStep(1);
+    setStep('experience');
   };
 
-  const answerTwo = (value: string) => {
-    void saveExperience(value as Experience);
-    trackEvent('onboarding_q2', { experience: value });
-    setStep(2);
+  const answerExperience = (value: string) => {
+    const v = value as Experience;
+    void saveExperience(v);
+    trackEvent('onboarding_q2', { experience: v });
+    setStep('struggles');
   };
 
-  const answerThree = (value: string) => {
-    const v = value as Struggle;
-    setStruggle(v);
-    void saveStruggle(v);
-    trackEvent('onboarding_q3', { struggle: v });
+  const toggleStruggle = (value: Struggle) => {
+    setStruggles((prev) =>
+      prev.includes(value) ? prev.filter((s) => s !== value) : [...prev, value],
+    );
+  };
+
+  const confirmStruggles = () => {
+    void saveStruggles(struggles);
+    trackEvent('onboarding_q3', { struggle: struggles[0] ?? null, count: struggles.length });
+    setStep({ profile: 0 });
+  };
+
+  const answerProfile = (index: number, value: string) => {
+    const q = PROFILE_QUESTIONS[index];
+    const next = { ...profile, [q.id]: value };
+    setProfile(next);
+    trackEvent('onboarding_profile', { question: q.id, answer: value });
+
+    if (index + 1 < PROFILE_QUESTIONS.length) {
+      setStep({ profile: index + 1 });
+      return;
+    }
+
+    /*
+      Written once, here, rather than per question - see saveProfileAnswers.
+      Nothing reads these until the plan renders from state a moment later,
+      so the write has the whole thinking beat to land.
+    */
+    void saveProfileAnswers(next);
+    trackEvent('onboarding_profile_complete', { answered: Object.keys(next).length });
     setStep('thinking');
   };
 
-  const trades = SAMPLE_TRADES[instrument];
-  const card = STRUGGLE_CARD[struggle];
+  /*
+    Awaited, in order, because the two used to race - and the race was
+    visible.
+
+    markOnboardingComplete() writes the timestamp and onComplete() re-reads
+    the profile. Fired together, the read usually won: it fetched a profile
+    whose timestamp was still null, the gate in App.tsx renders onboarding
+    for exactly as long as that is null, and so the screen simply stayed
+    put. Tapping the last button in the flow did nothing visible while
+    silently succeeding in the database - the worst shape a bug can have,
+    because the only recovery a user has is to tap it again.
+
+    Caught by walking the flow as a new account rather than by reading it;
+    the write had landed and the screen had not moved.
+  */
+  const [finishing, setFinishing] = useState(false);
+
+  const finish = async () => {
+    if (finishing) return;
+    setFinishing(true);
+    trackEvent('onboarding_complete', {
+      instrument,
+      struggle: primaryStruggle,
+      struggles: struggles.length,
+    });
+    await markOnboardingComplete();
+    await onComplete();
+  };
+
+  const profileIndex = typeof step === 'object' ? step.profile : null;
 
   return (
-    <div className="min-h-screen bg-black text-white flex items-center justify-center px-5 py-8 sm:py-12">
-      {/*
-        One step fades out as the next slides in, rather than the screen
-        simply being different.
-
-        Tapping an answer used to swap the content in a single frame, which
-        reads as a page failing to load rather than as progress. 180ms is
-        enough to see the change happen and short enough that three of them
-        cost half a second of a twenty-second flow.
-
-        mode="wait" so the outgoing step finishes before the incoming one
-        starts - overlapping them puts two headings on screen at once, which
-        is worse than the abrupt version it replaces.
-      */}
-      <div className={step === 3 ? 'w-full max-w-2xl' : 'w-full max-w-md'}>
+    <div className="min-h-screen bg-brand-bg text-white flex items-center justify-center px-5 py-10">
+      <div className={step === 'plan' ? 'w-full max-w-2xl' : 'w-full max-w-md'}>
         <AnimatePresence mode="wait">
-        <motion.div
-          key={step}
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.18, ease: 'easeOut' }}
-        >
-        {step === 0 && (
-          <>
+          <motion.div
+            key={typeof step === 'object' ? `profile-${step.profile}` : step}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+          >
             {/*
-              He greets on the first screen and nowhere else in the flow.
+              The reaffirm screen.
 
-              Activation is the metric this screen moves - it is the single
-              strongest predictor of long-term retention and revenue, and the
-              SaaS median is 37.5% against 65-75% in the top quartile - and
-              the thing that loses it here is somebody deciding three
-              questions is more work than it is. Saying how short it is, in
-              a character's voice rather than as another line of grey helper
-              text, is the cheapest thing that addresses that.
-
-              Once, not on all three. Repeating him down every step would add
-              height to a twenty-second flow and turn a greeting into
-              furniture, and the drop-off this fights is at the start.
+              It asks for nothing. Several of the best flows studied open by
+              confirming the decision somebody just made rather than
+              immediately extracting from them, and it costs one tap at the
+              point in the funnel where intent is the highest it will ever be.
             */}
-            <MascotSays pose="wave" height={84} side="above" className="mb-6">
-              Three taps and I&rsquo;ll set this up for you.
-            </MascotSays>
-
-            <Question
-              step={0}
-              title="What do you trade?"
-              options={INSTRUMENTS}
-              onChoose={answerOne}
-            />
-          </>
-        )}
-
-        {step === 1 && (
-          <Question
-            step={1}
-            title="How long have you been trading?"
-            options={EXPERIENCE}
-            onChoose={answerTwo}
-          />
-        )}
-
-        {step === 2 && (
-          <Question
-            step={2}
-            title="What's actually costing you money right now?"
-            options={STRUGGLES}
-            onChoose={answerThree}
-          />
-        )}
-
-        {step === 'thinking' && <Thinking onDone={() => setStep(3)} />}
-
-        {step === 3 && (
-          <>
-            {/*
-              Bold, and allowed the full column.
-
-              text-balance was evening the line lengths out, which on a
-              headline this short meant breaking a sentence that had room to
-              run - two cramped lines where one wide one fits. Dropped, and
-              the tracking pulled in a notch to hold bold together at size.
-            */}
-            <h1 className="text-[27px] sm:text-[34px] leading-[1.12] font-bold tracking-[-0.038em]
-              text-white text-center mb-3">
-              {PAYOFF_HEADLINE[struggle]}
-            </h1>
-            <p className="text-center text-[13.5px] sm:text-[14.5px] text-gray-400 leading-relaxed
-              max-w-lg mx-auto">
-              Every journal records what the trade did. This one records what you were like
-              before you took it.
-            </p>
-
-            {/*
-              The differentiator, live, above everything else.
-
-              Three taps and the argument is made physically rather than
-              described. Unanswered stays visible as its own state, which is
-              the whole design of the real control - "not rated" is not the
-              same as "rated low".
-            */}
-            <div className="mt-5 sm:mt-7 rounded-2xl border border-brand-blue-light/30
-              bg-brand-blue/[0.06] p-4 sm:p-5">
-              <div className="flex items-baseline justify-between mb-3.5">
-                <p className="text-[11px] uppercase tracking-[0.14em] text-brand-blue-light">
-                  Before the trade
+            {step === 'welcome' && (
+              <div className="text-center">
+                <MascotSays pose="wave" height={92} side="above" className="mb-7">
+                  Good call. Let&rsquo;s find out what&rsquo;s actually costing you.
+                </MascotSays>
+                <h1 className="text-[27px] sm:text-[33px] leading-[1.13] font-semibold
+                  tracking-[-0.035em] text-white text-balance mb-3">
+                  Nobody blows an account on the strategy.
+                </h1>
+                <p className="text-[14.5px] sm:text-[15.5px] leading-relaxed text-gray-400
+                  max-w-md mx-auto">
+                  They blow it on what they did at the moment of entry. Eight questions and
+                  I&rsquo;ll show you which one is yours.
                 </p>
-                <p className="text-[11.5px] text-gray-500">Try it</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    trackEvent('onboarding_started');
+                    setStep('instrument');
+                  }}
+                  className="mt-7 inline-flex items-center justify-center gap-2 px-8 py-3.5
+                    rounded-full bg-white text-black text-[15px] font-medium
+                    hover:bg-gray-200 transition-colors"
+                >
+                  Start
+                  <ArrowRight size={17} />
+                </button>
+                <p className="mt-3 text-[12.5px] text-gray-500">Takes about a minute</p>
               </div>
-              <PreTradeScales
-                values={demoScales}
-                onChange={(key, value) => setDemoScales((prev) => ({ ...prev, [key]: value }))}
+            )}
+
+            {step === 'instrument' && (
+              <Question
+                step={step}
+                title="What do you trade?"
+                options={INSTRUMENTS}
+                onChoose={answerInstrument}
               />
-              <p className="mt-4 pt-3.5 border-t border-brand-blue-light/20 text-[13px]
-                leading-relaxed text-gray-300">
-                {Object.values(demoScales).filter((v) => v !== null && v !== undefined).length === 3
-                  ? 'Three taps. Thirty of those and the pattern stops being an opinion.'
-                  : 'Rate them the way you would before an entry.'}
-              </p>
-            </div>
+            )}
+
+            {step === 'experience' && (
+              <Question
+                step={step}
+                title="How long have you been at it?"
+                options={EXPERIENCE}
+                onChoose={answerExperience}
+              />
+            )}
 
             {/*
-              The answer to the line above it, and nothing else.
+              Multi-select, and the only question screen with a confirm
+              button.
 
-              It was the card title, four findings and an outcome. Three of
-              those findings were invented figures - "11 of your last 14 red
-              days", "4 minutes" - on the screen immediately before a price,
-              which is the worst place to be carrying numbers nobody can
-              stand behind. The outcome line was always the strongest thing
-              in the block and it needs no invented arithmetic to land.
+              Headspace found that letting people pick more than one goal
+              lifted trial conversion 10%, and the honest answer here is
+              usually more than one - somebody revenge trading after a loss
+              is generally overtrading as well. The second tap is the price
+              of not forcing a false choice, and it buys a better answer.
             */}
-            <p className="mt-4 sm:mt-5 text-center text-[15px] sm:text-[16.5px] leading-[1.55]
-              text-gray-200 text-balance max-w-xl mx-auto">
-              {card.outcome}
-            </p>
+            {step === 'struggles' && (
+              <>
+                <Progress step={step} />
+                <h1 className="text-[26px] sm:text-[32px] leading-[1.15] font-semibold
+                  tracking-[-0.03em] text-white text-balance text-center mb-2">
+                  What&rsquo;s actually costing you money?
+                </h1>
+                <p className="text-center text-[13.5px] text-gray-500 mb-6">
+                  Pick as many as are true.
+                </p>
+                <div className="flex flex-col gap-2.5">
+                  {STRUGGLES.map((o) => (
+                    <Choice
+                      key={o.value}
+                      label={o.label}
+                      selected={struggles.includes(o.value)}
+                      onClick={() => toggleStruggle(o.value)}
+                    />
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  disabled={struggles.length === 0}
+                  onClick={confirmStruggles}
+                  className="mt-6 w-full inline-flex items-center justify-center gap-2 px-8 py-3.5
+                    rounded-full bg-white text-black text-[15px] font-medium
+                    hover:bg-gray-200 transition-colors
+                    disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white"
+                >
+                  Continue
+                  <ArrowRight size={17} />
+                </button>
+              </>
+            )}
 
+            {profileIndex !== null && (
+              <Question
+                step={step}
+                title={PROFILE_QUESTIONS[profileIndex].title}
+                options={PROFILE_QUESTIONS[profileIndex].options}
+                onChoose={(v) => answerProfile(profileIndex, v)}
+              />
+            )}
 
-            <div className="mt-5 sm:mt-7 text-center">
-              <button
-                type="button"
-                onClick={() => {
-                  trackEvent('onboarding_complete', { instrument, struggle });
-                  void markOnboardingComplete();
-                  void onComplete();
-                }}
-                className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full
-                  bg-white text-black text-[15px] font-medium hover:bg-gray-200 transition-colors"
-              >
-                Start 14 days free
-                <ArrowRight size={17} />
-              </button>
-              {/*
-                The same words as the button on the screen this leads to.
+            {step === 'thinking' && <Thinking onDone={() => setStep('plan')} />}
 
-                It used to say "See plans", which is a navigation label -
-                it asks somebody to go and look at prices, which is the
-                lowest-intent thing a button can ask for, and it promised a
-                comparison the paywall no longer runs. Carrying the paywall's
-                own CTA here makes the two screens one promise rather than
-                two, and the tap that follows is a confirmation instead of a
-                second decision.
+            {step === 'plan' && (
+              <>
+                <h1 className="text-[27px] sm:text-[34px] leading-[1.12] font-semibold
+                  tracking-[-0.038em] text-white text-center mb-3">
+                  {plan.headline}
+                </h1>
+                <p className="text-center text-[14.5px] sm:text-[15.5px] text-gray-300
+                  leading-relaxed max-w-lg mx-auto">
+                  {card.outcome}
+                </p>
 
-                The line under it stops repeating the trial length now the
-                button says it, and spends itself on the thing somebody is
-                actually weighing at this point instead.
-              */}
-              <p className="mt-3 text-[12.5px] text-gray-500">
-                Nothing charged today &middot; Cancel in two clicks
-              </p>
-            </div>
-          </>
-        )}
-        </motion.div>
+                {/*
+                  The dated promise and the three specifics under it.
+
+                  Every line here traces back to something they answered two
+                  screens ago. A plan assembled from somebody's answers that
+                  could have been written for anybody is a product tour with
+                  their name on it.
+                */}
+                <div className="mt-6 sm:mt-7 rounded-2xl border border-brand-blue/30
+                  bg-brand-blue/[0.06] p-5">
+                  <p className="text-[11px] uppercase tracking-[0.14em] text-brand-blue-light mb-2.5">
+                    Your first two weeks
+                  </p>
+                  <p className="text-[15px] sm:text-[16px] leading-[1.5] text-white mb-4">
+                    {plan.promise}
+                  </p>
+                  <ul className="flex flex-col gap-3">
+                    {plan.points.map((point) => (
+                      <li key={point} className="flex gap-2.5 text-[13.5px] leading-relaxed text-gray-300">
+                        <Check size={15} className="flex-shrink-0 mt-[3px] text-brand-blue-light" strokeWidth={2.5} />
+                        <span>{point}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-4 pt-3.5 border-t border-brand-blue/20 text-[12.5px] text-gray-500">
+                    Watching for: {plan.watching}
+                  </p>
+                </div>
+
+                {/*
+                  The differentiator, live, and the one thing on this screen
+                  they can touch. Unanswered stays visible as its own state,
+                  which is the whole design of the real control - "not rated"
+                  is not the same as "rated low".
+                */}
+                <div className="mt-4 rounded-2xl border border-white/10 bg-brand-surface p-4 sm:p-5">
+                  <div className="flex items-baseline justify-between mb-3.5">
+                    <p className="text-[11px] uppercase tracking-[0.14em] text-gray-600">
+                      Before the trade
+                    </p>
+                    <p className="text-[11.5px] text-gray-500">Try it</p>
+                  </div>
+                  <PreTradeScales
+                    values={demoScales}
+                    onChange={(key, value) => setDemoScales((prev) => ({ ...prev, [key]: value }))}
+                  />
+                  <p className="mt-4 pt-3.5 border-t border-white/10 text-[13px]
+                    leading-relaxed text-gray-300">
+                    {Object.values(demoScales).filter((v) => v !== null && v !== undefined).length === 3
+                      ? 'Three taps. Thirty of those and the pattern stops being an opinion.'
+                      : 'Rate them the way you would before an entry.'}
+                  </p>
+                </div>
+
+                <div className="mt-6 text-center">
+                  {/*
+                    The same words as the button on the screen this leads to,
+                    so the two screens are one promise rather than two.
+
+                    Duolingo found that changing a CTA from "Continue" to
+                    "Commit to my goal" was a large win - the button as a
+                    promise to yourself rather than a navigation label. Worth
+                    testing here, but not worth breaking the match with the
+                    paywall's own CTA on a guess.
+                  */}
+                  <button
+                    type="button"
+                    onClick={() => void finish()}
+                    disabled={finishing}
+                    className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full
+                      bg-white text-black text-[15px] font-medium hover:bg-gray-200 transition-colors
+                      disabled:opacity-60"
+                  >
+                    {finishing ? 'One moment\u2026' : 'Start 14 days free'}
+                    {!finishing && <ArrowRight size={17} />}
+                  </button>
+                  <p className="mt-3 text-[12.5px] text-gray-500">
+                    Nothing charged today &middot; Cancel in two clicks
+                  </p>
+                </div>
+              </>
+            )}
+          </motion.div>
         </AnimatePresence>
       </div>
     </div>
