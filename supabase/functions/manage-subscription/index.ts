@@ -148,31 +148,101 @@ Deno.serve(async (req: Request) => {
         );
       }
 
+      /*
+        Every subscription, not the first five.
+
+        A customer who has retried signup a few times can hold more than five,
+        and the one that bills them is not guaranteed to be in the first page.
+      */
       const subscriptions = await stripe.subscriptions.list({
         customer: stripeCustomerId,
         status: "all",
-        limit: 5,
+        limit: 100,
       });
 
-      // "active" alone misses subscriptions still in their 7-day trial
-      // (Stripe status "trialing") or with a failed payment ("past_due")
-      // - both are still real, cancellable subscriptions.
-      const subscription = subscriptions.data.find((s) =>
+      // "active" alone misses subscriptions still in their trial (Stripe
+      // status "trialing") or with a failed payment ("past_due") - both are
+      // still real, cancellable subscriptions.
+      const live = subscriptions.data.filter((s) =>
         ["active", "trialing", "past_due"].includes(s.status)
       );
 
-      if (!subscription) {
+      if (live.length === 0) {
         return new Response(
           JSON.stringify({ error: "No active subscription found" }),
           { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      await stripe.subscriptions.update(subscription.id, {
+      /*
+        Which subscription is actually theirs, when there is more than one.
+
+        This used to take the first live one Stripe happened to return, with
+        no rule at all. That is how a customer cancelled on 25 September, was
+        emailed a confident "full access until 27 September", and was charged
+        $299.90 on the 27th anyway: the cancellation landed on one of his five
+        subscriptions and a different one billed him. The email was true about
+        the subscription it cancelled and irrelevant to the one taking his
+        money.
+
+        The one that runs longest is the one worth keeping - an annual plan
+        outlasts a three-day trial - and it is also the one with the most of
+        the customer's money in it. Everything else is leftover.
+      */
+      const sorted = [...live].sort((a, b) => b.current_period_end - a.current_period_end);
+      const subscription = sorted[0];
+      const duplicates = sorted.slice(1);
+
+      /*
+        Leftovers are cancelled outright, and first.
+
+        Outright, because scheduling them for their period end leaves them
+        able to bill - which is the whole failure being fixed. First, so the
+        last thing Stripe hears about is the subscription we are keeping.
+
+        A failure here is logged and swallowed: the customer asked to cancel,
+        and a stuck duplicate must not stop the subscription they actually
+        hold from being cancelled.
+      */
+      for (const dupe of duplicates) {
+        try {
+          await stripe.subscriptions.cancel(dupe.id);
+          console.info(`Cancelled duplicate subscription ${dupe.id} for user ${user.id}`);
+        } catch (err) {
+          console.error(`Could not cancel duplicate ${dupe.id} for user ${user.id}:`, err);
+        }
+      }
+
+      const cancelled = await stripe.subscriptions.update(subscription.id, {
         cancel_at_period_end: true,
       });
 
-      const cancelDate = new Date(subscription.current_period_end * 1000);
+      /*
+        The row is written here, from what Stripe just confirmed, rather than
+        left to the webhook.
+
+        Several cancellations have just been fired at once and webhook
+        delivery has no ordering guarantee, so the last event to arrive might
+        be about a leftover. Writing the outcome directly means the row is
+        correct the moment this returns, whatever order the events land in.
+      */
+      await supabase
+        .from("subscriptions")
+        .update({
+          stripe_subscription_id: cancelled.id,
+          status: cancelled.status,
+          current_period_end: new Date(cancelled.current_period_end * 1000).toISOString(),
+          cancel_at_period_end: true,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", user.id);
+
+      /*
+        The date comes from what Stripe returned, not from the copy we listed
+        a moment ago, so the email can only ever quote the subscription that
+        actually changed.
+      */
+      const cancelDate = new Date(cancelled.current_period_end * 1000);
       const formattedCancelDate = cancelDate.toLocaleDateString("en-US", {
         year: "numeric",
         month: "long",
