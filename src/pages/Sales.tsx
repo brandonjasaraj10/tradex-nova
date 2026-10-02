@@ -224,10 +224,46 @@ export default function Sales() {
             it was dimming out rather than being emphasised - the headline is
             the offer and it should not fade.
           */}
-          <h1 className="text-[46px] leading-[1.02] sm:text-6xl lg:text-[80px] lg:leading-[0.98]
+          {/*
+            About this reader, not about all traders.
+
+            It said "Nobody blows an account on the strategy", which is not
+            true - a bad edge will empty an account on its own merits, and a
+            trader who suspects theirs is weak reads that line as a lie and
+            stops reading. The claim only holds for somebody who already has
+            a method, which is who this is for, so the sentence is about them
+            instead of about everyone.
+
+            It also flatters rather than accuses, which matters on the first
+            line somebody reads: the problem being named is not their
+            judgement, it is the distance between their judgement and their
+            hands.
+          */}
+          <h1 className="text-[40px] leading-[1.04] sm:text-[54px] lg:text-[68px] lg:leading-[1]
             font-semibold tracking-[-0.04em] text-white text-balance">
-            Stop guessing<br className="sm:hidden" /> why you lose
+            You already know what a good trade looks like.
           </h1>
+
+          {/*
+            The gap, drawn rather than described.
+
+            It is the spine of the product and it reads as nothing when it is
+            a clause in a paragraph - which is exactly what happened in the
+            onboarding until it was given room. Two words, the distance
+            between them, and an arrow across it.
+          */}
+          <div className="mt-7 flex items-center justify-center gap-3 sm:gap-5">
+            <span className="text-[15px] sm:text-[19px] font-semibold tracking-[-0.03em] text-white">
+              Identity
+            </span>
+            <span className="flex items-center gap-1.5 text-gray-600" aria-label="to">
+              <span className="block w-9 sm:w-14 border-t border-dashed border-white/25" />
+              <ArrowRight className="w-3.5 h-3.5 -ml-2.5" />
+            </span>
+            <span className="text-[15px] sm:text-[19px] font-semibold tracking-[-0.03em] text-white">
+              Execution
+            </span>
+          </div>
 
           {/*
             The difference, not the convenience.
@@ -250,9 +286,9 @@ export default function Sales() {
             tick below, where it answers the effort objection without being
             the reason to care.
           */}
-          <p className="mt-4 text-[14.5px] sm:text-base leading-snug text-gray-400 max-w-sm sm:max-w-md mx-auto text-balance">
-            Every journal records what the trade did. TradeX records what you
-            were like before you took it.
+          <p className="mt-5 text-[14.5px] sm:text-base leading-snug text-gray-400 max-w-sm sm:max-w-md mx-auto text-balance">
+            Knowing it was never the problem. Doing it with money on the line is &mdash;
+            and that is the part no other journal measures.
           </p>
 
           <div className="mt-6 flex flex-col items-center gap-2.5">

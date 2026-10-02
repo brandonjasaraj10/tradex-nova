@@ -457,9 +457,22 @@ export default function Onboarding({
                     {firstName ? `Right, ${firstName}. Let\u2019s find out what\u2019s costing you.`
                                : 'Let\u2019s find out what\u2019s actually costing you.'}
                   </MascotSays>,
+                  /*
+                    The same sentence the landing page opens with, and for the
+                    same reason it was changed there: "Nobody blows an account
+                    on the strategy" is not true of everybody - a weak edge
+                    empties an account on its own - and somebody who suspects
+                    theirs is the problem reads it as a lie. This is about the
+                    person answering instead, which is both true and the
+                    flattering half.
+
+                    A plain comment rather than a JSX one, because these are
+                    elements of an array and the braced JSX comment form is
+                    only valid inside JSX itself.
+                  */
                   <h1 key="h" className="text-[27px] sm:text-[33px] leading-[1.13] font-semibold
                     tracking-[-0.035em] text-white text-balance mb-3">
-                    Nobody blows an account on the strategy.
+                    You already know what a good trade looks like.
                   </h1>,
                   <div key="b" className="mt-7">
                     <button
