@@ -8,6 +8,7 @@ import TranscriptToEntry from '../components/sales/TranscriptToEntry';
 import ProductTabs from '../components/sales/ProductTabs';
 import Wordmark from '../components/shared/Wordmark';
 import NovaAnswer from '../components/sales/NovaAnswer';
+import SyncMarquee from '../components/sales/SyncMarquee';
 import SignupOrWaitlist from '../components/shared/SignupOrWaitlist';
 import { useHasLaunched } from '../lib/launch';
 import { useState, useEffect, useRef } from 'react';
@@ -365,6 +366,9 @@ export default function Sales() {
             <p className="text-[11.5px] text-gray-500">
               Join <span className="text-gray-300">600+ traders</span> already journaling with TradeX
             </p>
+
+          {/* Every rival puts this above the fold. See the component. */}
+          <SyncMarquee />
           </div>
         </div>
 

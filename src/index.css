@@ -406,3 +406,29 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus {
     opacity: 1;
   }
 }
+
+/*
+  The hero's sync row.
+
+  Translating by exactly -50% works because the track holds the list twice:
+  at the halfway point the second copy sits precisely where the first began,
+  so the reset is invisible. Any other distance snaps.
+
+  Stopped entirely under prefers-reduced-motion. A strip that never stops
+  moving is a real accessibility problem, and the row reads perfectly well
+  standing still.
+*/
+@keyframes sync-marquee-scroll {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-50%, 0, 0); }
+}
+
+.sync-marquee-track {
+  animation: sync-marquee-scroll 38s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sync-marquee-track {
+    animation: none;
+  }
+}
