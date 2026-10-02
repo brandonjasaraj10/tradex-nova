@@ -171,35 +171,35 @@ export function buildPlan(
   */
   if (profile.rules_live === 'head' || profile.rules_live === 'none') {
     points.push(
-      'Your rules come out of your head and onto *a checklist you tick before you enter* — so breaking one is a thing you see, not a thing you remember.',
+      'Your rules come out of your head and onto *a checklist you tick before entry*.',
     );
   } else {
     points.push(
-      'Your rules go on *a checklist you tick before you enter*, and every entry records which ones you actually kept.',
+      '*A checklist you tick before entry*, and every entry records which ones you kept.',
     );
   }
 
   if (profile.after_loss === 'bigger') {
     points.push(
-      'Every trade is scored against *what you were like before you took it* — starting with the ones straight after a loss, since that is where you said the size goes up.',
+      'Every trade scored against *what you were like going in* — starting with the ones after a loss.',
     );
   } else if (profile.green_day === 'keep_going') {
     points.push(
-      'Every trade is scored against *what you were like before you took it* — including the ones you take when the day was already won.',
+      'Every trade scored against *what you were like going in* — including the ones after the day was won.',
     );
   } else {
     points.push(
-      'Every trade is scored against *what you were like before you took it*, not just what it paid.',
+      'Every trade scored against *what you were like going in*, not just what it paid.',
     );
   }
 
   if (profile.notice_when === 'later') {
     points.push(
-      '*Adherence, psychology and P&L on one screen* — so you see it the same week instead of months later, if at all.',
+      '*Adherence, psychology and P&L on one screen* — the same week, not months later.',
     );
   } else {
     points.push(
-      '*Adherence, psychology and P&L on one screen* — the pattern is something you look at, not something you are told.',
+      '*Adherence, psychology and P&L on one screen* — something you look at, not something you are told.',
     );
   }
 
@@ -211,7 +211,7 @@ export function buildPlan(
     screen immediately before a price, which is the worst possible place for
     one.
   */
-  const promise = `By ${day} you’ll have a *rule-adherence number* and a *psychology score* with two weeks behind them. Yours, not an average.`;
+  const promise = `By ${day} you’ll have a *rule-adherence number* and a *psychology score*. Yours, not an average.`;
 
   return {
     headline: HEADLINE[primary],

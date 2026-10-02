@@ -210,7 +210,7 @@ function PrivateLayout() {
   if (user && profile && needsSubscription && !profile.onboarding_completed_at) {
     return (
       <Suspense fallback={<PageLoader fullScreen />}>
-        <Onboarding onComplete={refreshProfile} />
+        <Onboarding onComplete={refreshProfile} firstName={profile.first_name} />
       </Suspense>
     );
   }

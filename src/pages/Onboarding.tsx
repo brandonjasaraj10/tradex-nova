@@ -15,7 +15,6 @@ import { emphasise } from '../lib/emphasise';
 import MascotSays from '../components/shared/MascotSays';
 import FirstEntry from '../components/onboarding/FirstEntry';
 import type { VoiceJournalData } from '../services/voiceJournal';
-import PreTradeScales, { type ScaleValues } from '../components/journal/PreTradeScales';
 
 /*
   Eight questions and a plan, between signing up and seeing a price.
@@ -62,6 +61,8 @@ type Step =
   | 'struggles'
   | { profile: number }
   | 'thinking'
+  | 'pattern'
+  | 'gap'
   | 'plan'
   | 'entry';
 
@@ -247,17 +248,38 @@ function Question({
   );
 }
 
-export default function Onboarding({ onComplete }: { onComplete: () => void | Promise<void> }) {
+export default function Onboarding({
+  onComplete,
+  firstName,
+}: {
+  onComplete: () => void | Promise<void>;
+  /*
+    They typed this one screen ago. Opening on it is what makes this read as
+    the next step of something rather than as a different app starting.
+  */
+  firstName?: string | null;
+}) {
   const [step, setStep] = useState<Step>('welcome');
+
+  /*
+    Drives the welcome screen's staged reveal.
+
+    Done with a CSS transition off a mounted flag rather than with framer's
+    initial/animate, deliberately. An entrance that starts at opacity 0 and
+    relies on an animation to bring it up leaves the first screen a new user
+    ever sees completely blank if that animation does not run - which is
+    exactly the failure that had to be fixed on the dashboard. Here the
+    resting state is visible and the transition only moves it there, so the
+    worst case is that it appears instantly.
+  */
+  const [revealed, setRevealed] = useState(false);
+  useEffect(() => {
+    const t = window.setTimeout(() => setRevealed(true), 60);
+    return () => clearTimeout(t);
+  }, []);
   const [instrument, setInstrument] = useState<Instrument>('forex');
   const [struggles, setStruggles] = useState<Struggle[]>([]);
   const [profile, setProfile] = useState<ProfileAnswers>({});
-
-  /*
-    Live, not a picture of the control - the real component, so this cannot
-    drift from the product it is selling.
-  */
-  const [demoScales, setDemoScales] = useState<ScaleValues>({});
 
   /*
     Fourteen days from the moment they see the plan, which is what the trial
@@ -402,34 +424,50 @@ export default function Onboarding({ onComplete }: { onComplete: () => void | Pr
             */}
             {step === 'welcome' && (
               <div className="text-center">
-                <MascotSays pose="wave" height={92} side="above" className="mb-7">
-                  Good call. Let&rsquo;s find out what&rsquo;s actually costing you.
-                </MascotSays>
-                <h1 className="text-[27px] sm:text-[33px] leading-[1.13] font-semibold
-                  tracking-[-0.035em] text-white text-balance mb-3">
-                  Nobody blows an account on the strategy.
-                </h1>
-                <p className="text-[14.5px] sm:text-[15.5px] leading-relaxed text-gray-400
-                  max-w-md mx-auto">
-                  You already know what a good trade looks like. What costs you money is the
-                  distance between knowing it and doing it with real money on the line &mdash;
-                  the <strong className="font-semibold text-white">identity-to-execution
-                  gap</strong>. Eight questions and I&rsquo;ll show you where yours is.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    trackEvent('onboarding_started');
-                    setStep('instrument');
-                  }}
-                  className="mt-7 inline-flex items-center justify-center gap-2 px-8 py-3.5
-                    rounded-full bg-white text-black text-[15px] font-medium
-                    hover:bg-gray-200 transition-colors"
-                >
-                  Start
-                  <ArrowRight size={17} />
-                </button>
-                <p className="mt-3 text-[12.5px] text-gray-500">Takes about a minute</p>
+                {[
+                  <MascotSays key="m" pose="wave" height={92} side="above" className="mb-7">
+                    {firstName ? `Right, ${firstName}. Let\u2019s find out what\u2019s costing you.`
+                               : 'Let\u2019s find out what\u2019s actually costing you.'}
+                  </MascotSays>,
+                  <h1 key="h" className="text-[27px] sm:text-[33px] leading-[1.13] font-semibold
+                    tracking-[-0.035em] text-white text-balance mb-3">
+                    Nobody blows an account on the strategy.
+                  </h1>,
+                  <p key="p" className="text-[14.5px] sm:text-[15.5px] leading-relaxed text-gray-400
+                    max-w-md mx-auto">
+                    What costs you money is the distance between knowing what a good trade looks
+                    like and doing it with money on the line &mdash;{' '}
+                    <strong className="font-semibold text-white">the identity-to-execution gap</strong>.
+                  </p>,
+                  <div key="b" className="mt-7">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        trackEvent('onboarding_started');
+                        setStep('instrument');
+                      }}
+                      className="inline-flex items-center justify-center gap-2 px-8 py-3.5
+                        rounded-full bg-white text-black text-[15px] font-medium
+                        hover:bg-gray-200 transition-colors"
+                    >
+                      Show me
+                      <ArrowRight size={17} />
+                    </button>
+                    <p className="mt-3 text-[12.5px] text-gray-500">Eight questions &middot; about a minute</p>
+                  </div>,
+                ].map((node, i) => (
+                  <div
+                    key={i}
+                    className="transition-all duration-500 ease-out"
+                    style={{
+                      opacity: revealed ? 1 : 0,
+                      transform: revealed ? 'none' : 'translateY(10px)',
+                      transitionDelay: `${i * 140}ms`,
+                    }}
+                  >
+                    {node}
+                  </div>
+                ))}
               </div>
             )}
 
@@ -505,68 +543,79 @@ export default function Onboarding({ onComplete }: { onComplete: () => void | Pr
               />
             )}
 
-            {step === 'thinking' && <Thinking onDone={() => setStep('plan')} />}
+            {step === 'thinking' && <Thinking onDone={() => setStep('pattern')} />}
 
             {step === 'entry' && (
               <FirstEntry onDone={(entry, transcript) => void finish(entry, transcript)} />
             )}
 
-            {step === 'plan' && (
-              <>
-                <h1 className="text-[27px] sm:text-[34px] leading-[1.12] font-semibold
-                  tracking-[-0.038em] text-white text-center mb-3">
+            {/*
+              The argument, split across three screens instead of stacked on
+              one.
+
+              It was 256 words on a single page, sitting between eight
+              eleven-word question screens. That is the exact mistake the
+              research warns about from the other direction: the average app
+              in the Mobbin study runs 25 screens and Duolingo runs 60, and
+              none of them feel long because each screen carries one idea.
+              Length is cheap; density is not. Splitting a single signup form
+              across several screens measurably raised conversion for House,
+              which is the same trade being made here.
+            */}
+            {step === 'pattern' && (
+              <div className="text-center">
+                <h1 className="text-[28px] sm:text-[36px] leading-[1.1] font-semibold
+                  tracking-[-0.04em] text-white text-balance mb-4">
                   {plan.headline}
                 </h1>
-                <p className="text-center text-[14.5px] sm:text-[15.5px] text-gray-300
-                  leading-relaxed max-w-lg mx-auto">
+                <p className="text-[15px] sm:text-[16.5px] text-gray-300 leading-relaxed
+                  max-w-md mx-auto">
                   {card.outcome}
                 </p>
+                <button
+                  type="button"
+                  onClick={() => setStep('gap')}
+                  className="mt-8 inline-flex items-center justify-center gap-2 px-8 py-3.5
+                    rounded-full bg-white text-black text-[15px] font-medium
+                    hover:bg-gray-200 transition-colors"
+                >
+                  Go on
+                  <ArrowRight size={17} />
+                </button>
+              </div>
+            )}
 
-                {/*
-                  The outcome, and the only place it is sold.
+            {step === 'gap' && (
+              <div className="text-center">
+                <p className="text-[19px] sm:text-[23px] leading-[1.3] font-normal
+                  tracking-[-0.02em] text-gray-400 text-balance max-w-lg mx-auto">
+                  {emphasise('Most traders take *three years* to find out what you are about to find out in *two weeks*.')}
+                </p>
+                <p className="mt-6 text-[14px] sm:text-[15px] leading-relaxed text-gray-500
+                  max-w-md mx-auto">
+                  {emphasise('Nobody is measuring the thing that actually decides it \u2014 *what you were like going in*. P&L only tells you what already happened.')}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setStep('plan')}
+                  className="mt-8 inline-flex items-center justify-center gap-2 px-8 py-3.5
+                    rounded-full bg-white text-black text-[15px] font-medium
+                    hover:bg-gray-200 transition-colors"
+                >
+                  So what changes
+                  <ArrowRight size={17} />
+                </button>
+              </div>
+            )}
 
-                  An earlier draft of this screen was all mechanism - a
-                  rule-adherence number, a psychology score - and no
-                  destination. Nobody signs up for a number. What is being
-                  sold is the gap closing: the same strategy, run by somebody
-                  who can see themselves running it.
+            {step === 'plan' && (
+              <>
+                <h1 className="text-[24px] sm:text-[29px] leading-[1.15] font-semibold
+                  tracking-[-0.032em] text-white text-center text-balance mb-5">
+                  You do not need a new strategy.
+                </h1>
 
-                  The claim is deliberately about TIME rather than money.
-                  "Three years compressed into two weeks" is a claim about
-                  the speed of self-knowledge, which this can stand behind;
-                  anything about returns is one it cannot, and this is a
-                  trading product with a risk disclaimer for a reason.
-                */}
-                <div className="mt-6 sm:mt-7 text-center max-w-lg mx-auto">
-                  {/*
-                    Base weight deliberately light. emphasise() renders its
-                    marked runs semibold white, so a line that is already
-                    semibold white has nothing left to emphasise with - the
-                    first version of this bolded "three years" and "two
-                    weeks" into text that was identical to them.
-                  */}
-                  <p className="text-[16.5px] sm:text-[18px] leading-[1.45] font-normal
-                    tracking-[-0.015em] text-gray-400 text-balance">
-                    {emphasise('Most traders take *three years* to find out what you are about to find out in *two weeks*.')}
-                  </p>
-                  <p className="mt-3 text-[13.5px] sm:text-[14.5px] leading-relaxed text-gray-400">
-                    {emphasise('Not because they are slow. Because nobody is measuring the thing that actually decides it — *what you were like going in*. P&L only tells you what already happened.')}
-                  </p>
-                  <p className="mt-3 text-[13.5px] sm:text-[14.5px] leading-relaxed text-gray-400">
-                    {emphasise('You do not need a new strategy. You need *the one you already have*, executed by someone who can see themselves doing it.')}
-                  </p>
-                </div>
-
-                {/*
-                  The dated promise and the three specifics under it.
-
-                  Every line here traces back to something they answered two
-                  screens ago. A plan assembled from somebody's answers that
-                  could have been written for anybody is a product tour with
-                  their name on it.
-                */}
-                <div className="mt-6 sm:mt-7 rounded-2xl border border-brand-blue/30
-                  bg-brand-blue/[0.06] p-5">
+                <div className="rounded-2xl border border-brand-blue/30 bg-brand-blue/[0.06] p-5">
                   <p className="text-[11px] uppercase tracking-[0.14em] text-brand-blue-light mb-2.5">
                     Your first two weeks
                   </p>
@@ -582,54 +631,19 @@ export default function Onboarding({ onComplete }: { onComplete: () => void | Pr
                     ))}
                   </ul>
                   <p className="mt-4 pt-3.5 border-t border-brand-blue/20 text-[12.5px] text-gray-500">
-                    First number you’ll see: {plan.firstNumber}
+                    First number you&rsquo;ll see: {plan.firstNumber}
                   </p>
                 </div>
 
                 {/*
-                  The differentiator, live, and the one thing on this screen
-                  they can touch. Unanswered stays visible as its own state,
-                  which is the whole design of the real control - "not rated"
-                  is not the same as "rated low".
+                  The pre-trade scales demo used to sit here. It was the only
+                  interactive moment in the flow back when the next screen was
+                  a price; now the next screen is the product running on their
+                  own trade, which does that job far better and with their own
+                  words in it. Two demonstrations of the same thing, one of
+                  them real, is one too many.
                 */}
-                <div className="mt-4 rounded-2xl border border-white/10 bg-brand-surface p-4 sm:p-5">
-                  <div className="flex items-baseline justify-between mb-3.5">
-                    <p className="text-[11px] uppercase tracking-[0.14em] text-gray-600">
-                      Before the trade
-                    </p>
-                    <p className="text-[11.5px] text-gray-500">Try it</p>
-                  </div>
-                  <PreTradeScales
-                    values={demoScales}
-                    onChange={(key, value) => setDemoScales((prev) => ({ ...prev, [key]: value }))}
-                  />
-                  <p className="mt-4 pt-3.5 border-t border-white/10 text-[13px]
-                    leading-relaxed text-gray-300">
-                    {Object.values(demoScales).filter((v) => v !== null && v !== undefined).length === 3
-                      ? 'Three taps. Thirty of those and the pattern stops being an opinion.'
-                      : 'Rate them the way you would before an entry.'}
-                  </p>
-                </div>
-
                 <div className="mt-6 text-center">
-                  {/*
-                    The same words as the button on the screen this leads to,
-                    so the two screens are one promise rather than two.
-
-                    Duolingo found that changing a CTA from "Continue" to
-                    "Commit to my goal" was a large win - the button as a
-                    promise to yourself rather than a navigation label. Worth
-                    testing here, but not worth breaking the match with the
-                    paywall's own CTA on a guess.
-                  */}
-                  {/*
-                    Leads to the demonstration rather than to the price.
-
-                    The plan is the argument; the next screen is the proof,
-                    and it is the only place in this flow where the product
-                    actually runs. Sending somebody from a promise straight
-                    to a paywall is what the old flow did.
-                  */}
                   <button
                     type="button"
                     onClick={() => setStep('entry')}
