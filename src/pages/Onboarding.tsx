@@ -14,6 +14,7 @@ import { trackEvent } from '../lib/productAnalytics';
 import { emphasise } from '../lib/emphasise';
 import MascotSays from '../components/shared/MascotSays';
 import FirstEntry from '../components/onboarding/FirstEntry';
+import { buildStarterRules, buildStarterPsychChecks } from '../lib/onboardingChecklist';
 import type { VoiceJournalData } from '../services/voiceJournal';
 
 /*
@@ -56,6 +57,7 @@ import type { VoiceJournalData } from '../services/voiceJournal';
 
 type Step =
   | 'welcome'
+  | 'thegap'
   | 'instrument'
   | 'experience'
   | 'struggles'
@@ -296,6 +298,21 @@ export default function Onboarding({
     [struggles, profile, trialEnds],
   );
 
+  /*
+    Their first checklist, built from the eight answers rather than described
+    to them. A new account has none of these - inserting into trading_rules
+    needs an active subscription - so without this the plan screen promises a
+    checklist that does not exist and the app opens on empty panels.
+  */
+  const starterRules = useMemo(
+    () => buildStarterRules(struggles, profile),
+    [struggles, profile],
+  );
+  const starterChecks = useMemo(
+    () => buildStarterPsychChecks(struggles, profile),
+    [struggles, profile],
+  );
+
   const primaryStruggle: Struggle = struggles[0] ?? 'not_sure';
   const card = STRUGGLE_CARD[primaryStruggle];
 
@@ -384,7 +401,18 @@ export default function Onboarding({
       try {
         localStorage.setItem(
           'tradex.onboarding.firstEntry',
-          JSON.stringify({ entry, transcript, at: Date.now() }),
+          JSON.stringify({
+            entry,
+            transcript,
+            /*
+              The checklist goes with it. These are not rows yet and cannot
+              be until there is a subscription, so the whole set - entry,
+              rules, pre-trade checks - is written together afterwards.
+            */
+            rules: starterRules,
+            psychChecks: starterChecks,
+            at: Date.now(),
+          }),
         );
       } catch {
         /* nothing to do - the entry is lost, the flow is not */
@@ -405,7 +433,7 @@ export default function Onboarding({
 
   return (
     <div className="min-h-screen bg-brand-bg text-white flex items-center justify-center px-5 py-10">
-      <div className={step === 'plan' || step === 'entry' ? 'w-full max-w-2xl' : 'w-full max-w-md'}>
+      <div className={step === 'entry' ? 'w-full max-w-2xl' : 'w-full max-w-md'}>
         <AnimatePresence mode="wait">
           <motion.div
             key={typeof step === 'object' ? `profile-${step.profile}` : step}
@@ -433,18 +461,12 @@ export default function Onboarding({
                     tracking-[-0.035em] text-white text-balance mb-3">
                     Nobody blows an account on the strategy.
                   </h1>,
-                  <p key="p" className="text-[14.5px] sm:text-[15.5px] leading-relaxed text-gray-400
-                    max-w-md mx-auto">
-                    What costs you money is the distance between knowing what a good trade looks
-                    like and doing it with money on the line &mdash;{' '}
-                    <strong className="font-semibold text-white">the identity-to-execution gap</strong>.
-                  </p>,
                   <div key="b" className="mt-7">
                     <button
                       type="button"
                       onClick={() => {
                         trackEvent('onboarding_started');
-                        setStep('instrument');
+                        setStep('thegap');
                       }}
                       className="inline-flex items-center justify-center gap-2 px-8 py-3.5
                         rounded-full bg-white text-black text-[15px] font-medium
@@ -468,6 +490,52 @@ export default function Onboarding({
                     {node}
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/*
+              The belief change, given a screen and a picture rather than a
+              clause.
+
+              It was the tail of a paragraph on the welcome screen - "the
+              distance between knowing what a good trade looks like and doing
+              it with money on the line - the identity-to-execution gap" -
+              which is the single most important idea in the product buried
+              in the fourth line of the third sentence, hyphenated across two
+              lines on a phone. Named, spaced and drawn, it is the only thing
+              on screen and the gap is literally visible between the two
+              words.
+            */}
+            {step === 'thegap' && (
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-3 sm:gap-5 mb-8">
+                  <span className="text-[19px] sm:text-[25px] font-semibold tracking-[-0.03em] text-white">
+                    Identity
+                  </span>
+                  <span className="flex items-center gap-1.5 text-gray-600" aria-label="to">
+                    <span className="block w-10 sm:w-16 border-t border-dashed border-white/25" />
+                    <ArrowRight size={16} className="-ml-2.5" />
+                  </span>
+                  <span className="text-[19px] sm:text-[25px] font-semibold tracking-[-0.03em] text-white">
+                    Execution
+                  </span>
+                </div>
+
+                <p className="text-[16px] sm:text-[19px] leading-[1.4] text-gray-300 text-balance
+                  max-w-sm mx-auto">
+                  Every account you have lost died in that gap. Not in the strategy.
+                </p>
+
+                <button
+                  type="button"
+                  onClick={() => setStep('instrument')}
+                  className="mt-8 inline-flex items-center justify-center gap-2 px-8 py-3.5
+                    rounded-full bg-white text-black text-[15px] font-medium
+                    hover:bg-gray-200 transition-colors"
+                >
+                  Find mine
+                  <ArrowRight size={17} />
+                </button>
               </div>
             )}
 
@@ -546,7 +614,11 @@ export default function Onboarding({
             {step === 'thinking' && <Thinking onDone={() => setStep('pattern')} />}
 
             {step === 'entry' && (
-              <FirstEntry onDone={(entry, transcript) => void finish(entry, transcript)} />
+              <FirstEntry
+                rules={starterRules}
+                psychChecks={starterChecks}
+                onDone={(entry, transcript) => void finish(entry, transcript)}
+              />
             )}
 
             {/*
@@ -608,56 +680,51 @@ export default function Onboarding({
               </div>
             )}
 
+            {/*
+              Quiet, like the two screens before it.
+
+              This was a bordered blue card with ticked bullets sitting under
+              a headline - the only panel in a flow that is otherwise black
+              space and one sentence, and it read as a different product. The
+              content has not changed; the furniture has gone. Three
+              personalised lines, set small and grey, under one statement.
+            */}
             {step === 'plan' && (
-              <>
-                <h1 className="text-[24px] sm:text-[29px] leading-[1.15] font-semibold
-                  tracking-[-0.032em] text-white text-center text-balance mb-5">
-                  You do not need a new strategy.
+              <div className="text-center">
+                <p className="text-[11px] uppercase tracking-[0.16em] text-gray-600 mb-5">
+                  Your first two weeks
+                </p>
+
+                <h1 className="text-[27px] sm:text-[34px] leading-[1.13] font-semibold
+                  tracking-[-0.038em] text-white text-balance">
+                  By {plan.day} you&rsquo;ll have two numbers.
                 </h1>
 
-                <div className="rounded-2xl border border-brand-blue/30 bg-brand-blue/[0.06] p-5">
-                  <p className="text-[11px] uppercase tracking-[0.14em] text-brand-blue-light mb-2.5">
-                    Your first two weeks
-                  </p>
-                  <p className="text-[15px] sm:text-[16px] leading-[1.5] text-white mb-4">
-                    {emphasise(plan.promise)}
-                  </p>
-                  <ul className="flex flex-col gap-3">
-                    {plan.points.map((point) => (
-                      <li key={point} className="flex gap-2.5 text-[13.5px] leading-relaxed text-gray-300">
-                        <Check size={15} className="flex-shrink-0 mt-[3px] text-brand-blue-light" strokeWidth={2.5} />
-                        <span>{emphasise(point)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="mt-4 pt-3.5 border-t border-brand-blue/20 text-[12.5px] text-gray-500">
-                    First number you&rsquo;ll see: {plan.firstNumber}
-                  </p>
+                <p className="mt-4 text-[15px] sm:text-[16.5px] leading-relaxed text-gray-300
+                  max-w-sm mx-auto">
+                  {emphasise(plan.promise)}
+                </p>
+
+                <div className="mt-9 flex flex-col gap-3.5 max-w-sm mx-auto">
+                  {plan.points.map((point) => (
+                    <p key={point} className="text-[13px] leading-relaxed text-gray-500">
+                      {emphasise(point)}
+                    </p>
+                  ))}
                 </div>
 
-                {/*
-                  The pre-trade scales demo used to sit here. It was the only
-                  interactive moment in the flow back when the next screen was
-                  a price; now the next screen is the product running on their
-                  own trade, which does that job far better and with their own
-                  words in it. Two demonstrations of the same thing, one of
-                  them real, is one too many.
-                */}
-                <div className="mt-6 text-center">
-                  <button
-                    type="button"
-                    onClick={() => setStep('entry')}
-                    className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full
-                      bg-white text-black text-[15px] font-medium hover:bg-gray-200 transition-colors"
-                  >
-                    Try it on a real trade
-                    <ArrowRight size={17} />
-                  </button>
-                  <p className="mt-3 text-[12.5px] text-gray-500">
-                    Takes about thirty seconds
-                  </p>
-                </div>
-              </>
+                <button
+                  type="button"
+                  onClick={() => setStep('entry')}
+                  className="mt-9 inline-flex items-center justify-center gap-2 px-8 py-3.5
+                    rounded-full bg-white text-black text-[15px] font-medium
+                    hover:bg-gray-200 transition-colors"
+                >
+                  Try it on a real trade
+                  <ArrowRight size={17} />
+                </button>
+                <p className="mt-3 text-[12.5px] text-gray-500">Takes about thirty seconds</p>
+              </div>
             )}
           </motion.div>
         </AnimatePresence>

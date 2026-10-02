@@ -1,10 +1,11 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, Mic, Loader2 } from 'lucide-react';
+import { ArrowRight, Mic, Loader2, Check, X } from 'lucide-react';
 import { processVoiceJournalEntry, type VoiceJournalData } from '../../services/voiceJournal';
 import { useVoice } from '../../hooks/useVoice';
 import { trackEvent } from '../../lib/productAnalytics';
 import MascotSays from '../shared/MascotSays';
+import type { StarterItem } from '../../lib/onboardingChecklist';
 
 /*
   The aha, and the only screen in onboarding where the product actually runs.
@@ -83,6 +84,34 @@ function toLines(html: string | undefined): Line[] {
   }
 }
 
+/*
+  One checklist line, in the two states that matter.
+
+  Kept is a blue tick and broken is a grey cross, which is the app's own
+  convention everywhere else - deliberately not the green/red every other
+  journal uses. A rule Nova said nothing about is neither: it renders unmarked
+  rather than being quietly counted as kept, because "not mentioned" and
+  "followed" are not the same claim and only one of them is true.
+*/
+function CheckRow({ name, state }: { name: string; state: boolean | null }) {
+  return (
+    <li className="flex items-start gap-2.5">
+      <span className="flex-shrink-0 w-4 h-4 mt-[2px] flex items-center justify-center">
+        {state === true ? (
+          <Check size={14} className="text-brand-blue-light" strokeWidth={2.5} />
+        ) : state === false ? (
+          <X size={14} className="text-gray-500" strokeWidth={2.5} />
+        ) : (
+          <span className="block w-1.5 h-1.5 rounded-full bg-white/15" />
+        )}
+      </span>
+      <span className={`text-[13px] leading-relaxed ${state === false ? 'text-white' : 'text-gray-400'}`}>
+        {name}
+      </span>
+    </li>
+  );
+}
+
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div>
@@ -94,9 +123,19 @@ function Field({ label, value }: { label: string; value: string }) {
 
 export default function FirstEntry({
   onDone,
+  rules,
+  psychChecks,
 }: {
   /* Hands back whatever Nova produced, or null if they skipped or it failed. */
   onDone: (entry: VoiceJournalData | null, transcript: string) => void;
+  /*
+    Their starter checklist, built from the eight answers. Handed to Nova so
+    she can mark which ones this trade kept and which it broke - which is
+    what makes this look like a real entry rather than a demo of one, and
+    what makes the checklist the plan screen promised actually exist.
+  */
+  rules: StarterItem[];
+  psychChecks: StarterItem[];
 }) {
   const [text, setText] = useState('');
   const [writing, setWriting] = useState(false);
@@ -126,10 +165,15 @@ export default function FirstEntry({
       const result = await processVoiceJournalEntry(
         transcript,
         undefined,
+        /*
+          Confluences stay empty on purpose. They are the trader's own setup
+          and nothing in the eight questions asks about it, so there is
+          nothing honest to hand over.
+        */
         [],
-        [],
+        rules,
         undefined,
-        [],
+        psychChecks,
         'trade',
         (partial) => setEntry((prev) => ({ ...(prev ?? {}), ...partial })),
       );
@@ -154,6 +198,15 @@ export default function FirstEntry({
   if (entry && !writing) {
     const pnl = entry.manual_pnl;
     const mood = entry.template_data?.pre_trade_mindset?.mood_rating;
+    const scales: [string, number][] = (
+      [
+        ['Emotional state', entry.pre_trade_emotional_state],
+        ['Focus', entry.pre_trade_focus],
+        ['Confidence', entry.pre_trade_confidence],
+      ] as [string, number | null | undefined][]
+    )
+      .filter((pair) => typeof pair[1] === 'number')
+      .map((pair) => [pair[0], pair[1] as number]);
 
     return (
       <div>
@@ -215,12 +268,74 @@ export default function FirstEntry({
               </div>
             )}
 
-            {mood !== undefined && mood !== null && (
-              <div className="mt-4 pt-3.5 border-t border-white/[0.06] flex items-center gap-2">
-                <p className="text-[11px] uppercase tracking-[0.12em] text-gray-600">
-                  Going in
-                </p>
-                <p className="text-[13px] text-gray-300">{mood} out of 5</p>
+            {(rules.length > 0 || psychChecks.length > 0) && (
+              <div className="mt-4 pt-4 border-t border-white/[0.06] grid sm:grid-cols-2 gap-5">
+                {rules.length > 0 && (
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.12em] text-gray-600 mb-2.5">
+                      Your rules
+                    </p>
+                    <ul className="flex flex-col gap-2">
+                      {rules.map((r) => (
+                        <CheckRow
+                          key={r.id}
+                          name={r.name}
+                          state={entry.rules_status?.find((x) => x.id === r.id)?.followed ?? null}
+                        />
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {psychChecks.length > 0 && (
+                  <div>
+                    {/*
+                      Forward-looking, not a verdict.
+
+                      These are ticked BEFORE a trade, and this trade already
+                      happened - so Nova has nothing to judge them against and
+                      every one of them rendered blank, which read as three
+                      failures rather than as three things that did not exist
+                      yet. They are what the next entry starts with, so that
+                      is what the label says.
+                    */}
+                    <p className="text-[10px] uppercase tracking-[0.12em] text-gray-600 mb-2.5">
+                      Before your next one
+                    </p>
+                    <ul className="flex flex-col gap-2">
+                      {psychChecks.map((c) => (
+                        <CheckRow
+                          key={c.id}
+                          name={c.name}
+                          state={entry.psychology_status?.find((x) => x.id === c.id)?.confirmed ?? null}
+                        />
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/*
+              The three scales, as the real control shows them. Nova returns
+              these only when the trader actually said something about how
+              they felt, so an omitted one stays omitted rather than being
+              drawn as a zero.
+            */}
+            {(scales.length > 0 || (mood !== undefined && mood !== null)) && (
+              <div className="mt-4 pt-3.5 border-t border-white/[0.06] flex flex-wrap gap-x-6 gap-y-2">
+                {scales.map(([label, value]) => (
+                  <div key={label} className="flex items-center gap-2">
+                    <p className="text-[10px] uppercase tracking-[0.12em] text-gray-600">{label}</p>
+                    <p className="text-[13px] text-gray-300">{value} / 5</p>
+                  </div>
+                ))}
+                {scales.length === 0 && mood !== undefined && mood !== null && (
+                  <div className="flex items-center gap-2">
+                    <p className="text-[10px] uppercase tracking-[0.12em] text-gray-600">Going in</p>
+                    <p className="text-[13px] text-gray-300">{mood} / 5</p>
+                  </div>
+                )}
               </div>
             )}
           </div>

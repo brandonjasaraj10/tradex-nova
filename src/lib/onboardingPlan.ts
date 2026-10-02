@@ -115,7 +115,9 @@ export type ProfileAnswers = Record<string, string>;
 export interface Plan {
   /* The line that names their pattern back to them. */
   headline: string;
-  /* What the first fortnight actually produces. One honest sentence. */
+  /* The date the trial ends, already formatted. */
+  day: string;
+  /* What the first fortnight produces, as a quiet line under the headline. */
   promise: string;
   /* Three specifics, each traceable to something they answered. */
   points: string[];
@@ -211,10 +213,11 @@ export function buildPlan(
     screen immediately before a price, which is the worst possible place for
     one.
   */
-  const promise = `By ${day} you’ll have a *rule-adherence number* and a *psychology score*. Yours, not an average.`;
+  const promise = 'A *rule-adherence number* and a *psychology score*. Yours, not an average.';
 
   return {
     headline: HEADLINE[primary],
+    day,
     promise,
     points,
     firstNumber: FIRST_NUMBER[primary],
