@@ -12,6 +12,8 @@ import {
 } from '../lib/onboardingPlan';
 import { trackEvent } from '../lib/productAnalytics';
 import MascotSays from '../components/shared/MascotSays';
+import FirstEntry from '../components/onboarding/FirstEntry';
+import type { VoiceJournalData } from '../services/voiceJournal';
 import PreTradeScales, { type ScaleValues } from '../components/journal/PreTradeScales';
 
 /*
@@ -59,7 +61,8 @@ type Step =
   | 'struggles'
   | { profile: number }
   | 'thinking'
-  | 'plan';
+  | 'plan'
+  | 'entry';
 
 const QUESTION_COUNT = 3 + PROFILE_QUESTIONS.length;
 
@@ -338,13 +341,38 @@ export default function Onboarding({ onComplete }: { onComplete: () => void | Pr
   */
   const [finishing, setFinishing] = useState(false);
 
-  const finish = async () => {
+  const finish = async (entry: VoiceJournalData | null, transcript: string) => {
     if (finishing) return;
     setFinishing(true);
+
+    /*
+      Kept on the device, not written to the database.
+
+      journal_entries requires an active subscription at the RLS level, so
+      there is nowhere to put this until they subscribe - and carving an
+      exception into the paywall for one row is not a trade worth making.
+      Stashed here instead, for the subscription flow to pick up and write.
+
+      Wrapped, because storage throws outright in some privacy modes and in
+      embedded browsers - which is most of this traffic - and losing a
+      stashed entry must never cost somebody the end of their signup.
+    */
+    if (entry) {
+      try {
+        localStorage.setItem(
+          'tradex.onboarding.firstEntry',
+          JSON.stringify({ entry, transcript, at: Date.now() }),
+        );
+      } catch {
+        /* nothing to do - the entry is lost, the flow is not */
+      }
+    }
+
     trackEvent('onboarding_complete', {
       instrument,
       struggle: primaryStruggle,
       struggles: struggles.length,
+      wroteEntry: !!entry,
     });
     await markOnboardingComplete();
     await onComplete();
@@ -354,7 +382,7 @@ export default function Onboarding({ onComplete }: { onComplete: () => void | Pr
 
   return (
     <div className="min-h-screen bg-brand-bg text-white flex items-center justify-center px-5 py-10">
-      <div className={step === 'plan' ? 'w-full max-w-2xl' : 'w-full max-w-md'}>
+      <div className={step === 'plan' || step === 'entry' ? 'w-full max-w-2xl' : 'w-full max-w-md'}>
         <AnimatePresence mode="wait">
           <motion.div
             key={typeof step === 'object' ? `profile-${step.profile}` : step}
@@ -476,6 +504,10 @@ export default function Onboarding({ onComplete }: { onComplete: () => void | Pr
 
             {step === 'thinking' && <Thinking onDone={() => setStep('plan')} />}
 
+            {step === 'entry' && (
+              <FirstEntry onDone={(entry, transcript) => void finish(entry, transcript)} />
+            )}
+
             {step === 'plan' && (
               <>
                 <h1 className="text-[27px] sm:text-[34px] leading-[1.12] font-semibold
@@ -552,19 +584,25 @@ export default function Onboarding({ onComplete }: { onComplete: () => void | Pr
                     testing here, but not worth breaking the match with the
                     paywall's own CTA on a guess.
                   */}
+                  {/*
+                    Leads to the demonstration rather than to the price.
+
+                    The plan is the argument; the next screen is the proof,
+                    and it is the only place in this flow where the product
+                    actually runs. Sending somebody from a promise straight
+                    to a paywall is what the old flow did.
+                  */}
                   <button
                     type="button"
-                    onClick={() => void finish()}
-                    disabled={finishing}
+                    onClick={() => setStep('entry')}
                     className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full
-                      bg-white text-black text-[15px] font-medium hover:bg-gray-200 transition-colors
-                      disabled:opacity-60"
+                      bg-white text-black text-[15px] font-medium hover:bg-gray-200 transition-colors"
                   >
-                    {finishing ? 'One moment\u2026' : 'Start 14 days free'}
-                    {!finishing && <ArrowRight size={17} />}
+                    Try it on a real trade
+                    <ArrowRight size={17} />
                   </button>
                   <p className="mt-3 text-[12.5px] text-gray-500">
-                    Nothing charged today &middot; Cancel in two clicks
+                    Takes about thirty seconds
                   </p>
                 </div>
               </>
