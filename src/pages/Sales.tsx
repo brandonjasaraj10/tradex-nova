@@ -909,118 +909,6 @@ export default function Sales() {
         </div>
       </div>
 
-      {/*
-        THE OBJECTION.
-
-        Almost nobody arrives using nothing - they use a spreadsheet and half
-        believe it is fine. Naming that directly converts better than listing
-        features, because the comparison is the argument they are already
-        having with themselves.
-      */}
-      <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
-        <div className="max-w-3xl mx-auto px-5 sm:px-8">
-          {/*
-            He turns up beside the objection rather than above it.
-
-            This is the only heading on the page written in somebody else's
-            voice - it is the reader's own line, quoted back at them - so a
-            character standing next to it reads as the one saying it, and the
-            section becomes a conversation instead of a rebuttal. Centred
-            above, like the closing CTA, he would just be a second badge on a
-            second heading.
-
-            Small, and beside the text rather than over it: the joke is that
-            he is standing there, not that he is announcing anything.
-          */}
-          <div className="text-center mb-24 sm:mb-14">
-            <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
-              &ldquo;I already have a spreadsheet&rdquo;
-            </h2>
-            <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-sm sm:max-w-md mx-auto text-balance">
-              You do. Be honest about how up to date it is.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 sm:gap-4">
-            <div className="rounded-2xl border border-white/[0.07] bg-brand-surface p-4 sm:p-6">
-              <p className="text-[11px] uppercase tracking-[0.14em] text-gray-600 mb-4">Spreadsheet</p>
-              <ul className="flex flex-col gap-3">
-                {[
-                  'You type every row',
-                  'Blank after a bad week',
-                  'Tells you what, never why',
-                  'No memory of your state',
-                ].map((t) => (
-                  <li key={t} className="text-[12.5px] sm:text-sm text-gray-500 leading-snug">{t}</li>
-                ))}
-              </ul>
-            </div>
-            {/*
-              He is looking over the top of the TradeX card.
-
-              Standing next to a heading is a sticker; leaning on the furniture
-              is a character. The clip window is what sells it - the wrapper is
-              as tall as the part of him that should show, so the rest is cut
-              off behind the card's edge and he reads as being BEHIND it rather
-              than pasted on top.
-
-              Arms crossed, turned to face the spreadsheet column he is
-            unimpressed by - the pose carries the head tilt, so no rotation
-            is added on top of it.
-
-            Over the TradeX card and not the spreadsheet one, deliberately.
-              The spreadsheet is the reader's, and this section already takes
-              care not to mock them for it - "You do. Be honest about how up to
-              date it is." A character sneering over that column would undo the
-              one line on the page that grants them some dignity.
-            */}
-            <div className="relative rounded-2xl border border-white/15 bg-brand-surface p-4 sm:p-6">
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute right-3 sm:right-5 overflow-hidden
-                  -top-[84px] h-[84px] sm:-top-[110px] sm:h-[110px]"
-              >
-                {/*
-                  The window is 56.8% of his height, which is where the
-                  underside of his crossed arms sits - so the card's edge
-                  lands under the arms rather than through them. It shows his
-                  head AND his crossed arms, which is
-                  the whole reason this pose is here - clipped at head height
-                  he would just be the idle pose again and the skepticism
-                  would be invisible. It lands so the card's edge cuts just
-                  under the arms, which reads as him leaning on it.
-
-                  Shorter on a phone, because the gap over a card is smaller
-                  when the text above it wraps - at full height his head sat
-                  across the word "date" in "how up to date it is".
-
-                  Static, by choice. A bob was tried and removed: the effect
-                  here is the clip, not the movement, and a loop that runs
-                  forever on a marketing page is one more thing to get right
-                  on a slow phone for something the still frame already does.
-                */}
-                {/* Two sizes so the PROPORTION shown stays the same: 54 of
-                    110 and 72 of 150 are both a touch under half, which is
-                    head, eyes and smile. Shrinking only the window cut him
-                    off above the smile on a phone. */}
-                <Mascot pose="arms" height={124} facing="left" className="sm:hidden" />
-                <Mascot pose="arms" height={162} facing="left" className="hidden sm:block" />
-              </div>
-              <p className="text-[11px] uppercase tracking-[0.14em] text-gray-400 mb-4">TradeX</p>
-              <ul className="flex flex-col gap-3">
-                {[
-                  'You talk, it types',
-                  'Thirty seconds, so it gets done',
-                  'Finds the pattern across every trade',
-                  'Scores your head, not just the result',
-                ].map((t) => (
-                  <li key={t} className="text-[12.5px] sm:text-sm text-gray-200 leading-snug">{t}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/*
         FROM THE FOUNDER.
@@ -1459,12 +1347,20 @@ export default function Sales() {
           */}
           <Mascot height={150} className="mx-auto mb-6 sm:mb-7" />
 
+          {/*
+            Closes on the same idea it opened on.
+
+            This was still "Stop guessing why you lose" - the hero's old
+            headline, left behind when the hero changed, so the page opened on
+            one argument and shut on another. The last thing read before the
+            price should be the first thing read on the page.
+          */}
           <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
-            Stop guessing why you lose
+            Close the gap
           </h2>
           <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-sm mx-auto text-balance">
             Your P&amp;L says what happened. It never says what you were like
-            when it did.
+            when it did. Two weeks is enough to find out.
           </p>
 
           {launched ? (
