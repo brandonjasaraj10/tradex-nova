@@ -49,18 +49,33 @@ const PLACEHOLDER =
   the markup instead and rendered as React - the structure survives, the
   injection surface does not.
 */
-function toLines(html: string | undefined): string[] {
+interface Line {
+  text: string;
+  heading: boolean;
+}
+
+function toLines(html: string | undefined): Line[] {
   if (!html) return [];
   try {
     const doc = new DOMParser().parseFromString(html, 'text/html');
-    const nodes = [...doc.querySelectorAll('li, p, h1, h2, h3')];
-    const lines = nodes
-      .map((n) => (n.textContent ?? '').trim())
-      .filter((t) => t.length > 0);
-    /* No list markup at all - fall back to the plain text of the whole thing. */
+    const nodes = [...doc.querySelectorAll('li, p, h1, h2, h3, h4')];
+    const lines: Line[] = nodes
+      .map((n) => ({
+        text: (n.textContent ?? '').trim(),
+        /*
+          Nova writes real headings - "What happened", "Psychology" - and
+          flattening them into the bullet list made them read as two
+          mysteriously short bullets among the long ones. They are labels,
+          so they are rendered as labels.
+        */
+        heading: /^H[1-4]$/.test(n.tagName),
+      }))
+      .filter((l) => l.text.length > 0);
+
+    /* No markup at all - fall back to the plain text of the whole thing. */
     if (lines.length === 0) {
       const text = (doc.body.textContent ?? '').trim();
-      return text ? [text] : [];
+      return text ? [{ text, heading: false }] : [];
     }
     return lines;
   } catch {
@@ -181,14 +196,23 @@ export default function FirstEntry({
             )}
 
             {lines.length > 0 && (
-              <ul className="flex flex-col gap-2">
-                {lines.map((line, i) => (
-                  <li key={i} className="flex gap-2.5 text-[13.5px] leading-relaxed text-gray-300">
-                    <span className="flex-shrink-0 mt-[7px] w-1 h-1 rounded-full bg-brand-blue-light" />
-                    <span>{line}</span>
-                  </li>
-                ))}
-              </ul>
+              <div className="flex flex-col gap-2">
+                {lines.map((line, i) =>
+                  line.heading ? (
+                    <p
+                      key={i}
+                      className="text-[10px] uppercase tracking-[0.12em] text-gray-600 mt-2 first:mt-0"
+                    >
+                      {line.text}
+                    </p>
+                  ) : (
+                    <div key={i} className="flex gap-2.5 text-[13.5px] leading-relaxed text-gray-300">
+                      <span className="flex-shrink-0 mt-[7px] w-1 h-1 rounded-full bg-brand-blue-light" />
+                      <span>{line.text}</span>
+                    </div>
+                  ),
+                )}
+              </div>
             )}
 
             {mood !== undefined && mood !== null && (

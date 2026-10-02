@@ -538,8 +538,15 @@ export default function Onboarding({ onComplete }: { onComplete: () => void | Pr
                   trading product with a risk disclaimer for a reason.
                 */}
                 <div className="mt-6 sm:mt-7 text-center max-w-lg mx-auto">
-                  <p className="text-[16px] sm:text-[18px] leading-[1.45] font-semibold
-                    tracking-[-0.02em] text-white text-balance">
+                  {/*
+                    Base weight deliberately light. emphasise() renders its
+                    marked runs semibold white, so a line that is already
+                    semibold white has nothing left to emphasise with - the
+                    first version of this bolded "three years" and "two
+                    weeks" into text that was identical to them.
+                  */}
+                  <p className="text-[16.5px] sm:text-[18px] leading-[1.45] font-normal
+                    tracking-[-0.015em] text-gray-400 text-balance">
                     {emphasise('Most traders take *three years* to find out what you are about to find out in *two weeks*.')}
                   </p>
                   <p className="mt-3 text-[13.5px] sm:text-[14.5px] leading-relaxed text-gray-400">
