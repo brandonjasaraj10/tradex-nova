@@ -11,6 +11,7 @@ import {
   PROFILE_QUESTIONS, buildPlan, type ProfileAnswers,
 } from '../lib/onboardingPlan';
 import { trackEvent } from '../lib/productAnalytics';
+import { emphasise } from '../lib/emphasise';
 import MascotSays from '../components/shared/MascotSays';
 import FirstEntry from '../components/onboarding/FirstEntry';
 import type { VoiceJournalData } from '../services/voiceJournal';
@@ -410,8 +411,10 @@ export default function Onboarding({ onComplete }: { onComplete: () => void | Pr
                 </h1>
                 <p className="text-[14.5px] sm:text-[15.5px] leading-relaxed text-gray-400
                   max-w-md mx-auto">
-                  They blow it on what they did at the moment of entry. Eight questions and
-                  I&rsquo;ll show you which one is yours.
+                  You already know what a good trade looks like. What costs you money is the
+                  distance between knowing it and doing it with real money on the line &mdash;
+                  the <strong className="font-semibold text-white">identity-to-execution
+                  gap</strong>. Eight questions and I&rsquo;ll show you where yours is.
                 </p>
                 <button
                   type="button"
@@ -520,6 +523,34 @@ export default function Onboarding({ onComplete }: { onComplete: () => void | Pr
                 </p>
 
                 {/*
+                  The outcome, and the only place it is sold.
+
+                  An earlier draft of this screen was all mechanism - a
+                  rule-adherence number, a psychology score - and no
+                  destination. Nobody signs up for a number. What is being
+                  sold is the gap closing: the same strategy, run by somebody
+                  who can see themselves running it.
+
+                  The claim is deliberately about TIME rather than money.
+                  "Three years compressed into two weeks" is a claim about
+                  the speed of self-knowledge, which this can stand behind;
+                  anything about returns is one it cannot, and this is a
+                  trading product with a risk disclaimer for a reason.
+                */}
+                <div className="mt-6 sm:mt-7 text-center max-w-lg mx-auto">
+                  <p className="text-[16px] sm:text-[18px] leading-[1.45] font-semibold
+                    tracking-[-0.02em] text-white text-balance">
+                    {emphasise('Most traders take *three years* to find out what you are about to find out in *two weeks*.')}
+                  </p>
+                  <p className="mt-3 text-[13.5px] sm:text-[14.5px] leading-relaxed text-gray-400">
+                    {emphasise('Not because they are slow. Because nobody is measuring the thing that actually decides it — *what you were like going in*. P&L only tells you what already happened.')}
+                  </p>
+                  <p className="mt-3 text-[13.5px] sm:text-[14.5px] leading-relaxed text-gray-400">
+                    {emphasise('You do not need a new strategy. You need *the one you already have*, executed by someone who can see themselves doing it.')}
+                  </p>
+                </div>
+
+                {/*
                   The dated promise and the three specifics under it.
 
                   Every line here traces back to something they answered two
@@ -533,18 +564,18 @@ export default function Onboarding({ onComplete }: { onComplete: () => void | Pr
                     Your first two weeks
                   </p>
                   <p className="text-[15px] sm:text-[16px] leading-[1.5] text-white mb-4">
-                    {plan.promise}
+                    {emphasise(plan.promise)}
                   </p>
                   <ul className="flex flex-col gap-3">
                     {plan.points.map((point) => (
                       <li key={point} className="flex gap-2.5 text-[13.5px] leading-relaxed text-gray-300">
                         <Check size={15} className="flex-shrink-0 mt-[3px] text-brand-blue-light" strokeWidth={2.5} />
-                        <span>{point}</span>
+                        <span>{emphasise(point)}</span>
                       </li>
                     ))}
                   </ul>
                   <p className="mt-4 pt-3.5 border-t border-brand-blue/20 text-[12.5px] text-gray-500">
-                    Watching for: {plan.watching}
+                    First number you’ll see: {plan.firstNumber}
                   </p>
                 </div>
 

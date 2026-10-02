@@ -119,8 +119,8 @@ export interface Plan {
   promise: string;
   /* Three specifics, each traceable to something they answered. */
   points: string[];
-  /* The thing being watched for, in four or five words, for the grid label. */
-  watching: string;
+  /* The first number this person will see, named from what they picked. */
+  firstNumber: string;
 }
 
 const HEADLINE: Record<Struggle, string> = {
@@ -130,11 +130,17 @@ const HEADLINE: Record<Struggle, string> = {
   not_sure: 'You have a pattern. You just haven’t seen it yet.',
 };
 
-const WATCHING: Record<Struggle, string> = {
-  revenge_trading: 'the hour after a loss',
+/*
+  The first number they will actually see, picked from what they said is
+  costing them. Each one is computed from their own entries - adherence from
+  the rules they tick, the psychology score from the pre-trade scales - so
+  none of this promises that something will be noticed on their behalf.
+*/
+const FIRST_NUMBER: Record<Struggle, string> = {
+  revenge_trading: 'your adherence on the trade straight after a loss',
   overtrading: 'your trade count against your P&L',
-  breaking_rules: 'which rule you drop first',
-  not_sure: 'what your losing days have in common',
+  breaking_rules: 'your rule adherence',
+  not_sure: 'your psychology score',
 };
 
 /*
@@ -165,35 +171,35 @@ export function buildPlan(
   */
   if (profile.rules_live === 'head' || profile.rules_live === 'none') {
     points.push(
-      'Your rules come out of your head and onto a checklist you tick before you enter — so breaking one is a thing you see, not a thing you remember.',
+      'Your rules come out of your head and onto *a checklist you tick before you enter* — so breaking one is a thing you see, not a thing you remember.',
     );
   } else {
     points.push(
-      'Your rules go on a checklist you tick before you enter, and every entry records which ones you actually kept.',
+      'Your rules go on *a checklist you tick before you enter*, and every entry records which ones you actually kept.',
     );
   }
 
   if (profile.after_loss === 'bigger') {
     points.push(
-      'Every trade is scored against what you were like before you took it — starting with the ones straight after a loss, since that is where you said the size goes up.',
+      'Every trade is scored against *what you were like before you took it* — starting with the ones straight after a loss, since that is where you said the size goes up.',
     );
   } else if (profile.green_day === 'keep_going') {
     points.push(
-      'Every trade is scored against what you were like before you took it — including the ones you take when the day was already won.',
+      'Every trade is scored against *what you were like before you took it* — including the ones you take when the day was already won.',
     );
   } else {
     points.push(
-      'Every trade is scored against what you were like before you took it, not just what it paid.',
+      'Every trade is scored against *what you were like before you took it*, not just what it paid.',
     );
   }
 
   if (profile.notice_when === 'later') {
     points.push(
-      'Nova reads the lot back and names the pattern the same week — rather than you spotting it months later, if at all.',
+      '*Adherence, psychology and P&L on one screen* — so you see it the same week instead of months later, if at all.',
     );
   } else {
     points.push(
-      'Nova reads every entry and names what keeps repeating, across months rather than one trade at a time.',
+      '*Adherence, psychology and P&L on one screen* — the pattern is something you look at, not something you are told.',
     );
   }
 
@@ -205,12 +211,12 @@ export function buildPlan(
     screen immediately before a price, which is the worst possible place for
     one.
   */
-  const promise = `By ${day} you’ll have two weeks of entries — enough for the first pattern to show up on its own.`;
+  const promise = `By ${day} you’ll have a *rule-adherence number* and a *psychology score* with two weeks behind them. Yours, not an average.`;
 
   return {
     headline: HEADLINE[primary],
     promise,
     points,
-    watching: WATCHING[primary],
+    firstNumber: FIRST_NUMBER[primary],
   };
 }
