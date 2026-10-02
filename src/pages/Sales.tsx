@@ -9,6 +9,9 @@ import ProductTabs from '../components/sales/ProductTabs';
 import Wordmark from '../components/shared/Wordmark';
 import NovaAnswer from '../components/sales/NovaAnswer';
 import SyncMarquee from '../components/sales/SyncMarquee';
+import PreTradeScales from '../components/journal/PreTradeScales';
+import NOVAScore from '../components/shared/NOVAScore';
+import { EXAMPLE_SCORE } from '../components/marketing/exampleScore';
 import SignupOrWaitlist from '../components/shared/SignupOrWaitlist';
 import { useHasLaunched } from '../lib/launch';
 import { useState, useEffect, useRef } from 'react';
@@ -666,33 +669,23 @@ export default function Sales() {
               ))}
             </div>
 
-            {/* The prop firm recognition row. */}
+            {/*
+              The firm names used to be repeated here.
+
+              They now scroll past in the hero, which is where every rival
+              puts them and where the question "will this work with my
+              account?" actually occurs. Printing the same ten names again
+              four screens later was not reinforcement, it was the same
+              credibility spent twice - and on a page being cut for length,
+              the duplicate is the obvious thing to lose.
+
+              What stays is the sentence underneath them, which is the part
+              that was never said in the hero and is the one that matters
+              legally as much as commercially: the connection is to
+              MetaTrader, not to any firm.
+            */}
             <div className="mt-7 pt-6 border-t border-white/[0.07]">
-              <p className="text-center text-[11px] tracking-[0.14em] uppercase text-gray-500 mb-4">
-                If your firm runs MT4 or MT5, it works
-              </p>
-              <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2.5">
-                {[
-                  'FTMO',
-                  'FundedNext',
-                  'The5ers',
-                  'FundingPips',
-                  'E8 Markets',
-                  'Alpha Capital',
-                  'FXIFY',
-                  'Goat Funded Trader',
-                  'Funded Trading Plus',
-                  'City Traders Imperium',
-                ].map((firm) => (
-                  <span
-                    key={firm}
-                    className="text-[13px] text-gray-500 tracking-[-0.01em] whitespace-nowrap"
-                  >
-                    {firm}
-                  </span>
-                ))}
-              </div>
-              <p className="mt-5 text-center text-[12px] text-gray-600 leading-relaxed max-w-md mx-auto">
+              <p className="text-center text-[12px] text-gray-600 leading-relaxed max-w-md mx-auto">
                 TradeX connects through MetaTrader itself, not through any firm{' — '}so
                 your broker, your prop firm, or both at once all work the same way.
               </p>
@@ -781,67 +774,40 @@ export default function Sales() {
 
           <div className="rounded-2xl border border-white/[0.07] bg-brand-surface p-5 sm:p-8">
             {/*
-              What you log, per trade. Three sliders before you enter, which is
-              the whole ask - the rest is TradeX's problem.
-            */}
-            <p className="text-[10px] uppercase tracking-[0.12em] text-gray-600 mb-3">Before the trade</p>
-            <div className="grid grid-cols-3 gap-3 sm:gap-5">
-              {[
-                { label: 'Focus', value: 7 },
-                { label: 'Confidence', value: 4 },
-                { label: 'Discipline', value: 6 },
-              ].map((m) => (
-                <div key={m.label} className="rounded-xl border border-white/[0.07] bg-brand-elevated p-3 sm:p-4">
-                  <p className="text-[9px] sm:text-[10px] uppercase tracking-[0.04em] sm:tracking-[0.12em] text-gray-600 whitespace-nowrap">{m.label}</p>
-                  <p className="mt-1.5 text-xl sm:text-2xl font-semibold text-white tabular-nums">
-                    {m.value}<span className="text-gray-600 text-sm">/10</span>
-                  </p>
-                  <div className="mt-2.5 h-1 rounded-full bg-white/[0.07] overflow-hidden">
-                    <div className="h-full rounded-full bg-brand-blue/70" style={{ width: `${m.value * 10}%` }} />
-                  </div>
-                </div>
-              ))}
-            </div>
+              The real controls, not drawings of them.
 
-            {/*
-              And what it turns into. The NOVA Score is the app's own roll-up -
-              0 to 100, banded Developing through Elite, built from
-              profitability, consistency, risk management, discipline and
-              execution. It belongs here because it is the number that moves
-              when your head does, and it was the one real feature the page
-              never mentioned.
-            */}
-            <div className="mt-4 rounded-xl border border-brand-blue/20 bg-brand-blue/[0.06] p-4 sm:p-5">
-              <div className="flex items-center justify-between gap-4 mb-4">
-                <div>
-                  <p className="text-[10px] uppercase tracking-[0.12em] text-gray-500">NOVA Score</p>
-                  <p className="mt-1 flex items-baseline gap-2">
-                    <span className="text-3xl sm:text-4xl font-semibold text-white tabular-nums">68</span>
-                    <span className="text-[13px] text-brand-blue">Advanced</span>
-                  </p>
-                </div>
-                <p className="text-[11px] text-gray-500 text-right max-w-[9rem] leading-relaxed">
-                  One number for whether you are actually improving
-                </p>
-              </div>
-              <div className="flex flex-col gap-2">
-                {[
-                  ['Discipline', 74],
-                  ['Risk Management', 71],
-                  ['Consistency', 62],
-                  ['Execution', 58],
-                ].map(([label, value]) => (
-                  <div key={label as string} className="flex items-center gap-3">
-                    <span className="w-[104px] sm:w-[124px] flex-shrink-0 text-[11.5px] text-gray-500">{label}</span>
-                    <span className="flex-1 h-1 rounded-full bg-white/[0.07] overflow-hidden">
-                      <span className="block h-full rounded-full bg-brand-blue/60" style={{ width: `${value}%` }} />
-                    </span>
-                    <span className="w-7 text-right text-[11.5px] text-gray-400 tabular-nums">{value}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+              This drew its own pre-trade sliders - Focus, Confidence and
+              Discipline, each out of ten - and the product has no such
+              control. The actual one rates Emotional State, Focus Level and
+              Confidence from one to five, and there is no Discipline slider
+              anywhere in the app. Somebody arriving from this page met a
+              screen they had not been shown.
 
+              It also drew its own NOVA Score at 68 while /features and
+              /pricing render the shared EXAMPLE_SCORE at 78 - the same number
+              advertised twice at two different values, which is the exact
+              failure exampleScore.ts was written to prevent.
+
+              Both are now the components the app itself ships, which is the
+              brand guide's own rule: a marketing page cannot drift from the
+              product it is selling if it is rendering the product.
+            */}
+            <PreTradeScales
+              accent="marketing"
+              disabled
+              values={{ emotional_state: 2, focus: 4, confidence: 3 }}
+              onChange={() => {}}
+            />
+
+            <div className="mt-5">
+              <NOVAScore
+                accent="marketing"
+                breakdown={EXAMPLE_SCORE}
+                size="md"
+                showBreakdown
+                periodLabel="Last 30 days"
+              />
+            </div>
             <div className="mt-4 rounded-xl border border-white/[0.07] bg-brand-elevated p-4 sm:p-5">
               <p className="text-[10px] uppercase tracking-[0.12em] text-gray-600 mb-2">What it found</p>
               <p className="text-[13.5px] sm:text-[15px] text-gray-300 leading-relaxed">
@@ -1259,62 +1225,54 @@ export default function Sales() {
       </div>
 
       {/*
-        Testimonials, restyled to match the rest of the page.
+        Testimonials, as a band rather than a section.
 
-        Content unchanged - that is a decision already taken. What changed is
-        the treatment: quote first and name second, because on a page this
-        quiet the words carry more than an avatar circle does, and three
-        heavy cards in a row was the last piece of the old visual language
-        left standing.
+        The words are unchanged - that is a decision already taken. What
+        changed is how much of the page they take up. They had their own
+        full section: an eyebrow, a 48px heading, three bordered cards with
+        avatar circles, and nearly 200px of vertical padding around it. On a
+        page being cut for length, that is a lot of room for the least
+        verifiable thing on it, sitting between the guarantee and the one
+        button that matters.
+
+        So the chrome goes and the quotes stay. No cards, because a card says
+        "object worth examining" and these are better skimmed; no avatar
+        initials, because a circle with letters in it is decoration standing
+        in for a face we do not have; no heading, because the one line above
+        the row says the same thing in a quarter of the height. What is left
+        is three short quotes in a row, a thin rule above them, and the page
+        moving on to the close.
       */}
-      <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
+      <div className="relative border-t border-white/[0.06] py-12 sm:py-16">
         <div className="max-w-4xl mx-auto px-5 sm:px-8">
-          <div className="text-center mb-10 sm:mb-14">
-            <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
-              Early users
-            </p>
-            <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
-              What they say
-            </h2>
-          </div>
+          <p className="text-center text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500">
+            From early users
+          </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+          <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-7 sm:gap-8">
             {[
               {
                 quote: "NOVA's psychological insights helped me identify and fix my emotional trading patterns. My win rate improved by 35% in just two months.",
                 name: 'Michael S.',
                 role: 'Forex Trader',
-                initials: 'MS',
               },
               {
                 quote: 'The visual trade calendar and analytics helped me identify my most profitable setups. TradeX has completely transformed my trading approach.',
                 name: 'Sarah L.',
                 role: 'Options Trader',
-                initials: 'SL',
               },
               {
                 quote: "The detailed analytics and journaling features save me hours each week. NOVA's insights have helped me become more consistent and disciplined.",
                 name: 'David K.',
                 role: 'Crypto Trader',
-                initials: 'DK',
               },
             ].map((t) => (
-              <figure
-                key={t.name}
-                className="flex flex-col rounded-2xl border border-white/[0.07] bg-brand-surface p-5 sm:p-6"
-              >
-                <blockquote className="text-[13.5px] sm:text-sm text-gray-300 leading-relaxed flex-1">
+              <figure key={t.name} className="flex flex-col">
+                <blockquote className="text-[13px] sm:text-[13.5px] text-gray-400 leading-relaxed flex-1">
                   &ldquo;{t.quote}&rdquo;
                 </blockquote>
-                <figcaption className="mt-5 pt-4 border-t border-white/[0.06] flex items-center gap-2.5">
-                  <span className="w-7 h-7 rounded-full bg-brand-elevated border border-white/10
-                    flex items-center justify-center text-[10px] font-medium text-gray-400">
-                    {t.initials}
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block text-[12.5px] text-gray-300 truncate">{t.name}</span>
-                    <span className="block text-[11px] text-gray-600 truncate">{t.role}</span>
-                  </span>
+                <figcaption className="mt-3.5 text-[11.5px] text-gray-600">
+                  {t.name} &middot; {t.role}
                 </figcaption>
               </figure>
             ))}
