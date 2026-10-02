@@ -1,4 +1,5 @@
 import { supabase, getCurrentUser } from '../lib/supabase';
+import { newUuid } from '../lib/uuid';
 
 export interface ChatMessage {
   id: string;
@@ -13,7 +14,7 @@ export class NovaAIService {
   private userId: string | null = null;
 
   constructor(sessionId?: string) {
-    this.sessionId = sessionId || crypto.randomUUID();
+    this.sessionId = sessionId || newUuid();
   }
 
   async initialize() {
@@ -526,7 +527,7 @@ export class NovaAIService {
   }
 
   newSession(): void {
-    this.sessionId = crypto.randomUUID();
+    this.sessionId = newUuid();
   }
 }
 

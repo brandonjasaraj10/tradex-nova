@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import type { Archetype } from '../lib/auditContent';
+import { newUuid } from '../lib/uuid';
 
 /*
   Recording a psychology audit taken by somebody with no account.
@@ -10,18 +11,6 @@ import type { Archetype } from '../lib/auditContent';
   Generating the id here is what makes the second write possible at all.
 */
 
-/* crypto.randomUUID is unavailable on http origins in older Safari, and
-   this page will be opened from Instagram's in-app browser more than
-   anywhere else, so there is a fallback rather than a crash. */
-function newId(): string {
-  try {
-    if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
-  } catch { /* fall through */ }
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
-  });
-}
 
 /*
   Written the moment the questions are finished, before anything is asked
@@ -37,7 +26,7 @@ export async function recordAudit(
   answers: Record<string, number>,
   source?: string,
 ): Promise<string | null> {
-  const id = newId();
+  const id = newUuid();
   try {
     const { error } = await supabase
       .from('psychology_audits')

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase, getCurrentUser } from '../lib/supabase';
 import { NovaAIService, ChatMessage } from '../services/novaAI';
+import { newUuid } from '../lib/uuid';
 
 async function ensureSessionExists(sessionId: string) {
   const user = await getCurrentUser();
@@ -48,7 +49,7 @@ export function useNovaEntrySession(sessionId: string | null | undefined, onSess
     setIsLoading(true);
 
     const load = async () => {
-      const effectiveSessionId = sessionId || crypto.randomUUID();
+      const effectiveSessionId = sessionId || newUuid();
 
       await ensureSessionExists(effectiveSessionId);
       if (cancelled) return;
@@ -67,7 +68,7 @@ export function useNovaEntrySession(sessionId: string | null | undefined, onSess
 
       if (history.length === 0) {
         const welcomeMessage: ChatMessage = {
-          id: crypto.randomUUID(),
+          id: newUuid(),
           role: 'assistant',
           content: "Hey! I'm Nova. Ask me to analyze your charts, help you fill out this entry, or just talk through your trade."
         };
@@ -100,7 +101,7 @@ export function useNovaEntrySession(sessionId: string | null | undefined, onSess
     if (!content.trim() || !service || isTyping) return undefined;
 
     const userMsg: ChatMessage = {
-      id: crypto.randomUUID(),
+      id: newUuid(),
       role: 'user',
       content: content.trim()
     };
@@ -114,7 +115,7 @@ export function useNovaEntrySession(sessionId: string | null | undefined, onSess
       const response = await service.generateResponse(content.trim(), messagesRef.current, images);
 
       const assistantMsg: ChatMessage = {
-        id: crypto.randomUUID(),
+        id: newUuid(),
         role: 'assistant',
         content: response
       };
@@ -125,7 +126,7 @@ export function useNovaEntrySession(sessionId: string | null | undefined, onSess
     } catch (error) {
       console.error('Error sending message:', error);
       const errorMsg: ChatMessage = {
-        id: crypto.randomUUID(),
+        id: newUuid(),
         role: 'assistant',
         content: 'Sorry, I encountered an error. Please try again.'
       };

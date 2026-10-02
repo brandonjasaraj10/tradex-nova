@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { supabase, getCurrentUser } from './supabase';
 import { NovaAIService, ChatMessage } from '../services/novaAI';
+import { newUuid } from '../lib/uuid';
 
 interface NovaContextType {
   messages: ChatMessage[];
@@ -26,7 +27,7 @@ const NOVA_SESSION_KEY = 'nova_session_id';
 function getOrCreateSessionId(): string {
   let sessionId = localStorage.getItem(NOVA_SESSION_KEY);
   if (!sessionId) {
-    sessionId = crypto.randomUUID();
+    sessionId = newUuid();
     localStorage.setItem(NOVA_SESSION_KEY, sessionId);
   }
   return sessionId;
@@ -101,7 +102,7 @@ export function NovaProvider({ children }: { children: ReactNode }) {
       const history = await novaService.loadChatHistory();
       if (history.length === 0) {
         const welcomeMessage: ChatMessage = {
-          id: crypto.randomUUID(),
+          id: newUuid(),
           role: 'assistant',
           content: "Hey! I'm NOVA, your AI Trading Assistant. I'm here to help you analyze your trades, review your performance, and provide insights. What would you like to explore?"
         };
@@ -191,7 +192,7 @@ export function NovaProvider({ children }: { children: ReactNode }) {
     if (!content.trim() || isTyping) return;
 
     const userMsg: ChatMessage = {
-      id: crypto.randomUUID(),
+      id: newUuid(),
       role: 'user',
       content: content.trim()
     };
@@ -225,7 +226,7 @@ export function NovaProvider({ children }: { children: ReactNode }) {
       const response = await novaService.generateResponse(content.trim(), messages, images);
 
       const assistantMsg: ChatMessage = {
-        id: crypto.randomUUID(),
+        id: newUuid(),
         role: 'assistant',
         content: response
       };
@@ -235,7 +236,7 @@ export function NovaProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Error sending message:', error);
       const errorMsg: ChatMessage = {
-        id: crypto.randomUUID(),
+        id: newUuid(),
         role: 'assistant',
         content: 'Sorry, I encountered an error. Please try again.'
       };
@@ -248,11 +249,11 @@ export function NovaProvider({ children }: { children: ReactNode }) {
   const clearHistory = useCallback(async () => {
     try {
       await novaService.clearHistory();
-      const newSessionId = crypto.randomUUID();
+      const newSessionId = newUuid();
       localStorage.setItem(NOVA_SESSION_KEY, newSessionId);
 
       const welcomeMessage: ChatMessage = {
-        id: crypto.randomUUID(),
+        id: newUuid(),
         role: 'assistant',
         content: "Hey! I'm NOVA, your AI Trading Assistant. I'm here to help you analyze your trades, review your performance, and provide insights. What would you like to explore?"
       };
@@ -268,7 +269,7 @@ export function NovaProvider({ children }: { children: ReactNode }) {
 
   const startVoiceSession = useCallback(() => {
     const welcomeMessage: ChatMessage = {
-      id: crypto.randomUUID(),
+      id: newUuid(),
       role: 'assistant',
       content: "Hey! I'm ready to chat. What would you like to know?"
     };
@@ -296,7 +297,7 @@ export function NovaProvider({ children }: { children: ReactNode }) {
   const createNewSession = useCallback(async () => {
     try {
       setIsLoading(true);
-      const newSessionId = crypto.randomUUID();
+      const newSessionId = newUuid();
       const user = await getCurrentUser();
       if (!user) return;
 
@@ -316,7 +317,7 @@ export function NovaProvider({ children }: { children: ReactNode }) {
       setNovaService(newService);
 
       const welcomeMessage: ChatMessage = {
-        id: crypto.randomUUID(),
+        id: newUuid(),
         role: 'assistant',
         content: "Hey! I'm NOVA, your AI Trading Assistant. I'm here to help you analyze your trades, review your performance, and provide insights. What would you like to explore?"
       };
