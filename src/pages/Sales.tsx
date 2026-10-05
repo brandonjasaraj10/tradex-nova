@@ -865,11 +865,10 @@ export default function Sales() {
                 Why I built this
               </p>
               <p className="mt-3 text-[14.5px] sm:text-[15.5px] leading-relaxed text-gray-300 max-w-xl">
-                I kept quitting my own trading journal, because writing it up
-                honestly is hardest on exactly the days it would have helped
-                most. Every one I tried had a hundred features and not one of
-                them tracked the thing that actually decides whether I make
-                money. My trading psychology.
+                Every one I tried had a hundred features and not one of them
+                tracked the thing that actually decides whether I make money.
+                My trading psychology. Everything else is tidier arithmetic on
+                a loss you have already taken.
               </p>
               <p className="mt-4">
                 <Link
