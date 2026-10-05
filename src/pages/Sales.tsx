@@ -675,11 +675,12 @@ export default function Sales() {
               Psychology
             </p>
             <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
-              Your P&amp;L is the symptom
+              A number that moves when your head does
             </h2>
             <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-sm sm:max-w-md mx-auto text-balance">
-              Rate your head before the trade. TradeX matches it against what
-              actually happened, and turns it into one score you can watch move.
+              Three taps before you enter &mdash; how you feel, how focused
+              you are, how sure. TradeX holds that against what you actually
+              did, and the window above stops being invisible.
             </p>
 
             {/*
@@ -762,11 +763,11 @@ export default function Sales() {
               Nova
             </p>
             <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
-              Ask Nova anything about your trading
+              It has read everything you wrote
             </h2>
             <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-sm sm:max-w-md mx-auto text-balance">
-              Nova has read every entry you have written. Not generic advice &mdash;
-              your trades, your numbers, your habits.
+              Nova is not answering from the internet. It is answering from
+              your entries, your numbers and the things you have told it twice.
             </p>
           </div>
 
@@ -982,8 +983,10 @@ export default function Sales() {
             </h2>
 
             <p className="mt-5 text-[15px] sm:text-[17px] leading-relaxed text-gray-300 text-balance">
-              I kept quitting my own trading journal. So I built the one I would
-              actually keep.
+              I kept quitting my own trading journal. Not because it was a bad
+              journal &mdash; because writing it up honestly is hardest on
+              exactly the days it would have helped most. So I built the one
+              that still gets written on those days.
             </p>
 
             {/*
@@ -1393,8 +1396,9 @@ export default function Sales() {
             Close the gap
           </h2>
           <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-sm mx-auto text-balance">
-            Your P&amp;L says what happened. It never says what you were like
-            when it did. Two weeks is enough to find out.
+            Your P&amp;L already tells you which trades lost. It has never once
+            told you what you were like in the twenty minutes after. Two weeks
+            is enough to find out.
           </p>
 
           {launched ? (
