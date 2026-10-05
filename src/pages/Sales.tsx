@@ -376,7 +376,7 @@ export default function Sales() {
             rather than like a page pretending to have testimonials.
           */}
           <p className="mt-7 flex items-baseline justify-center gap-2.5">
-            <span className="font-mono text-[15px] text-gray-200 tabular-nums tracking-tight">800+</span>
+            <span className="text-[15px] text-gray-200 tabular-nums tracking-tight">800+</span>
             <span className="text-[11.5px] text-gray-500">traders signed up to TradeX</span>
           </p>
 
@@ -477,7 +477,7 @@ export default function Sales() {
                 key={s.step}
                 className="rounded-2xl border border-white/[0.07] bg-brand-surface p-5 sm:p-6 flex flex-col"
               >
-                <span className="font-mono text-[11px] tabular-nums text-gray-600">0{n + 1}</span>
+                <span className="text-[11px] tabular-nums text-gray-600">0{n + 1}</span>
                 <p className="mt-2 text-[15px] sm:text-base font-semibold tracking-[-0.01em] text-white">
                   {s.step}
                 </p>
@@ -488,7 +488,7 @@ export default function Sales() {
                 <span className="mt-5 block h-1 rounded-full bg-white/[0.06] overflow-hidden">
                   <span className={`block h-full rounded-full ${s.width} ${s.tone}`} />
                 </span>
-                <span className="mt-2 font-mono text-[10px] uppercase tracking-[0.14em] text-gray-600">
+                <span className="mt-2 text-[10px] uppercase tracking-[0.14em] text-gray-600">
                   Position size
                 </span>
               </li>
@@ -568,7 +568,7 @@ export default function Sales() {
             one line instead of three screens.
           */}
           <ol className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-5
-            font-mono text-[10px] sm:text-[11px] uppercase tracking-[0.16em] text-gray-500">
+            text-[10px] sm:text-[11px] uppercase tracking-[0.16em] text-gray-500">
             <li><span className="text-gray-600">01</span> You talk</li>
             <li className="text-gray-700" aria-hidden="true">&rarr;</li>
             <li><span className="text-gray-600">02</span> It files it</li>
@@ -626,14 +626,14 @@ export default function Sales() {
             reason the two needed to be apart.
           */}
           <div className="border-t border-white/[0.07] pt-6 sm:pt-7">
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-600 mb-3">
+            <p className="text-[10px] uppercase tracking-[0.16em] text-gray-600 mb-3">
               What you said
             </p>
             <TranscriptToEntry transcriptOnly />
           </div>
 
           <div className="mt-8 sm:mt-10">
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-600 mb-3">
+            <p className="text-[10px] uppercase tracking-[0.16em] text-gray-600 mb-3">
               What it filed
             </p>
             <ProductShot
@@ -649,7 +649,7 @@ export default function Sales() {
             that no competitor makes.
           */}
           <div className="mt-8 sm:mt-10 pt-5 border-t border-white/[0.07]">
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-600">
+            <p className="text-[10px] uppercase tracking-[0.16em] text-gray-600">
               What it noticed
             </p>
             <p className="mt-2 text-[13px] sm:text-[13.5px] leading-relaxed text-gray-300">
@@ -896,7 +896,7 @@ export default function Sales() {
       <div className="relative border-t border-white/[0.06] py-16 sm:py-24">
         <div className="max-w-3xl mx-auto px-5 sm:px-8">
           <div className="mb-10 sm:mb-12">
-            <p className="font-mono text-[10px] sm:text-[11px] tracking-[0.2em] uppercase text-gray-500 mb-4">
+            <p className="text-[10px] sm:text-[11px] tracking-[0.2em] uppercase text-gray-500 mb-4">
               Broker sync
             </p>
 
@@ -914,7 +914,7 @@ export default function Sales() {
                   rounded-full bg-brand-blue opacity-75 animate-ping" />
                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-brand-blue" />
               </span>
-              <span className="font-mono text-[11px] tracking-[0.14em] uppercase text-brand-blue">
+              <span className="text-[11px] tracking-[0.14em] uppercase text-brand-blue">
                 Live now
               </span>
             </div>
@@ -1015,7 +1015,7 @@ export default function Sales() {
       <div className="relative border-t border-white/[0.06] py-16 sm:py-24">
         <div className="max-w-3xl mx-auto px-5 sm:px-8">
           <div className="max-w-lg mx-auto text-center">
-            <p className="font-mono text-[10px] sm:text-[11px] tracking-[0.2em] uppercase text-gray-500 mb-4">
+            <p className="text-[10px] sm:text-[11px] tracking-[0.2em] uppercase text-gray-500 mb-4">
               From the founder
             </p>
             <h2 className="text-[28px] leading-[1.12] sm:text-[40px] sm:leading-[1.08] font-semibold tracking-[-0.03em] text-white text-balance">
@@ -1100,7 +1100,7 @@ export default function Sales() {
       */}
       <div className="relative border-t border-white/[0.06] py-12 sm:py-16">
         <div className="max-w-4xl mx-auto px-5 sm:px-8">
-          <p className="text-center font-mono text-[10px] sm:text-[11px] tracking-[0.2em] uppercase text-gray-500">
+          <p className="text-center text-[10px] sm:text-[11px] tracking-[0.2em] uppercase text-gray-500">
             From early users
           </p>
 

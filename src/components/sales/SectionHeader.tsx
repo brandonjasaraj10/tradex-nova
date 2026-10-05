@@ -59,7 +59,7 @@ export default function SectionHeader({
   return (
     <header className={`${centered ? 'text-center' : ''} ${className}`}>
       <div className={`flex items-center gap-4 ${centered ? 'justify-center' : ''}`}>
-        <span className="font-mono text-[10px] sm:text-[10.5px] tracking-[0.2em] uppercase text-gray-500 whitespace-nowrap">
+        <span className="text-[9.5px] sm:text-[10px] tracking-[0.16em] uppercase text-gray-600 whitespace-nowrap">
           {eyebrow}
         </span>
         {/*
