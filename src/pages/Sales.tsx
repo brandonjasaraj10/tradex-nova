@@ -6,7 +6,6 @@ import Mascot from '../components/shared/Mascot';
 import { TIERS, IN_EVERY_PLAN, ALSO_INCLUDED } from '../lib/pricingTiers';
 import TranscriptToEntry from '../components/sales/TranscriptToEntry';
 import Wordmark from '../components/shared/Wordmark';
-import NovaAnswer from '../components/sales/NovaAnswer';
 import SyncMarquee from '../components/sales/SyncMarquee';
 import ProductShot from '../components/sales/ProductShot';
 import SectionHeader from '../components/sales/SectionHeader';
@@ -697,32 +696,31 @@ export default function Sales() {
               your entries, your numbers and the things you have told it twice.
           </SectionHeader>
 
-          <div className="rounded-2xl border border-white/[0.07] bg-brand-surface p-5 sm:p-7">
-            <div className="flex flex-col gap-4">
-              <div className="flex justify-end">
-                <p className="max-w-[85%] rounded-2xl rounded-br-sm bg-brand-elevated border border-white/[0.07]
-                  px-4 py-2.5 text-[13px] sm:text-sm text-gray-300">
-                  Why am I losing on Fridays?
-                </p>
-              </div>
+          {/*
+            A real conversation, not a written one.
 
-              <NovaAnswer />
-            </div>
+            This was a hand-built chat bubble - "Why am I losing on Fridays?"
+            with an invented reply underneath it - and of all the drawn UI on
+            this page it was the least defensible, because the claim the
+            section makes is that the answer comes from your own entries. An
+            answer somebody typed into a marketing page cannot demonstrate
+            that. It demonstrates the opposite.
 
-            <div className="mt-6 pt-5 border-t border-white/[0.06] grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {[
-                ['Reads every entry', 'Not just the last one. Patterns show up across months, not trades.'],
-                ['Remembers you', 'Say it once, and Nova keeps hold of it.'],
-                ['Writes your entries', 'Talk it through and Nova files the whole thing for you.'],
-              ].map(([title, body]) => (
-                <div key={title}>
-                  <p className="text-[12.5px] font-medium text-white">{title}</p>
-                  <p className="mt-1 text-[12px] text-gray-500 leading-relaxed">{body}</p>
-                </div>
-              ))}
-            </div>
-            <p className="mt-5 text-center text-[11px] text-gray-600">Example conversation</p>
-          </div>
+            The screenshot is Nova actually answering, on the demo account,
+            with numbers that came out of the database: eight ES trades at a
+            50% win rate netting $124 against XAUUSD five from five, and
+            Thursdays as the only losing day of the week. Nobody wrote those.
+            They are what the account contains.
+
+            The three feature columns underneath went with it. One of them -
+            "Writes your entries" - was repeating the section two above, and
+            the other two are said better by the screenshot than by a caption.
+          */}
+          <ProductShot
+            src="/product/nova.jpg"
+            label="Nova"
+            alt="Nova answering a question about the trader's biggest leak, citing their ES win rate, their gold results and their Thursday performance."
+          />
 
           <p className="mt-7 text-center">
             <Link to="/nova-ai" className="inline-flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-white transition-colors underline underline-offset-[3px] decoration-white/20 hover:decoration-white/50">
@@ -761,7 +759,17 @@ export default function Sales() {
               underneath that say which of your setups actually pays.
           </SectionHeader>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
+          {/*
+            Stacked, not side by side.
+
+            Two 1600px screenshots in a two-column grid render about 550px
+            wide each, which is below the width at which any of the numbers in
+            them can be read - so the page was showing two pictures of
+            something unreadable and calling it a demonstration. Full width
+            each, one after the other, costs vertical space the page can
+            afford and makes both of them legible.
+          */}
+          <div className="flex flex-col gap-5 sm:gap-6">
             <ProductShot
               src="/product/calendar.jpg"
               label="Calendar"
