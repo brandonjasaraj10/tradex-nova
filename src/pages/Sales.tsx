@@ -402,6 +402,123 @@ export default function Sales() {
       </div>
 
       {/*
+        THE GAP, NAMED.
+
+        The page's single biggest hole: it opened on "Identity to Execution"
+        and then went straight to how the product works, so the reader was
+        sold a mechanism before anybody had agreed there was a problem. Four
+        product sections followed. Nothing in between asked them to believe
+        anything.
+
+        This is that beat. No product in it at all - no screenshot, no
+        feature, no button. One claim, one piece of evidence, and the shape
+        of the thing happening to them.
+
+        WHY THIS CLAIM AND NOT A BETTER-SOUNDING ONE
+
+        It is the uncontested lane. TradeZella leads on an AI hub, Edgewonk
+        promises profit outright, Tradespad on free backtesting, TraderSync
+        on mobile logging - and not one of the four mentions psychology.
+        Saying the account dies in the minutes after a loss is both the
+        truest thing we can say and the only thing none of them are saying.
+
+        It is also deliberately not "you need discipline". That is a scold,
+        and the reader has heard it. The sequence below is recognisable
+        rather than accusing: anybody who has done it knows they did not
+        decide to do it.
+      */}
+      <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
+        <div className="max-w-3xl mx-auto px-5 sm:px-8">
+          <div className="text-center">
+            <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
+              Where it actually goes
+            </p>
+            <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
+              Accounts go in the three trades after a red one
+            </h2>
+            <p className="mt-5 text-[14.5px] sm:text-base leading-relaxed text-gray-400 max-w-md mx-auto text-balance">
+              The loss itself is survivable. What ends the account is the next
+              twenty minutes &mdash; bigger size, no setup, and a rule you
+              would not have broken an hour earlier.
+            </p>
+          </div>
+
+          {/*
+            The sequence, not a chart.
+
+            Three steps with the size growing underneath them. The point is
+            made by the bars, not by any number: there are no figures here
+            because inventing them would be the same mistake the hero's
+            drawn dashboard made, and the shape is the whole argument.
+          */}
+          <ol className="mt-12 sm:mt-14 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+            {[
+              {
+                step: 'The loss',
+                line: 'Planned, sized properly, stopped where you said. A normal day so far.',
+                width: 'w-1/3',
+                tone: 'bg-white/20',
+              },
+              {
+                step: 'The one to get it back',
+                line: 'Same instrument, bigger size, and the setup is close enough.',
+                width: 'w-2/3',
+                tone: 'bg-white/30',
+              },
+              {
+                step: 'The one that ends it',
+                line: 'No setup left to speak of. By now it is about the morning, not the chart.',
+                width: 'w-full',
+                tone: 'bg-brand-blue/70',
+              },
+            ].map((s, n) => (
+              <li
+                key={s.step}
+                className="rounded-2xl border border-white/[0.07] bg-brand-surface p-5 sm:p-6 flex flex-col"
+              >
+                <span className="text-[11px] tabular-nums text-gray-600">0{n + 1}</span>
+                <p className="mt-2 text-[15px] sm:text-base font-semibold tracking-[-0.01em] text-white">
+                  {s.step}
+                </p>
+                <p className="mt-2 text-[13px] sm:text-[13.5px] leading-relaxed text-gray-400 flex-1">
+                  {s.line}
+                </p>
+                {/* Position size, growing. The only thing these three bars say. */}
+                <span className="mt-5 block h-1 rounded-full bg-white/[0.06] overflow-hidden">
+                  <span className={`block h-full rounded-full ${s.width} ${s.tone}`} />
+                </span>
+                <span className="mt-2 text-[10px] uppercase tracking-[0.12em] text-gray-600">
+                  Position size
+                </span>
+              </li>
+            ))}
+          </ol>
+
+          {/*
+            The evidence, attributed.
+
+            The figure is self-reported industry data and is not
+            independently audited, so it says so in the same breath rather
+            than in a footnote nobody reads. A number this good for us is
+            exactly the one to caveat out loud.
+          */}
+          <p className="mt-10 text-center text-[13px] sm:text-[13.5px] leading-relaxed text-gray-500 max-w-lg mx-auto">
+            <span className="text-gray-300">
+              71% of first-phase prop firm failures are daily drawdown breaches
+            </span>
+            {' '}&mdash; most inside the first week, and usually across one to
+            three trades. Self-reported industry figures, not independently
+            audited.
+          </p>
+
+          <p className="mt-8 text-center text-[14.5px] sm:text-base text-gray-300 text-balance">
+            That window is twenty minutes long and you are inside it. It is
+            also the only part of trading nothing you own measures.
+          </p>
+        </div>
+      </div>
+
+      {/*
         HOW IT WORKS.
 
         The research on this is consistent: a visitor's second question after
