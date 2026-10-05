@@ -193,8 +193,8 @@ export default function PsychologySwipe() {
               </div>
             </div>
             <p className="text-[12.5px] leading-relaxed text-gray-500 max-w-sm">
-              Three taps. The only thing TradeX asks you for that your broker
-              cannot already tell it.
+              Three taps, before you click buy. Your broker can report the
+              trade. It cannot report the state you took it in.
             </p>
           </div>
         </div>
