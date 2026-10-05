@@ -1265,7 +1265,19 @@ export default function Sales() {
             className="mb-10 sm:mb-12"
           />
 
-          <div className="flex flex-col gap-2.5">
+          {/*
+            Rows, not cards.
+
+            Each question was a bordered panel on a tinted background,
+            directly beneath a pricing block that is three bordered panels on
+            a tinted background. Two card blocks running is what made this
+            page feel repetitive everywhere else it happened.
+
+            A list separated by hairlines reads as a document rather than as
+            more product furniture, which is the right register for the one
+            section whose job is answering doubts plainly.
+          */}
+          <div className="flex flex-col">
             {[
               {
                 /*
@@ -1304,34 +1316,46 @@ export default function Sales() {
             ].map((item) => (
               <details
                 key={item.q}
-                className="group rounded-xl border border-white/[0.07] bg-brand-surface
-                  open:border-white/15 transition-colors"
+                className="group border-t border-white/[0.07] first:border-t-0"
               >
                 <summary
-                  className="cursor-pointer list-none px-5 py-4 flex items-center justify-between gap-4
-                    text-[14.5px] sm:text-[15px] font-medium text-white
-                    focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/40 rounded-xl"
+                  className="cursor-pointer list-none py-5 flex items-start justify-between gap-5
+                    text-[15px] sm:text-[16px] font-medium text-gray-300 group-open:text-white
+                    hover:text-white transition-colors
+                    focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/40 rounded-lg"
                 >
                   {item.q}
                   <Plus
-                    className="w-4 h-4 flex-shrink-0 text-gray-500 transition-transform duration-200
-                      group-open:rotate-45"
+                    className="mt-1 w-4 h-4 flex-shrink-0 text-gray-600 transition-transform duration-300
+                      group-open:rotate-45 group-open:text-gray-400"
                     strokeWidth={2}
                   />
                 </summary>
-                <p className="px-5 pb-5 -mt-1 text-[13.5px] sm:text-sm text-gray-400 leading-relaxed">
+                {/*
+                  The answer is indented behind a rule rather than sitting
+                  flush under the question. With no card around each item,
+                  something has to say where an answer ends and the next
+                  question starts, and a hairline does it more quietly than a
+                  box.
+                */}
+                <p className="pb-6 -mt-1 pl-4 border-l border-white/[0.09]
+                  text-[13.5px] sm:text-[14.5px] text-gray-400 leading-relaxed">
                   {item.a}
                 </p>
               </details>
             ))}
           </div>
 
-          <p className="mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+          {/*
+            "How your data is kept" is gone from here at Brandon's call. The
+            /security page still exists and the footer still reaches it - this
+            is about not raising the question on a page where nobody asked it.
+            The FAQ above still answers who can see what you write, which is
+            the version of that worry somebody actually has.
+          */}
+          <p className="mt-9 border-t border-white/[0.07] pt-7 text-center">
             <Link to="/faq" className="inline-flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-white transition-colors underline underline-offset-[3px] decoration-white/20 hover:decoration-white/50">
               Every other question
-            </Link>
-            <Link to="/security" className="inline-flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-white transition-colors underline underline-offset-[3px] decoration-white/20 hover:decoration-white/50">
-              How your data is kept
             </Link>
           </p>
         </div>
