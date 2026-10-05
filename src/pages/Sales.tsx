@@ -536,7 +536,7 @@ export default function Sales() {
               How it works
             </p>
             <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
-              Thirty seconds a trade
+              Thirty seconds, out loud
             </h2>
             {/*
               This said "The reason journals die is the typing. So TradeX
@@ -576,8 +576,8 @@ export default function Sales() {
             {[
               {
                 step: '01',
-                title: 'Say what happened',
-                body: 'Hit record and talk like you would to a trading partner. Rambling is fine.',
+                title: 'Talk, do not type',
+                body: 'The way you would tell a trading partner on the phone. Rambling is fine - it is doing the listening.',
                 visual: (
                   <div className="flex items-center gap-3">
                     {/* Blue here on purpose - this is the record button, and it
@@ -595,14 +595,14 @@ export default function Sales() {
               },
               {
                 step: '02',
-                title: 'It writes the entry',
-                body: 'Symbol, direction, size, P&L and your reasoning, pulled out and filed where they belong.',
+                title: 'Nova writes it down',
+                body: 'Symbol, direction, size, P&L and the reason you gave, pulled out and filed where they belong.',
                 visual: <TranscriptToEntry />,
               },
               {
                 step: '03',
-                title: 'It tells you what you keep doing',
-                body: 'Across every entry, not just this one. The pattern you cannot see from inside it.',
+                title: 'It finds the window',
+                body: 'Across every entry, not just this one - the three trades you cannot see from inside them.',
                 visual: (
                   <div className="rounded-lg border border-brand-blue/20 bg-brand-blue/[0.06] px-3 py-2.5">
                     <p className="text-[12.5px] leading-relaxed text-gray-300">
@@ -629,7 +629,37 @@ export default function Sales() {
               </div>
             ))}
           </div>
+          <div className="mt-14 sm:mt-16">
+            <p className="text-center text-[11px] tracking-[0.14em] uppercase text-gray-500 mb-6">
+              And this is where it lands
+            </p>
+            <ProductTabs />
+            <p className="mt-7 text-center">
+              <Link to="/features" className="inline-flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-white transition-colors underline underline-offset-[3px] decoration-white/20 hover:decoration-white/50">
+                See everything it does
+              </Link>
+            </p>
+          </div>
         </div>
+
+          {/*
+            The tour, inside this section rather than beside it.
+
+            It had its own heading - "Have a look around" - directly after
+            this one, which gave the page two consecutive invitations to look
+            at the product and no argument between them. Four product
+            sections ran back to back and this was two of them.
+
+            It belongs here because it is the same beat: the three steps above
+            say what you do, and these are the screens that come out of doing
+            it. Demoted to a caption rather than a headline so the section
+            still only makes one claim.
+
+            Still mid-page, not in the hero: Notre Dame found ~1% of visitors
+            click a hero carousel at all and 84% of those clicks land on the
+            first panel, against 43% interaction for a static hero. Hyros and
+            TradeZella both put their own tabs down here for the same reason.
+          */}
       </div>
 
       {/*
@@ -755,48 +785,6 @@ export default function Sales() {
               </p>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/*
-        THE PRODUCT, EXPLORABLE.
-
-        Placed here rather than in the hero on the evidence: Notre Dame found
-        ~1% of visitors click a hero carousel at all and 84% of those clicks
-        land on the first panel, and carousel-versus-static A/B testing
-        measured 1.96% interaction against 43.03%. Hyros and TradeZella both
-        put their own tabs mid-page for the same reason.
-
-        The hero keeps one static panel carrying one message. This is for the
-        visitor who is still reading and now wants to see more.
-      */}
-      <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
-        <div className="max-w-3xl mx-auto px-5 sm:px-8">
-          <div className="text-center mb-10 sm:mb-12">
-            <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
-              Inside TradeX
-            </p>
-            <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
-              Have a look around
-            </h2>
-          </div>
-          <ProductTabs />
-
-          {/*
-            The way deeper.
-
-            Everything the landing page holds back now lives on a real page,
-            and until this the only route to one was the footer. A visitor who
-            wants more detail is the most interested person on the site; making
-            them hunt for it is the one mistake worth avoiding here. Quiet grey
-            text so it never competes with the CTA - the job is to be findable,
-            not to be clicked instead of signing up.
-          */}
-          <p className="mt-7 text-center">
-            <Link to="/features" className="inline-flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-white transition-colors underline underline-offset-[3px] decoration-white/20 hover:decoration-white/50">
-              See everything it does
-            </Link>
-          </p>
         </div>
       </div>
 
