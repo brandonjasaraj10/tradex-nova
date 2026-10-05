@@ -827,77 +827,57 @@ export default function Sales() {
         a section-sized gap between a heading and the sentence finishing its
         thought made it worse.
       */}
-      <div className="relative border-t border-white/[0.06] py-16 sm:py-24">
-        <div className="max-w-5xl mx-auto px-5 sm:px-8">
-          {/*
-            THE FOUNDER GETS A FACE.
+      {/*
+        THE FOUNDER, AS A BAND RATHER THAN A SECTION.
 
-            A twelve-megabyte video of Brandon talking to camera, and a poster
-            frame of it, have been sitting in public/ and in the build's
-            allowlist the whole time. The section that exists to be the human
-            moment on the page was using neither, and was instead the only
-            section with no visual at all - two paragraphs centred in a column
-            while every section around it sits left on the grid.
+        The video is off the landing page. It was a good argument badly
+        placed: twelve megabytes behind preload="none" costs nothing to
+        scroll past, but it still gave a full section and a large frame to
+        something that is not what anybody came here to look at. It lives on
+        /about, which is where somebody who wants the story goes.
 
-            PRELOAD NONE, AND THAT IS THE WHOLE TRICK
+        Whether this should exist at all is a fair question - neither
+        TradeZella nor Tradespad has a founder section, and this page now
+        carries five real screenshots, a control you can use and a genuine
+        Nova answer, so it is not short of proof.
 
-            It is a real <video> with controls, so pressing play plays it here
-            rather than sending somebody to another page to watch it. preload
-            is "none", so the twelve megabytes are not fetched until somebody
-            actually asks for them - the poster is 55KB and that is all this
-            costs anybody who scrolls past. On a page whose traffic is phones
-            on mobile data from Instagram, that distinction is the difference
-            between having a founder video and not being able to afford one.
-
-            Image left, words right - the opposite way round from the Nova
-            section above, so two consecutive two-column sections do not
-            mirror each other.
-          */}
-          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-10 lg:gap-14 lg:items-center">
-            <video
-              controls
-              preload="none"
-              poster="/founder-video-poster.jpg"
-              className="w-full rounded-[20px] border border-white/10 bg-brand-surface"
-            >
-              <source src="/founder-video.mp4" type="video/mp4" />
-            </video>
-
-            <div>
-              <p className="text-[9.5px] sm:text-[10px] tracking-[0.16em] uppercase text-gray-600 mb-4">
-                From the founder
-              </p>
-              <h2 className="text-[28px] leading-[1.12] sm:text-[40px] sm:leading-[1.08] font-semibold tracking-[-0.03em] text-white text-balance">
+        It survives because it is the only thing here that says a person made
+        this rather than a company, and it sits directly before the price,
+        which is where that matters. But it earns a band, not a section: a
+        face, two sentences, and a way through to the rest. No heading of its
+        own, because a heading is what makes something a section.
+      */}
+      <div className="relative border-t border-white/[0.06] py-12 sm:py-14">
+        <div className="max-w-3xl mx-auto px-5 sm:px-8">
+          <div className="flex flex-col sm:flex-row sm:items-start gap-5 sm:gap-6">
+            <img
+              src="/founder-video-poster.jpg"
+              alt="Brandon, who built TradeX"
+              width={96}
+              height={96}
+              loading="lazy"
+              decoding="async"
+              className="w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover flex-shrink-0
+                border border-white/10 object-[50%_18%]"
+            />
+            <div className="min-w-0">
+              <p className="text-[9.5px] sm:text-[10px] tracking-[0.16em] uppercase text-gray-600">
                 Why I built this
-              </h2>
-
-              <p className="mt-5 text-[15px] sm:text-[16.5px] leading-relaxed text-gray-300">
-                I kept quitting my own trading journal. Not because it was a bad
-                journal &mdash; because writing it up honestly is hardest on
-                exactly the days it would have helped most. So I built the one
-                that still gets written on those days.
               </p>
-
-              {/*
-                No em-dash before "My trading psychology". The clause it used
-                to hang off read as an aside when it is the whole point, so it
-                is its own sentence - a two-word fragment after a long one
-                lands the way a dash never does.
-              */}
-              <p className="mt-4 text-[14px] sm:text-[15px] leading-relaxed text-gray-400">
-                Every one I tried had a hundred features and not one of them
-                tracked the thing that actually decides whether I make money. My
-                trading psychology. Everything else is tidier arithmetic on a
-                loss you have already taken.
+              <p className="mt-3 text-[14.5px] sm:text-[15.5px] leading-relaxed text-gray-300 max-w-xl">
+                I kept quitting my own trading journal, because writing it up
+                honestly is hardest on exactly the days it would have helped
+                most. Every one I tried had a hundred features and not one of
+                them tracked the thing that actually decides whether I make
+                money. My trading psychology.
               </p>
-
-              <p className="mt-7">
+              <p className="mt-4">
                 <Link
                   to="/about"
-                  className="inline-flex items-center gap-2 text-[13.5px] text-gray-400
+                  className="inline-flex items-center gap-2 text-[13px] text-gray-500
                     hover:text-white transition-colors"
                 >
-                  More of the story
+                  The two-minute version
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </p>
