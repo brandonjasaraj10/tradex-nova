@@ -563,96 +563,66 @@ export default function Sales() {
           </SectionHeader>
 
           {/*
-            The sequence as a legend. Mono, because it is a readout of the
-            steps rather than a sentence about them, and inline so it occupies
-            one line instead of three screens.
+            One move, read top to bottom.
+
+            This was a legend row followed by three labelled blocks stacked
+            down the page - 01/02/03, then WHAT YOU SAID, WHAT IT FILED, WHAT
+            IT NOTICED. Two problems. The legend said the same three things
+            the labels below it said, so the section opened by repeating
+            itself. And a stack of labelled blocks reads as a list, which is
+            the wrong shape for an argument whose whole point is that one
+            thing turns into another.
+
+            So the legend is gone and what is left is the transformation
+            itself: the sentence somebody speaks, set large enough to be the
+            thing you look at, and then the entry it became. No label on the
+            quote, because quotation marks and a typing cursor already say
+            what it is.
           */}
-          <ol className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-5
-            text-[10px] sm:text-[11px] uppercase tracking-[0.16em] text-gray-500">
-            <li><span className="text-gray-600">01</span> You talk</li>
-            <li className="text-gray-700" aria-hidden="true">&rarr;</li>
-            <li><span className="text-gray-600">02</span> It files it</li>
-            <li className="text-gray-700" aria-hidden="true">&rarr;</li>
-            <li><span className="text-gray-600">03</span> It finds the window</li>
-          </ol>
+          <figure className="border-t border-white/[0.07] pt-8 sm:pt-10">
+            {/*
+              The opening quote hangs in the margin rather than sitting in the
+              text. The transcript is a block element - it has to be, so the
+              typing can reserve its own wrapped height - so an inline quote
+              mark either side of it landed on its own line above and below
+              the sentence. Hanging it is also just better typography, and one
+              mark is enough: the closing one was doing nothing the large type
+              and the caption underneath were not already doing.
+            */}
+            <blockquote className="relative pl-5 sm:pl-7 text-[19px] sm:text-[24px] leading-[1.45] text-gray-200 tracking-[-0.015em] max-w-2xl">
+              <span
+                className="absolute left-0 top-0 text-gray-700 select-none"
+                aria-hidden="true"
+              >
+                &ldquo;
+              </span>
+              <TranscriptToEntry transcriptOnly />
+            </blockquote>
+
+            <figcaption className="mt-7 sm:mt-9 flex items-center gap-3 text-[12.5px] text-gray-500">
+              <span className="h-px w-8 bg-white/15" aria-hidden="true" />
+              Thirty seconds later, filed
+            </figcaption>
+
+            <div className="mt-5">
+              <ProductShot
+                src="/product/journal.jpg"
+                label="Journal"
+                alt="The entry TradeX wrote: symbol, direction, size and duration filled in, the trade it is linked to, tags, and the written review underneath."
+              />
+            </div>
+          </figure>
 
           {/*
-            NOT DRESSED AS A SCREENSHOT - and this was a real mistake, caught
-            by Brandon.
-
-            The first version of this put the demonstration inside window
-            chrome with a pulsing "Recording" dot and a 00:31 timer. No such
-            screen exists in TradeX. That is precisely the fault this page
-            spent the morning removing from the hero and the product tour -
-            hand-drawn UI that looks like the product and is not - and it got
-            rebuilt here within the hour, which says how easy it is to do by
-            accident while trying to make something feel designed.
-
-            So there is no card, no border and no chrome. It reads as what it
-            is: a demonstration of what you say turning into what gets filed,
-            set in type on the page, with hairlines doing the separating.
-            The real interface is one section below, as an actual screenshot.
-
-            Losing the card also fixes the other complaint: almost every block
-            on this page was a bordered panel, which flattens the hierarchy
-            until nothing reads as more important than anything else.
+            And the part that is not about this entry at all. It reads across
+            every entry, which is the only claim in this section no competitor
+            makes.
           */}
-          {/*
-            THE ONLY UI HERE IS A PHOTOGRAPH OF THE REAL ONE.
-
-            This went through two wrong versions before this one, both caught
-            by Brandon, and the pattern is worth recording because it is the
-            same mistake twice.
-
-            First it was wrapped in window chrome with a pulsing "Recording"
-            dot and a 00:31 timer - a screen that does not exist. Then, with
-            the chrome stripped, the component underneath was still drawing
-            two-column bordered field rows and a bullet summary, which is also
-            a screen that does not exist: the real Journal shows a
-            SYMBOL/DIRECTION/SIZE/ACCOUNT strip above the ordinary entry form,
-            and the voice flow is a "Voice Input" button in the toolbar, not a
-            recorder panel.
-
-            So the section now contains exactly two things, and only one of
-            them is an interface:
-
-            - The spoken line, typed out. Speech has no interface, so showing
-              it as text invents nothing.
-            - A screenshot of the actual Journal page with the entry in it.
-
-            Which also means the separate "A written entry, not a row in a
-            sheet" section that followed this one is gone - it carried this
-            same screenshot, and having drawn it here first was the only
-            reason the two needed to be apart.
-          */}
-          <div className="border-t border-white/[0.07] pt-6 sm:pt-7">
-            <p className="text-[10px] uppercase tracking-[0.16em] text-gray-600 mb-3">
-              What you said
+          <div className="mt-10 sm:mt-12 pt-6 border-t border-white/[0.07]">
+            <p className="text-[9.5px] sm:text-[10px] tracking-[0.16em] uppercase text-gray-600">
+              And then, across every entry
             </p>
-            <TranscriptToEntry transcriptOnly />
-          </div>
-
-          <div className="mt-8 sm:mt-10">
-            <p className="text-[10px] uppercase tracking-[0.16em] text-gray-600 mb-3">
-              What it filed
-            </p>
-            <ProductShot
-              src="/product/journal.jpg"
-              label="Journal"
-              alt="The entry TradeX wrote: symbol, direction, size and duration filled in, the trade it is linked to, tags, and the written review underneath."
-            />
-          </div>
-
-          {/*
-            Step three, as the thing you are left holding. It reads across
-            every entry rather than this one, which is the only claim here
-            that no competitor makes.
-          */}
-          <div className="mt-8 sm:mt-10 pt-5 border-t border-white/[0.07]">
-            <p className="text-[10px] uppercase tracking-[0.16em] text-gray-600">
-              What it noticed
-            </p>
-            <p className="mt-2 text-[13px] sm:text-[13.5px] leading-relaxed text-gray-300">
+            <p className="mt-2.5 text-[15px] sm:text-[17px] leading-relaxed text-gray-300 max-w-xl">
               You moved your stop on{' '}
               <span className="text-white">4 of your last 6 losers</span>. None
               of your winners.

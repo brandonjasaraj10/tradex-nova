@@ -140,10 +140,17 @@ export default function TranscriptToEntry({ transcriptOnly = false }: { transcri
 
   return (
     <div ref={hostRef}>
-      <div className="flex items-start gap-2.5">
-        <span className="mt-[3px] text-[10px] uppercase tracking-[0.12em] text-gray-600 flex-shrink-0">
-          You
-        </span>
+      <div className={transcriptOnly ? '' : 'flex items-start gap-2.5'}>
+        {/*
+          The "You" tag belongs to the two-part version, where it distinguishes
+          the speech from the fields underneath. On its own the speech needs no
+          label - it is in quotation marks and it is typing itself.
+        */}
+        {!transcriptOnly && (
+          <span className="mt-[3px] text-[10px] uppercase tracking-[0.12em] text-gray-600 flex-shrink-0">
+            You
+          </span>
+        )}
         {/*
           The full transcript is rendered invisibly underneath and the typed
           copy painted on top of it, in the same grid cell, so the box is
@@ -156,10 +163,10 @@ export default function TranscriptToEntry({ transcriptOnly = false }: { transcri
           itself can.
         */}
         <div className="grid flex-1">
-          <p className="col-start-1 row-start-1 text-[12.5px] leading-relaxed invisible" aria-hidden="true">
+          <p className={`col-start-1 row-start-1 invisible ${transcriptOnly ? '' : 'text-[12.5px] leading-relaxed'}`} aria-hidden="true">
             {TRANSCRIPT}
           </p>
-          <p className="col-start-1 row-start-1 text-[12.5px] leading-relaxed text-gray-300">
+          <p className={`col-start-1 row-start-1 ${transcriptOnly ? '' : 'text-[12.5px] leading-relaxed text-gray-300'}`}>
             {TRANSCRIPT.slice(0, typed)}
             {isTyping && (
               <span className="inline-block w-[2px] h-[1em] -mb-[2px] ml-[1px] bg-brand-blue align-middle animate-pulse" />
