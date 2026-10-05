@@ -47,6 +47,22 @@ import { EXAMPLE_SCORE } from '../marketing/exampleScore';
   panels and the rail still work, they just stop animating.
 */
 
+/*
+  Panel width and gap, in one place because three different calculations
+  depend on them agreeing: the scroll step, the track's side padding and the
+  snap alignment.
+
+  SIDE is half the slack left over by the panel width. Without it the first
+  panel sits hard against the left edge and the last against the right, so
+  whichever one you are looking at appears cut off on one side - there is
+  nothing for scroll-snap to centre it against. Padding the track by exactly
+  that amount means scrollLeft 0 already has panel one centred, and maximum
+  scroll has the last one centred.
+*/
+const PANEL_W = 86;            /* percent of the track */
+const SIDE = (100 - PANEL_W) / 2;
+const GAP = 24;                /* px, must match the gap class below */
+
 const PANELS = [
   { id: 'before', eyebrow: 'Before the trade', label: 'What you put in' },
   { id: 'after', eyebrow: 'After thirty of them', label: 'What comes out' },
@@ -64,6 +80,16 @@ export default function PsychologySwipe() {
   });
   const [index, setIndex] = useState(0);
   const trackRef = useRef<HTMLDivElement | null>(null);
+  /*
+    Set while a button-driven scroll is in flight.
+
+    Without it the two sources of truth fight: go() sets the index to the
+    target, the scroll listener immediately recomputes it from a scrollLeft
+    that has not moved yet and puts it back, then the animation carries it
+    forward again. The panel dimming flipped target - old - target, which is
+    the flicker before the slide.
+  */
+  const animatingTo = useRef<number | null>(null);
 
   const onChange = useCallback((key: keyof ScaleValues, value: number | null) => {
     setValues((v) => ({ ...v, [key]: value }));
@@ -76,9 +102,15 @@ export default function PsychologySwipe() {
     const onScroll = () => {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
-        const panel = el.firstElementChild as HTMLElement | null;
-        const step = panel ? panel.offsetWidth + 24 : el.clientWidth;
-        setIndex(Math.min(PANELS.length - 1, Math.round(el.scrollLeft / Math.max(1, step))));
+        const panel = el.querySelector<HTMLElement>('[data-panel]');
+        const step = panel ? panel.offsetWidth + GAP : el.clientWidth;
+        const at = Math.min(PANELS.length - 1, Math.round(el.scrollLeft / Math.max(1, step)));
+        /* Ignore everything until the programmatic scroll has arrived. */
+        if (animatingTo.current !== null) {
+          if (at === animatingTo.current) animatingTo.current = null;
+          return;
+        }
+        setIndex(at);
       });
     };
     el.addEventListener('scroll', onScroll, { passive: true });
@@ -91,14 +123,17 @@ export default function PsychologySwipe() {
   const go = (i: number) => {
     const el = trackRef.current;
     if (!el) return;
-    const panel = el.firstElementChild as HTMLElement | null;
-    const step = panel ? panel.offsetWidth + 24 : el.clientWidth;
-    el.scrollTo({ left: i * step, behavior: 'smooth' });
+    const panel = el.querySelector<HTMLElement>('[data-panel]');
+    const step = panel ? panel.offsetWidth + GAP : el.clientWidth;
+    animatingTo.current = i;
     setIndex(i);
+    el.scrollTo({ left: i * step, behavior: 'smooth' });
+    /* Release the lock even if the scroll never lands exactly on the step. */
+    window.setTimeout(() => { animatingTo.current = null; }, 700);
   };
 
   const panelClass = (i: number) =>
-    `w-[86%] sm:w-[91%] flex-shrink-0 snap-center transition-[opacity,transform] duration-500 ease-out
+    `flex-shrink-0 snap-center transition-[opacity,transform] duration-500 ease-out
      motion-reduce:transition-none ${
        index === i
          ? 'opacity-100 scale-100'
@@ -121,13 +156,33 @@ export default function PsychologySwipe() {
         ref={trackRef}
         className="flex gap-6 overflow-x-auto snap-x snap-mandatory scroll-smooth motion-reduce:scroll-auto
           [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
-        style={{
-          /* A panel arrives and leaves rather than being cut off at the edge. */
-          maskImage: 'linear-gradient(to right, transparent, black 4%, black 96%, transparent)',
-          WebkitMaskImage: 'linear-gradient(to right, transparent, black 4%, black 96%, transparent)',
-        }}
+        /*
+          No mask. It faded the outer few percent of the track, which is where
+          the active panel's own edge sits once the panels are centred - so the
+          thing meant to soften the neighbours was dimming the panel being
+          read. The neighbours already recede by opacity; that is enough.
+        */
+        /*
+          Spacers rather than padding, and this is not a style preference.
+
+          A percentage width on a flex child resolves against the container's
+          CONTENT box. Padding the track therefore shrank the box the panels
+          were sized from, so 86% came out narrower than 86% of the track and
+          every panel sat 40px off centre - which is exactly the "cut off on
+          one side" this was meant to fix.
+
+          The spacers are part of the content, so the panels keep their full
+          86%. Each is SIDE minus one gap wide, because the flex gap applies
+          between the spacer and the first panel too.
+        */
       >
-        <div className={panelClass(0)}>
+        <span
+          aria-hidden="true"
+          className="flex-shrink-0"
+          style={{ flexBasis: `calc(${SIDE}% - ${GAP}px)` }}
+        />
+
+        <div data-panel className={panelClass(0)} style={{ width: `${PANEL_W}%` }}>
           <div className={card}>
             <p className="text-[9.5px] sm:text-[10px] tracking-[0.16em] uppercase text-gray-600">
               {PANELS[0].eyebrow}
@@ -144,7 +199,7 @@ export default function PsychologySwipe() {
           </div>
         </div>
 
-        <div className={panelClass(1)}>
+        <div data-panel className={panelClass(1)} style={{ width: `${PANEL_W}%` }}>
           <div className={card}>
             <p className="text-[9.5px] sm:text-[10px] tracking-[0.16em] uppercase text-gray-600">
               {PANELS[1].eyebrow}
@@ -166,6 +221,11 @@ export default function PsychologySwipe() {
             </p>
           </div>
         </div>
+        <span
+          aria-hidden="true"
+          className="flex-shrink-0"
+          style={{ flexBasis: `calc(${SIDE}% - ${GAP}px)` }}
+        />
       </div>
 
       {/*
