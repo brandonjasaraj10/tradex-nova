@@ -136,7 +136,7 @@ export default function Sales() {
                 nobody is looking at the header anyway.
               */
               className={`inline-flex items-center justify-center whitespace-nowrap overflow-hidden
-                py-1.5 rounded-full bg-white text-black text-[13px] font-medium
+                py-1.5 rounded-lg bg-white text-black text-[13px] font-medium
                 hover:bg-gray-200 transition-all duration-300
                 ${showHeaderCta
                   ? 'opacity-100 max-w-[180px] px-4 ml-4 sm:ml-5 pointer-events-auto'
@@ -300,7 +300,7 @@ export default function Sales() {
             <Link
               to="/auth?mode=signup"
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2
-                px-7 py-3 rounded-full bg-white text-black text-[14px] font-medium
+                px-7 py-3.5 rounded-xl bg-white text-black text-[14px] font-medium
                 hover:bg-gray-200 transition-colors"
             >
               Start journaling
@@ -362,30 +362,26 @@ export default function Sales() {
             worked out the gap would be right to stop believing the rest.
             "Signed up" is both true and the thing the count actually counts.
 
-            The circles carry initials rather than faces - inventing
-            photographs of customers who have not agreed to appear would be
-            the other thing here that could not be defended.
+            THE OVERLAPPING CIRCLES ARE GONE
+
+            Five stacked avatar circles reading M J K A R is a consumer-SaaS
+            pattern - it borrows the shape of a page showing real customers'
+            faces while having no faces to show, which is the same borrowed
+            credibility as a logo wall implying partnerships we do not have.
+            Initials were the honest version of a dishonest device.
+
+            The count is better off on its own, set as a reading: mono,
+            tabular, with the label beside it rather than a decoration above
+            it. It says the same true thing and looks like an instrument
+            rather than like a page pretending to have testimonials.
           */}
-          <div className="mt-6 flex flex-col items-center gap-2">
-            <div className="flex -space-x-2">
-              {['M', 'J', 'K', 'A', 'R'].map((initial, i) => (
-                <span
-                  key={initial}
-                  className="w-[22px] h-[22px] rounded-full bg-brand-elevated border border-white/15
-                    flex items-center justify-center text-[9px] font-medium text-gray-400"
-                  style={{ zIndex: 5 - i }}
-                >
-                  {initial}
-                </span>
-              ))}
-            </div>
-            <p className="text-[11.5px] text-gray-500">
-              Join <span className="text-gray-300">800+ traders</span> who have signed up to TradeX
-            </p>
+          <p className="mt-7 flex items-baseline justify-center gap-2.5">
+            <span className="font-mono text-[15px] text-gray-200 tabular-nums tracking-tight">800+</span>
+            <span className="text-[11.5px] text-gray-500">traders signed up to TradeX</span>
+          </p>
 
           {/* Every rival puts this above the fold. See the component. */}
           <SyncMarquee />
-          </div>
         </div>
 
         {/*
@@ -523,112 +519,101 @@ export default function Sales() {
       </div>
 
       {/*
-        HOW IT WORKS.
+        HOW IT WORKS, as one instrument rather than three cards.
 
-        The research on this is consistent: a visitor's second question after
-        "what do I get" is "how does this actually work". Three steps, in the
-        order they happen, each with the interface moment that proves it.
+        This was three stacked rounded panels - 01 Talk, 02 Nova writes it
+        down, 03 It finds the window - each with text on the left and a visual
+        on the right, the same layout three times running. It was the purest
+        case of the problem the whole page has been carrying: everything is a
+        card, and a border around every idea flattens the hierarchy until
+        nothing looks more important than anything else.
 
-        Replaced about 1,100 lines of animated mock dashboards. They were
-        impressive and nobody read them - too much to take in, and every one
-        of them competed with the others for the same attention.
+        It was also the generic "How it works" pattern - numbered markers used
+        as decoration. Numbering only earns its place when the order carries
+        information the reader needs. Here it genuinely does, because this is
+        a sequence, so the numbers stay - but as a legend above the panel
+        rather than as three headings pretending to be three features.
+
+        THE REAL REASON IT IS ONE OBJECT NOW
+
+        The three steps are not three things. They are one thing happening:
+        you talk, and thirty seconds later there is an entry with a pattern
+        attached. Three cards told the reader to evaluate three separate
+        claims. One panel shows a single pipeline, which is both what actually
+        happens and the thing that looks like software rather than like a
+        brochure describing software.
+
+        TranscriptToEntry already carried the first two beats - the speech
+        resolving into filled fields and a written summary - and its root is
+        an unstyled div, so it drops into the panel without nesting a second
+        border inside the first. The third beat becomes the footer, which is
+        where it belongs: the pattern is what you are left holding after the
+        other two have run.
       */}
       <div className="relative border-t border-white/[0.06] py-16 sm:py-24">
         <div className="max-w-4xl mx-auto px-5 sm:px-8">
           <SectionHeader
             eyebrow="How it works"
             title="Thirty seconds, out loud"
-            className="mb-10 sm:mb-12"
+            className="mb-8 sm:mb-10"
           >
-              You quit the last journal because it was typing. This one is you
-              talking for half a minute &mdash; and it still catches what your
-              head was doing inside that window.
+            No typing, and no fields to fill in. Thirty seconds of talking
+            and the entry writes itself.
           </SectionHeader>
+
+          {/*
+            The sequence as a legend. Mono, because it is a readout of the
+            steps rather than a sentence about them, and inline so it occupies
+            one line instead of three screens.
+          */}
+          <ol className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-5
+            font-mono text-[10px] sm:text-[11px] uppercase tracking-[0.16em] text-gray-500">
+            <li><span className="text-gray-600">01</span> You talk</li>
+            <li className="text-gray-700" aria-hidden="true">&rarr;</li>
+            <li><span className="text-gray-600">02</span> It files it</li>
+            <li className="text-gray-700" aria-hidden="true">&rarr;</li>
+            <li><span className="text-gray-600">03</span> It finds the window</li>
+          </ol>
+
+          {/*
+            NOT DRESSED AS A SCREENSHOT - and this was a real mistake, caught
+            by Brandon.
+
+            The first version of this put the demonstration inside window
+            chrome with a pulsing "Recording" dot and a 00:31 timer. No such
+            screen exists in TradeX. That is precisely the fault this page
+            spent the morning removing from the hero and the product tour -
+            hand-drawn UI that looks like the product and is not - and it got
+            rebuilt here within the hour, which says how easy it is to do by
+            accident while trying to make something feel designed.
+
+            So there is no card, no border and no chrome. It reads as what it
+            is: a demonstration of what you say turning into what gets filed,
+            set in type on the page, with hairlines doing the separating.
+            The real interface is one section below, as an actual screenshot.
+
+            Losing the card also fixes the other complaint: almost every block
+            on this page was a bordered panel, which flattens the hierarchy
+            until nothing reads as more important than anything else.
+          */}
+          <div className="border-t border-white/[0.07] pt-6 sm:pt-7">
+            <TranscriptToEntry />
+
             {/*
-              This said "The reason journals die is the typing. So TradeX
-              takes it off you." Brandon doubted the pain point was typing and
-              he was right, for a reason sharper than taste: convenience is
-              the one claim this product cannot win on. Tradespad already owns
-              simple-and-clean AND a free tier, so a section whose whole
-              argument is "less effort" is picking the fight we lose - while
-              psychology, which none of the four competitors mention at all,
-              is sitting uncontested.
-
-              It was also feature-led where it should be outcome-led. Benefit
-              headlines beat feature headlines by about 27% and concrete
-              numbers add another 15%, so "thirty seconds" stays - it is the
-              number that makes the promise checkable - and the sentence under
-              it now ends on what the reader gets rather than on what they are
-              spared.
-
-              The quitting objection is not lost by this. It is answered
-              directly in the FAQ below, by name: "I have tried journals
-              before and quit. Why is this different?"
+              Step three, as the thing you are left holding. It reads across
+              every entry rather than this one, which is the only claim here
+              that no competitor makes.
             */}
-                        {/*
-              He introduces the three steps. Below the copy rather than above
-              it so the section still opens on its own words, and small enough
-              to read as a presenter beside the list rather than a second
-              headline over it.
-            */}
-            <Mascot pose="present" height={88} className="mt-8 sm:mt-10 -ml-2" />
-
-          <div className="flex flex-col gap-4 sm:gap-5">
-            {[
-              {
-                step: '01',
-                title: 'Talk, do not type',
-                body: 'The way you would tell a trading partner on the phone. Rambling is fine - it is doing the listening.',
-                visual: (
-                  <div className="flex items-center gap-3">
-                    {/* Blue here on purpose - this is the record button, and it
-                        is blue in the product. One accent, where it is literal. */}
-                    <span className="flex-shrink-0 w-9 h-9 rounded-full bg-brand-blue/15 border border-brand-blue/30 flex items-center justify-center">
-                      <span className="w-2.5 h-2.5 rounded-full bg-brand-blue" />
-                    </span>
-                    <div className="flex items-end gap-[3px] h-7" aria-hidden="true">
-                      {[7, 14, 22, 12, 26, 18, 9, 20, 28, 15, 8, 19, 24, 11, 6].map((h, i) => (
-                        <span key={i} className="w-[3px] rounded-full bg-white/25" style={{ height: `${h}px` }} />
-                      ))}
-                    </div>
-                  </div>
-                ),
-              },
-              {
-                step: '02',
-                title: 'Nova writes it down',
-                body: 'Symbol, direction, size, P&L and the reason you gave, pulled out and filed where they belong.',
-                visual: <TranscriptToEntry />,
-              },
-              {
-                step: '03',
-                title: 'It finds the window',
-                body: 'Across every entry, not just this one - the three trades you cannot see from inside them.',
-                visual: (
-                  <div className="rounded-lg border border-brand-blue/20 bg-brand-blue/[0.06] px-3 py-2.5">
-                    <p className="text-[12.5px] leading-relaxed text-gray-300">
-                      You moved your stop on <span className="text-white">4 of your last 6 losers</span>.
-                      None of your winners.
-                    </p>
-                  </div>
-                ),
-              },
-            ].map((item) => (
-              <div
-                key={item.step}
-                className="rounded-2xl border border-white/[0.07] bg-brand-surface p-5 sm:p-7
-                  sm:grid sm:grid-cols-[1fr_minmax(0,300px)] sm:gap-8 sm:items-center"
-              >
-                <div>
-                  <p className="font-mono text-[10px] tracking-[0.18em] text-gray-600 mb-2.5 tabular-nums">{item.step}</p>
-                  <h3 className="text-[19px] sm:text-xl font-semibold text-white tracking-[-0.02em]">{item.title}</h3>
-                  <p className="mt-2 text-[13.5px] sm:text-sm text-gray-400 leading-relaxed">{item.body}</p>
-                </div>
-                <div className="mt-5 sm:mt-0 rounded-xl border border-white/[0.06] bg-brand-elevated p-4">
-                  {item.visual}
-                </div>
-              </div>
-            ))}
+            <div className="mt-6 sm:mt-7 pt-5 border-t border-white/[0.07]">
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-600">
+                What it noticed
+              </p>
+              <p className="mt-2 text-[13px] sm:text-[13.5px] leading-relaxed text-gray-300">
+                You moved your stop on{' '}
+                <span className="text-white">4 of your last 6 losers</span>. None
+                of your winners.
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -1355,7 +1340,7 @@ export default function Sales() {
                 <Link
                   to="/auth?mode=signup"
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5
-                    rounded-full bg-white text-black text-[14px] font-medium hover:bg-gray-200 transition-colors"
+                    rounded-xl bg-white text-black text-[14px] font-medium hover:bg-gray-200 transition-colors"
                 >
                   Start journaling
                   <ArrowRight className="w-4 h-4" />
@@ -1526,7 +1511,7 @@ export default function Sales() {
               <Link
                 to="/auth?mode=signup"
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2
-                  px-7 py-3 rounded-full bg-white text-black text-[14px] font-medium
+                  px-7 py-3.5 rounded-xl bg-white text-black text-[14px] font-medium
                   hover:bg-gray-200 transition-colors"
               >
                 Start journaling
