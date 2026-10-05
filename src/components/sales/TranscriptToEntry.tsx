@@ -18,14 +18,23 @@ import { useState, useEffect, useRef } from 'react';
   And prefers-reduced-motion simply gets the finished state.
 */
 
+/*
+  The same trade as the screenshot underneath it on the landing page.
+
+  This used to be a EURUSD loss while the screenshot beside it showed a gold
+  win - a visitor reading both saw somebody describe one trade and the product
+  file a different one. The demonstration only works if the two halves are the
+  same event, so this is the 18 September entry from the demo account, spoken
+  the way it would actually be said out loud.
+*/
 const TRANSCRIPT =
-  'Shorted euro dollar half a lot, got stopped out for about a hundred and eighty bucks. Moved my stop twice again, same as Tuesday.';
+  'Shorted gold on the opening range reclaim, one lot, held it the whole forty-eight minutes for about seven eighty-nine. Never touched the stop.';
 
 const FIELDS: [string, string][] = [
-  ['Symbol', 'EURUSD'],
+  ['Symbol', 'XAUUSD'],
   ['Direction', 'Short'],
-  ['Size', '0.5 lots'],
-  ['Result', '-$180'],
+  ['Size', '1 lot'],
+  ['Result', '+$789'],
 ];
 
 /*
@@ -34,9 +43,9 @@ const FIELDS: [string, string][] = [
   it as prose would undersell the part people are paying for.
 */
 const BULLETS = [
-  'Entered short on the retest, no confirmation',
-  'Stop moved twice, both times against the plan',
-  'Repeat of Tuesday - same setup, same mistake',
+  'Entered on the reclaim rather than the break',
+  'Stop set before entry and never moved',
+  'Held the full move, no partials out of nerves',
 ];
 
 /*
