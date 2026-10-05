@@ -5,7 +5,6 @@ import Footer from '../components/layout/Footer';
 import Mascot from '../components/shared/Mascot';
 import { TIERS, IN_EVERY_PLAN, ALSO_INCLUDED } from '../lib/pricingTiers';
 import TranscriptToEntry from '../components/sales/TranscriptToEntry';
-import ProductTabs from '../components/sales/ProductTabs';
 import Wordmark from '../components/shared/Wordmark';
 import NovaAnswer from '../components/sales/NovaAnswer';
 import SyncMarquee from '../components/sales/SyncMarquee';
@@ -642,38 +641,54 @@ export default function Sales() {
               </div>
             ))}
           </div>
-          <div className="mt-14 sm:mt-16">
-            <p className="text-center text-[11px] tracking-[0.14em] uppercase text-gray-500 mb-6">
-              And this is where it lands
+        </div>
+      </div>
+
+      {/*
+        WHAT COMES OUT - the first of the two unpacked screenshot sections.
+
+        These three screenshots used to be behind a tab strip: one visible,
+        two a click away. Neither competitor hides anything. TradeZella runs
+        five feature sections, Tradespad six, and every one of them is a
+        heading, a line and a screenshot, inline. A tab is a click, and most
+        people do not click.
+
+        The tabs were defended here with Notre Dame's carousel study - ~1% of
+        visitors click a hero carousel, 84% of those clicks landing on the
+        first panel. That study is about HERO carousels. It was the wrong
+        citation for a mid-page tab strip and it had been load-bearing.
+
+        Unpacked, but deliberately not into three screenshot sections in a
+        row: that would rebuild the four-consecutive-product-sections problem
+        this page was just dug out of. The journal lands here, next to the
+        steps that produce it. The calendar and the analytics land after Nova.
+        So each product section carries a different kind of visual - a
+        screenshot, then live components, then a conversation, then two more
+        screenshots - and the page never shows the same thing twice running.
+      */}
+      <div className="relative border-t border-white/[0.06] py-16 sm:py-20">
+        <div className="max-w-4xl mx-auto px-5 sm:px-8">
+          <div className="text-center mb-10 sm:mb-12">
+            <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
+              What comes out
             </p>
-            <ProductTabs />
-            <p className="mt-7 text-center">
-              <Link to="/features" className="inline-flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-white transition-colors underline underline-offset-[3px] decoration-white/20 hover:decoration-white/50">
-                See everything it does
-              </Link>
+            <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
+              A written entry, not a row in a sheet
+            </h2>
+            <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-md mx-auto text-balance">
+              Symbol, direction, size and duration filed where they belong
+              &mdash; and underneath them, in your own words, what you were
+              actually doing.
             </p>
           </div>
+          <ProductShot
+            src="/product/journal.jpg"
+            label="Journal"
+            alt="A journal entry for a gold trade: symbol, direction, size, duration, the trade it is linked to, tags, and the written review underneath."
+          />
         </div>
-
-          {/*
-            The tour, inside this section rather than beside it.
-
-            It had its own heading - "Have a look around" - directly after
-            this one, which gave the page two consecutive invitations to look
-            at the product and no argument between them. Four product
-            sections ran back to back and this was two of them.
-
-            It belongs here because it is the same beat: the three steps above
-            say what you do, and these are the screens that come out of doing
-            it. Demoted to a caption rather than a headline so the section
-            still only makes one claim.
-
-            Still mid-page, not in the hero: Notre Dame found ~1% of visitors
-            click a hero carousel at all and 84% of those clicks land on the
-            first panel, against 43% interaction for a static hero. Hyros and
-            TradeZella both put their own tabs down here for the same reason.
-          */}
       </div>
+
 
       {/*
         THE DIFFERENTIATOR.
@@ -819,6 +834,59 @@ export default function Sales() {
         </div>
       </div>
 
+
+      {/*
+        WHAT COMES OUT - the second of the two unpacked screenshot sections.
+
+        The other two panels from the old tab strip. They belong together and
+        apart from the journal one: the journal is what you produce on the
+        day, these are what you look at afterwards, and splitting them that
+        way means neither section has to claim to be about both.
+
+        Two screenshots side by side rather than one each, because they are
+        the same job seen at two zoom levels and giving each a full section
+        would be the third and fourth consecutive screenshot - exactly what
+        unpacking the tabs was supposed to avoid.
+
+        The route into the detail that the landing page holds back sits here
+        now, at the end of the product run, which is where somebody who wants
+        more of it has just finished looking.
+      */}
+      <div className="relative border-t border-white/[0.06] py-16 sm:py-20">
+        <div className="max-w-5xl mx-auto px-5 sm:px-8">
+          <div className="text-center mb-10 sm:mb-12">
+            <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
+              Afterwards
+            </p>
+            <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
+              The month, and what it was made of
+            </h2>
+            <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-md mx-auto text-balance">
+              Every day coloured by what you did with it, and the reports
+              underneath that say which of your setups actually pays.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
+            <ProductShot
+              src="/product/calendar.jpg"
+              label="Calendar"
+              alt="A month of trading laid out as a calendar, each day showing its profit or loss, with weekly totals down the side."
+            />
+            <ProductShot
+              src="/product/analytics.jpg"
+              label="Analytics"
+              alt="The analytics page: NOVA Score, total profit and loss, win rate, profit factor, and cumulative P&L and win-rate charts."
+            />
+          </div>
+
+          <p className="mt-7 text-center">
+            <Link to="/features" className="inline-flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-white transition-colors underline underline-offset-[3px] decoration-white/20 hover:decoration-white/50">
+              See everything it does
+            </Link>
+          </p>
+        </div>
+      </div>
 
       {/*
         Moved below the two psychology sections, not above them.
