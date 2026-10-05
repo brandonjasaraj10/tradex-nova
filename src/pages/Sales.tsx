@@ -8,10 +8,8 @@ import TranscriptToEntry from '../components/sales/TranscriptToEntry';
 import Wordmark from '../components/shared/Wordmark';
 import SyncMarquee from '../components/sales/SyncMarquee';
 import ProductShot from '../components/sales/ProductShot';
+import PsychologySwipe from '../components/sales/PsychologySwipe';
 import SectionHeader from '../components/sales/SectionHeader';
-import PreTradeScales from '../components/journal/PreTradeScales';
-import NOVAScore from '../components/shared/NOVAScore';
-import { EXAMPLE_SCORE } from '../components/marketing/exampleScore';
 import SignupOrWaitlist from '../components/shared/SignupOrWaitlist';
 import { useHasLaunched } from '../lib/launch';
 import { useState, useEffect, useRef } from 'react';
@@ -614,66 +612,16 @@ export default function Sales() {
           </SectionHeader>
             
             {/*
-              The slumped pose, and the only section on the page it can go in.
+              The mascot is gone from this section.
 
-              Everywhere else he is selling - waving, presenting, leaning on a
-              price - and this is the one part that names the problem rather
-              than the answer. "Your P&L is the symptom" is about the bad day,
-              so the character under it is the one having one. He is the reader
-              here, not the product.
-
-              The render has a flat line where the smile is, which is why this
-              pose has to stay out of the hero, the pricing and the CTA: a
-              mascot pulling that face next to a price reads as a warning.
+              It was the slumped pose, chosen deliberately: the section names
+              the problem rather than the answer, so the character under it was
+              the reader having a bad day rather than the product. Sound
+              reasoning, but it was the fourth thing competing for attention in
+              a box that already held three, and the section's actual argument
+              was the thing losing.
             */}
-            <Mascot pose="slump" height={104} className="mx-auto mt-8 sm:mt-9" />
-
-          <div className="rounded-2xl border border-white/[0.07] bg-brand-surface p-5 sm:p-8">
-            {/*
-              The real controls, not drawings of them.
-
-              This drew its own pre-trade sliders - Focus, Confidence and
-              Discipline, each out of ten - and the product has no such
-              control. The actual one rates Emotional State, Focus Level and
-              Confidence from one to five, and there is no Discipline slider
-              anywhere in the app. Somebody arriving from this page met a
-              screen they had not been shown.
-
-              It also drew its own NOVA Score at 68 while /features and
-              /pricing render the shared EXAMPLE_SCORE at 78 - the same number
-              advertised twice at two different values, which is the exact
-              failure exampleScore.ts was written to prevent.
-
-              Both are now the components the app itself ships, which is the
-              brand guide's own rule: a marketing page cannot drift from the
-              product it is selling if it is rendering the product.
-            */}
-            <PreTradeScales
-              accent="marketing"
-              disabled
-              values={{ emotional_state: 2, focus: 4, confidence: 3 }}
-              onChange={() => {}}
-            />
-
-            <div className="mt-5">
-              <NOVAScore
-                accent="marketing"
-                breakdown={EXAMPLE_SCORE}
-                size="md"
-                showBreakdown
-                periodLabel="Last 30 days"
-              />
-            </div>
-            <div className="mt-4 rounded-xl border border-white/[0.07] bg-brand-elevated p-4 sm:p-5">
-              <p className="text-[10px] uppercase tracking-[0.12em] text-gray-600 mb-2">What it found</p>
-              <p className="text-[13.5px] sm:text-[15px] text-gray-300 leading-relaxed">
-                Every trade you rated <span className="text-white">confidence below 5</span> lost money.
-                Nine out of nine. You are not losing on setups &mdash; you are losing on the days you
-                already knew you should sit out.
-              </p>
-            </div>
-            <p className="mt-4 text-center text-[11px] text-gray-600">Example figures</p>
-          </div>
+            <PsychologySwipe />
         </div>
       </div>
 
