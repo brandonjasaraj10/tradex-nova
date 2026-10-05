@@ -850,23 +850,38 @@ export default function Sales() {
       <div className="relative border-t border-white/[0.06] py-12 sm:py-14">
         <div className="max-w-3xl mx-auto px-5 sm:px-8">
           <div className="flex flex-col sm:flex-row sm:items-start gap-5 sm:gap-6">
+            {/*
+              A portrait, not a frame grab.
+
+              This was the founder video's poster: a 16:9 shot with the face
+              high in the frame, squeezed into a circle and nudged with
+              object-position until it roughly landed. It worked and it looked
+              like it had been made to work.
+
+              object-top rather than centre, and that is arithmetic rather
+              than taste: the source is 180x320, so a square crop shows 56% of
+              its height. The face sits at about 28% down, which is the centre
+              of the top band - so top-aligned puts it in the middle of the
+              circle, and centre-aligned would cut it off at the forehead.
+            */}
             <img
-              src="/founder-video-poster.jpg"
+              src="/founder.jpg"
               alt="Brandon, who built TradeX"
-              width={96}
-              height={96}
+              width={180}
+              height={180}
               loading="lazy"
               decoding="async"
-              className="w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover flex-shrink-0
-                border border-white/10 object-[50%_18%]"
+              className="w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover object-top
+                flex-shrink-0 border border-white/10"
             />
             <div className="min-w-0">
               <p className="text-[9.5px] sm:text-[10px] tracking-[0.16em] uppercase text-gray-600">
                 Why I built this
               </p>
               <p className="mt-3 text-[14.5px] sm:text-[15.5px] leading-relaxed text-gray-300 max-w-xl">
-                Every one I tried had a hundred features and not one of them
-                tracked the thing that actually decides whether I make money.
+                Every trading journal I tried had a hundred features and not one
+                of them tracked the thing that actually decides whether I make
+                money.
                 My trading psychology. Everything else is tidier arithmetic on
                 a loss you have already taken.
               </p>

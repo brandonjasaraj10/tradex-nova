@@ -92,7 +92,9 @@ const PUBLIC_FILES = [
   'product/nova-mobile.jpg',
   /* The calendar's psychology view - the one no competitor has. */
   'product/calendar-psych.jpg',
-  'product/calendar-psych-mobile.jpg'
+  'product/calendar-psych-mobile.jpg',
+  /* The founder portrait in the band above the price. */
+  'founder.jpg'
 ];
 
 export default defineConfig({
