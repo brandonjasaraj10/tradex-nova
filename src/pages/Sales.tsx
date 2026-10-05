@@ -437,10 +437,11 @@ export default function Sales() {
       */}
       <div className="relative border-t border-white/[0.06] py-16 sm:py-24">
         <div className="max-w-3xl mx-auto px-5 sm:px-8">
-          <SectionHeader align="center" eyebrow="Where it actually goes" title="Accounts go in the three trades after a red one">
-            The loss itself is survivable. What ends the account is the next
-            twenty minutes &mdash; bigger size, no setup, and a rule you
-            would not have broken an hour earlier.
+          <SectionHeader align="center" eyebrow="The real variable" title="The hard part was never the chart">
+            Ask anyone who has traded for a year and they can tell you exactly
+            what they should have done. Knowing it has never been the same as
+            doing it with money on the line, and that gap is where the account
+            actually goes.
           </SectionHeader>
 
           {/*
@@ -454,20 +455,20 @@ export default function Sales() {
           <ol className="mt-12 sm:mt-14 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             {[
               {
-                step: 'The loss',
-                line: 'Planned, sized properly, stopped where you said. A normal day so far.',
+                step: 'The trade you planned',
+                line: 'Right setup, right size, stopped where you said. Nothing has gone wrong yet.',
                 width: 'w-1/3',
                 tone: 'bg-white/20',
               },
               {
-                step: 'The one to get it back',
-                line: 'Same instrument, bigger size, and the setup is close enough.',
+                step: 'The one right after',
+                line: 'Straight back in, a bit bigger, and the setup is close enough this time.',
                 width: 'w-2/3',
                 tone: 'bg-white/30',
               },
               {
-                step: 'The one that ends it',
-                line: 'No setup left to speak of. By now it is about the morning, not the chart.',
+                step: 'The one that costs you',
+                line: 'No real setup left. By now it is about getting back to flat, not about the chart.',
                 width: 'w-full',
                 tone: 'bg-brand-blue/70',
               },
@@ -504,16 +505,16 @@ export default function Sales() {
           */}
           <p className="mt-10 text-center text-[13px] sm:text-[13.5px] leading-relaxed text-gray-500 max-w-lg mx-auto">
             <span className="text-gray-300">
-              71% of first-phase prop firm failures are daily drawdown breaches
+              71% of traders who fail a funded account do it on a drawdown
+              limit, not a bad strategy
             </span>
-            {' '}&mdash; most inside the first week, and usually across one to
-            three trades. Self-reported industry figures, not independently
-            audited.
+            {' '}&mdash; most inside the first week, usually across one to three
+            trades. Self-reported industry figures, not independently audited.
           </p>
 
           <p className="mt-8 text-center text-[14.5px] sm:text-base text-gray-300 text-balance">
-            That window is twenty minutes long and you are inside it. It is
-            also the only part of trading nothing you own measures.
+            Every tool you own measures the trade. None of them measure the
+            twenty minutes after it, which is the part that decides the month.
           </p>
         </div>
       </div>
