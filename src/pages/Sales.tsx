@@ -9,6 +9,7 @@ import Wordmark from '../components/shared/Wordmark';
 import NovaAnswer from '../components/sales/NovaAnswer';
 import SyncMarquee from '../components/sales/SyncMarquee';
 import ProductShot from '../components/sales/ProductShot';
+import SectionHeader from '../components/sales/SectionHeader';
 import PreTradeScales from '../components/journal/PreTradeScales';
 import NOVAScore from '../components/shared/NOVAScore';
 import { EXAMPLE_SCORE } from '../components/marketing/exampleScore';
@@ -438,21 +439,13 @@ export default function Sales() {
         rather than accusing: anybody who has done it knows they did not
         decide to do it.
       */}
-      <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
+      <div className="relative border-t border-white/[0.06] py-16 sm:py-24">
         <div className="max-w-3xl mx-auto px-5 sm:px-8">
-          <div className="text-center">
-            <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
-              Where it actually goes
-            </p>
-            <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
-              Accounts go in the three trades after a red one
-            </h2>
-            <p className="mt-5 text-[14.5px] sm:text-base leading-relaxed text-gray-400 max-w-md mx-auto text-balance">
-              The loss itself is survivable. What ends the account is the next
-              twenty minutes &mdash; bigger size, no setup, and a rule you
-              would not have broken an hour earlier.
-            </p>
-          </div>
+          <SectionHeader align="center" eyebrow="Where it actually goes" title="Accounts go in the three trades after a red one">
+            The loss itself is survivable. What ends the account is the next
+            twenty minutes &mdash; bigger size, no setup, and a rule you
+            would not have broken an hour earlier.
+          </SectionHeader>
 
           {/*
             The sequence, not a chart.
@@ -487,7 +480,7 @@ export default function Sales() {
                 key={s.step}
                 className="rounded-2xl border border-white/[0.07] bg-brand-surface p-5 sm:p-6 flex flex-col"
               >
-                <span className="text-[11px] tabular-nums text-gray-600">0{n + 1}</span>
+                <span className="font-mono text-[11px] tabular-nums text-gray-600">0{n + 1}</span>
                 <p className="mt-2 text-[15px] sm:text-base font-semibold tracking-[-0.01em] text-white">
                   {s.step}
                 </p>
@@ -498,7 +491,7 @@ export default function Sales() {
                 <span className="mt-5 block h-1 rounded-full bg-white/[0.06] overflow-hidden">
                   <span className={`block h-full rounded-full ${s.width} ${s.tone}`} />
                 </span>
-                <span className="mt-2 text-[10px] uppercase tracking-[0.12em] text-gray-600">
+                <span className="mt-2 font-mono text-[10px] uppercase tracking-[0.14em] text-gray-600">
                   Position size
                 </span>
               </li>
@@ -540,15 +533,17 @@ export default function Sales() {
         impressive and nobody read them - too much to take in, and every one
         of them competed with the others for the same attention.
       */}
-      <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
+      <div className="relative border-t border-white/[0.06] py-16 sm:py-24">
         <div className="max-w-4xl mx-auto px-5 sm:px-8">
-          <div className="text-center mb-14 sm:mb-20">
-            <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
-              How it works
-            </p>
-            <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
-              Thirty seconds, out loud
-            </h2>
+          <SectionHeader
+            eyebrow="How it works"
+            title="Thirty seconds, out loud"
+            className="mb-10 sm:mb-12"
+          >
+              You quit the last journal because it was typing. This one is you
+              talking for half a minute &mdash; and it still catches what your
+              head was doing inside that window.
+          </SectionHeader>
             {/*
               This said "The reason journals die is the typing. So TradeX
               takes it off you." Brandon doubted the pain point was typing and
@@ -570,19 +565,13 @@ export default function Sales() {
               directly in the FAQ below, by name: "I have tried journals
               before and quit. Why is this different?"
             */}
-            <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-sm sm:max-w-md mx-auto text-balance">
-              You quit the last journal because it was typing. This one is you
-              talking for half a minute &mdash; and it still catches what your
-              head was doing inside that window.
-            </p>
-            {/*
+                        {/*
               He introduces the three steps. Below the copy rather than above
               it so the section still opens on its own words, and small enough
               to read as a presenter beside the list rather than a second
               headline over it.
             */}
-            <Mascot pose="present" height={96} className="mx-auto mt-7 sm:mt-8" />
-          </div>
+            <Mascot pose="present" height={88} className="mt-8 sm:mt-10 -ml-2" />
 
           <div className="flex flex-col gap-4 sm:gap-5">
             {[
@@ -631,7 +620,7 @@ export default function Sales() {
                   sm:grid sm:grid-cols-[1fr_minmax(0,300px)] sm:gap-8 sm:items-center"
               >
                 <div>
-                  <p className="text-[10px] tracking-[0.18em] text-gray-600 mb-2.5 tabular-nums">{item.step}</p>
+                  <p className="font-mono text-[10px] tracking-[0.18em] text-gray-600 mb-2.5 tabular-nums">{item.step}</p>
                   <h3 className="text-[19px] sm:text-xl font-semibold text-white tracking-[-0.02em]">{item.title}</h3>
                   <p className="mt-2 text-[13.5px] sm:text-sm text-gray-400 leading-relaxed">{item.body}</p>
                 </div>
@@ -668,19 +657,15 @@ export default function Sales() {
       */}
       <div className="relative border-t border-white/[0.06] py-16 sm:py-20">
         <div className="max-w-4xl mx-auto px-5 sm:px-8">
-          <div className="text-center mb-10 sm:mb-12">
-            <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
-              What comes out
-            </p>
-            <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
-              A written entry, not a row in a sheet
-            </h2>
-            <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-md mx-auto text-balance">
+          <SectionHeader
+            eyebrow="What comes out"
+            title="A written entry, not a row in a sheet"
+            className="mb-10 sm:mb-12"
+          >
               Symbol, direction, size and duration filed where they belong
               &mdash; and underneath them, in your own words, what you were
               actually doing.
-            </p>
-          </div>
+          </SectionHeader>
           <ProductShot
             src="/product/journal.jpg"
             label="Journal"
@@ -696,21 +681,18 @@ export default function Sales() {
         Every journal shows P&L. This is the one thing no competitor leads
         with, so it gets a section to itself rather than a card in a grid.
       */}
-      <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
+      <div className="relative border-t border-white/[0.06] py-16 sm:py-24">
         <div className="max-w-4xl mx-auto px-5 sm:px-8">
-          <div className="text-center mb-12 sm:mb-16">
-            <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
-              Psychology
-            </p>
-            <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
-              A number that moves when your head does
-            </h2>
-            <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-sm sm:max-w-md mx-auto text-balance">
+          <SectionHeader
+            eyebrow="Psychology"
+            title="A number that moves when your head does"
+            className="mb-10 sm:mb-12"
+          >
               Three taps before you enter &mdash; how you feel, how focused
               you are, how sure. TradeX holds that against what you actually
               did, and the window above stops being invisible.
-            </p>
-
+          </SectionHeader>
+            
             {/*
               The slumped pose, and the only section on the page it can go in.
 
@@ -725,7 +707,6 @@ export default function Sales() {
               mascot pulling that face next to a price reads as a warning.
             */}
             <Mascot pose="slump" height={104} className="mx-auto mt-8 sm:mt-9" />
-          </div>
 
           <div className="rounded-2xl border border-white/[0.07] bg-brand-surface p-5 sm:p-8">
             {/*
@@ -784,20 +765,16 @@ export default function Sales() {
         makes Nova worth paying for is that she has read every entry, so the
         demonstration is an answer no generic chatbot could give.
       */}
-      <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
+      <div className="relative border-t border-white/[0.06] py-16 sm:py-24">
         <div className="max-w-3xl mx-auto px-5 sm:px-8">
-          <div className="text-center mb-10 sm:mb-14">
-            <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
-              Nova
-            </p>
-            <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
-              It has read everything you wrote
-            </h2>
-            <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-sm sm:max-w-md mx-auto text-balance">
+          <SectionHeader
+            eyebrow="Nova"
+            title="It has read everything you wrote"
+            className="mb-10 sm:mb-12"
+          >
               Nova is not answering from the internet. It is answering from
               your entries, your numbers and the things you have told it twice.
-            </p>
-          </div>
+          </SectionHeader>
 
           <div className="rounded-2xl border border-white/[0.07] bg-brand-surface p-5 sm:p-7">
             <div className="flex flex-col gap-4">
@@ -854,18 +831,14 @@ export default function Sales() {
       */}
       <div className="relative border-t border-white/[0.06] py-16 sm:py-20">
         <div className="max-w-5xl mx-auto px-5 sm:px-8">
-          <div className="text-center mb-10 sm:mb-12">
-            <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
-              Afterwards
-            </p>
-            <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
-              The month, and what it was made of
-            </h2>
-            <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-md mx-auto text-balance">
+          <SectionHeader
+            eyebrow="Afterwards"
+            title="The month, and what it was made of"
+            className="mb-10 sm:mb-12"
+          >
               Every day coloured by what you did with it, and the reports
               underneath that say which of your setups actually pays.
-            </p>
-          </div>
+          </SectionHeader>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
             <ProductShot
@@ -911,14 +884,11 @@ export default function Sales() {
       */}
       <div className="relative border-t border-white/[0.06] py-16 sm:py-20">
         <div className="max-w-4xl mx-auto px-5 sm:px-8">
-          <div className="text-center mb-10 sm:mb-12">
-            <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
-              The short version
-            </p>
-            <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
-              Everything it does
-            </h2>
-          </div>
+          <SectionHeader
+            eyebrow="The short version"
+            title="Everything it does"
+            className="mb-10 sm:mb-12"
+          />
 
           <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {[
@@ -994,10 +964,10 @@ export default function Sales() {
         for, which is recognition - a trader scanning this sees their own
         firm and stops wondering.
       */}
-      <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
+      <div className="relative border-t border-white/[0.06] py-16 sm:py-24">
         <div className="max-w-3xl mx-auto px-5 sm:px-8">
-          <div className="text-center mb-10 sm:mb-12">
-            <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
+          <div className="mb-10 sm:mb-12">
+            <p className="font-mono text-[10px] sm:text-[11px] tracking-[0.2em] uppercase text-gray-500 mb-4">
               Broker sync
             </p>
 
@@ -1015,15 +985,15 @@ export default function Sales() {
                   rounded-full bg-brand-blue opacity-75 animate-ping" />
                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-brand-blue" />
               </span>
-              <span className="text-[11px] tracking-[0.1em] uppercase text-brand-blue font-medium">
+              <span className="font-mono text-[11px] tracking-[0.14em] uppercase text-brand-blue">
                 Live now
               </span>
             </div>
 
-            <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
+            <h2 className="mt-5 text-[28px] leading-[1.12] sm:text-[40px] sm:leading-[1.08] font-semibold tracking-[-0.03em] text-white text-balance max-w-2xl">
               MT4 and MT5 sync is here
             </h2>
-            <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-md mx-auto text-balance">
+            <p className="mt-4 text-[14.5px] sm:text-[15px] leading-relaxed text-gray-400 max-w-lg">
               Connect an account once and every trade you close arrives by itself.
               You write the thinking. TradeX never asks you for the numbers.
             </p>
@@ -1113,13 +1083,13 @@ export default function Sales() {
         a section-sized gap between a heading and the sentence finishing its
         thought made it worse.
       */}
-      <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
+      <div className="relative border-t border-white/[0.06] py-16 sm:py-24">
         <div className="max-w-3xl mx-auto px-5 sm:px-8">
           <div className="max-w-lg mx-auto text-center">
-            <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
+            <p className="font-mono text-[10px] sm:text-[11px] tracking-[0.2em] uppercase text-gray-500 mb-4">
               From the founder
             </p>
-            <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
+            <h2 className="text-[28px] leading-[1.12] sm:text-[40px] sm:leading-[1.08] font-semibold tracking-[-0.03em] text-white text-balance">
               Why I built this
             </h2>
 
@@ -1201,7 +1171,7 @@ export default function Sales() {
       */}
       <div className="relative border-t border-white/[0.06] py-12 sm:py-16">
         <div className="max-w-4xl mx-auto px-5 sm:px-8">
-          <p className="text-center text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500">
+          <p className="text-center font-mono text-[10px] sm:text-[11px] tracking-[0.2em] uppercase text-gray-500">
             From early users
           </p>
 
@@ -1251,21 +1221,17 @@ export default function Sales() {
         The gold-* classes this section used were undefined and rendered as
         nothing, which is why the old feature headings had no colour at all.
       */}
-      <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
+      <div className="relative border-t border-white/[0.06] py-16 sm:py-24">
         <div className="max-w-xl mx-auto px-5 sm:px-8">
-          <div className="text-center mb-24 sm:mb-24">
-            <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
-              Pricing
-            </p>
-            <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
-              Everything in every plan
-            </h2>
-            <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-sm mx-auto text-balance">
+          <SectionHeader
+            eyebrow="Pricing"
+            title="Everything in every plan"
+            className="mb-10 sm:mb-12"
+          >
               {launched
-                ? 'What changes is how many accounts sync themselves.'
-                : 'Join the waitlist before launch and lock in founding member pricing.'}
-            </p>
-          </div>
+              ? 'What changes is how many accounts sync themselves.'
+              : 'Join the waitlist before launch and lock in founding member pricing.'}
+          </SectionHeader>
 
           {/*
             And he is leaning on the price.
@@ -1429,16 +1395,13 @@ export default function Sales() {
         JavaScript, it is keyboard accessible for free, and the answer is in
         the DOM for search engines whether or not anyone opens it.
       */}
-      <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
+      <div className="relative border-t border-white/[0.06] py-16 sm:py-24">
         <div className="max-w-2xl mx-auto px-5 sm:px-8">
-          <div className="text-center mb-10 sm:mb-12">
-            <p className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-4">
-              Before you ask
-            </p>
-            <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
-              The honest answers
-            </h2>
-          </div>
+          <SectionHeader
+            eyebrow="Before you ask"
+            title="The honest answers"
+            className="mb-10 sm:mb-12"
+          />
 
           <div className="flex flex-col gap-2.5">
             {[
@@ -1524,7 +1487,7 @@ export default function Sales() {
         claimed an outcome for people we cannot point to. The guarantee does
         the same job and is checkable.
       */}
-      <div className="relative border-t border-white/[0.06] py-20 sm:py-28">
+      <div className="relative border-t border-white/[0.06] py-16 sm:py-24">
         <div className="max-w-xl mx-auto px-5 sm:px-8 text-center">
           {/*
             He appears once, here, and not anywhere above.
@@ -1549,7 +1512,7 @@ export default function Sales() {
             one argument and shut on another. The last thing read before the
             price should be the first thing read on the page.
           */}
-          <h2 className="text-[32px] leading-[1.08] sm:text-5xl font-semibold tracking-[-0.035em] text-white text-balance">
+          <h2 className="text-[28px] leading-[1.12] sm:text-[40px] sm:leading-[1.08] font-semibold tracking-[-0.03em] text-white text-balance">
             Close the gap
           </h2>
           <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-sm mx-auto text-balance">

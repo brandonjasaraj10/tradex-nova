@@ -20,6 +20,19 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
+        /*
+          The technical voice.
+
+          Used for eyebrows, labels, counts and anything that is a reading
+          off the product rather than a sentence about it. The public pages
+          had one typeface doing every job, which is the main reason they
+          read as a marketing template rather than as software - a mono on
+          the labels is most of what separates Linear, Vercel and Stripe
+          from a generic dark landing page.
+
+          Not for body copy, ever. It is a label face here.
+        */
+        mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'monospace'],
       },
       // Brand tokens - see BRAND_GUIDE.md for when to use which.
       // These just give the app's intentional color choices a name, so
