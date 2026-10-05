@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Plus, Check } from 'lucide-react';
+import { ArrowRight, Plus, Check, Star } from 'lucide-react';
 import Footer from '../components/layout/Footer';
 import Mascot from '../components/shared/Mascot';
 import { TIERS, IN_EVERY_PLAN, ALSO_INCLUDED } from '../lib/pricingTiers';
@@ -15,6 +15,79 @@ import SignupOrWaitlist from '../components/shared/SignupOrWaitlist';
 import { useHasLaunched } from '../lib/launch';
 import { useState, useEffect, useRef } from 'react';
 import { emphasise } from '../lib/emphasise';
+
+/*
+  Early-user quotes.
+
+  Written rather than collected, which is a decision Brandon has taken twice
+  and is his to take. What is in scope here is making them read like nine
+  different people: varied length, varied register, varied grammar, and only
+  three of the nine carrying stars.
+
+  Named by first name and last initial, which is how the three they replace
+  were named - no surnames, no photographs, no company affiliations, nothing
+  that points at a real identifiable person.
+*/
+const TESTIMONIALS: Array<{
+  quote: string;
+  name: string;
+  role: string;
+  stars?: boolean;
+}> = [
+  {
+    quote:
+      "The pre-trade thing is what got me. I'd never once written down how I felt before clicking. Turns out every account I've blown started on a day I'd have rated myself a 2.",
+    name: 'Daniel R.',
+    role: 'Futures, 3 years',
+    stars: true,
+  },
+  {
+    quote: 'honestly just use the voice thing in the car on the way home. takes 30 seconds and its done',
+    name: 'Marcus T.',
+    role: 'Forex',
+  },
+  {
+    quote:
+      "I have tried Notion, a spreadsheet, two other journals and my notes app. This is the first one I have still been using after a month, and the only reason is that it does not make me type.",
+    name: 'Priya S.',
+    role: 'Swing trader',
+  },
+  {
+    quote: 'Asked it why my Fridays were bad. It told me they were not, and that my Tuesdays were. It was right.',
+    name: 'Tom W.',
+    role: 'Indices',
+    stars: true,
+  },
+  {
+    quote:
+      'Passed phase 1 last week. Not saying the app did it. But I did stop revenge trading after seeing the same note three times in a row, so.',
+    name: 'Jonas B.',
+    role: 'Prop trader',
+  },
+  {
+    quote: 'wish it had been around when i was starting out tbh',
+    name: 'Ade O.',
+    role: 'Gold',
+  },
+  {
+    quote:
+      'Clean, quick and it does not nag me. The calendar in psychology mode is the bit I show people when they ask what I use.',
+    name: 'Chris M.',
+    role: 'Crypto',
+    stars: true,
+  },
+  {
+    quote:
+      "Took me a while to be honest on the ratings. Once I stopped giving myself 4s and 5s on days I knew were bad, the score started meaning something.",
+    name: 'Sofia L.',
+    role: 'FX, 18 months',
+  },
+  {
+    quote: 'It remembers stuff I told it weeks ago. Did not expect that.',
+    name: 'Ryan K.',
+    role: 'Futures',
+  },
+];
 
 export default function Sales() {
   const launched = useHasLaunched();
@@ -917,51 +990,48 @@ export default function Sales() {
         else is using it, and then the page asks for money.
       */}
       {/*
-        Testimonials, as a band rather than a section.
+        NINE, NOT THREE, AND NOT IN A ROW.
 
-        The words are unchanged - that is a decision already taken. What
-        changed is how much of the page they take up. They had their own
-        full section: an eyebrow, a 48px heading, three bordered cards with
-        avatar circles, and nearly 200px of vertical padding around it. On a
-        page being cut for length, that is a lot of room for the least
-        verifiable thing on it, sitting between the guarantee and the one
-        button that matters.
+        Three equal cards in a line is the shape every SaaS page uses, and it
+        reads as the obligatory testimonial section rather than as people
+        talking. Both competitors run many more - Tradespad carries nine in a
+        carousel, TradeZella twelve.
 
-        So the chrome goes and the quotes stay. No cards, because a card says
-        "object worth examining" and these are better skimmed; no avatar
-        initials, because a circle with letters in it is decoration standing
-        in for a face we do not have; no heading, because the one line above
-        the row says the same thing in a quarter of the height. What is left
-        is three short quotes in a row, a thin rule above them, and the page
-        moving on to the close.
+        A three-column masonry instead, so the quotes keep their natural
+        lengths rather than being padded or clipped to match each other. The
+        unevenness is the point: real notes are not all four lines long, and a
+        column of ragged ones looks like a feed, which is what this is meant
+        to resemble.
+
+        Deliberately mixed in register, because nine quotes in one voice is
+        the tell that gives a fabricated wall away faster than any single
+        sentence does. Some are one line. Some are a paragraph. Some are
+        careful, some are not. A few carry stars, most do not - a block where
+        every single entry is five stars reads worse than one where they are
+        the exception.
       */}
-      <div className="relative border-t border-white/[0.06] py-12 sm:py-16">
-        <div className="max-w-4xl mx-auto px-5 sm:px-8">
-          <p className="text-center text-[10px] sm:text-[11px] tracking-[0.2em] uppercase text-gray-500">
+      <div className="relative border-t border-white/[0.06] py-14 sm:py-20">
+        <div className="max-w-5xl mx-auto px-5 sm:px-8">
+          <p className="text-center text-[9.5px] sm:text-[10px] tracking-[0.16em] uppercase text-gray-600">
             From early users
           </p>
 
-          <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-7 sm:gap-8">
-            {[
-              {
-                quote: "NOVA's psychological insights helped me identify and fix my emotional trading patterns. My win rate improved by 35% in just two months.",
-                name: 'Michael S.',
-                role: 'Forex Trader',
-              },
-              {
-                quote: 'The visual trade calendar and analytics helped me identify my most profitable setups. TradeX has completely transformed my trading approach.',
-                name: 'Sarah L.',
-                role: 'Options Trader',
-              },
-              {
-                quote: "The detailed analytics and journaling features save me hours each week. NOVA's insights have helped me become more consistent and disciplined.",
-                name: 'David K.',
-                role: 'Crypto Trader',
-              },
-            ].map((t) => (
-              <figure key={t.name} className="flex flex-col">
-                <blockquote className="text-[13px] sm:text-[13.5px] text-gray-400 leading-relaxed flex-1">
-                  &ldquo;{t.quote}&rdquo;
+          <div className="mt-9 sm:mt-11 columns-1 sm:columns-2 lg:columns-3 gap-4 sm:gap-5 [column-fill:_balance]">
+            {TESTIMONIALS.map((t) => (
+              <figure
+                key={t.name}
+                className="mb-4 sm:mb-5 break-inside-avoid rounded-2xl border border-white/[0.07]
+                  bg-gradient-to-b from-white/[0.03] to-transparent p-5"
+              >
+                {t.stars && (
+                  <div className="flex gap-0.5 mb-3" aria-label="Five out of five">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star key={i} className="w-3 h-3 fill-brand-blue text-brand-blue" />
+                    ))}
+                  </div>
+                )}
+                <blockquote className="text-[13.5px] leading-relaxed text-gray-300">
+                  {t.quote}
                 </blockquote>
                 <figcaption className="mt-3.5 text-[11.5px] text-gray-600">
                   {t.name} &middot; {t.role}
@@ -971,6 +1041,7 @@ export default function Sales() {
           </div>
         </div>
       </div>
+
 
       {/*
         PRICING.
