@@ -41,6 +41,16 @@ export type Tier = {
     variable can no longer silently break checkout for one tier.
   */
   priceIds: { monthly: string; annual: string };
+  /*
+    The single axis these tiers differ on, for the landing page.
+
+    /pricing shows the full three lines per tier because somebody on that page
+    has come to compare. The landing page shows this instead: the tiers are
+    identical in every respect except how many accounts sync themselves, so
+    one line per column is the whole comparison and three lines was three
+    times the reading for the same decision.
+  */
+  syncedLabel: string;
 };
 
 /*
@@ -63,6 +73,7 @@ export type Tier = {
 export const TIERS: Tier[] = [
   {
     name: 'Starter',
+    syncedLabel: '1 account synced',
     price: '$29.99',
     who: 'For one *synced* trading account.',
     /*
@@ -125,6 +136,7 @@ export const TIERS: Tier[] = [
   },
   {
     name: 'Pro',
+    syncedLabel: '2 accounts synced',
     price: '$49.99',
     who: 'For a funded account and your own, both *synced*.',
     lines: [
@@ -155,6 +167,7 @@ export const TIERS: Tier[] = [
   },
   {
     name: 'Elite',
+    syncedLabel: '5 accounts synced',
     price: '$99.99',
     who: 'For several *synced* funded accounts at once.',
     lines: [

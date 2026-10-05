@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Plus, Check, Star } from 'lucide-react';
 import Footer from '../components/layout/Footer';
 import Mascot from '../components/shared/Mascot';
-import { TIERS, IN_EVERY_PLAN, ALSO_INCLUDED } from '../lib/pricingTiers';
+import { TIERS } from '../lib/pricingTiers';
 import TranscriptToEntry from '../components/sales/TranscriptToEntry';
 import Wordmark from '../components/shared/Wordmark';
 import SyncMarquee from '../components/sales/SyncMarquee';
@@ -14,7 +14,6 @@ import SectionHeader from '../components/sales/SectionHeader';
 import SignupOrWaitlist from '../components/shared/SignupOrWaitlist';
 import { useHasLaunched } from '../lib/launch';
 import { useState, useEffect, useRef } from 'react';
-import { emphasise } from '../lib/emphasise';
 
 /*
   Early-user quotes.
@@ -1125,66 +1124,98 @@ export default function Sales() {
             Centred above the three, presenting them, which is the same thing
             he does on /pricing and works at every width including a phone.
           */}
-          <Mascot pose="present" height={92} className="mx-auto mb-7" />
+          {/*
+            THE PRICES, AND NOTHING ELSE.
 
-          <div className="grid gap-4 sm:grid-cols-3 sm:gap-4">
+            This was three cards each carrying a name, a price, a sentence and
+            three ticked lines, then a separate box with eight more ticks in
+            two columns, then a paragraph. Everything true, and far too much to
+            read at the one point on the page where a decision gets made.
+
+            The three tiers stay - a pricing page that shows all of them
+            converts better than one that hides them behind a link, and these
+            differ on exactly one axis anyway. But the cards now carry only
+            that axis: a name, a price, and the number of accounts that sync.
+            1 / 2 / 5 does the comparing on its own, which is the entire
+            reason for having three columns.
+
+            Everything the product does moved to one line underneath. It is
+            identical on every plan, so saying it three times inside the
+            columns made the columns look different when they are not.
+          */}
+          <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
             {TIERS.map((tier) => (
               <div
                 key={tier.name}
-                className={`relative flex flex-col rounded-2xl border p-5 sm:p-6 ${
+                className={`relative rounded-2xl border p-5 text-center ${
                   tier.featured
-                    ? 'border-brand-blue/40 bg-brand-blue/[0.06]'
-                    : 'border-white/10 bg-brand-surface'
+                    ? 'border-brand-blue/40 bg-brand-blue/[0.05]'
+                    : 'border-white/[0.07] bg-brand-surface'
                 }`}
               >
                 {tier.featured && (
-                  <span
-                    className="absolute -top-2.5 left-5 rounded-full bg-brand-blue px-2.5 py-1
-                      text-[10px] font-medium uppercase tracking-[0.12em] text-black"
-                  >
+                  <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full
+                    bg-brand-blue px-2.5 py-0.5 text-[10px] font-medium text-white whitespace-nowrap">
                     Most popular
                   </span>
                 )}
-                <p className="text-[12px] uppercase tracking-[0.14em] text-gray-400">{tier.name}</p>
-                <p className="mt-2 flex items-baseline gap-1">
-                  <span className="text-[30px] font-semibold text-white tracking-[-0.03em] tabular-nums">
+                <p className="text-[11px] uppercase tracking-[0.14em] text-gray-500">{tier.name}</p>
+                <p className="mt-2.5 flex items-baseline justify-center gap-1">
+                  <span className="text-[26px] sm:text-[28px] font-semibold tracking-[-0.03em] text-white tabular-nums">
                     {tier.price}
                   </span>
-                  <span className="text-[13px] text-gray-500">/mo</span>
+                  <span className="text-[12px] text-gray-500">/mo</span>
                 </p>
-                <p className="mt-2 text-[12.5px] text-gray-500 leading-relaxed">{emphasise(tier.who)}</p>
-
-                {/* Only the lines that differ between plans. */}
-                <ul className="mt-4 flex flex-col gap-2">
-                  {tier.lines.filter((l) => l.included).slice(0, 2).map((line) => (
-                    <li key={line.text} className="flex gap-2 text-[12.5px] text-gray-300 leading-snug">
-                      <Check className="mt-[3px] w-3.5 h-3.5 flex-shrink-0 text-brand-blue" strokeWidth={3} />
-                      {line.text}
-                    </li>
-                  ))}
-                </ul>
+                <p className="mt-3 pt-3 border-t border-white/[0.07] text-[12.5px] text-gray-400">
+                  {tier.syncedLabel}
+                </p>
               </div>
             ))}
           </div>
 
           {/*
-            What every plan contains, once. Same six outcomes as /pricing,
-            from the same module, so the two pages cannot drift.
+            THE FOURTEEN DAYS, IN ORDER.
+
+            Blinkist found that showing a visitor exactly when they will be
+            charged produced more trial signups AND fewer complaints, which is
+            the rare change that helps both sides of the same argument. It
+            earns its place here for a reason sharper than the research:
+            TradeX has already had a customer charged after cancelling who was
+            convinced he had been scammed. Being specific about the date is
+            cheaper than that conversation.
+
+            WHAT IT DOES NOT SAY
+
+            It does not promise a reminder email. Nothing in this project
+            sends one - there is no trial_will_end handler in the Stripe
+            webhook and no reminder function beside the welcome and abandon
+            ones - and the single most valuable thing that could be added to
+            this section is the email that would let it say so.
           */}
-          <div className="mt-5 rounded-2xl border border-white/[0.07] bg-brand-surface p-5 sm:p-6">
-            <p className="text-[11px] uppercase tracking-[0.14em] text-gray-400 mb-4">
-              In every plan
-            </p>
-            <ul className="grid gap-x-8 gap-y-2.5 sm:grid-cols-2">
-              {IN_EVERY_PLAN.map((item) => (
-                <li key={item} className="flex gap-2.5 text-[13px] text-gray-300 leading-relaxed">
-                  <Check className="mt-[3px] w-3.5 h-3.5 flex-shrink-0 text-brand-blue" strokeWidth={2.5} />
-                  {item}
-                </li>
-              ))}
-            </ul>
-            <p className="mt-4 text-[12px] text-gray-500 leading-relaxed">{ALSO_INCLUDED}</p>
-          </div>
+          <ol className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-px overflow-hidden rounded-2xl
+            border border-white/[0.07] bg-white/[0.07]">
+            {[
+              { when: 'Today', what: 'Everything unlocks. Your card goes on file and nothing is taken.' },
+              { when: 'Days 1\u201313', what: 'Full access. Cancel in two clicks and you are never charged.' },
+              { when: 'Day 14', what: 'First payment, at the plan you picked. Monthly from then on.' },
+            ].map((step) => (
+              <li key={step.when} className="bg-brand-surface p-5">
+                <p className="text-[11px] uppercase tracking-[0.14em] text-gray-500">{step.when}</p>
+                <p className="mt-2 text-[12.5px] leading-relaxed text-gray-400">{step.what}</p>
+              </li>
+            ))}
+          </ol>
+
+          <p className="mt-6 text-center text-[13px] leading-relaxed text-gray-500">
+            Everything else is the same on all three &mdash; Nova, the journal,
+            psychology scoring, the calendar and the analytics.{' '}
+            <Link
+              to="/pricing"
+              className="text-gray-400 hover:text-white transition-colors underline underline-offset-[3px] decoration-white/20 hover:decoration-white/50"
+            >
+              The full comparison
+            </Link>
+          </p>
 
           <div className="mt-7 flex flex-col items-center gap-3">
             {launched ? (
@@ -1200,12 +1231,6 @@ export default function Sales() {
                 <p className="text-[12px] text-gray-500">
                   14 days free &middot; Cancel in two clicks
                 </p>
-                <Link
-                  to="/pricing"
-                  className="text-[13px] text-gray-500 hover:text-white transition-colors underline underline-offset-[3px] decoration-white/20 hover:decoration-white/50"
-                >
-                  Full plan comparison
-                </Link>
               </>
             ) : (
               <SignupOrWaitlist
