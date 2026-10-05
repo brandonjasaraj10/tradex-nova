@@ -558,48 +558,29 @@ export default function Sales() {
             title="Thirty seconds, out loud"
             className="mb-8 sm:mb-10"
           >
-            No typing, and no fields to fill in. Thirty seconds of talking
-            and the entry writes itself.
+            Say it however it comes out and Nova pulls the trade out of it
+            &mdash; symbol, direction, size, P&amp;L. Or type it, if that is
+            the kind of day it is.
           </SectionHeader>
 
           {/*
             One move, read top to bottom.
 
             This was a legend row followed by three labelled blocks stacked
-            down the page - 01/02/03, then WHAT YOU SAID, WHAT IT FILED, WHAT
-            IT NOTICED. Two problems. The legend said the same three things
-            the labels below it said, so the section opened by repeating
-            itself. And a stack of labelled blocks reads as a list, which is
-            the wrong shape for an argument whose whole point is that one
-            thing turns into another.
+            down the page. The legend said the same three things the labels
+            below it said, so the section opened by repeating itself, and a
+            stack of labelled blocks reads as a list - the wrong shape for an
+            argument whose point is that one thing turns into another.
 
-            So the legend is gone and what is left is the transformation
-            itself: the sentence somebody speaks, set large enough to be the
-            thing you look at, and then the entry it became. No label on the
-            quote, because quotation marks and a typing cursor already say
-            what it is.
+            A second attempt set the spoken line at 24px as a display quote.
+            That was too loud: the sentence is the input, not the headline,
+            and blown up it competed with the section title directly above it.
+            It is back at the size it was, which is what it wanted to be.
           */}
-          <figure className="border-t border-white/[0.07] pt-8 sm:pt-10">
-            {/*
-              The opening quote hangs in the margin rather than sitting in the
-              text. The transcript is a block element - it has to be, so the
-              typing can reserve its own wrapped height - so an inline quote
-              mark either side of it landed on its own line above and below
-              the sentence. Hanging it is also just better typography, and one
-              mark is enough: the closing one was doing nothing the large type
-              and the caption underneath were not already doing.
-            */}
-            <blockquote className="relative pl-5 sm:pl-7 text-[19px] sm:text-[24px] leading-[1.45] text-gray-200 tracking-[-0.015em] max-w-2xl">
-              <span
-                className="absolute left-0 top-0 text-gray-700 select-none"
-                aria-hidden="true"
-              >
-                &ldquo;
-              </span>
-              <TranscriptToEntry transcriptOnly />
-            </blockquote>
+          <figure className="border-t border-white/[0.07] pt-7 sm:pt-8">
+            <TranscriptToEntry transcriptOnly />
 
-            <figcaption className="mt-7 sm:mt-9 flex items-center gap-3 text-[12.5px] text-gray-500">
+            <figcaption className="mt-8 sm:mt-10 flex items-center gap-3 text-[12.5px] text-gray-500">
               <span className="h-px w-8 bg-white/15" aria-hidden="true" />
               Thirty seconds later, filed
             </figcaption>
@@ -608,26 +589,10 @@ export default function Sales() {
               <ProductShot
                 src="/product/journal.jpg"
                 label="Journal"
-                alt="The entry TradeX wrote: symbol, direction, size and duration filled in, the trade it is linked to, tags, and the written review underneath."
+                alt="The entry TradeX wrote: symbol, direction, size and duration filled in, with the written review underneath it."
               />
             </div>
           </figure>
-
-          {/*
-            And the part that is not about this entry at all. It reads across
-            every entry, which is the only claim in this section no competitor
-            makes.
-          */}
-          <div className="mt-10 sm:mt-12 pt-6 border-t border-white/[0.07]">
-            <p className="text-[9.5px] sm:text-[10px] tracking-[0.16em] uppercase text-gray-600">
-              And then, across every entry
-            </p>
-            <p className="mt-2.5 text-[15px] sm:text-[17px] leading-relaxed text-gray-300 max-w-xl">
-              You moved your stop on{' '}
-              <span className="text-white">4 of your last 6 losers</span>. None
-              of your winners.
-            </p>
-          </div>
         </div>
       </div>
 
