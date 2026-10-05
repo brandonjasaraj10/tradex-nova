@@ -9,6 +9,7 @@ import ProductTabs from '../components/sales/ProductTabs';
 import Wordmark from '../components/shared/Wordmark';
 import NovaAnswer from '../components/sales/NovaAnswer';
 import SyncMarquee from '../components/sales/SyncMarquee';
+import ProductShot from '../components/sales/ProductShot';
 import PreTradeScales from '../components/journal/PreTradeScales';
 import NOVAScore from '../components/shared/NOVAScore';
 import { EXAMPLE_SCORE } from '../components/marketing/exampleScore';
@@ -379,78 +380,24 @@ export default function Sales() {
           The product, before anyone scrolls.
 
           This is the piece the page never had: a visitor could read the whole
-          hero without seeing that TradeX is software. It is the real interface
-          - the app's own tokens, type and profit/loss colours - rendered live
-          rather than screenshotted, so it stays sharp on every display and
-          cannot go stale when the product changes.
+          hero without seeing that TradeX is software.
 
-          Figures are an example, and the panel says so.
+          It used to draw its own dashboard, and the drawing had drifted -
+          three statistics that exist nowhere in the app, an equity curve with
+          nothing behind it, and a "Focus 4/10" tag against a scale that goes
+          to five. It is now a screenshot of the running app. See ProductShot
+          for why that trade - sharpness for honesty - is the right way round.
         */}
         <div className="relative max-w-4xl mx-auto px-5 sm:px-8 pb-20 sm:pb-28">
-          <div className="relative rounded-2xl border border-white/10 bg-brand-surface overflow-hidden shadow-[0_0_60px_-15px_rgba(255,255,255,0.08)]">
-            {/* window chrome */}
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.06] bg-brand-elevated">
-              <span className="w-2.5 h-2.5 rounded-full bg-white/15" />
-              <span className="w-2.5 h-2.5 rounded-full bg-white/10" />
-              <span className="w-2.5 h-2.5 rounded-full bg-white/10" />
-              <span className="ml-2 text-[11px] text-gray-600 tracking-wide">Dashboard</span>
-            </div>
-
-            <div className="p-4 sm:p-6">
-              <div className="grid grid-cols-3 gap-3 sm:gap-4">
-                {[
-                  /* The Dashboard's own labels, so the page and the product
-                     call the same numbers the same things. */
-                  { label: 'Total P&L', value: '+$4,812', tone: 'text-brand-blue' },
-                  { label: 'Win Rate', value: '58%', tone: 'text-white' },
-                  { label: 'Profit Factor', value: '1.94', tone: 'text-white' },
-                ].map((stat) => (
-                  <div key={stat.label} className="rounded-xl border border-white/[0.07] bg-brand-elevated px-3 py-3 sm:px-4 sm:py-4">
-                    <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.12em] text-gray-600">{stat.label}</p>
-                    <p className={`mt-1.5 text-lg sm:text-2xl font-semibold tabular-nums ${stat.tone}`}>{stat.value}</p>
-                  </div>
-                ))}
-              </div>
-
-              {/* equity curve - one path, drawn to the box */}
-              <div className="mt-4 rounded-xl border border-white/[0.07] bg-brand-elevated p-4">
-                <div className="flex items-baseline justify-between mb-3">
-                  <p className="text-[11px] uppercase tracking-[0.12em] text-gray-600">Equity</p>
-                  <p className="text-[11px] text-gray-600">Last 30 days</p>
-                </div>
-                <svg viewBox="0 0 320 72" className="w-full h-16 sm:h-20" preserveAspectRatio="none" aria-hidden="true">
-                  <defs>
-                    <linearGradient id="heroEquityFill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.28" />
-                      <stop offset="100%" stopColor="#3B82F6" stopOpacity="0" />
-                    </linearGradient>
-                  </defs>
-                  <path d="M0 60 L32 55 L64 58 L96 44 L128 47 L160 33 L192 36 L224 22 L256 26 L288 14 L320 8 L320 72 L0 72 Z" fill="url(#heroEquityFill)" />
-                  <path d="M0 60 L32 55 L64 58 L96 44 L128 47 L160 33 L192 36 L224 22 L256 26 L288 14 L320 8" fill="none" stroke="#3B82F6" strokeWidth="1.75" strokeLinejoin="round" strokeLinecap="round" />
-                </svg>
-              </div>
-
-              {/* what makes it TradeX rather than a P&L tracker */}
-              <div className="mt-4 rounded-xl border border-white/[0.07] bg-brand-elevated p-4">
-                <p className="text-[11px] uppercase tracking-[0.12em] text-gray-600 mb-2.5">Journal &mdash; today</p>
-                <p className="text-[13px] sm:text-sm text-gray-300 leading-relaxed">
-                  &ldquo;Moved my stop twice on the EURUSD short. Same thing I did Tuesday.&rdquo;
-                </p>
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {['Moved stop', 'Revenge entry', 'Focus 4/10'].map((tag) => (
-                    /* Blue because tags are blue in the product - the Journal
-                       renders them bg-blue-500/10 text-blue-500. This panel is
-                       a claim about what the app looks like, so it should not
-                       invent a greyer version of it. */
-                    <span key={tag} className="text-[11px] font-medium text-brand-blue bg-brand-blue/10 rounded-full px-2.5 py-1">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-          <p className="mt-3 text-center text-[11px] text-gray-600">Example figures</p>
+          <ProductShot
+            src="/product/dashboard.jpg"
+            alt="The TradeX dashboard: account balance, NOVA Score, win rate, profit factor and a panel showing how closely the trader followed their own plan."
+            label="Dashboard"
+            priority
+          />
+          <p className="mt-3 text-center text-[11px] text-gray-600">
+            A demo account, not a customer&rsquo;s results
+          </p>
         </div>
       </div>
 
