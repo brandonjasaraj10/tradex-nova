@@ -4,51 +4,58 @@ import NOVAScore from '../shared/NOVAScore';
 import { EXAMPLE_SCORE } from '../marketing/exampleScore';
 
 /*
-  The psychology section, as two panels you move between rather than one
-  column you scroll past.
+  The psychology section, as two panels you move between.
 
-  WHAT THIS REPLACES
+  WHAT THE FIRST VERSION GOT WRONG
 
-  Everything stacked: the three pre-trade scales, then the NOVA Score with its
-  breakdown open, then a "what it found" claim, then a mascot on top of the
-  lot. Four things competing in one box, and the section's actual argument -
-  you rate your head, and a number moves - was the first casualty.
+  It worked and it looked like a prototype. Two full-width boxes butted
+  against each other with a one-pixel gutter, and two grey chip buttons
+  underneath. Nothing told you there was a second panel until you had already
+  found it, nothing moved except the scroll position, and the whole thing read
+  as a mechanism rather than as a designed object.
 
-  Two panels now. The first is what you put in. The second is what comes out
-  of it. That is the whole section, and splitting it means each half gets to
-  be the only thing on screen.
+  Four changes, and they are all about the same thing - making the movement
+  itself feel deliberate:
+
+  1. THE PANELS PEEK. Each is slightly narrower than the track, so the edge of
+     the next one is always visible. That is the entire reason anybody swipes
+     a carousel: not a dot telling them they could, but seeing that there is
+     something there. It also means the gap between panels is a real gap you
+     watch pass, rather than two borders touching.
+
+  2. THE INACTIVE PANEL SITS BACK. Dimmed and very slightly scaled down, with
+     a slow transition. Depth is what separates a carousel from a row of
+     boxes, and it costs two CSS properties.
+
+  3. THE EDGES FADE. The track is masked at both ends so a panel arrives and
+     leaves rather than being clipped against a hard edge.
+
+  4. THE INDICATOR IS A RAIL, NOT TWO BUTTONS. A thin track with a thumb that
+     slides between two positions, labelled. It says where you are, where you
+     could go, and that the two are a sequence - which is the actual argument
+     of the section: one thing becomes the other.
 
   THE DOTS WORK
 
-  The scales were rendered `disabled` with fixed values, which is a picture of
-  a control. They are live here: tap a dot and it sets, tap the one already
-  set and it clears, exactly as it behaves in the app, because it IS the
-  app's component with its real onChange wired to local state.
+  Unchanged and worth restating: the scales are the app's own component with
+  its real onChange wired to local state. Tap a dot and it sets, tap the one
+  already set and it clears. It is the only thing on this page a visitor can
+  use before signing up, and it costs nothing - no account, no API call,
+  nothing leaving the page.
 
-  It is the only thing on this page somebody can actually use before signing
-  up, and it costs nothing - no account, no API call, no data leaving the
-  page. A visitor who has rated their own state on the real control has used
-  more of the product than one who read four more paragraphs about it.
-
-  WHY SCROLL-SNAP AND NOT A CAROUSEL
-
-  The page already contains a hand-written swipe carousel with axis locking
-  and drag resistance. This needs none of it: two panels, native horizontal
-  scrolling with snap points, which a trackpad, a touchscreen, a scrollbar and
-  the keyboard all drive for free and which no JavaScript has to keep upright.
-  The buttons below are for pointer users who will not think to swipe.
+  prefers-reduced-motion removes the scaling and the smooth scrolling; the
+  panels and the rail still work, they just stop animating.
 */
 
 const PANELS = [
-  { id: 'before', label: 'Before the trade' },
-  { id: 'after', label: 'What it turns into' },
+  { id: 'before', eyebrow: 'Before the trade', label: 'What you put in' },
+  { id: 'after', eyebrow: 'After thirty of them', label: 'What comes out' },
 ] as const;
 
 export default function PsychologySwipe() {
   /*
-    Starts part-answered rather than blank. An empty set of dots reads as a
-    broken control, and a full set leaves nothing to do - two of three invites
-    the third.
+    Starts two-of-three answered. Empty reads as a broken control, full leaves
+    nothing to do, and the missing one is an invitation.
   */
   const [values, setValues] = useState<ScaleValues>({
     emotional_state: 2,
@@ -62,7 +69,6 @@ export default function PsychologySwipe() {
     setValues((v) => ({ ...v, [key]: value }));
   }, []);
 
-  /* Keep the indicator honest when the panel is moved by scrolling, not by the buttons. */
   useEffect(() => {
     const el = trackRef.current;
     if (!el) return;
@@ -70,7 +76,9 @@ export default function PsychologySwipe() {
     const onScroll = () => {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
-        setIndex(Math.round(el.scrollLeft / Math.max(1, el.clientWidth)));
+        const panel = el.firstElementChild as HTMLElement | null;
+        const step = panel ? panel.offsetWidth + 24 : el.clientWidth;
+        setIndex(Math.min(PANELS.length - 1, Math.round(el.scrollLeft / Math.max(1, step))));
       });
     };
     el.addEventListener('scroll', onScroll, { passive: true });
@@ -83,77 +91,111 @@ export default function PsychologySwipe() {
   const go = (i: number) => {
     const el = trackRef.current;
     if (!el) return;
-    el.scrollTo({ left: i * el.clientWidth, behavior: 'smooth' });
+    const panel = el.firstElementChild as HTMLElement | null;
+    const step = panel ? panel.offsetWidth + 24 : el.clientWidth;
+    el.scrollTo({ left: i * step, behavior: 'smooth' });
     setIndex(i);
   };
+
+  const panelClass = (i: number) =>
+    `w-[86%] sm:w-[91%] flex-shrink-0 snap-center transition-[opacity,transform] duration-500 ease-out
+     motion-reduce:transition-none ${
+       index === i
+         ? 'opacity-100 scale-100'
+         : 'opacity-45 scale-[0.975] motion-reduce:scale-100'
+     }`;
+
+  /*
+    Equal height, because a carousel whose panels change height makes the rail
+    and everything under it jump as you move. The second panel is the taller
+    one, so the first has slack - centring the body means that slack sits
+    above and below the content rather than pooling at the bottom and reading
+    as an unfinished box.
+  */
+  const card =
+    'h-full flex flex-col rounded-[20px] border border-white/[0.08] bg-gradient-to-b from-white/[0.035] to-transparent p-6 sm:p-9';
 
   return (
     <div>
       <div
         ref={trackRef}
-        className="flex overflow-x-auto snap-x snap-mandatory scroll-smooth
+        className="flex gap-6 overflow-x-auto snap-x snap-mandatory scroll-smooth motion-reduce:scroll-auto
           [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+        style={{
+          /* A panel arrives and leaves rather than being cut off at the edge. */
+          maskImage: 'linear-gradient(to right, transparent, black 4%, black 96%, transparent)',
+          WebkitMaskImage: 'linear-gradient(to right, transparent, black 4%, black 96%, transparent)',
+        }}
       >
-        {/* Panel one: the input. */}
-        <div className="w-full flex-shrink-0 snap-center px-[1px]">
-          <div className="rounded-2xl border border-white/[0.07] bg-brand-surface p-5 sm:p-8">
-            <p className="text-[9.5px] sm:text-[10px] tracking-[0.16em] uppercase text-gray-600 mb-5">
-              Before the trade
+        <div className={panelClass(0)}>
+          <div className={card}>
+            <p className="text-[9.5px] sm:text-[10px] tracking-[0.16em] uppercase text-gray-600">
+              {PANELS[0].eyebrow}
             </p>
-            <PreTradeScales
-              accent="marketing"
-              values={values}
-              onChange={onChange}
-            />
-            <p className="mt-6 text-[12.5px] text-gray-500">
+            <div className="flex-1 flex items-center py-7">
+              <div className="w-full">
+                <PreTradeScales accent="marketing" values={values} onChange={onChange} />
+              </div>
+            </div>
+            <p className="text-[12.5px] leading-relaxed text-gray-500 max-w-sm">
               Go on, set them. Three taps, and they are the only thing TradeX
               asks you for that your broker cannot tell it.
             </p>
           </div>
         </div>
 
-        {/* Panel two: what it becomes. */}
-        <div className="w-full flex-shrink-0 snap-center px-[1px]">
-          <div className="rounded-2xl border border-white/[0.07] bg-brand-surface p-5 sm:p-8">
-            <p className="text-[9.5px] sm:text-[10px] tracking-[0.16em] uppercase text-gray-600 mb-5">
-              After thirty of them
+        <div className={panelClass(1)}>
+          <div className={card}>
+            <p className="text-[9.5px] sm:text-[10px] tracking-[0.16em] uppercase text-gray-600">
+              {PANELS[1].eyebrow}
             </p>
-            <NOVAScore
-              accent="marketing"
-              breakdown={EXAMPLE_SCORE}
-              size="md"
-              showBreakdown
-              periodLabel="Last 30 days"
-            />
-            <p className="mt-6 text-[12.5px] text-gray-500">
-              One number, built from how you traded rather than what the market
-              did. Example figures.
+            <div className="flex-1 flex items-center py-7">
+              <div className="w-full">
+              <NOVAScore
+                accent="marketing"
+                breakdown={EXAMPLE_SCORE}
+                size="md"
+                showBreakdown
+                periodLabel="Last 30 days"
+              />
+              </div>
+            </div>
+            <p className="text-[12.5px] leading-relaxed text-gray-500 max-w-sm">
+              One number, built from how you traded rather than from what the
+              market did. Example figures.
             </p>
           </div>
         </div>
       </div>
 
       {/*
-        Labelled buttons rather than anonymous dots: two panels is few enough
-        that naming them costs nothing and tells somebody what they would be
-        moving to, which a dot never does.
+        The rail. Two segments, a thumb that slides, and the label of wherever
+        you are sitting underneath it - so the control says both where you are
+        and that there is somewhere else to be.
       */}
-      <div className="mt-5 flex items-center justify-center gap-2">
-        {PANELS.map((p, i) => (
-          <button
-            key={p.id}
-            type="button"
-            onClick={() => go(i)}
-            aria-current={index === i}
-            className={`rounded-lg px-3 py-1.5 text-[12px] transition-colors ${
-              index === i
-                ? 'bg-white/[0.07] text-gray-200'
-                : 'text-gray-600 hover:text-gray-400'
-            }`}
-          >
-            {p.label}
-          </button>
-        ))}
+      <div className="mt-8 flex flex-col items-center gap-3">
+        <div className="relative h-[2px] w-[132px] rounded-full bg-white/[0.08]">
+          <span
+            className="absolute inset-y-0 w-1/2 rounded-full bg-white/60 transition-transform duration-500 ease-out motion-reduce:transition-none"
+            style={{ transform: `translateX(${index * 100}%)` }}
+            aria-hidden="true"
+          />
+        </div>
+        <div className="flex items-center gap-1">
+          {PANELS.map((p, i) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => go(i)}
+              aria-current={index === i}
+              className={`rounded-lg px-3 py-1.5 text-[12.5px] transition-colors duration-300 ${
+                index === i ? 'text-gray-200' : 'text-gray-600 hover:text-gray-400'
+              }`}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
