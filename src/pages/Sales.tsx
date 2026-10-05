@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Plus, Check, Star } from 'lucide-react';
+import { ArrowRight, Check, Star } from 'lucide-react';
 import Footer from '../components/layout/Footer';
 import Mascot from '../components/shared/Mascot';
 import { TIERS } from '../lib/pricingTiers';
@@ -10,6 +10,7 @@ import SyncMarquee from '../components/sales/SyncMarquee';
 import ProductShot from '../components/sales/ProductShot';
 import PsychologySwipe from '../components/sales/PsychologySwipe';
 import SwipeDeck from '../components/sales/SwipeDeck';
+import FaqList, { type FaqItem } from '../components/sales/FaqList';
 import SectionHeader from '../components/sales/SectionHeader';
 import SignupOrWaitlist from '../components/shared/SignupOrWaitlist';
 import { useHasLaunched } from '../lib/launch';
@@ -85,6 +86,42 @@ const TESTIMONIALS: Array<{
     quote: 'It remembers stuff I told it weeks ago. Did not expect that.',
     name: 'Ryan K.',
     role: 'Futures',
+  },
+];
+
+/*
+  The six doubts worth answering on the landing page.
+
+  Kept as data rather than inside the JSX so the list reads as a list. The
+  longer reasoning for individual entries - why "does journaling actually
+  work" leads, why "who can see what I write" earns a place on a product that
+  asks people to record their state of mind - lives in git history rather than
+  between the strings.
+*/
+const FAQ_ITEMS: FaqItem[] = [
+  {
+    q: 'Does journaling actually work?',
+    a: 'Only if you keep doing it. That is the whole problem, and it is what TradeX is built around \u2014 a journal you abandon in week three teaches you nothing, however good its charts are. Thirty seconds of talking is a habit people keep.',
+  },
+  {
+    q: 'Can I connect my broker?',
+    a: 'Yes. MT4 and MT5 sync is live \u2014 connect the account once and your closed trades arrive in the journal on their own, usually within a few minutes. It is read-only: TradeX sees your trade history and nothing else. It can never place, close or modify a trade, and it never touches your money. The connection is to MetaTrader itself rather than to any firm, so your broker, your prop firm, or both at once all work the same way. You can still import a CSV or add trades by hand if you would rather.',
+  },
+  {
+    q: 'How is this different from a spreadsheet?',
+    a: 'A spreadsheet records what the trade did. It cannot record what you were like before you took it \u2014 and it has never once told anybody what they keep doing. TradeX scores the psychology on every trade, reads them together and names the pattern. You can also talk the entry in rather than typing it.',
+  },
+  {
+    q: 'I have tried journals before and quit. Why is this different?',
+    a: 'Because quitting is not really an effort problem. People do not stop journaling \u2014 they stop logging the bad days. Writing down the trade you would rather forget means admitting what you did, so the trades most worth reviewing are the ones that never make it in, and the journal ends up with a hole exactly where the lesson was. TradeX asks you to talk instead of type, and Nova reads the entries back to you, so reviewing is not something you have to sit and do to yourself. It also records how you felt going in and matches it against what happened, because seeing that you lost and seeing why you lost are different things.',
+  },
+  {
+    q: 'Who can see what I write?',
+    a: 'Only you. Your entries, your psychology scores and your conversations with Nova are yours \u2014 they are not shown to other users and they are not sold to anyone. You can export or delete everything from Settings.',
+  },
+  {
+    q: 'What if it is not for me?',
+    a: 'Take the fourteen days and find out. Talk a few trades through, let Nova read them back, and see whether you actually keep doing it \u2014 that is the only question that matters, and it answers itself fast. Cancel inside the fourteen days in two clicks and you are never charged.',
   },
 ];
 
@@ -1265,86 +1302,7 @@ export default function Sales() {
             className="mb-10 sm:mb-12"
           />
 
-          {/*
-            Rows, not cards.
-
-            Each question was a bordered panel on a tinted background,
-            directly beneath a pricing block that is three bordered panels on
-            a tinted background. Two card blocks running is what made this
-            page feel repetitive everywhere else it happened.
-
-            A list separated by hairlines reads as a document rather than as
-            more product furniture, which is the right register for the one
-            section whose job is answering doubts plainly.
-          */}
-          <div className="flex flex-col">
-            {[
-              {
-                /*
-                  The doubt underneath every other question, and the one
-                  TradeZella leads their own FAQ with. Answering it honestly -
-                  including the condition - reads as more credible than a
-                  promise.
-                */
-                q: 'Does journaling actually work?',
-                a: 'Only if you keep doing it. That is the whole problem, and it is what TradeX is built around \u2014 a journal you abandon in week three teaches you nothing, however good its charts are. Thirty seconds of talking is a habit people keep.',
-              },
-              {
-                q: 'Can I connect my broker?',
-                a: 'Yes. MT4 and MT5 sync is live \u2014 connect the account once and your closed trades arrive in the journal on their own, usually within a few minutes. It is read-only: TradeX sees your trade history and nothing else. It can never place, close or modify a trade, and it never touches your money. The connection is to MetaTrader itself rather than to any firm, so your broker, your prop firm, or both at once all work the same way. You can still import a CSV or add trades by hand if you would rather.',
-              },
-              {
-                q: 'How is this different from a spreadsheet?',
-                a: 'A spreadsheet records what the trade did. It cannot record what you were like before you took it \u2014 and it has never once told anybody what they keep doing. TradeX scores the psychology on every trade, reads them together and names the pattern. You can also talk the entry in rather than typing it.',
-              },
-              {
-                q: 'I have tried journals before and quit. Why is this different?',
-                a: 'Because quitting is not really an effort problem. People do not stop journaling \u2014 they stop logging the bad days. Writing down the trade you would rather forget means admitting what you did, so the trades most worth reviewing are the ones that never make it in, and the journal ends up with a hole exactly where the lesson was. TradeX asks you to talk instead of type, and Nova reads the entries back to you, so reviewing is not something you have to sit and do to yourself. It also records how you felt going in and matches it against what happened, because seeing that you lost and seeing why you lost are different things.',
-              },
-              {
-                /*
-                  Worth answering plainly: this product asks people to record
-                  their state of mind, which is more personal than a P&L.
-                */
-                q: 'Who can see what I write?',
-                a: 'Only you. Your entries, your psychology scores and your conversations with Nova are yours \u2014 they are not shown to other users and they are not sold to anyone. You can export or delete everything from Settings.',
-              },
-              {
-                q: 'What if it is not for me?',
-                a: 'Take the fourteen days and find out. Talk a few trades through, let Nova read them back, and see whether you actually keep doing it \u2014 that is the only question that matters, and it answers itself fast. Cancel inside the fourteen days in two clicks and you are never charged.',
-              },
-            ].map((item) => (
-              <details
-                key={item.q}
-                className="group border-t border-white/[0.07] first:border-t-0"
-              >
-                <summary
-                  className="cursor-pointer list-none py-5 flex items-start justify-between gap-5
-                    text-[15px] sm:text-[16px] font-medium text-gray-300 group-open:text-white
-                    hover:text-white transition-colors
-                    focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/40 rounded-lg"
-                >
-                  {item.q}
-                  <Plus
-                    className="mt-1 w-4 h-4 flex-shrink-0 text-gray-600 transition-transform duration-300
-                      group-open:rotate-45 group-open:text-gray-400"
-                    strokeWidth={2}
-                  />
-                </summary>
-                {/*
-                  The answer is indented behind a rule rather than sitting
-                  flush under the question. With no card around each item,
-                  something has to say where an answer ends and the next
-                  question starts, and a hairline does it more quietly than a
-                  box.
-                */}
-                <p className="pb-6 -mt-1 pl-4 border-l border-white/[0.09]
-                  text-[13.5px] sm:text-[14.5px] text-gray-400 leading-relaxed">
-                  {item.a}
-                </p>
-              </details>
-            ))}
-          </div>
+          <FaqList items={FAQ_ITEMS} />
 
           {/*
             "How your data is kept" is gone from here at Brandon's call. The
@@ -1388,7 +1346,7 @@ export default function Sales() {
             Sized so he reads as a small presence rather than a banner: he is
             greeting the reader at the door, not blocking it.
           */}
-          <Mascot height={150} className="mx-auto mb-6 sm:mb-7" />
+          <Mascot pose="wave" height={150} className="mx-auto mb-6 sm:mb-7" />
 
           {/*
             Closes on the same idea it opened on.
