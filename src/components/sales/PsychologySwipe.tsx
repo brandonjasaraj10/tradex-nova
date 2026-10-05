@@ -193,8 +193,8 @@ export default function PsychologySwipe() {
               </div>
             </div>
             <p className="text-[12.5px] leading-relaxed text-gray-500 max-w-sm">
-              Go on, set them. Three taps, and they are the only thing TradeX
-              asks you for that your broker cannot tell it.
+              Three taps. The only thing TradeX asks you for that your broker
+              cannot already tell it.
             </p>
           </div>
         </div>
