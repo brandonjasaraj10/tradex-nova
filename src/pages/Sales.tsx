@@ -1037,6 +1037,78 @@ export default function Sales() {
       </div>
 
       {/*
+        Moved above the price, not left after the FAQ.
+
+        It used to sit between the FAQ and the closing CTA - after somebody
+        had already seen what it costs and read the objections, which is
+        after the decision rather than before it. Both competitors put
+        customer evidence immediately before the ask: Tradespad runs
+        testimonials at its eleventh section and pricing at its thirteenth,
+        TradeZella closes on a testimonial carousel. The conversion research
+        says the same thing - customer evidence belongs before the closing
+        CTA, and social proof beside the CTA is where the measured lifts
+        come from.
+
+        So it lands here: the founder note says who built it, this says who
+        else is using it, and then the page asks for money.
+      */}
+      {/*
+        Testimonials, as a band rather than a section.
+
+        The words are unchanged - that is a decision already taken. What
+        changed is how much of the page they take up. They had their own
+        full section: an eyebrow, a 48px heading, three bordered cards with
+        avatar circles, and nearly 200px of vertical padding around it. On a
+        page being cut for length, that is a lot of room for the least
+        verifiable thing on it, sitting between the guarantee and the one
+        button that matters.
+
+        So the chrome goes and the quotes stay. No cards, because a card says
+        "object worth examining" and these are better skimmed; no avatar
+        initials, because a circle with letters in it is decoration standing
+        in for a face we do not have; no heading, because the one line above
+        the row says the same thing in a quarter of the height. What is left
+        is three short quotes in a row, a thin rule above them, and the page
+        moving on to the close.
+      */}
+      <div className="relative border-t border-white/[0.06] py-12 sm:py-16">
+        <div className="max-w-4xl mx-auto px-5 sm:px-8">
+          <p className="text-center text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500">
+            From early users
+          </p>
+
+          <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-7 sm:gap-8">
+            {[
+              {
+                quote: "NOVA's psychological insights helped me identify and fix my emotional trading patterns. My win rate improved by 35% in just two months.",
+                name: 'Michael S.',
+                role: 'Forex Trader',
+              },
+              {
+                quote: 'The visual trade calendar and analytics helped me identify my most profitable setups. TradeX has completely transformed my trading approach.',
+                name: 'Sarah L.',
+                role: 'Options Trader',
+              },
+              {
+                quote: "The detailed analytics and journaling features save me hours each week. NOVA's insights have helped me become more consistent and disciplined.",
+                name: 'David K.',
+                role: 'Crypto Trader',
+              },
+            ].map((t) => (
+              <figure key={t.name} className="flex flex-col">
+                <blockquote className="text-[13px] sm:text-[13.5px] text-gray-400 leading-relaxed flex-1">
+                  &ldquo;{t.quote}&rdquo;
+                </blockquote>
+                <figcaption className="mt-3.5 text-[11.5px] text-gray-600">
+                  {t.name} &middot; {t.role}
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/*
         PRICING.
 
         High-converting SaaS pages show the price rather than hiding it behind
@@ -1309,62 +1381,6 @@ export default function Sales() {
               How your data is kept
             </Link>
           </p>
-        </div>
-      </div>
-
-      {/*
-        Testimonials, as a band rather than a section.
-
-        The words are unchanged - that is a decision already taken. What
-        changed is how much of the page they take up. They had their own
-        full section: an eyebrow, a 48px heading, three bordered cards with
-        avatar circles, and nearly 200px of vertical padding around it. On a
-        page being cut for length, that is a lot of room for the least
-        verifiable thing on it, sitting between the guarantee and the one
-        button that matters.
-
-        So the chrome goes and the quotes stay. No cards, because a card says
-        "object worth examining" and these are better skimmed; no avatar
-        initials, because a circle with letters in it is decoration standing
-        in for a face we do not have; no heading, because the one line above
-        the row says the same thing in a quarter of the height. What is left
-        is three short quotes in a row, a thin rule above them, and the page
-        moving on to the close.
-      */}
-      <div className="relative border-t border-white/[0.06] py-12 sm:py-16">
-        <div className="max-w-4xl mx-auto px-5 sm:px-8">
-          <p className="text-center text-[10px] sm:text-[11px] tracking-[0.18em] uppercase text-gray-500">
-            From early users
-          </p>
-
-          <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-7 sm:gap-8">
-            {[
-              {
-                quote: "NOVA's psychological insights helped me identify and fix my emotional trading patterns. My win rate improved by 35% in just two months.",
-                name: 'Michael S.',
-                role: 'Forex Trader',
-              },
-              {
-                quote: 'The visual trade calendar and analytics helped me identify my most profitable setups. TradeX has completely transformed my trading approach.',
-                name: 'Sarah L.',
-                role: 'Options Trader',
-              },
-              {
-                quote: "The detailed analytics and journaling features save me hours each week. NOVA's insights have helped me become more consistent and disciplined.",
-                name: 'David K.',
-                role: 'Crypto Trader',
-              },
-            ].map((t) => (
-              <figure key={t.name} className="flex flex-col">
-                <blockquote className="text-[13px] sm:text-[13.5px] text-gray-400 leading-relaxed flex-1">
-                  &ldquo;{t.quote}&rdquo;
-                </blockquote>
-                <figcaption className="mt-3.5 text-[11.5px] text-gray-600">
-                  {t.name} &middot; {t.role}
-                </figcaption>
-              </figure>
-            ))}
-          </div>
         </div>
       </div>
 
