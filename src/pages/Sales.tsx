@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Plus, Check, Mic, Brain, ListChecks, Gauge, CalendarDays, BarChart3, RefreshCw, Search } from 'lucide-react';
+import { ArrowRight, Plus, Check } from 'lucide-react';
 import Footer from '../components/layout/Footer';
 import Mascot from '../components/shared/Mascot';
 import { TIERS, IN_EVERY_PLAN, ALSO_INCLUDED } from '../lib/pricingTiers';
@@ -844,63 +844,6 @@ export default function Sales() {
               See everything it does
             </Link>
           </p>
-        </div>
-      </div>
-
-      {/*
-        THE INVENTORY.
-
-        For the visitor the rest of this page is not written for.
-
-        Everything above argues: it names a problem, then shows four screens
-        that answer it. That is right for somebody who arrived from a reel
-        and had not decided they wanted a journal. It is wrong for somebody
-        comparing three products in three tabs, who wants to know whether it
-        does the specific thing they came for and will not read an argument
-        to find out.
-
-        Both competitors serve that person explicitly - TradeZella with a
-        six-card product grid at its fifth section, Tradespad with six named
-        feature blocks. We served them with one grey text link.
-
-        Placed after the product run and before the objection, so it catches
-        the comparison shopper on the way down without interrupting the
-        argument for everybody else. Every line is a feature that exists and
-        is already claimed on /features; nothing here is aspirational.
-      */}
-      <div className="relative border-t border-white/[0.06] py-16 sm:py-20">
-        <div className="max-w-4xl mx-auto px-5 sm:px-8">
-          <SectionHeader
-            eyebrow="The short version"
-            title="Everything it does"
-            className="mb-10 sm:mb-12"
-          />
-
-          <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            {[
-              { Icon: Mic, name: 'Voice journaling', line: 'Talk it through. Type it instead whenever you would rather.' },
-              { Icon: Brain, name: 'Nova AI', line: 'Reads your entries, and remembers across sessions.' },
-              { Icon: ListChecks, name: 'Pre-trade checklists', line: 'Rules, confluences and psychology, ticked before entry.' },
-              { Icon: Gauge, name: 'NOVA Score', line: 'One number out of a hundred, built from how you traded.' },
-              { Icon: CalendarDays, name: 'Trading calendar', line: 'Every day by P&L, or the same month by psychology.' },
-              { Icon: BarChart3, name: 'Analytics & reports', line: 'Weekly and monthly, built from your trades.' },
-              { Icon: RefreshCw, name: 'MT4 & MT5 sync', line: 'Or CSV import, per account.' },
-              { Icon: Search, name: 'Searchable trade log', line: 'Unlimited trades, across every account.' },
-            ].map((f) => (
-              <li
-                key={f.name}
-                className="rounded-2xl border border-white/[0.07] bg-brand-surface p-5"
-              >
-                <f.Icon className="w-[18px] h-[18px] text-brand-blue" aria-hidden="true" />
-                <p className="mt-3.5 text-[14px] font-semibold tracking-[-0.01em] text-white">
-                  {f.name}
-                </p>
-                <p className="mt-1.5 text-[12.5px] leading-relaxed text-gray-500">
-                  {f.line}
-                </p>
-              </li>
-            ))}
-          </ul>
         </div>
       </div>
 
