@@ -596,69 +596,69 @@ export default function Sales() {
             on this page was a bordered panel, which flattens the hierarchy
             until nothing reads as more important than anything else.
           */}
-          <div className="border-t border-white/[0.07] pt-6 sm:pt-7">
-            <TranscriptToEntry />
+          {/*
+            THE ONLY UI HERE IS A PHOTOGRAPH OF THE REAL ONE.
 
-            {/*
-              Step three, as the thing you are left holding. It reads across
-              every entry rather than this one, which is the only claim here
-              that no competitor makes.
-            */}
-            <div className="mt-6 sm:mt-7 pt-5 border-t border-white/[0.07]">
-              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-600">
-                What it noticed
-              </p>
-              <p className="mt-2 text-[13px] sm:text-[13.5px] leading-relaxed text-gray-300">
-                You moved your stop on{' '}
-                <span className="text-white">4 of your last 6 losers</span>. None
-                of your winners.
-              </p>
-            </div>
+            This went through two wrong versions before this one, both caught
+            by Brandon, and the pattern is worth recording because it is the
+            same mistake twice.
+
+            First it was wrapped in window chrome with a pulsing "Recording"
+            dot and a 00:31 timer - a screen that does not exist. Then, with
+            the chrome stripped, the component underneath was still drawing
+            two-column bordered field rows and a bullet summary, which is also
+            a screen that does not exist: the real Journal shows a
+            SYMBOL/DIRECTION/SIZE/ACCOUNT strip above the ordinary entry form,
+            and the voice flow is a "Voice Input" button in the toolbar, not a
+            recorder panel.
+
+            So the section now contains exactly two things, and only one of
+            them is an interface:
+
+            - The spoken line, typed out. Speech has no interface, so showing
+              it as text invents nothing.
+            - A screenshot of the actual Journal page with the entry in it.
+
+            Which also means the separate "A written entry, not a row in a
+            sheet" section that followed this one is gone - it carried this
+            same screenshot, and having drawn it here first was the only
+            reason the two needed to be apart.
+          */}
+          <div className="border-t border-white/[0.07] pt-6 sm:pt-7">
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-600 mb-3">
+              What you said
+            </p>
+            <TranscriptToEntry transcriptOnly />
+          </div>
+
+          <div className="mt-8 sm:mt-10">
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-600 mb-3">
+              What it filed
+            </p>
+            <ProductShot
+              src="/product/journal.jpg"
+              label="Journal"
+              alt="The entry TradeX wrote: symbol, direction, size and duration filled in, the trade it is linked to, tags, and the written review underneath."
+            />
+          </div>
+
+          {/*
+            Step three, as the thing you are left holding. It reads across
+            every entry rather than this one, which is the only claim here
+            that no competitor makes.
+          */}
+          <div className="mt-8 sm:mt-10 pt-5 border-t border-white/[0.07]">
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-600">
+              What it noticed
+            </p>
+            <p className="mt-2 text-[13px] sm:text-[13.5px] leading-relaxed text-gray-300">
+              You moved your stop on{' '}
+              <span className="text-white">4 of your last 6 losers</span>. None
+              of your winners.
+            </p>
           </div>
         </div>
       </div>
-
-      {/*
-        WHAT COMES OUT - the first of the two unpacked screenshot sections.
-
-        These three screenshots used to be behind a tab strip: one visible,
-        two a click away. Neither competitor hides anything. TradeZella runs
-        five feature sections, Tradespad six, and every one of them is a
-        heading, a line and a screenshot, inline. A tab is a click, and most
-        people do not click.
-
-        The tabs were defended here with Notre Dame's carousel study - ~1% of
-        visitors click a hero carousel, 84% of those clicks landing on the
-        first panel. That study is about HERO carousels. It was the wrong
-        citation for a mid-page tab strip and it had been load-bearing.
-
-        Unpacked, but deliberately not into three screenshot sections in a
-        row: that would rebuild the four-consecutive-product-sections problem
-        this page was just dug out of. The journal lands here, next to the
-        steps that produce it. The calendar and the analytics land after Nova.
-        So each product section carries a different kind of visual - a
-        screenshot, then live components, then a conversation, then two more
-        screenshots - and the page never shows the same thing twice running.
-      */}
-      <div className="relative border-t border-white/[0.06] py-16 sm:py-20">
-        <div className="max-w-4xl mx-auto px-5 sm:px-8">
-          <SectionHeader
-            eyebrow="What comes out"
-            title="A written entry, not a row in a sheet"
-            className="mb-10 sm:mb-12"
-          >
-              Symbol, direction, size and duration filed where they belong
-              &mdash; and underneath them, in your own words, what you were
-              actually doing.
-          </SectionHeader>
-          <ProductShot
-            src="/product/journal.jpg"
-            label="Journal"
-            alt="A journal entry for a gold trade: symbol, direction, size, duration, the trade it is linked to, tags, and the written review underneath."
-          />
-        </div>
-      </div>
-
 
       {/*
         THE DIFFERENTIATOR.

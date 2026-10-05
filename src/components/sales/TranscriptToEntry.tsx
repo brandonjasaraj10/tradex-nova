@@ -39,7 +39,25 @@ const BULLETS = [
   'Repeat of Tuesday - same setup, same mistake',
 ];
 
-export default function TranscriptToEntry() {
+/*
+  transcriptOnly: render just the spoken half - the typing - and none of the
+  extracted fields.
+
+  The fields and the "what happened" bullets below them are a drawing of an
+  interface TradeX does not have: two-column bordered field rows that exist
+  nowhere in the Journal, which really shows a SYMBOL/DIRECTION/SIZE/ACCOUNT
+  strip over the normal entry form. On the landing page that drawing now
+  stands next to a real screenshot of the actual page, and the difference was
+  obvious enough that Brandon spotted it twice.
+
+  The transcript itself is not a drawing of anything - it is speech, which has
+  no interface - so that half stays honest and stays.
+
+  Default false, so /features and /about are untouched by this. The same
+  objection applies to them and is worth fixing, but silently changing two
+  other pages from inside a landing-page edit is not the way to do it.
+*/
+export default function TranscriptToEntry({ transcriptOnly = false }: { transcriptOnly?: boolean } = {}) {
   const prefersReduced =
     typeof window !== 'undefined' &&
     window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
@@ -150,6 +168,7 @@ export default function TranscriptToEntry() {
         </div>
       </div>
 
+      {!transcriptOnly && (
       <div
         className={`mt-3 pt-3 border-t border-white/[0.06] transition-opacity duration-500
           ${showEntry ? 'opacity-100' : 'opacity-0'}`}
@@ -176,6 +195,7 @@ export default function TranscriptToEntry() {
           ))}
         </ul>
       </div>
+      )}
     </div>
   );
 }
