@@ -828,52 +828,80 @@ export default function Sales() {
         thought made it worse.
       */}
       <div className="relative border-t border-white/[0.06] py-16 sm:py-24">
-        <div className="max-w-3xl mx-auto px-5 sm:px-8">
-          <div className="max-w-lg mx-auto text-center">
-            <p className="text-[10px] sm:text-[11px] tracking-[0.2em] uppercase text-gray-500 mb-4">
-              From the founder
-            </p>
-            <h2 className="text-[28px] leading-[1.12] sm:text-[40px] sm:leading-[1.08] font-semibold tracking-[-0.03em] text-white text-balance">
-              Why I built this
-            </h2>
+        <div className="max-w-5xl mx-auto px-5 sm:px-8">
+          {/*
+            THE FOUNDER GETS A FACE.
 
-            <p className="mt-5 text-[15px] sm:text-[17px] leading-relaxed text-gray-300 text-balance">
-              I kept quitting my own trading journal. Not because it was a bad
-              journal &mdash; because writing it up honestly is hardest on
-              exactly the days it would have helped most. So I built the one
-              that still gets written on those days.
-            </p>
+            A twelve-megabyte video of Brandon talking to camera, and a poster
+            frame of it, have been sitting in public/ and in the build's
+            allowlist the whole time. The section that exists to be the human
+            moment on the page was using neither, and was instead the only
+            section with no visual at all - two paragraphs centred in a column
+            while every section around it sits left on the grid.
 
-            {/*
-              The actual reason, in his words: the competition is not missing
-              features, it has too many, and none of them is the one that
-              matters. It also sets up the psychology sections above and below
-              rather than sitting apart from them.
+            PRELOAD NONE, AND THAT IS THE WHOLE TRICK
 
-              No em-dash. The clause it used to hang off read as an aside when
-              it is the whole point, so "My trading psychology." is its own
-              sentence now - a two-word fragment after a long sentence lands
-              the way a dash never does. The close moves from "I" to "you",
-              which is where the paragraph is actually aimed.
-            */}
-            <p className="mt-4 text-[14.5px] sm:text-base leading-relaxed text-gray-400 text-balance">
-              Every one I tried had a hundred features and not one of them tracked
-              the thing that actually decides whether I make money. My trading
-              psychology. What was going on in my head when I clicked buy, when I
-              clicked sell, when I closed a position early. Everything else is
-              tidier arithmetic on a loss you have already taken and can learn
-              nothing from.
-            </p>
+            It is a real <video> with controls, so pressing play plays it here
+            rather than sending somebody to another page to watch it. preload
+            is "none", so the twelve megabytes are not fetched until somebody
+            actually asks for them - the poster is 55KB and that is all this
+            costs anybody who scrolls past. On a page whose traffic is phones
+            on mobile data from Instagram, that distinction is the difference
+            between having a founder video and not being able to afford one.
 
-            <Link
-              to="/about"
-              className="mt-8 inline-flex items-center gap-2 px-5 py-2.5 rounded-full
-                border border-white/15 text-[13.5px] text-gray-300
-                hover:text-white hover:border-white/25 transition-colors"
+            Image left, words right - the opposite way round from the Nova
+            section above, so two consecutive two-column sections do not
+            mirror each other.
+          */}
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-10 lg:gap-14 lg:items-center">
+            <video
+              controls
+              preload="none"
+              poster="/founder-video-poster.jpg"
+              className="w-full rounded-[20px] border border-white/10 bg-brand-surface"
             >
-              Watch the two-minute version
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
+              <source src="/founder-video.mp4" type="video/mp4" />
+            </video>
+
+            <div>
+              <p className="text-[9.5px] sm:text-[10px] tracking-[0.16em] uppercase text-gray-600 mb-4">
+                From the founder
+              </p>
+              <h2 className="text-[28px] leading-[1.12] sm:text-[40px] sm:leading-[1.08] font-semibold tracking-[-0.03em] text-white text-balance">
+                Why I built this
+              </h2>
+
+              <p className="mt-5 text-[15px] sm:text-[16.5px] leading-relaxed text-gray-300">
+                I kept quitting my own trading journal. Not because it was a bad
+                journal &mdash; because writing it up honestly is hardest on
+                exactly the days it would have helped most. So I built the one
+                that still gets written on those days.
+              </p>
+
+              {/*
+                No em-dash before "My trading psychology". The clause it used
+                to hang off read as an aside when it is the whole point, so it
+                is its own sentence - a two-word fragment after a long one
+                lands the way a dash never does.
+              */}
+              <p className="mt-4 text-[14px] sm:text-[15px] leading-relaxed text-gray-400">
+                Every one I tried had a hundred features and not one of them
+                tracked the thing that actually decides whether I make money. My
+                trading psychology. Everything else is tidier arithmetic on a
+                loss you have already taken.
+              </p>
+
+              <p className="mt-7">
+                <Link
+                  to="/about"
+                  className="inline-flex items-center gap-2 text-[13.5px] text-gray-400
+                    hover:text-white transition-colors"
+                >
+                  More of the story
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </p>
+            </div>
           </div>
         </div>
       </div>
