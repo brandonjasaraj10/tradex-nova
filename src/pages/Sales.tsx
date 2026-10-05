@@ -344,15 +344,27 @@ export default function Sales() {
           {/*
             Social proof, sized to what is actually true.
 
-            Competitors put customer logos and five-figure counts here. We have
-            661 real signups, so that is what it rounds down to - 258 of them
-            in the last seven days and 139 in the last two, off one reel that
-            travelled. The number is checked against auth.users rather than
-            remembered, and it is stated as "600+" so it stays true while it
-            climbs. The circles carry initials
-            rather than faces - inventing photographs of customers who have not
-            agreed to appear would be the one thing on this page that could not
-            be defended.
+            Competitors put five-figure counts here - Tradespad claims 4,000
+            traders, TradeZella 100,000. We have 801 real signups measured
+            against auth.users on 2026-10-04 (669 of them in the last thirty
+            days), so it rounds down to "800+" and stays true while it climbs.
+
+            THE VERB MATTERS MORE THAN THE NUMBER
+
+            This said "800+ traders already journaling with TradeX", and that
+            was the one indefensible sentence on the page. 801 people have
+            signed up. Twenty-eight have ever written an entry. "Journaling"
+            describes the twenty-eight, not the eight hundred.
+
+            It is a small lie and it would cost more than it buys, because
+            this page's whole argument runs on the reader believing we are
+            being straight with them about their own behaviour. A visitor who
+            worked out the gap would be right to stop believing the rest.
+            "Signed up" is both true and the thing the count actually counts.
+
+            The circles carry initials rather than faces - inventing
+            photographs of customers who have not agreed to appear would be
+            the other thing here that could not be defended.
           */}
           <div className="mt-6 flex flex-col items-center gap-2">
             <div className="flex -space-x-2">
@@ -368,7 +380,7 @@ export default function Sales() {
               ))}
             </div>
             <p className="text-[11.5px] text-gray-500">
-              Join <span className="text-gray-300">600+ traders</span> already journaling with TradeX
+              Join <span className="text-gray-300">800+ traders</span> who have signed up to TradeX
             </p>
 
           {/* Every rival puts this above the fold. See the component. */}
@@ -560,8 +572,9 @@ export default function Sales() {
               before and quit. Why is this different?"
             */}
             <p className="mt-4 text-[14.5px] sm:text-base text-gray-400 max-w-sm sm:max-w-md mx-auto text-balance">
-              You quit the last journal because it was work. This one is thirty
-              seconds of talking, and it still catches what your head was doing.
+              You quit the last journal because it was typing. This one is you
+              talking for half a minute &mdash; and it still catches what your
+              head was doing inside that window.
             </p>
             {/*
               He introduces the three steps. Below the copy rather than above
