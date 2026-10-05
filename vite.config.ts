@@ -89,7 +89,10 @@ const PUBLIC_FILES = [
     list has caught something, which is the point of the warning below.
   */
   'product/nova.jpg',
-  'product/nova-mobile.jpg'
+  'product/nova-mobile.jpg',
+  /* The calendar's psychology view - the one no competitor has. */
+  'product/calendar-psych.jpg',
+  'product/calendar-psych-mobile.jpg'
 ];
 
 export default defineConfig({

@@ -9,6 +9,7 @@ import Wordmark from '../components/shared/Wordmark';
 import SyncMarquee from '../components/sales/SyncMarquee';
 import ProductShot from '../components/sales/ProductShot';
 import PsychologySwipe from '../components/sales/PsychologySwipe';
+import SwipeDeck from '../components/sales/SwipeDeck';
 import SectionHeader from '../components/sales/SectionHeader';
 import SignupOrWaitlist from '../components/shared/SignupOrWaitlist';
 import { useHasLaunched } from '../lib/launch';
@@ -634,49 +635,64 @@ export default function Sales() {
         demonstration is an answer no generic chatbot could give.
       */}
       <div className="relative border-t border-white/[0.06] py-16 sm:py-24">
-        <div className="max-w-3xl mx-auto px-5 sm:px-8">
-          <SectionHeader
-            eyebrow="Nova"
-            title="It has read everything you wrote"
-            className="mb-10 sm:mb-12"
-          >
-              Nova is not answering from the internet. It is answering from
-              your entries, your numbers and the things you have told it twice.
-          </SectionHeader>
-
+        <div className="max-w-5xl mx-auto px-5 sm:px-8">
           {/*
-            A real conversation, not a written one.
+            Two columns, because three sections in a row were the same shape.
 
-            This was a hand-built chat bubble - "Why am I losing on Fridays?"
-            with an invented reply underneath it - and of all the drawn UI on
-            this page it was the least defensible, because the claim the
-            section makes is that the answer comes from your own entries. An
-            answer somebody typed into a marketing page cannot demonstrate
-            that. It demonstrates the opposite.
+            Eyebrow, heading, subhead, one screenshot - that was section three,
+            this, and the one below it. Each was fine on its own and together
+            they read as a template. This one breaks the column: the argument
+            sits on the left and the evidence beside it, which is also the
+            honest arrangement, because the screenshot IS the argument here
+            and deserves to be looked at rather than scrolled past.
 
-            The screenshot is Nova actually answering, on the demo account,
-            with numbers that came out of the database: eight ES trades at a
-            50% win rate netting $124 against XAUUSD five from five, and
-            Thursdays as the only losing day of the week. Nobody wrote those.
-            They are what the account contains.
-
-            The three feature columns underneath went with it. One of them -
-            "Writes your entries" - was repeating the section two above, and
-            the other two are said better by the screenshot than by a caption.
+            Stacks back to one column below lg, where two columns would make
+            the screenshot too small to recognise.
           */}
-          <ProductShot
-            src="/product/nova.jpg"
-            label="Nova"
-            alt="Nova answering a question about the trader's biggest leak, citing their ES win rate, their gold results and their Thursday performance."
-          />
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] gap-10 lg:gap-12 lg:items-center">
+            <div>
+              <SectionHeader eyebrow="Nova" title="It has read everything you wrote">
+                Not answering from the internet. Answering from your entries,
+                your numbers, and the things you have told it twice.
+              </SectionHeader>
 
-          <p className="mt-7 text-center">
-            <Link to="/nova-ai" className="inline-flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-white transition-colors underline underline-offset-[3px] decoration-white/20 hover:decoration-white/50">
-              More on how Nova works
-            </Link>
-          </p>
+              {/*
+                What people actually ask it. Quiet, and set as questions rather
+                than as features, because the range is the point - these are
+                not three things it does, they are three things only something
+                that has read your journal could answer.
+              */}
+              <ul className="mt-8 flex flex-col gap-2.5">
+                {[
+                  'What is my biggest leak right now?',
+                  'Am I sizing up after losses again?',
+                  'What did I say I would stop doing?',
+                ].map((q) => (
+                  <li
+                    key={q}
+                    className="text-[13px] sm:text-[13.5px] text-gray-400 border-l border-white/[0.12] pl-4"
+                  >
+                    {q}
+                  </li>
+                ))}
+              </ul>
+
+              <p className="mt-8">
+                <Link to="/nova-ai" className="inline-flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-white transition-colors underline underline-offset-[3px] decoration-white/20 hover:decoration-white/50">
+                  More on how Nova works
+                </Link>
+              </p>
+            </div>
+
+            <ProductShot
+              src="/product/nova.jpg"
+              label="Nova"
+              alt="Nova answering a question about the trader's biggest leak, citing their ES win rate, their gold results and their Thursday performance."
+            />
+          </div>
         </div>
       </div>
+
 
 
       {/*
@@ -703,34 +719,66 @@ export default function Sales() {
             title="The month, and what it was made of"
             className="mb-10 sm:mb-12"
           >
-              Every day coloured by what you did with it, and the reports
-              underneath that say which of your setups actually pays.
+              The same month twice over &mdash; once by what you made, once by
+              how you were while you made it &mdash; and the reports that say
+              which of your setups actually pays.
           </SectionHeader>
 
           {/*
-            Side by side, as a pair.
+            Three surfaces, swiped, rather than two screenshots in a row.
 
-            I had stacked these on the argument that 550px is too narrow to
-            read the numbers in them. True, and beside the point: nobody reads
-            a screenshot on a landing page, they recognise it. Two shots in a
-            row say "a month, and the report under it" in one glance, which is
-            the sentence above them. Stacked, they read as two more sections.
+            The page had three sections running that were the same shape -
+            eyebrow, heading, one screenshot - and this was the third. Same
+            rhythm three times reads as a template no matter how good the
+            individual screenshots are.
 
-            The detail is one click away on /features for anybody who wants to
-            actually read it.
+            It also only ever showed the calendar in its P&L view, which is
+            the view every rival has. The psychology view - the same month
+            coloured by how you were, with a NOVA score on each day and an
+            average mental state beside it - is the one nothing else does, and
+            the landing page had never shown it once.
+
+            Equal height is off: these are images of different shapes, and
+            matching their heights letterboxes one of them.
           */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
-            <ProductShot
-              src="/product/calendar.jpg"
-              label="Calendar"
-              alt="A month of trading laid out as a calendar, each day showing its profit or loss, with weekly totals down the side."
-            />
-            <ProductShot
-              src="/product/analytics.jpg"
-              label="Analytics"
-              alt="The analytics page: NOVA Score, total profit and loss, win rate, profit factor, and cumulative P&L and win-rate charts."
-            />
-          </div>
+          <SwipeDeck
+            equalHeight={false}
+            panels={[
+              {
+                id: 'cal-pnl',
+                label: 'By P&L',
+                content: (
+                  <ProductShot
+                    src="/product/calendar.jpg"
+                    label="Calendar"
+                    alt="A month of trading laid out as a calendar, each day showing its profit or loss, with weekly totals down the side."
+                  />
+                ),
+              },
+              {
+                id: 'cal-psych',
+                label: 'By how you traded',
+                content: (
+                  <ProductShot
+                    src="/product/calendar-psych.jpg"
+                    label="Calendar"
+                    alt="The same month in the psychology view: each day carries a NOVA score instead of a P&L figure, with average mental state and a count of peak, good and challenging days alongside."
+                  />
+                ),
+              },
+              {
+                id: 'analytics',
+                label: 'The reports',
+                content: (
+                  <ProductShot
+                    src="/product/analytics.jpg"
+                    label="Analytics"
+                    alt="The analytics page: NOVA Score, total profit and loss, win rate, profit factor, and cumulative P&L and win-rate charts."
+                  />
+                ),
+              },
+            ]}
+          />
 
           <p className="mt-7 text-center">
             <Link to="/features" className="inline-flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-white transition-colors underline underline-offset-[3px] decoration-white/20 hover:decoration-white/50">
