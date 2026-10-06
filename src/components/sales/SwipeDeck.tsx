@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, type ReactNode } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, type ReactNode } from 'react';
 
 /*
   A horizontal deck of panels, centred, with a rail underneath.
@@ -81,20 +81,24 @@ export default function SwipeDeck({
   */
   const [heights, setHeights] = useState<number[]>([]);
   /*
-    The panel the track has actually come to rest on, which is not the same as
-    the one the rail is highlighting mid-slide.
+    The panels currently on screen, as a range - [0, 0] at rest on the first,
+    [0, 1] anywhere between the first and second.
 
-    The first version of the phone height-follow sized the track from `index`,
-    which changes the instant a button is tapped - so the track's height
-    started animating at the same moment as the horizontal slide. Changing
-    layout under a scroll in progress makes the browser abandon it: in Chrome
-    the slide simply never happened (every sampled frame read scrollLeft 0),
-    and on an iPhone it overshot and left the second panel cut off at the left
-    edge. Height now waits for the slide to land.
+    The track is as tall as the tallest panel in that range. So the moment a
+    swipe brings a taller panel into view the track is already tall enough
+    for it, and it only shrinks back once the swipe has landed on a shorter
+    one. The previous version sized it from the panel the swipe had settled
+    on, which meant the incoming panel slid in cropped at the bottom and then
+    the page jumped down to fit it once the swipe stopped - what Brandon saw
+    on his phone.
   */
-  const [settled, setSettled] = useState(0);
-  const settleTimer = useRef<number | null>(null);
+  const [span, setSpan] = useState<[number, number]>([0, 0]);
+  const spanRef = useRef(span);
+  spanRef.current = span;
+  const isPhoneRef = useRef(false);
+  const lastHeight = useRef(0);
   const [isPhone, setIsPhone] = useState(false);
+  isPhoneRef.current = isPhone;
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 639px)');
@@ -108,7 +112,30 @@ export default function SwipeDeck({
     const el = trackRef.current;
     if (!el || typeof ResizeObserver === 'undefined') return;
     const panels = [...el.querySelectorAll<HTMLElement>('[data-panel]')];
-    const measure = () => setHeights(panels.map((p) => p.offsetHeight));
+    const measure = () => {
+      const hs = panels.map((p) => p.offsetHeight);
+      /*
+        A panel that just grew gets its room in this same frame, written
+        straight onto the track, before React has re-rendered.
+
+        Going through state alone was one frame late, and the score
+        breakdown opens by animating its own height - about 50px a frame -
+        so one frame late was 50 to 80px of the breakdown cropped off the
+        bottom on every frame of its opening. A ResizeObserver callback runs
+        after layout and before paint, so writing here lands before anybody
+        sees the crop. The render that follows sets the same value.
+      */
+      if (isPhoneRef.current) {
+        const [lo, hi] = spanRef.current;
+        const need = Math.max(0, ...hs.slice(lo, hi + 1));
+        if (need > el.offsetHeight) {
+          el.style.transition = 'none';
+          el.style.height = `${need}px`;
+          lastHeight.current = need;
+        }
+      }
+      setHeights(hs);
+    };
     measure();
     const ro = new ResizeObserver(measure);
     panels.forEach((p) => ro.observe(p));
@@ -124,14 +151,20 @@ export default function SwipeDeck({
       frame = requestAnimationFrame(() => {
         const panel = el.querySelector<HTMLElement>('[data-panel]');
         const step = panel ? panel.offsetWidth + GAP : el.clientWidth;
-        const at = Math.min(panels.length - 1, Math.round(el.scrollLeft / Math.max(1, step)));
+        const pos = Math.min(panels.length - 1, el.scrollLeft / Math.max(1, step));
+        /* Within a few per cent of a panel counts as on it - snapping lands a pixel or two off. */
+        const near = Math.round(pos);
+        setSpan((prev) => {
+          const next: [number, number] =
+            Math.abs(pos - near) < 0.03 ? [near, near] : [Math.floor(pos), Math.ceil(pos)];
+          return prev[0] === next[0] && prev[1] === next[1] ? prev : next;
+        });
+        const at = near;
         if (animatingTo.current !== null) {
           if (at === animatingTo.current) animatingTo.current = null;
           return;
         }
         setIndex(at);
-        if (settleTimer.current) window.clearTimeout(settleTimer.current);
-        settleTimer.current = window.setTimeout(() => setSettled(at), 140);
       });
     };
     el.addEventListener('scroll', onScroll, { passive: true });
@@ -149,6 +182,9 @@ export default function SwipeDeck({
     const target = Math.min(i * step, el.scrollWidth - el.clientWidth);
     animatingTo.current = i;
     setIndex(i);
+    /* Both ends of the trip are on screen from the first frame of it. */
+    const here = Math.round(el.scrollLeft / Math.max(1, step));
+    setSpan([Math.min(here, i), Math.max(here, i)]);
 
     /*
       Snapping off for the trip, back on once it has arrived.
@@ -179,7 +215,7 @@ export default function SwipeDeck({
       el.scrollLeft = target;
       el.style.scrollSnapType = '';
       animatingTo.current = null;
-      setSettled(i);
+      setSpan([i, i]);
     };
     if (duration === 0 || Math.abs(distance) < 1) { finish(); return; }
     const frame = (now: number) => {
@@ -191,6 +227,14 @@ export default function SwipeDeck({
     };
     requestAnimationFrame(frame);
   };
+
+  const trackHeight = isPhone
+    ? Math.max(0, ...heights.slice(span[0], span[1] + 1).filter(Boolean))
+    : 0;
+  const growing = trackHeight >= lastHeight.current;
+  useLayoutEffect(() => {
+    lastHeight.current = trackHeight;
+  });
 
   const spacer = (
     <span
@@ -206,9 +250,24 @@ export default function SwipeDeck({
         ref={trackRef}
         className={`flex gap-6 overflow-x-auto snap-x snap-mandatory
           [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden
-          max-sm:items-start max-sm:overflow-y-hidden max-sm:transition-[height] max-sm:duration-300 max-sm:ease-out
+          max-sm:items-start max-sm:overflow-y-hidden
           ${equalHeight ? '' : 'items-start'}`}
-        style={isPhone && heights[settled] ? { height: heights[settled] } : undefined}
+        style={
+          trackHeight
+            ? {
+                height: trackHeight,
+                /*
+                  Growing is instant, shrinking is animated. A panel that
+                  grows - the score breakdown opening, or a taller panel
+                  sliding in - has to have the room the same frame it needs
+                  it; animating towards it is what left the breakdown cropped
+                  and lagging behind its own expand. Shrinking has nothing to
+                  crop, so it can take its time.
+                */
+                transition: growing ? 'none' : 'height 300ms ease-out',
+              }
+            : undefined
+        }
       >
         {spacer}
         {panels.map((p, i) => (
