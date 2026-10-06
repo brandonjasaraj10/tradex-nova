@@ -93,6 +93,20 @@ function PlanCard({ tier, billing, launched, className = '' }: { tier: Tier; bil
           <Check className="mt-[2px] w-4 h-4 flex-shrink-0 text-brand-blue" strokeWidth={2.5} />
           {tier.syncedLabel} automatically
         </li>
+        {/*
+          The other row that differs by plan, so it sits bold beside sync.
+          Read from the tier's own lines rather than written again here, so
+          this card and /pricing cannot quote different allowances. Note that
+          the monthly credit metering is not built yet - see pricingTiers.ts.
+        */}
+        {tier.lines
+          .filter((l) => l.included && /Nova credits/.test(l.text))
+          .map((l) => (
+            <li key={l.text} className="flex gap-2.5 text-[13px] leading-snug text-white font-medium">
+              <Check className="mt-[2px] w-4 h-4 flex-shrink-0 text-brand-blue" strokeWidth={2.5} />
+              {l.text}
+            </li>
+          ))}
         {PLAN_CHECKLIST.filter((row) => row.in.includes(tier.name)).map((row) => (
           <li key={row.text} className="flex gap-2.5 text-[13px] leading-snug text-gray-300">
             <Check className="mt-[2px] w-4 h-4 flex-shrink-0 text-brand-blue" strokeWidth={2.5} />
