@@ -470,10 +470,17 @@ export function ImportPathsPanel() {
     { k: 'Type it', v: 'You enter the trade. Nothing is connected at all.', now: true },
     { k: 'Talk it', v: 'You describe it and Nova writes the entry.', now: true },
     { k: 'CSV import', v: 'You upload the statement your broker exports.', now: true },
-    { k: 'MT4 / MT5 sync', v: 'Read-only. Closed trades and balance.', now: false },
+    /*
+      Was now: false, rendering "Days away" - written before sync shipped and
+      never updated after it did. It is live: MT4 and MT5 sync through
+      MetaApi, and the integrations page lists the firms that work. Shown on
+      /faq and /security, so both were telling visitors the product's main
+      paid feature did not exist yet.
+    */
+    { k: 'MT4 / MT5 sync', v: 'Read-only. Closed trades arrive on their own, usually within minutes.', now: true },
   ];
   return (
-    <Frame label="How trades get in" note="Both paths, today and soon">
+    <Frame label="How trades get in" note="Four ways in, all live today">
       <div className="flex flex-col gap-3">
         {rows.map((r) => (
           <div key={r.k} className="rounded-xl border border-white/[0.07] bg-brand-elevated px-3.5 py-3">
