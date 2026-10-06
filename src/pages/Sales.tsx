@@ -10,6 +10,7 @@ import SyncMarquee from '../components/sales/SyncMarquee';
 import ProductShot from '../components/sales/ProductShot';
 import PsychologySwipe from '../components/sales/PsychologySwipe';
 import SwipeDeck from '../components/sales/SwipeDeck';
+import ShotStack from '../components/sales/ShotStack';
 import FaqList, { type FaqItem } from '../components/sales/FaqList';
 import SectionHeader from '../components/sales/SectionHeader';
 import HeaderNav from '../components/sales/HeaderNav';
@@ -520,6 +521,11 @@ export default function Sales() {
             alt="The TradeX dashboard: account balance, NOVA Score, win rate, profit factor and a panel showing how closely the trader followed their own plan."
             label="Dashboard"
             priority
+            zoomSpace="max-sm:mb-16"
+            zooms={[
+              { x: 118, y: 182, w: 340, h: 146, place: '-bottom-10 left-2.5 w-[62%]' },
+              { x: 850, y: 650, w: 214, h: 130, place: '-bottom-14 right-2.5 w-[32%]' },
+            ]}
           />
           <p className="mt-3 text-center text-[11px] text-gray-600">
             A demo account, not a customer&rsquo;s results
@@ -710,6 +716,11 @@ export default function Sales() {
                 src="/product/journal.jpg"
                 label="Journal"
                 alt="The entry TradeX wrote: symbol, direction, size and duration filled in, with the written review underneath it."
+                zoomSpace="max-sm:mt-4 max-sm:mb-16"
+                zooms={[
+                  { x: 630, y: 70, w: 350, h: 64, place: '-top-4 left-3 w-[74%]' },
+                  { x: 127, y: 770, w: 300, h: 220, place: '-bottom-16 right-3 w-[50%]' },
+                ]}
               />
             </div>
           </figure>
@@ -810,6 +821,11 @@ export default function Sales() {
               src="/product/nova.jpg"
               label="Nova"
               alt="Nova answering a question about the trader's biggest leak, citing their ES win rate, their gold results and their Thursday performance."
+              zoomSpace="max-sm:mb-24"
+              zooms={[
+                { x: 1188, y: 430, w: 296, h: 56, place: 'bottom-[36px] right-3 w-[52%]' },
+                { x: 812, y: 505, w: 564, h: 180, place: '-bottom-20 left-2 right-2' },
+              ]}
             />
           </div>
         </div>
@@ -863,6 +879,41 @@ export default function Sales() {
             Equal height is off: these are images of different shapes, and
             matching their heights letterboxes one of them.
           */}
+          {/*
+            On a phone, a pile of the same three screenshots instead - see
+            ShotStack for why the deck did not survive at 375px.
+          */}
+          <ShotStack
+            className="sm:hidden"
+            shots={[
+              {
+                id: 'cal-pnl',
+                label: 'By P&L',
+                src: '/product/calendar.jpg',
+                window: 'Calendar',
+                alt: 'A month of trading laid out as a calendar, each day showing its profit or loss, with weekly totals down the side.',
+                zoom: { x: 1192, y: 183, w: 354, h: 98, place: '-bottom-8 right-3 w-[58%]' },
+              },
+              {
+                id: 'cal-psych',
+                label: 'By how you traded',
+                src: '/product/calendar-psych.jpg',
+                window: 'Calendar',
+                alt: 'The same month in the psychology view: each day carries a NOVA score instead of a P&L figure, with average mental state and a count of peak, good and challenging days alongside.',
+                zoom: { x: 1196, y: 190, w: 340, h: 222, place: '-bottom-10 right-3 w-[50%]' },
+              },
+              {
+                id: 'analytics',
+                label: 'The reports',
+                src: '/product/analytics.jpg',
+                window: 'Analytics',
+                alt: 'The analytics page: NOVA Score, total profit and loss, win rate, profit factor, and cumulative P&L and win-rate charts.',
+                zoom: { x: 107, y: 690, w: 715, h: 310, place: '-bottom-10 left-3 w-[64%]' },
+              },
+            ]}
+          />
+
+          <div className="max-sm:hidden">
           <SwipeDeck
             equalHeight={false}
             panels={[
@@ -901,6 +952,7 @@ export default function Sales() {
               },
             ]}
           />
+          </div>
 
           <p className="mt-7 text-center">
             <Link to="/features" className="inline-flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-white transition-colors underline underline-offset-[3px] decoration-white/20 hover:decoration-white/50">

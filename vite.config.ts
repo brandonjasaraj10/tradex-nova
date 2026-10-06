@@ -74,25 +74,14 @@ const PUBLIC_FILES = [
   'product/calendar.jpg',
   'product/analytics.jpg',
   /*
-    The phone crops. Same four screens, shot on a 390px viewport and scrolled
-    to the part that screen is about, because a desktop screenshot shrunk to
-    phone width is unreadable. See ProductShot.
-  */
-  'product/dashboard-mobile.jpg',
-  'product/journal-mobile.jpg',
-  'product/calendar-mobile.jpg',
-  'product/analytics-mobile.jpg',
-  /*
     Nova answering a real question. Added after the landing page shipped a
     broken image for it: publicDir is false, so a file that is not named in
     this list 404s and comes back as index.html. That is the third time this
     list has caught something, which is the point of the warning below.
   */
   'product/nova.jpg',
-  'product/nova-mobile.jpg',
   /* The calendar's psychology view - the one no competitor has. */
   'product/calendar-psych.jpg',
-  'product/calendar-psych-mobile.jpg',
   /* The founder portrait in the band above the price. */
   'founder.jpg'
 ];
