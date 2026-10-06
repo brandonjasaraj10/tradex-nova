@@ -240,12 +240,18 @@ export default function Sales() {
             The order is the order the questions get asked: what does it do,
             what does it cost, what is stopping me.
 
-            Hidden below md. Four links will not fit beside a wordmark and a
-            button at 375px, and the phone is where the no-exits argument is
-            strongest anyway; the footer carries every page for anybody who
-            wants one.
+            Shown from sm up rather than md. The md breakpoint was a guess at
+            where three links stop fitting and it was too cautious by about
+            130px - measured at 640px the header still has room, and a 726px
+            browser pane was hiding the nav entirely, which is a common enough
+            laptop-with-a-sidebar width to matter.
+
+            Still hidden on phones. Three links will not fit beside a wordmark
+            and a button at 375px, and the phone is where the no-exits
+            argument is strongest anyway; the footer carries every page for
+            anybody who wants one.
           */}
-          <nav className="hidden md:flex items-center gap-7" aria-label="Main">
+          <nav className="hidden sm:flex items-center gap-5 md:gap-7" aria-label="Main">
             {[
               { to: '/features', label: 'Features' },
               { to: '/pricing', label: 'Pricing' },
