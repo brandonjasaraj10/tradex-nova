@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Check } from 'lucide-react';
 import Footer from '../components/layout/Footer';
 import Mascot from '../components/shared/Mascot';
-import { TIERS } from '../lib/pricingTiers';
+import { TIERS, IN_EVERY_PLAN, ALSO_INCLUDED } from '../lib/pricingTiers';
 import TranscriptToEntry from '../components/sales/TranscriptToEntry';
 import Wordmark from '../components/shared/Wordmark';
 import SyncMarquee from '../components/sales/SyncMarquee';
@@ -1259,6 +1259,44 @@ export default function Sales() {
           </div>
 
           {/*
+            WHAT IS ACTUALLY IN IT.
+
+            The prices used to sit over one line - "Everything else is the
+            same on all three" - which assumes the reader already knows what
+            "everything" is. Brandon caught it on his phone: TradeZella and
+            Tradespad both list what a plan contains, and ours listed only
+            how many accounts sync.
+
+            Listed once, under all three, rather than ticked down each card:
+            the plans are identical on every one of these, and the same seven
+            ticks in three columns would make three identical cards look like
+            a comparison. Same list as /pricing, from one module, so the two
+            pages cannot disagree about what is included.
+          */}
+          <div className="mt-4 rounded-2xl border border-white/[0.07] bg-brand-surface p-5 sm:p-6">
+            <p className="text-[11px] uppercase tracking-[0.14em] text-gray-500">Every plan includes</p>
+            <ul className="mt-4 flex flex-col gap-3">
+              {IN_EVERY_PLAN.map((item) => (
+                <li key={item} className="flex gap-2.5 text-[13px] sm:text-[13.5px] leading-snug text-gray-300">
+                  <Check className="mt-[3px] w-3.5 h-3.5 flex-shrink-0 text-brand-blue" strokeWidth={2.5} />
+                  {item}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-5 pt-4 border-t border-white/[0.07] flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2
+              text-[12px] text-gray-500">
+              {/* The trial has its own timeline directly below, so it is not repeated here. */}
+              <span>{ALSO_INCLUDED.split(' \u00b7 ').filter((x) => !/days free/.test(x)).join(' \u00b7 ')}</span>
+              <Link
+                to="/pricing"
+                className="text-gray-400 hover:text-white transition-colors underline underline-offset-[3px] decoration-white/20 hover:decoration-white/50"
+              >
+                Compare plans
+              </Link>
+            </p>
+          </div>
+
+          {/*
             THE FOURTEEN DAYS, IN ORDER.
 
             Blinkist found that showing a visitor exactly when they will be
@@ -1291,16 +1329,6 @@ export default function Sales() {
             ))}
           </ol>
 
-          <p className="mt-6 text-center text-[13px] leading-relaxed text-gray-500">
-            Everything else is the same on all three &mdash; Nova, the journal,
-            psychology scoring, the calendar and the analytics.{' '}
-            <Link
-              to="/pricing"
-              className="text-gray-400 hover:text-white transition-colors underline underline-offset-[3px] decoration-white/20 hover:decoration-white/50"
-            >
-              The full comparison
-            </Link>
-          </p>
 
           <div className="mt-7 flex flex-col items-center gap-3">
             {launched ? (
