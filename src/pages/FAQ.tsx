@@ -41,7 +41,7 @@ const GROUPS: {
   {
     id: 'works',
     title: 'Does this actually work?',
-    lead: 'The fair question, and the answer is not an unqualified yes.',
+    lead: 'The fair question to ask first, so it is the one answered first.',
     visual: <ChecklistPanel />,
     items: [
       {
@@ -58,7 +58,7 @@ const GROUPS: {
       },
       {
         q: 'Will it make me profitable?',
-        a: 'No, and anyone telling you otherwise is selling something. It shows you what you repeatedly do wrong. Acting on that is still your job.',
+        a: 'No, and anyone telling you otherwise is selling something. What it does is show you the thing you repeatedly do that costs you money, with the dates and the numbers attached. Most traders have never seen that written down, and it is hard to keep doing something once you have.',
       },
     ],
   },
@@ -93,7 +93,7 @@ const GROUPS: {
   {
     id: 'nova',
     title: 'Voice and Nova',
-    lead: 'The two parts people are most sceptical about before they try them.',
+    lead: 'The two parts that do the most work, and the two people ask about most.',
     visual: (
       <Frame label="Nova" note="Plays on its own">
         <div className="flex flex-col gap-4">
@@ -122,7 +122,7 @@ const GROUPS: {
       },
       {
         q: 'Can Nova tell me what to trade?',
-        a: 'No. TradeX is a journal, not an advisory service. Nova analyses trades you have already taken and does not give trading recommendations.',
+        a: 'No, and that is deliberate rather than a limitation. TradeX is a journal, not an advisory service — Nova works on trades you have already taken, which is the only place your own patterns actually live. Nobody needs another opinion about the market; the useful thing is an honest account of what you did in it.',
       },
       {
         q: 'Does it remember me between conversations?',
@@ -193,7 +193,7 @@ export default function FAQ() {
       width="wide"
       eyebrow="Questions"
       title="The honest answers"
-      subtitle="Including the ones where the answer is “no”."
+      subtitle="Asked before people start, answered straight — including the ones with a catch."
     >
       {GROUPS.map((group, i) => (
         <section
