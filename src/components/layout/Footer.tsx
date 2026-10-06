@@ -54,6 +54,19 @@ export default function Footer() {
                 ['/features', 'Features'],
                 ['/nova-ai', 'Nova AI'],
                 ['/pricing', 'Pricing'],
+                /*
+                  The free psychology audit, which was linked from nowhere in
+                  the whole codebase - not here, not the header, not the
+                  landing page - so the only route to it was typing the URL.
+                  Its own file says it exists because cold traffic from a reel
+                  meets a hard paywall, which makes unreachable the one thing
+                  it could not afford to be.
+
+                  The footer is a floor, not a fix: a no-signup offer aimed at
+                  people who are not ready to pay belongs somewhere they see
+                  before deciding, not under the fold.
+                */
+                ['/audit', 'Free psychology audit'],
                 ['/security', 'Security'],
               ].map(([to, label]) => (
                 <li key={to}>

@@ -207,6 +207,60 @@ export default function Sales() {
               className="-mb-px pointer-events-none select-none"
             />
           </div>
+
+          {/*
+            THE NAV, AND WHY IT IS LINKS RATHER THAN A MENU.
+
+            The header carried no navigation at all: a wordmark on the left,
+            sign-in and the CTA on the right, nothing in between. Seven public
+            pages were reachable only through inline links buried in sections,
+            and /audit - a free psychology quiz that asks for no account - was
+            linked from nowhere in the entire codebase.
+
+            Two arguments pull in opposite directions here and both are real.
+            Removing navigation from a landing page lifts conversion, because
+            every link is an exit, and this page's traffic is a cold tap from
+            an Instagram reel. Against that: a site with no navigation at all
+            reads as thin, and an unknown brand asking $29.99 a month cannot
+            afford to look like it might not be a company.
+
+            Three links is where those meet. Enough to look like a business,
+            few enough that the button still wins.
+
+            NOT A DROPDOWN
+
+            Pricing is the page visitors reach last before signing up and the
+            one they actively hunt for, so putting it behind a hover and a
+            click is the opposite of what the evidence asks for. TradeZella
+            and Tradespad both agree in practice - both carry Pricing as a top
+            level link and keep their menus for the pages nobody is urgently
+            looking for. If this ever needs more than four items, the dropdown
+            holds About and Affiliates, never this.
+
+            The order is the order the questions get asked: what does it do,
+            what does it cost, what is stopping me.
+
+            Hidden below md. Four links will not fit beside a wordmark and a
+            button at 375px, and the phone is where the no-exits argument is
+            strongest anyway; the footer carries every page for anybody who
+            wants one.
+          */}
+          <nav className="hidden md:flex items-center gap-7" aria-label="Main">
+            {[
+              { to: '/features', label: 'Features' },
+              { to: '/pricing', label: 'Pricing' },
+              { to: '/faq', label: 'FAQ' },
+            ].map((item) => (
+              <Link
+                key={item.to}
+                to={item.to}
+                className="text-[13.5px] text-gray-400 hover:text-white transition-colors"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+
           {/*
             The way back in for people who already have an account.
 
