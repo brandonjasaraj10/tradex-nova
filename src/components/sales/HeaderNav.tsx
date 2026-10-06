@@ -26,19 +26,24 @@ import { ChevronDown } from 'lucide-react';
   the security write-up. Nothing in there is on the path to a decision, which
   is exactly why it can afford a click.
 
-  WHAT IS MISSING AND IS NOT THIS COMPONENT'S FAULT
+  FIVE LINKS, NOT FOUR
 
-  Both competitors carry an integrations or supported-brokers item in this
-  bar. TradeX has no such page, so there is nothing to link. For a trading
-  journal that is the biggest practical objection there is - "will it work
-  with my account" - and it is currently answered by a marquee in the hero
-  and one line of FAQ. The slot is left empty rather than filled with
-  something weaker.
+  Integrations was the slot both competitors fill and this bar could not,
+  because the page did not exist. It does now, so the bar carries five links
+  and the header seven items in total - the ceiling the research gives, and
+  the reason nothing else gets added without something coming out.
 */
 
 const PRODUCT_LINKS = [
   { to: '/features', label: 'Features' },
   { to: '/for-prop-firm-traders', label: 'For prop traders' },
+  /*
+    The slot both competitors fill and this bar could not. TradeZella calls it
+    "Supported brokers", Tradespad "Integrations"; for a trading journal it
+    answers the first practical question anybody has, and it was previously
+    answered by a marquee in the hero and one line of FAQ.
+  */
+  { to: '/integrations', label: 'Integrations' },
   { to: '/pricing', label: 'Pricing' },
 ];
 
@@ -75,12 +80,23 @@ export default function HeaderNav() {
   }, [open]);
 
   return (
-    <nav className="hidden sm:flex items-center gap-5 md:gap-7" aria-label="Main">
+    <nav className="hidden md:flex items-center gap-4 lg:gap-6" aria-label="Main">
       {PRODUCT_LINKS.map((item) => (
         <Link
           key={item.to}
           to={item.to}
-          className="whitespace-nowrap text-[13.5px] text-gray-400 hover:text-white transition-colors"
+          /*
+            "For prop traders" is the longest label and the first to go. Five
+            links fit from lg; below that the wordmark, the remaining three,
+            sign-in and the button already fill the bar - at 726px the five
+            collided with the wordmark and pushed "Sign in" onto two lines.
+
+            It is the right one to drop because it is the only one with its
+            own route from inside the page, in the hero and the FAQ, and it
+            stays in the footer at every width.
+          */
+          className={`whitespace-nowrap text-[13.5px] text-gray-400 hover:text-white transition-colors
+            ${item.to === '/for-prop-firm-traders' ? 'hidden lg:inline' : ''}`}
         >
           {item.label}
         </Link>

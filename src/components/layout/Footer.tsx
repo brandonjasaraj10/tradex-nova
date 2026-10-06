@@ -53,6 +53,7 @@ export default function Footer() {
               {[
                 ['/features', 'Features'],
                 ['/nova-ai', 'Nova AI'],
+                ['/integrations', 'Integrations'],
                 ['/pricing', 'Pricing'],
                 /*
                   The free psychology audit, which was linked from nowhere in
