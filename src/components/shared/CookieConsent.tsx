@@ -100,7 +100,7 @@ export default function CookieConsent() {
         would bury the Accept button instead and consent has to stay
         answerable.
       */
-      className="fixed inset-x-0 bottom-0 z-50 p-3 sm:p-5"
+      className="fixed inset-x-0 bottom-0 z-50 p-2 sm:p-5"
     >
       {/*
         Slides up and fades in, 320ms on a gentle ease-out. Small on purpose:
@@ -112,24 +112,32 @@ export default function CookieConsent() {
       */}
       <div
         className={`mx-auto max-w-3xl rounded-2xl border border-white/10 bg-brand-surface/95
-          backdrop-blur-md p-4 sm:p-5 shadow-2xl
+          backdrop-blur-md px-3.5 py-3 sm:p-5 shadow-2xl
           transition-all duration-[320ms] ease-out
           motion-reduce:transition-none motion-reduce:transform-none motion-reduce:opacity-100
           ${shown ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
       >
         <div className="sm:flex sm:items-center sm:gap-6">
-          <p className="text-[13px] sm:text-sm text-gray-400 leading-relaxed">
+          {/*
+            Shorter on a phone, not weaker. At 390px the banner was ~170px tall
+            and sat across the hero's product screenshot - the first image
+            every visitor from Instagram sees. The disclosure, the "nothing runs
+            until you say yes" and the privacy link all stay; only the clause
+            about changing your mind later is desktop-only, and the policy it
+            links to says the same. Both buttons keep full-size tap targets.
+          */}
+          <p className="text-[12.5px] sm:text-sm text-gray-400 leading-relaxed">
             We use cookies to understand how the site is used. Nothing runs until
-            you say yes, and you can change your mind any time.{' '}
+            you say yes<span className="max-sm:hidden">, and you can change your mind any time</span>.{' '}
             <Link to="/privacy" className="text-gray-300 underline underline-offset-2 hover:text-white">
               Privacy Policy
             </Link>
           </p>
-          <div className="mt-4 sm:mt-0 flex gap-2.5 sm:flex-shrink-0">
+          <div className="mt-2.5 sm:mt-0 flex gap-2.5 sm:flex-shrink-0">
             <button
               type="button"
               onClick={decline}
-              className="flex-1 sm:flex-none px-5 py-2.5 rounded-full border border-white/15
+              className="flex-1 sm:flex-none px-5 py-2 sm:py-2.5 rounded-full border border-white/15
                 text-[13px] font-medium text-gray-300 hover:bg-white/5 transition-colors
                 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/40"
             >
@@ -138,7 +146,7 @@ export default function CookieConsent() {
             <button
               type="button"
               onClick={accept}
-              className="flex-1 sm:flex-none px-5 py-2.5 rounded-full bg-white text-black
+              className="flex-1 sm:flex-none px-5 py-2 sm:py-2.5 rounded-full bg-white text-black
                 text-[13px] font-medium hover:bg-gray-200 transition-colors
                 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/40"
             >

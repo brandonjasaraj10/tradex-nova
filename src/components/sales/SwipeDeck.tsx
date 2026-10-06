@@ -50,12 +50,56 @@ export default function SwipeDeck({
     Equal height stops the rail and everything below it jumping as panels
     change. Turn it off when the panels are images of different aspect
     ratios, where matching heights leaves one of them letterboxed.
+
+    Never applied below sm. On a phone the shorter panel was stretched to the
+    taller one's height, and at 390px wide that meant a card that was mostly
+    empty space around three rows of dots. The track still takes the tallest
+    panel's height either way, so the rail underneath does not jump - all
+    that changes is whether the slack sits inside the card or below it, and
+    below it is the version that does not look unfinished.
   */
   equalHeight?: boolean;
 }) {
   const [index, setIndex] = useState(0);
   const trackRef = useRef<HTMLDivElement | null>(null);
   const animatingTo = useRef<number | null>(null);
+
+  /*
+    ON A PHONE, THE TRACK IS AS TALL AS THE PANEL YOU ARE LOOKING AT.
+
+    A flex row is as tall as its tallest child, so a short panel next to a
+    tall one sat above a band of empty space - ~180px of nothing between the
+    psychology card and the rail at 390px, which on a phone is a fifth of the
+    screen. Stretching the short card to fill it was worse: a card that was
+    mostly empty.
+
+    So below sm the track's height follows the active panel and animates
+    between them as you swipe. The rail moves with it, smoothly, which is the
+    cost - and on a phone it is a better cost than a fifth of the screen
+    standing empty. From sm up nothing here applies: no inline height, and the
+    layout is exactly what it was.
+  */
+  const [heights, setHeights] = useState<number[]>([]);
+  const [isPhone, setIsPhone] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 639px)');
+    const onChange = () => setIsPhone(mq.matches);
+    onChange();
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const panels = [...el.querySelectorAll<HTMLElement>('[data-panel]')];
+    const measure = () => setHeights(panels.map((p) => p.offsetHeight));
+    measure();
+    const ro = new ResizeObserver(measure);
+    panels.forEach((p) => ro.observe(p));
+    return () => ro.disconnect();
+  }, [panels.length]);
 
   useEffect(() => {
     const el = trackRef.current;
@@ -106,7 +150,9 @@ export default function SwipeDeck({
         ref={trackRef}
         className={`flex gap-6 overflow-x-auto snap-x snap-mandatory scroll-smooth motion-reduce:scroll-auto
           [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden
+          max-sm:items-start max-sm:overflow-y-hidden max-sm:transition-[height] max-sm:duration-300 max-sm:ease-out
           ${equalHeight ? '' : 'items-start'}`}
+        style={isPhone && heights[index] ? { height: heights[index] } : undefined}
       >
         {spacer}
         {panels.map((p, i) => (

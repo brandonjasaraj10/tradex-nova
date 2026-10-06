@@ -514,7 +514,7 @@ export default function Sales() {
           to five. It is now a screenshot of the running app. See ProductShot
           for why that trade - sharpness for honesty - is the right way round.
         */}
-        <div className="relative max-w-4xl mx-auto px-5 sm:px-8 pb-20 sm:pb-28">
+        <div className="relative max-w-4xl mx-auto px-5 sm:px-8 pb-12 sm:pb-28">
           <ProductShot
             src="/product/dashboard.jpg"
             alt="The TradeX dashboard: account balance, NOVA Score, win rate, profit factor and a panel showing how closely the trader followed their own plan."
@@ -553,7 +553,7 @@ export default function Sales() {
         rather than accusing: anybody who has done it knows they did not
         decide to do it.
       */}
-      <div className="relative border-t border-white/[0.06] py-16 sm:py-24">
+      <div className="relative border-t border-white/[0.06] py-11 sm:py-24">
         <div className="max-w-3xl mx-auto px-5 sm:px-8">
           <SectionHeader align="center" eyebrow="The real variable" title="The hard part was never the chart">
             Ask anyone who has traded for a year and they can tell you exactly
@@ -570,7 +570,9 @@ export default function Sales() {
             because inventing them would be the same mistake the hero's
             drawn dashboard made, and the shape is the whole argument.
           */}
-          <ol className="mt-12 sm:mt-14 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+          <ol className="mt-9 sm:mt-14 grid grid-cols-1 sm:grid-cols-3 gap-0 sm:gap-4
+            max-sm:rounded-2xl max-sm:border max-sm:border-white/[0.07] max-sm:bg-brand-surface
+            max-sm:divide-y max-sm:divide-white/[0.07] max-sm:overflow-hidden">
             {[
               {
                 step: 'The trade you planned',
@@ -593,17 +595,17 @@ export default function Sales() {
             ].map((s, n) => (
               <li
                 key={s.step}
-                className="rounded-2xl border border-white/[0.07] bg-brand-surface p-5 sm:p-6 flex flex-col"
+                className="sm:rounded-2xl sm:border sm:border-white/[0.07] sm:bg-brand-surface px-4 py-4 sm:p-6 flex flex-col"
               >
                 <span className="text-[11px] tabular-nums text-gray-600">0{n + 1}</span>
-                <p className="mt-2 text-[15px] sm:text-base font-semibold tracking-[-0.01em] text-white">
+                <p className="mt-1 sm:mt-2 text-[15px] sm:text-base font-semibold tracking-[-0.01em] text-white">
                   {s.step}
                 </p>
-                <p className="mt-2 text-[13px] sm:text-[13.5px] leading-relaxed text-gray-400 flex-1">
+                <p className="mt-1 sm:mt-2 text-[13px] sm:text-[13.5px] leading-relaxed text-gray-400 flex-1">
                   {s.line}
                 </p>
                 {/* Position size, growing. The only thing these three bars say. */}
-                <span className="mt-5 block h-1 rounded-full bg-white/[0.06] overflow-hidden">
+                <span className="mt-3 sm:mt-5 block h-1 rounded-full bg-white/[0.06] overflow-hidden">
                   <span className={`block h-full rounded-full ${s.width} ${s.tone}`} />
                 </span>
                 <span className="mt-2 text-[10px] uppercase tracking-[0.14em] text-gray-600">
@@ -669,7 +671,7 @@ export default function Sales() {
         where it belongs: the pattern is what you are left holding after the
         other two have run.
       */}
-      <div className="relative border-t border-white/[0.06] py-16 sm:py-24">
+      <div className="relative border-t border-white/[0.06] py-11 sm:py-24">
         <div className="max-w-4xl mx-auto px-5 sm:px-8">
           <SectionHeader
             eyebrow="How it works"
@@ -720,7 +722,7 @@ export default function Sales() {
         Every journal shows P&L. This is the one thing no competitor leads
         with, so it gets a section to itself rather than a card in a grid.
       */}
-      <div className="relative border-t border-white/[0.06] py-16 sm:py-24">
+      <div className="relative border-t border-white/[0.06] py-11 sm:py-24">
         <div className="max-w-4xl mx-auto px-5 sm:px-8">
           <SectionHeader
             eyebrow="Psychology"
@@ -754,7 +756,7 @@ export default function Sales() {
         makes Nova worth paying for is that she has read every entry, so the
         demonstration is an answer no generic chatbot could give.
       */}
-      <div className="relative border-t border-white/[0.06] py-16 sm:py-24">
+      <div className="relative border-t border-white/[0.06] py-11 sm:py-24">
         <div className="max-w-5xl mx-auto px-5 sm:px-8">
           {/*
             Two columns, because three sections in a row were the same shape.
@@ -832,7 +834,7 @@ export default function Sales() {
         now, at the end of the product run, which is where somebody who wants
         more of it has just finished looking.
       */}
-      <div className="relative border-t border-white/[0.06] py-16 sm:py-20">
+      <div className="relative border-t border-white/[0.06] py-11 sm:py-20">
         <div className="max-w-5xl mx-auto px-5 sm:px-8">
           <SectionHeader
             eyebrow="Afterwards"
@@ -1057,18 +1059,39 @@ export default function Sales() {
         every single entry is five stars reads worse than one where they are
         the exception.
       */}
-      <div className="relative border-t border-white/[0.06] py-14 sm:py-20">
+      <div className="relative border-t border-white/[0.06] py-11 sm:py-20">
         <div className="max-w-5xl mx-auto px-5 sm:px-8">
           <p className="text-center text-[9.5px] sm:text-[10px] tracking-[0.16em] uppercase text-gray-600">
             From early users
           </p>
 
-          <div className="mt-9 sm:mt-11 columns-1 sm:columns-2 lg:columns-3 gap-4 sm:gap-5 [column-fill:_balance]">
+          {/*
+            ON A PHONE, A ROW YOU SWIPE - NOT NINE CARDS STACKED.
+
+            Stacked, nine quotes were 1,700px of identical cards at 390px wide:
+            more than two full screens of the same shape, sitting directly
+            before the price. TradeZella's phone page runs this exact kind of
+            content as a horizontal deck, and so does every review section
+            built for thumbs - the vertical page keeps moving down, and the
+            proof moves sideways underneath it.
+
+            Each card is 82% of the screen so the next one is always visibly
+            waiting at the edge, which is the whole cue to swipe; the row
+            bleeds to the screen edges so it reads as a strip rather than a
+            box. The quotes keep their natural lengths and the row aligns to
+            the top, so a one-liner is not stretched to match a paragraph.
+
+            From sm up this is untouched: the same three-column masonry.
+          */}
+          <div className="mt-7 sm:mt-11 -mx-5 px-5 sm:mx-0 sm:px-0
+            flex items-start gap-3 overflow-x-auto snap-x snap-mandatory scroll-px-5
+            [scrollbar-width:none] [&::-webkit-scrollbar]:hidden
+            sm:block sm:overflow-visible sm:columns-2 lg:columns-3 sm:gap-5 [column-fill:_balance]">
             {TESTIMONIALS.map((t) => (
               <figure
                 key={t.name}
-                className="mb-4 sm:mb-5 break-inside-avoid rounded-2xl border border-white/[0.07]
-                  bg-gradient-to-b from-white/[0.03] to-transparent p-5"
+                className="w-[82%] flex-shrink-0 snap-start sm:w-auto sm:mb-5 break-inside-avoid rounded-2xl
+                  border border-white/[0.07] bg-gradient-to-b from-white/[0.03] to-transparent p-5"
               >
                 {t.stars && (
                   <div className="flex gap-0.5 mb-3" aria-label="Five out of five">
@@ -1086,6 +1109,9 @@ export default function Sales() {
               </figure>
             ))}
           </div>
+          <p className="sm:hidden mt-4 text-center text-[11.5px] text-gray-600">
+            Swipe for more &rarr;
+          </p>
         </div>
       </div>
 
@@ -1105,7 +1131,7 @@ export default function Sales() {
         The gold-* classes this section used were undefined and rendered as
         nothing, which is why the old feature headings had no colour at all.
       */}
-      <div className="relative border-t border-white/[0.06] py-16 sm:py-24">
+      <div className="relative border-t border-white/[0.06] py-11 sm:py-24">
         <div className="max-w-xl mx-auto px-5 sm:px-8">
           <SectionHeader
             eyebrow="Pricing"
@@ -1191,30 +1217,43 @@ export default function Sales() {
             identical on every plan, so saying it three times inside the
             columns made the columns look different when they are not.
           */}
-          <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
+          {/*
+            On a phone the tiers are rows, not cards.
+
+            Three cards stacked at 390px were ~560px for what is a three-line
+            comparison - one number differs between them. As rows, the name and
+            the account count sit on the left and the price on the right, which
+            is the shape a phone reader scans a price list in, and the whole
+            block fits on one screen with the trial timeline under it. From sm
+            up these are the three centred cards, unchanged.
+          */}
+          <div className="grid gap-2.5 sm:grid-cols-3 sm:gap-4">
             {TIERS.map((tier) => (
               <div
                 key={tier.name}
-                className={`relative rounded-2xl border p-5 text-center ${
+                className={`relative rounded-2xl border px-4 py-3.5 sm:p-5 sm:text-center
+                  max-sm:grid max-sm:grid-cols-[1fr_auto] max-sm:items-center max-sm:gap-x-4 ${
                   tier.featured
                     ? 'border-brand-blue/40 bg-brand-blue/[0.05]'
                     : 'border-white/[0.07] bg-brand-surface'
                 }`}
               >
                 {tier.featured && (
-                  <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full
+                  <span className="absolute -top-2.5 left-4 sm:left-1/2 sm:-translate-x-1/2 rounded-full
                     bg-brand-blue px-2.5 py-0.5 text-[10px] font-medium text-white whitespace-nowrap">
                     Most popular
                   </span>
                 )}
-                <p className="text-[11px] uppercase tracking-[0.14em] text-gray-500">{tier.name}</p>
-                <p className="mt-2.5 flex items-baseline justify-center gap-1">
+                <p className="text-[11px] uppercase tracking-[0.14em] text-gray-500 max-sm:col-start-1 max-sm:row-start-1">{tier.name}</p>
+                <p className="sm:mt-2.5 flex items-baseline sm:justify-center gap-1
+                  max-sm:col-start-2 max-sm:row-start-1 max-sm:row-span-2">
                   <span className="text-[26px] sm:text-[28px] font-semibold tracking-[-0.03em] text-white tabular-nums">
                     {tier.price}
                   </span>
                   <span className="text-[12px] text-gray-500">/mo</span>
                 </p>
-                <p className="mt-3 pt-3 border-t border-white/[0.07] text-[12.5px] text-gray-400">
+                <p className="mt-1 sm:mt-3 sm:pt-3 sm:border-t sm:border-white/[0.07] text-[12.5px] text-gray-400
+                  max-sm:col-start-1 max-sm:row-start-2">
                   {tier.syncedLabel}
                 </p>
               </div>
@@ -1305,7 +1344,7 @@ export default function Sales() {
         JavaScript, it is keyboard accessible for free, and the answer is in
         the DOM for search engines whether or not anyone opens it.
       */}
-      <div className="relative border-t border-white/[0.06] py-16 sm:py-24">
+      <div className="relative border-t border-white/[0.06] py-11 sm:py-24">
         <div className="max-w-2xl mx-auto px-5 sm:px-8">
           <SectionHeader
             eyebrow="Before you ask"
@@ -1342,7 +1381,7 @@ export default function Sales() {
         claimed an outcome for people we cannot point to. The guarantee does
         the same job and is checkable.
       */}
-      <div className="relative border-t border-white/[0.06] py-16 sm:py-24">
+      <div className="relative border-t border-white/[0.06] py-11 sm:py-24">
         <div className="max-w-xl mx-auto px-5 sm:px-8 text-center">
           {/*
             He appears once, here, and not anywhere above.
