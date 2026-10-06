@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import FaqList from '../sales/FaqList';
 import { Link } from 'react-router-dom';
 import { Check } from 'lucide-react';
 
@@ -99,17 +100,23 @@ export function TickList({ items }: { items: string[] }) {
   skim-reading for it, and a page whose whole job is answering objections
   should not make the answers a click away.
 */
+/*
+  Questions, as the same accordion the landing page uses.
+
+  This was every question and answer printed open, one after another, which
+  is a different object from the one on the landing page doing the identical
+  job - and six pages used it, so the site had two ways of asking a question.
+
+  Delegating rather than reimplementing means the animation, the grid-row
+  trick that makes it possible, the button semantics and the aria wiring all
+  come from one place. The reasoning for each of those lives in FaqList.
+
+  The content stays in the DOM when a panel is closed - it is a grid row at
+  0fr, not display:none - so nothing here is hidden from a crawler, which
+  matters most on /faq where the questions are the entire page.
+*/
 export function QA({ items }: { items: { q: string; a: string }[] }) {
-  return (
-    <div className="flex flex-col gap-6">
-      {items.map(({ q, a }) => (
-        <div key={q}>
-          <p className="text-[14.5px] sm:text-[15px] font-medium text-white mb-1.5 text-balance">{q}</p>
-          <p className="text-[13.5px] sm:text-[14px] leading-relaxed text-gray-400">{a}</p>
-        </div>
-      ))}
-    </div>
-  );
+  return <FaqList items={items} />;
 }
 
 /*

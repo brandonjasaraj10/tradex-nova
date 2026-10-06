@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { Plus } from 'lucide-react';
 
 /*
@@ -38,6 +38,21 @@ export type FaqItem = { q: string; a: string };
 
 export default function FaqList({ items }: { items: FaqItem[] }) {
   const [open, setOpen] = useState<Record<number, boolean>>({});
+  /*
+    Namespaces the ids to this instance.
+
+    Without it every FaqList numbered its panels from zero, so a page with
+    more than one - /faq has several QA sections - emitted faq-panel-0 over
+    and over. Measured there: 24 panels carrying 19 duplicate ids. Duplicate
+    ids are invalid HTML, and worse here than usually: aria-controls and
+    aria-labelledby resolve by id, so every screen reader following one of
+    those pointers landed on the first panel on the page rather than the one
+    it was told about.
+
+    It only surfaced when QA started delegating here, because the landing
+    page renders exactly one of these.
+  */
+  const uid = useId();
 
   return (
     <div className="flex flex-col">
@@ -49,8 +64,8 @@ export default function FaqList({ items }: { items: FaqItem[] }) {
               <button
                 type="button"
                 aria-expanded={isOpen}
-                aria-controls={`faq-panel-${i}`}
-                id={`faq-q-${i}`}
+                aria-controls={`${uid}-panel-${i}`}
+                id={`${uid}-q-${i}`}
                 onClick={() => setOpen((o) => ({ ...o, [i]: !o[i] }))}
                 className={`w-full cursor-pointer py-5 flex items-start justify-between gap-5 text-left
                   text-[15px] sm:text-[16px] font-medium transition-colors duration-200
@@ -69,9 +84,9 @@ export default function FaqList({ items }: { items: FaqItem[] }) {
             </h3>
 
             <div
-              id={`faq-panel-${i}`}
+              id={`${uid}-panel-${i}`}
               role="region"
-              aria-labelledby={`faq-q-${i}`}
+              aria-labelledby={`${uid}-q-${i}`}
               className="grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none"
               style={{ gridTemplateRows: isOpen ? '1fr' : '0fr' }}
             >

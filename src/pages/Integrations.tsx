@@ -200,9 +200,19 @@ export default function Integrations() {
         </p>
       </Section>
 
+      {/*
+        "Coming soon" rather than "Not yet", which is Brandon's call and a
+        stronger heading - but it changes what the lead under it has to do.
+
+        "Not yet" is a statement of fact and sits happily beside "nothing here
+        is committed". "Coming soon" is a promise, so that sentence would have
+        contradicted the heading directly above it. The lead now carries the
+        absence of dates as a reason rather than as a disclaimer, which keeps
+        the heading honest without weakening it.
+      */}
       <Section
-        title="Not yet"
-        lead="Named honestly, with no dates on them. Nothing here is committed."
+        title="Coming soon"
+        lead="Roughly in the order people ask for them. No dates — a date on something unbuilt is how a roadmap turns into a complaint."
       >
         <div className="flex flex-col gap-3">
           {NOT_YET.map((item) => (
