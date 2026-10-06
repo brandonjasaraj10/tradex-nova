@@ -242,3 +242,17 @@ export const PLAN_CHECKLIST: Array<{ text: string; in: Array<Tier['name']> }> = 
   { text: 'Calendar, analytics and weekly reviews', in: ['Starter', 'Pro', 'Elite'] },
   { text: 'Priority support', in: ['Elite'] },
 ];
+
+/*
+  A tier's yearly price, by the same rule checkout uses: ten months for
+  twelve ("2 months free"), the per-month figure being that total spread
+  back over twelve and rounded to the cent Stripe charges. Payment.tsx
+  derives its own copy the same way; if that rule ever changes, change both.
+*/
+export function annualPricing(tier: Tier) {
+  const monthly = Number(tier.price.replace(/[^0-9.]/g, ''));
+  const total = monthly * 10;
+  const money = (n: number) =>
+    `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return { perMonth: money(Math.round((total / 12) * 100) / 100), total: money(total) };
+}

@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Check } from 'lucide-react';
-import { TIERS, PLAN_CHECKLIST, type Tier } from '../../lib/pricingTiers';
+import { TIERS, PLAN_CHECKLIST, annualPricing, type Tier } from '../../lib/pricingTiers';
+
+type Billing = 'monthly' | 'yearly';
+
+const shownPrice = (tier: Tier, billing: Billing) =>
+  billing === 'yearly' ? annualPricing(tier).perMonth : tier.price;
 
 /*
   The landing page's plans: a card per plan, listing what it contains.
@@ -29,7 +34,7 @@ function stripMarks(s: string) {
   return s.replace(/\*/g, '');
 }
 
-function PlanCard({ tier, launched, className = '' }: { tier: Tier; launched: boolean; className?: string }) {
+function PlanCard({ tier, billing, launched, className = '' }: { tier: Tier; billing: Billing; launched: boolean; className?: string }) {
   return (
     <div
       className={`relative flex flex-col rounded-2xl border p-6 ${
@@ -48,9 +53,26 @@ function PlanCard({ tier, launched, className = '' }: { tier: Tier; launched: bo
       <p className="text-[11px] uppercase tracking-[0.14em] text-gray-500">{tier.name}</p>
       <p className="mt-3 flex items-baseline gap-1">
         <span className="text-[38px] font-semibold tracking-[-0.035em] text-white tabular-nums leading-none">
-          {tier.price}
+          {shownPrice(tier, billing)}
         </span>
         <span className="text-[13px] text-gray-500">/month</span>
+      </p>
+      {/*
+        Always one line here, whichever is picked, so the cards do not change
+        height under the reader when they flip the toggle. The yearly total is
+        stated rather than left to arithmetic: a page that advertises a
+        per-month figure and then charges a year up front, unannounced, is
+        how chargebacks start.
+      */}
+      <p className="mt-2 text-[12px] text-gray-500 tabular-nums">
+        {billing === 'yearly' ? (
+          <>
+            {annualPricing(tier).total} billed yearly{' '}
+            <span className="text-brand-blue">&middot; 2 months free</span>
+          </>
+        ) : (
+          'Billed monthly'
+        )}
       </p>
       <p className="mt-3 text-[13px] leading-relaxed text-gray-400 min-h-[2.6em]">{stripMarks(tier.who)}</p>
 
@@ -85,6 +107,7 @@ function PlanCard({ tier, launched, className = '' }: { tier: Tier; launched: bo
 export default function PricingPlans({ launched }: { launched: boolean }) {
   const startAt = Math.max(0, TIERS.findIndex((t) => t.featured));
   const [picked, setPicked] = useState(startAt);
+  const [billing, setBilling] = useState<Billing>('monthly');
   const rowRef = useRef<HTMLDivElement | null>(null);
   const sliding = useRef(false);
 
@@ -154,6 +177,31 @@ export default function PricingPlans({ launched }: { launched: boolean }) {
 
   return (
     <div>
+      {/*
+        Monthly or yearly, kept small - it changes the numbers, not the
+        choice, so it should not compete with the plan switch under it.
+        Opens on monthly, the figure people compare against other journals.
+      */}
+      <div className="mb-5 flex items-center gap-3">
+        <div role="radiogroup" aria-label="Billing" className="inline-flex rounded-full border border-white/[0.08] bg-brand-surface p-0.5">
+          {(['monthly', 'yearly'] as const).map((b) => (
+            <button
+              key={b}
+              type="button"
+              role="radio"
+              aria-checked={billing === b}
+              onClick={() => setBilling(b)}
+              className={`rounded-full px-3.5 py-1 text-[12px] capitalize transition-colors duration-300 ${
+                billing === b ? 'bg-white/[0.1] text-white' : 'text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              {b}
+            </button>
+          ))}
+        </div>
+        <span className="text-[11.5px] text-brand-blue">2 months free yearly</span>
+      </div>
+
       {/* Phone: a switch over a row of cards. */}
       <div className="md:hidden">
         <div role="tablist" aria-label="Plans" className="grid grid-cols-3 gap-1 rounded-xl border border-white/[0.08] bg-brand-surface p-1">
@@ -169,7 +217,7 @@ export default function PricingPlans({ launched }: { launched: boolean }) {
               }`}
             >
               <span className="block text-[12.5px] font-medium">{t.name}</span>
-              <span className="block text-[11px] tabular-nums opacity-70">{t.price}</span>
+              <span className="block text-[11px] tabular-nums opacity-70">{shownPrice(t, billing)}</span>
             </button>
           ))}
         </div>
@@ -195,7 +243,7 @@ export default function PricingPlans({ launched }: { launched: boolean }) {
                 picked === i ? 'opacity-100' : 'opacity-50'
               }`}
             >
-              <PlanCard tier={t} launched={launched} className="w-full" />
+              <PlanCard tier={t} billing={billing} launched={launched} className="w-full" />
             </div>
           ))}
           {spacer}
@@ -205,7 +253,7 @@ export default function PricingPlans({ launched }: { launched: boolean }) {
       {/* md and up: all three. */}
       <div className="hidden md:grid grid-cols-3 gap-4 lg:gap-5 items-stretch">
         {TIERS.map((t) => (
-          <PlanCard key={t.name} tier={t} launched={launched} />
+          <PlanCard key={t.name} tier={t} billing={billing} launched={launched} />
         ))}
       </div>
     </div>
