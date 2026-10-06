@@ -31,8 +31,8 @@ export default function Security() {
 
       <Split
         eyebrow="Your broker"
-        title="Your account is not connected to TradeX"
-        lead="The thing people actually worry about, answered first and without hedging."
+        title="Connected read-only. It can look, never act."
+        lead="Sync uses a read-only connection: TradeX sees your closed trades and balance, and has no way to place, change or close anything."
         points={[
           'No trading permissions, ever — there is nothing to revoke',
           'No withdrawal access. TradeX never holds or moves funds',
@@ -123,7 +123,7 @@ export default function Security() {
         flip
         eyebrow="Nova and your entries"
         title="What the AI does and does not do with what you write"
-        lead="Nova is built on Claude, from Anthropic. This is the part most journals are vague about, so here it is plainly."
+        lead="Nova runs on Claude, from Anthropic. Here is exactly where your words go — and the much longer list of places they never do."
         points={[
           'Your entries are sent to Anthropic so Nova can read them and answer you',
           'Anthropic does not train its models on data sent through its API',
@@ -160,20 +160,20 @@ export default function Security() {
         }
       />
 
-      <Section title="Straight answers, including the uncomfortable ones">
+      <Section title="What people ask before trusting a journal with their trading">
         <QA
           items={[
             {
               q: 'Do you have SOC 2 or ISO certification?',
-              a: 'No, and we are not going to put a badge on this page pretending otherwise. TradeX is a small, young product. What we can tell you is exactly how it is built, which is what the rest of this page does.',
+              a: 'Not yet — TradeX is small and young, and you will not find a badge here pretending otherwise. What you get instead is this page: exactly how it is built, what it can reach, and how that was tested with real accounts, which tells you more than a logo would.',
             },
             {
               q: 'Could a TradeX employee read my journal?',
-              a: 'Database administration access exists, as it does for every product that stores anything. It is used for operating the service, not for reading entries. We are not going to claim a technical impossibility that is not true.',
+              a: 'Nobody reads your entries. Like every product that stores anything, the service has administrator access for keeping it running, and that is all it is used for. We would rather tell you that plainly than promise a technical impossibility no honest company can.',
             },
             {
               q: 'What happens to my data if I cancel?',
-              a: 'It stays until you delete it, so that resubscribing picks up where you left off. Delete your account from Settings and it goes.',
+              a: 'Nothing is lost: it stays until you delete it, so resubscribing picks up exactly where you left off. Delete your account from Settings and it is removed, not just deactivated.',
             },
             {
               q: 'Do you sell or share my trading data?',

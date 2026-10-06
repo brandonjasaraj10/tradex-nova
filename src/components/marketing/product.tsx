@@ -435,7 +435,7 @@ export function PermissionsPanel() {
     ['Place a trade', false],
     ['Close or modify a trade', false],
     ['Withdraw or move funds', false],
-    ['See your broker password', false],
+    ['See your trading (master) password', false],
   ];
   return (
     <Frame label="What TradeX can reach" note="Read-only sync">
