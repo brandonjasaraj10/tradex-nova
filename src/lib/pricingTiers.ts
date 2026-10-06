@@ -214,3 +214,28 @@ export const IN_EVERY_PLAN = [
 export const ALSO_INCLUDED =
   'Unlimited trades \u00b7 CSV import \u00b7 Notes \u00b7 14 days free to start';
 
+
+/*
+  The landing page's plan checklist - every row on every card, ticked where
+  the plan has it and greyed out where it does not.
+
+  Brandon asked for the Tradespad shape: a box per plan with what you get
+  ticked and what you don't shown faded. The faded rows are what make a
+  cheaper card read as a choice rather than as the same card for less, so
+  only rows that genuinely differ are allowed to fade - and on this product
+  that is very few. Sync count is its own first row, built from syncedLabel,
+  because it is the one thing that changes by number rather than by yes/no.
+
+  Short labels, not IN_EVERY_PLAN's sentences: these sit in a narrow card,
+  nine to a column, where a sentence wraps to three lines.
+*/
+export const PLAN_CHECKLIST: Array<{ text: string; in: Array<Tier['name']> }> = [
+  { text: 'A funded and a personal account, both synced', in: ['Pro', 'Elite'] },
+  { text: 'Unlimited accounts by hand or CSV', in: ['Starter', 'Pro', 'Elite'] },
+  { text: 'Talk through a trade — it writes itself up', in: ['Starter', 'Pro', 'Elite'] },
+  { text: 'Nova reads every entry and coaches you', in: ['Starter', 'Pro', 'Elite'] },
+  { text: 'Psychology scored on every trade', in: ['Starter', 'Pro', 'Elite'] },
+  { text: 'Your rules and pre-trade checklist', in: ['Starter', 'Pro', 'Elite'] },
+  { text: 'Calendar, analytics and weekly reviews', in: ['Starter', 'Pro', 'Elite'] },
+  { text: 'Priority support', in: ['Elite'] },
+];

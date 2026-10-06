@@ -48,11 +48,17 @@ export default {
           '0%': { transform: 'translateY(-50%)' },
           '100%': { transform: 'translateY(0)' },
         },
+        /* A plan card swapping in on the phone pricing switch. */
+        'plan-in': {
+          '0%': { opacity: '0', transform: 'translateY(6px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
       },
       animation: {
         'loader-sweep': 'loader-sweep 1.2s ease-in-out infinite',
         'review-up': 'review-up 46s linear infinite',
         'review-down': 'review-down 52s linear infinite',
+        'plan-in': 'plan-in 350ms ease-out',
       },
     },
   },

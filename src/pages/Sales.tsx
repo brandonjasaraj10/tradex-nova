@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Check } from 'lucide-react';
 import Footer from '../components/layout/Footer';
 import Mascot from '../components/shared/Mascot';
-import { TIERS, IN_EVERY_PLAN, ALSO_INCLUDED } from '../lib/pricingTiers';
 import TranscriptToEntry from '../components/sales/TranscriptToEntry';
 import Wordmark from '../components/shared/Wordmark';
 import SyncMarquee from '../components/sales/SyncMarquee';
@@ -14,6 +13,7 @@ import ShotStack from '../components/sales/ShotStack';
 import ReviewWall, { ReviewCard, type Review } from '../components/sales/ReviewWall';
 import FaqList, { type FaqItem } from '../components/sales/FaqList';
 import SectionHeader from '../components/sales/SectionHeader';
+import PricingPlans from '../components/sales/PricingPlans';
 import HeaderNav from '../components/sales/HeaderNav';
 import SignupOrWaitlist from '../components/shared/SignupOrWaitlist';
 import { useHasLaunched } from '../lib/launch';
@@ -1130,171 +1130,24 @@ export default function Sales() {
         nothing, which is why the old feature headings had no colour at all.
       */}
       <div className="relative border-t border-white/[0.06] py-11 sm:py-24">
-        <div className="max-w-xl mx-auto px-5 sm:px-8">
+        <div className="max-w-xl md:max-w-5xl mx-auto px-5 sm:px-8">
+          {/*
+            Retitled from "Everything in every plan", which the cards below
+            now visibly contradict - two rows fade on the cheaper plans.
+            What IS in every plan moves to the line underneath, said as the
+            reassurance it is.
+          */}
           <SectionHeader
             eyebrow="Pricing"
-            title="Everything in every plan"
+            title="Fourteen days free, then pick your size"
             className="mb-10 sm:mb-12"
           >
               {launched
-              ? 'What changes is how many accounts sync themselves.'
+              ? 'Every plan has the whole journal, Nova and the psychology scoring. What changes is how many accounts sync themselves.'
               : 'Join the waitlist before launch and lock in founding member pricing.'}
           </SectionHeader>
 
-          {/*
-            And he is leaning on the price.
-
-            The money is the most guarded moment on the page, which is exactly
-            why a familiar face belongs at it - by this point the reader has
-            met him four times, and recognition is the whole return on having
-            a mascot at all.
-
-            The leaning pose, propped against the card's top edge, which is
-            what that pose was generated for. Same clip trick as the
-            objection: he is behind the edge rather than pasted over it.
-
-            The window height is not a look-right guess - it is measured. The
-            underside of his propped arm sits at 53.1% of his height in the
-            render, so the window is 53.1% of whatever height he is given,
-            which puts the card's edge exactly where his arm comes down. Cut
-            lower and the arm rests on nothing, which is what a taller window
-            did here and what Brandon spotted immediately.
-          */}
-          {/*
-            Three tiers, not one price with a link.
-
-            This showed a single card reading "From $29.99", on the theory
-            that choosing a plan belongs on /pricing. The research says
-            otherwise and is specific about it: below $25K annual contract
-            value, show pricing in full, and displaying all three tiers with
-            a highlighted middle beats a starting price. Top-quartile pricing
-            pages convert at 6.5-12% against a 2.8% average, and three tiers
-            with a highlighted middle account for most of that gap.
-
-            The named conversion killer is a visitor who cannot tell the
-            tiers apart - so these cards carry only what DIFFERS, which for
-            this product is how many accounts sync themselves. Everything
-            shared sits underneath once, rather than being repeated down
-            three columns where it reads as a wall.
-
-            No comparison table. The hybrid pattern - cards on top, matrix
-            below - earns its 15-30% in multi-stakeholder B2B, where a buyer
-            has to justify the choice to finance. A trader buying their own
-            journal has nobody to justify it to, and /pricing carries the
-            detail for the minority who want it.
-          */}
-          {/*
-            Above the row, not leaning on the featured card.
-
-            The lean was tried there and measured: at this breakpoint a card
-            is 160px wide, the Most Popular badge is 114 and he is 81, so they
-            overlapped by 73px - and they will at every width until the cards
-            are wide enough for both, which is only large desktop. The badge
-            is worth 25-35% on its own; a decorative character does not get to
-            sit on top of it.
-
-            Centred above the three, presenting them, which is the same thing
-            he does on /pricing and works at every width including a phone.
-          */}
-          {/*
-            THE PRICES, AND NOTHING ELSE.
-
-            This was three cards each carrying a name, a price, a sentence and
-            three ticked lines, then a separate box with eight more ticks in
-            two columns, then a paragraph. Everything true, and far too much to
-            read at the one point on the page where a decision gets made.
-
-            The three tiers stay - a pricing page that shows all of them
-            converts better than one that hides them behind a link, and these
-            differ on exactly one axis anyway. But the cards now carry only
-            that axis: a name, a price, and the number of accounts that sync.
-            1 / 2 / 5 does the comparing on its own, which is the entire
-            reason for having three columns.
-
-            Everything the product does moved to one line underneath. It is
-            identical on every plan, so saying it three times inside the
-            columns made the columns look different when they are not.
-          */}
-          {/*
-            On a phone the tiers are rows, not cards.
-
-            Three cards stacked at 390px were ~560px for what is a three-line
-            comparison - one number differs between them. As rows, the name and
-            the account count sit on the left and the price on the right, which
-            is the shape a phone reader scans a price list in, and the whole
-            block fits on one screen with the trial timeline under it. From sm
-            up these are the three centred cards, unchanged.
-          */}
-          <div className="grid gap-2.5 sm:grid-cols-3 sm:gap-4">
-            {TIERS.map((tier) => (
-              <div
-                key={tier.name}
-                className={`relative rounded-2xl border px-4 py-3.5 sm:p-5 sm:text-center
-                  max-sm:grid max-sm:grid-cols-[1fr_auto] max-sm:items-center max-sm:gap-x-4 ${
-                  tier.featured
-                    ? 'border-brand-blue/40 bg-brand-blue/[0.05]'
-                    : 'border-white/[0.07] bg-brand-surface'
-                }`}
-              >
-                {tier.featured && (
-                  <span className="absolute -top-2.5 left-4 sm:left-1/2 sm:-translate-x-1/2 rounded-full
-                    bg-brand-blue px-2.5 py-0.5 text-[10px] font-medium text-white whitespace-nowrap">
-                    Most popular
-                  </span>
-                )}
-                <p className="text-[11px] uppercase tracking-[0.14em] text-gray-500 max-sm:col-start-1 max-sm:row-start-1">{tier.name}</p>
-                <p className="sm:mt-2.5 flex items-baseline sm:justify-center gap-1
-                  max-sm:col-start-2 max-sm:row-start-1 max-sm:row-span-2">
-                  <span className="text-[26px] sm:text-[28px] font-semibold tracking-[-0.03em] text-white tabular-nums">
-                    {tier.price}
-                  </span>
-                  <span className="text-[12px] text-gray-500">/mo</span>
-                </p>
-                <p className="mt-1 sm:mt-3 sm:pt-3 sm:border-t sm:border-white/[0.07] text-[12.5px] text-gray-400
-                  max-sm:col-start-1 max-sm:row-start-2">
-                  {tier.syncedLabel}
-                </p>
-              </div>
-            ))}
-          </div>
-
-          {/*
-            WHAT IS ACTUALLY IN IT.
-
-            The prices used to sit over one line - "Everything else is the
-            same on all three" - which assumes the reader already knows what
-            "everything" is. Brandon caught it on his phone: TradeZella and
-            Tradespad both list what a plan contains, and ours listed only
-            how many accounts sync.
-
-            Listed once, under all three, rather than ticked down each card:
-            the plans are identical on every one of these, and the same seven
-            ticks in three columns would make three identical cards look like
-            a comparison. Same list as /pricing, from one module, so the two
-            pages cannot disagree about what is included.
-          */}
-          <div className="mt-4 rounded-2xl border border-white/[0.07] bg-brand-surface p-5 sm:p-6">
-            <p className="text-[11px] uppercase tracking-[0.14em] text-gray-500">Every plan includes</p>
-            <ul className="mt-4 flex flex-col gap-3">
-              {IN_EVERY_PLAN.map((item) => (
-                <li key={item} className="flex gap-2.5 text-[13px] sm:text-[13.5px] leading-snug text-gray-300">
-                  <Check className="mt-[3px] w-3.5 h-3.5 flex-shrink-0 text-brand-blue" strokeWidth={2.5} />
-                  {item}
-                </li>
-              ))}
-            </ul>
-            <p className="mt-5 pt-4 border-t border-white/[0.07] flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2
-              text-[12px] text-gray-500">
-              {/* The trial has its own timeline directly below, so it is not repeated here. */}
-              <span>{ALSO_INCLUDED.split(' \u00b7 ').filter((x) => !/days free/.test(x)).join(' \u00b7 ')}</span>
-              <Link
-                to="/pricing"
-                className="text-gray-400 hover:text-white transition-colors underline underline-offset-[3px] decoration-white/20 hover:decoration-white/50"
-              >
-                Compare plans
-              </Link>
-            </p>
-          </div>
+          <PricingPlans launched={launched} />
 
           {/*
             THE FOURTEEN DAYS, IN ORDER.
@@ -1315,37 +1168,46 @@ export default function Sales() {
             ones - and the single most valuable thing that could be added to
             this section is the email that would let it say so.
           */}
-          <ol className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-px overflow-hidden rounded-2xl
-            border border-white/[0.07] bg-white/[0.07]">
+          {/*
+            Drawn as three stops on a line rather than three boxes: it is a
+            sequence in time, and the boxes made it read as three more cards
+            directly under three plan cards.
+          */}
+          <ol className="relative mt-10 grid grid-cols-3 gap-3">
+            <span
+              aria-hidden="true"
+              className="absolute left-[16.67%] right-[16.67%] top-[5px] h-px
+                bg-gradient-to-r from-brand-blue/60 via-white/15 to-white/15"
+            />
             {[
-              { when: 'Today', what: 'Everything unlocks. Your card goes on file and nothing is taken.' },
-              { when: 'Days 1\u201313', what: 'Full access. Cancel in two clicks and you are never charged.' },
-              { when: 'Day 14', what: 'First payment, at the plan you picked. Monthly from then on.' },
-            ].map((step) => (
-              <li key={step.when} className="bg-brand-surface p-5">
-                <p className="text-[11px] uppercase tracking-[0.14em] text-gray-500">{step.when}</p>
-                <p className="mt-2 text-[12.5px] leading-relaxed text-gray-400">{step.what}</p>
+              { when: 'Today', what: 'Everything unlocks. Card on file, nothing charged.' },
+              { when: 'Days 1\u201313', what: 'Cancel in two clicks and pay nothing.' },
+              { when: 'Day 14', what: 'First payment for the plan you picked.' },
+            ].map((step, i) => (
+              <li key={step.when} className="relative flex flex-col items-center text-center">
+                <span
+                  aria-hidden="true"
+                  className={`h-[11px] w-[11px] rounded-full ring-4 ring-black ${
+                    i === 0 ? 'bg-brand-blue' : 'bg-gray-600'
+                  }`}
+                />
+                <p className="mt-3 text-[10.5px] sm:text-[11px] uppercase tracking-[0.14em] text-gray-400">{step.when}</p>
+                <p className="mt-1.5 max-w-[15em] text-[12px] sm:text-[12.5px] leading-snug text-gray-500">{step.what}</p>
               </li>
             ))}
           </ol>
 
+          <p className="mt-8 text-center">
+            <Link
+              to="/pricing"
+              className="inline-flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-white transition-colors underline underline-offset-[3px] decoration-white/20 hover:decoration-white/50"
+            >
+              See the full comparison
+            </Link>
+          </p>
 
-          <div className="mt-7 flex flex-col items-center gap-3">
-            {launched ? (
-              <>
-                <Link
-                  to="/auth?mode=signup"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5
-                    rounded-xl bg-white text-black text-[14px] font-medium hover:bg-gray-200 transition-colors"
-                >
-                  Start journaling
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-                <p className="text-[12px] text-gray-500">
-                  14 days free &middot; Cancel in two clicks
-                </p>
-              </>
-            ) : (
+          {!launched && (
+            <div className="mt-7 flex flex-col items-center gap-3">
               <SignupOrWaitlist
                 preLaunchFootnote={
                   <p className="text-center text-[12.5px] text-gray-500 mt-4">
@@ -1353,8 +1215,8 @@ export default function Sales() {
                   </p>
                 }
               />
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
 
