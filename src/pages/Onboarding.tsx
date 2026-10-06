@@ -13,6 +13,7 @@ import {
 import { trackEvent } from '../lib/productAnalytics';
 import { emphasise } from '../lib/emphasise';
 import MascotSays from '../components/shared/MascotSays';
+import { HELD_KEY } from '../services/onboardingWriteBack';
 import FirstEntry from '../components/onboarding/FirstEntry';
 import { buildStarterRules, buildStarterPsychChecks } from '../lib/onboardingChecklist';
 import type { VoiceJournalData } from '../services/voiceJournal';
@@ -391,7 +392,8 @@ export default function Onboarding({
       journal_entries requires an active subscription at the RLS level, so
       there is nowhere to put this until they subscribe - and carving an
       exception into the paywall for one row is not a trade worth making.
-      Stashed here instead, for the subscription flow to pick up and write.
+      Stashed here instead; onboardingWriteBack writes it the first time a
+      protected page confirms they have access.
 
       Wrapped, because storage throws outright in some privacy modes and in
       embedded browsers - which is most of this traffic - and losing a
@@ -400,7 +402,7 @@ export default function Onboarding({
     if (entry) {
       try {
         localStorage.setItem(
-          'tradex.onboarding.firstEntry',
+          HELD_KEY,
           JSON.stringify({
             entry,
             transcript,

@@ -3,6 +3,7 @@ import { useAuth } from '../../lib/auth';
 import { useEffect, useState } from 'react';
 import { checkSubscriptionAccess } from '../../services/subscriptionService';
 import PageLoader from './PageLoader';
+import { writeHeldFirstEntry } from '../../services/onboardingWriteBack';
 
 export default function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading } = useAuth();
@@ -21,6 +22,12 @@ export default function PrivateRoute({ children }: { children: React.ReactNode }
 
         const access = await checkSubscriptionAccess();
         setHasAccess(access.hasAccess);
+        /*
+          The first point at which the entry from onboarding can be saved -
+          see onboardingWriteBack. Not awaited: the page should not wait on it,
+          and the journal picks the row up through realtime when it lands.
+        */
+        if (access.hasAccess) void writeHeldFirstEntry();
         setSubscriptionChecking(false);
       } else if (!authLoading) {
         setSubscriptionChecking(false);
