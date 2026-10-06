@@ -46,26 +46,26 @@ const GROUPS: {
     items: [
       {
         q: 'Does journaling actually work?',
-        a: 'Only if you keep doing it. That is the whole problem, and it is what TradeX is built around — a journal you abandon in week three teaches you nothing, however good its charts are. Thirty seconds of talking is a habit people keep.',
+        a: 'Yes, for the traders who keep it up — and keeping it up is the part everything else depends on. It is very hard to make the same mistake a fourth time once you have read the first three back in your own words. That is why TradeX is thirty seconds of talking rather than a form: the habit has to survive the weeks you least feel like writing anything down, because those are the weeks worth reading later.',
       },
       {
         q: 'I have tried journals before and quit. Why is this different?',
-        a: 'Because quitting is not really an effort problem. People do not stop journaling — they stop logging the bad days. Writing down the trade you would rather forget means admitting what you did, so the trades most worth reviewing are the ones that never make it in, and the journal ends up with a hole exactly where the lesson was. TradeX asks you to talk instead of type, and Nova reads the entries back to you, so reviewing is not something you have to sit and do to yourself. It also records how you felt going in and matches it against what happened, because seeing that you lost and seeing why you lost are different things.',
+        a: 'Because this one still gets written on the bad days. Almost nobody quits a journal from effort — they quit by skipping the red mornings, and those are the only entries with anything to teach. Talking for thirty seconds happens before you have talked yourself out of it, and Nova reads the entries back to you, so reviewing is not a thing you have to sit down and do to yourself. It records how you felt going in and matches it against what happened, because seeing that you lost and seeing why you lost are different things.',
       },
       {
         q: 'How is this different from a spreadsheet?',
-        a: 'You stop typing. You talk through the trade and TradeX writes the entry, then reads every entry together and tells you what you keep doing — which a spreadsheet has never once done for anybody.',
+        a: 'A spreadsheet holds what you type into it. TradeX writes the entry for you from what you said, then reads every entry together and tells you the thing you keep doing — you moved your stop on four of your last six losers, and none of your winners. No spreadsheet has ever told anybody that, and the numbers one does give you are numbers you had to key in by hand first.',
       },
       {
         q: 'Will it make me profitable?',
-        a: 'No, and anyone telling you otherwise is selling something. What it does is show you the thing you repeatedly do that costs you money, with the dates and the numbers attached. Most traders have never seen that written down, and it is hard to keep doing something once you have.',
+        a: 'Nothing can promise you that, and anything that does is selling you something. What TradeX gives you is the specific habit costing you money, named, with the dates and the figures attached. Most traders have never once seen that written down about themselves — and it is genuinely hard to keep doing a thing after you have read it back. That part is yours to act on; the trading is still trading.',
       },
     ],
   },
   {
     id: 'trades',
     title: 'Getting your trades in',
-    lead: 'Nothing has to be connected to your broker for TradeX to be useful today.',
+    lead: 'Connect an account, upload a statement, or just start talking — all three end up in the same journal.',
     visual: <ImportPathsPanel />,
     items: [
       {
@@ -118,7 +118,7 @@ const GROUPS: {
       },
       {
         q: 'What if it gets the entry wrong?',
-        a: 'Edit it. Nothing is locked — what Nova writes is a draft it saved you typing, not a verdict.',
+        a: 'You change it, and nothing is locked. Every field stays editable, and what Nova writes is a first draft that saved you the typing rather than a verdict you have to accept — so the worst case is correcting a sentence instead of writing one.',
       },
       {
         q: 'Can Nova tell me what to trade?',
@@ -154,7 +154,7 @@ const GROUPS: {
       },
       {
         q: 'Do you have SOC 2 or ISO certification?',
-        a: 'No, and there is no badge on this site pretending otherwise. TradeX is small and young. The security page describes exactly how it is built instead.',
+        a: 'Not yet — TradeX is small and young, and you will not find a badge on this site pretending otherwise. What you will find is a security page describing exactly how it is built and what it can and cannot reach, which tells you more than a logo would.',
       },
     ],
   },
