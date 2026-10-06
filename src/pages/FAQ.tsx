@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, ReactNode } from 'react';
+import { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import PageShell from '../components/layout/PageShell';
 import NovaAnswer from '../components/sales/NovaAnswer';
@@ -33,7 +33,6 @@ import {
 
 const GROUPS: {
   id: string;
-  nav: string;
   title: string;
   lead?: string;
   visual?: ReactNode;
@@ -41,7 +40,6 @@ const GROUPS: {
 }[] = [
   {
     id: 'works',
-    nav: 'Does it work?',
     title: 'Does this actually work?',
     lead: 'The fair question, and the answer is not an unqualified yes.',
     visual: <ChecklistPanel />,
@@ -66,7 +64,6 @@ const GROUPS: {
   },
   {
     id: 'trades',
-    nav: 'Getting set up',
     title: 'Getting your trades in',
     lead: 'Nothing has to be connected to your broker for TradeX to be useful today.',
     visual: <ImportPathsPanel />,
@@ -95,7 +92,6 @@ const GROUPS: {
   },
   {
     id: 'nova',
-    nav: 'Voice & Nova',
     title: 'Voice and Nova',
     lead: 'The two parts people are most sceptical about before they try them.',
     visual: (
@@ -136,7 +132,6 @@ const GROUPS: {
   },
   {
     id: 'safety',
-    nav: 'Privacy & safety',
     title: 'Privacy and safety',
     lead: 'What TradeX can reach, and what it is structurally incapable of doing.',
     visual: <PermissionsPanel />,
@@ -165,7 +160,6 @@ const GROUPS: {
   },
   {
     id: 'paying',
-    nav: 'Paying',
     title: 'Paying, and stopping',
     lead: 'Including the part most companies make deliberately difficult.',
     items: [
@@ -193,68 +187,6 @@ const GROUPS: {
   },
 ];
 
-/*
-  Jump nav.
-
-  Highlights whichever group is currently on screen, so on a long page it
-  doubles as a position indicator rather than only a set of links. Sticky
-  under the header, which is 3.5rem on a phone and 4rem above it.
-*/
-function JumpNav() {
-  const [active, setActive] = useState(GROUPS[0].id);
-  const ticking = useRef(false);
-
-  useEffect(() => {
-    const onScroll = () => {
-      if (ticking.current) return;
-      ticking.current = true;
-      requestAnimationFrame(() => {
-        ticking.current = false;
-        /*
-          Whichever heading is nearest below the sticky bar wins, falling back
-          to the last one passed. Picking "the topmost heading still on
-          screen" would leave the final group never highlighted, because it
-          can sit below the fold at the bottom of the page.
-        */
-        let current = GROUPS[0].id;
-        for (const g of GROUPS) {
-          const el = document.getElementById(g.id);
-          if (el && el.getBoundingClientRect().top <= 140) current = g.id;
-        }
-        setActive(current);
-      });
-    };
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
-  return (
-    <nav
-      aria-label="Jump to a section"
-      className="sticky top-14 sm:top-16 z-30 -mx-5 sm:-mx-8 px-5 sm:px-8 py-3
-        bg-black/80 backdrop-blur-md border-b border-white/[0.06]"
-    >
-      <ul className="flex gap-1.5 overflow-x-auto no-scrollbar">
-        {GROUPS.map((g) => (
-          <li key={g.id}>
-            <a
-              href={`#${g.id}`}
-              aria-current={active === g.id ? 'true' : undefined}
-              className={`inline-block whitespace-nowrap text-[12px] rounded-full px-3 py-1.5 border transition-colors
-                ${active === g.id
-                  ? 'border-brand-blue/40 bg-brand-blue/10 text-brand-blue'
-                  : 'border-white/10 text-gray-500 hover:text-gray-300 hover:border-white/20'}`}
-            >
-              {g.nav}
-            </a>
-          </li>
-        ))}
-      </ul>
-    </nav>
-  );
-}
-
 export default function FAQ() {
   return (
     <PageShell
@@ -263,15 +195,17 @@ export default function FAQ() {
       title="The honest answers"
       subtitle="Including the ones where the answer is “no”."
     >
-      <JumpNav />
-
       {GROUPS.map((group, i) => (
         <section
           key={group.id}
           id={group.id}
-          /* scroll-mt clears the header plus the sticky jump nav, so an
-             anchor does not land with its own heading hidden behind them. */
-          className="scroll-mt-32 sm:scroll-mt-36 pt-12 mt-12 border-t border-white/[0.06] first:border-t-0 first:mt-8 first:pt-0"
+          /*
+            scroll-mt still clears the fixed header, so an in-page anchor does
+            not land with its own heading hidden behind it. It used to clear
+            the sticky jump bar as well, which is why it was roughly twice
+            this.
+          */
+          className="scroll-mt-20 sm:scroll-mt-24 pt-12 mt-12 border-t border-white/[0.06] first:border-t-0 first:mt-8 first:pt-0"
         >
           <h2 className="text-[26px] leading-[1.12] sm:text-[32px] font-semibold tracking-[-0.032em] text-white text-balance">
             {group.title}
