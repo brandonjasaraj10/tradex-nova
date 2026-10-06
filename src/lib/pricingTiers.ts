@@ -216,23 +216,26 @@ export const ALSO_INCLUDED =
 
 
 /*
-  The landing page's plan checklist - every row on every card, ticked where
-  the plan has it and greyed out where it does not.
+  The landing page's plan checklist.
 
-  Brandon asked for the Tradespad shape: a box per plan with what you get
-  ticked and what you don't shown faded. The faded rows are what make a
-  cheaper card read as a choice rather than as the same card for less, so
-  only rows that genuinely differ are allowed to fade - and on this product
-  that is very few. Sync count is its own first row, built from syncedLabel,
-  because it is the one thing that changes by number rather than by yes/no.
+  A row shows on a plan's card only if the plan has it. There was a
+  Tradespad-style version where missing rows stayed on the card faded and
+  struck through; Brandon took it out - on a product where the plans differ
+  by so little, two crossed-out lines made Starter look short-changed rather
+  than smaller. The difference is carried by the bold sync-count row at the
+  top of each card instead, built from syncedLabel.
+
+  That is also why "a funded and a personal account, both synced" is gone:
+  it only restated Pro's "2 accounts synced", and it cannot sit ticked on
+  Starter. Priority support stays, on Elite's card alone, because that one
+  is true and different.
 
   Short labels, not IN_EVERY_PLAN's sentences: these sit in a narrow card,
-  nine to a column, where a sentence wraps to three lines.
+  where a sentence wraps to three lines.
 */
 export const PLAN_CHECKLIST: Array<{ text: string; in: Array<Tier['name']> }> = [
-  { text: 'A funded and a personal account, both synced', in: ['Pro', 'Elite'] },
   { text: 'Unlimited accounts by hand or CSV', in: ['Starter', 'Pro', 'Elite'] },
-  { text: 'Talk through a trade — it writes itself up', in: ['Starter', 'Pro', 'Elite'] },
+  { text: 'Talk through a trade \u2014 it writes itself up', in: ['Starter', 'Pro', 'Elite'] },
   { text: 'Nova reads every entry and coaches you', in: ['Starter', 'Pro', 'Elite'] },
   { text: 'Psychology scored on every trade', in: ['Starter', 'Pro', 'Elite'] },
   { text: 'Your rules and pre-trade checklist', in: ['Starter', 'Pro', 'Elite'] },

@@ -1,11 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Check } from 'lucide-react';
 import { TIERS, PLAN_CHECKLIST, type Tier } from '../../lib/pricingTiers';
 
 /*
-  The landing page's plans, Tradespad-style: a card per plan, its contents
-  ticked, what it lacks faded.
+  The landing page's plans: a card per plan, listing what it contains.
 
   This replaced three bare rows - a name, a price, an account count - over
   a separate "every plan includes" box. Brandon, on his phone: it "doesn't
@@ -13,15 +12,18 @@ import { TIERS, PLAN_CHECKLIST, type Tier } from '../../lib/pricingTiers';
   knew what was in a plan. A card that lists its own contents answers that
   where the price is, which is where the question gets asked.
 
-  ON A PHONE, ONE CARD AND A SWITCHER
+  ON A PHONE, A ROW YOU SWIPE, WITH A SWITCH ABOVE IT
 
   Three full cards stacked at 375px is three screens of nearly identical
-  ticks. Instead the plans are a three-way switch over one card, opening on
-  the featured plan; tapping Starter or Elite swaps the card in place, and
-  the faded rows change as you go, which shows what the difference between
-  them actually is better than reading three lists would. From md up there
-  is room for all three side by side, and they are shown that way.
+  ticks. So the cards sit in a horizontal row, opening on the featured plan
+  with its neighbours showing at the edges, and the Starter / Pro / Elite
+  switch above follows the swipe - or drives it, when tapped. From md up
+  there is room for all three side by side, and they are shown that way.
 */
+
+const CARD_W = 86; /* percent of the row, on a phone */
+const SIDE = (100 - CARD_W) / 2;
+const GAP = 12; /* px - must match gap-3 below */
 
 function stripMarks(s: string) {
   return s.replace(/\*/g, '');
@@ -52,15 +54,12 @@ function PlanCard({ tier, launched, className = '' }: { tier: Tier; launched: bo
       </p>
       <p className="mt-3 text-[13px] leading-relaxed text-gray-400 min-h-[2.6em]">{stripMarks(tier.who)}</p>
 
+      {/* White on every plan - Brandon's call. The featured card is already marked by its border and badge. */}
       {launched && (
         <Link
           to="/auth?mode=signup"
-          className={`mt-5 inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-[13.5px] font-medium
-            transition-colors ${
-              tier.featured
-                ? 'bg-white text-black hover:bg-gray-200'
-                : 'border border-white/[0.12] text-white hover:bg-white/[0.06]'
-            }`}
+          className="mt-5 inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-[13.5px] font-medium
+            bg-white text-black hover:bg-gray-200 transition-colors"
         >
           Start 14 days free
           <ArrowRight className="w-4 h-4" />
@@ -72,24 +71,12 @@ function PlanCard({ tier, launched, className = '' }: { tier: Tier; launched: bo
           <Check className="mt-[2px] w-4 h-4 flex-shrink-0 text-brand-blue" strokeWidth={2.5} />
           {tier.syncedLabel} automatically
         </li>
-        {PLAN_CHECKLIST.map((row) => {
-          const has = row.in.includes(tier.name);
-          return (
-            <li
-              key={row.text}
-              className={`flex gap-2.5 text-[13px] leading-snug ${has ? 'text-gray-300' : 'text-gray-600'}`}
-            >
-              <Check
-                className={`mt-[2px] w-4 h-4 flex-shrink-0 ${has ? 'text-brand-blue' : 'text-white/[0.14]'}`}
-                strokeWidth={2.5}
-              />
-              <span className={has ? '' : 'line-through decoration-white/15'}>
-                {row.text}
-                {!has && <span className="sr-only"> (not included)</span>}
-              </span>
-            </li>
-          );
-        })}
+        {PLAN_CHECKLIST.filter((row) => row.in.includes(tier.name)).map((row) => (
+          <li key={row.text} className="flex gap-2.5 text-[13px] leading-snug text-gray-300">
+            <Check className="mt-[2px] w-4 h-4 flex-shrink-0 text-brand-blue" strokeWidth={2.5} />
+            {row.text}
+          </li>
+        ))}
       </ul>
     </div>
   );
@@ -98,10 +85,76 @@ function PlanCard({ tier, launched, className = '' }: { tier: Tier; launched: bo
 export default function PricingPlans({ launched }: { launched: boolean }) {
   const startAt = Math.max(0, TIERS.findIndex((t) => t.featured));
   const [picked, setPicked] = useState(startAt);
+  const rowRef = useRef<HTMLDivElement | null>(null);
+  const sliding = useRef(false);
+
+  const stepOf = (el: HTMLDivElement) => {
+    const card = el.querySelector<HTMLElement>('[data-plan]');
+    return card ? card.offsetWidth + GAP : el.clientWidth;
+  };
+
+  /* Open on the featured plan, without animating there. */
+  useEffect(() => {
+    const el = rowRef.current;
+    if (el) el.scrollLeft = startAt * stepOf(el);
+  }, [startAt]);
+
+  useEffect(() => {
+    const el = rowRef.current;
+    if (!el) return;
+    let frame = 0;
+    const onScroll = () => {
+      if (sliding.current) return;
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        setPicked(Math.min(TIERS.length - 1, Math.round(el.scrollLeft / Math.max(1, stepOf(el)))));
+      });
+    };
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      el.removeEventListener('scroll', onScroll);
+      cancelAnimationFrame(frame);
+    };
+  }, []);
+
+  /*
+    A tapped plan slides there frame by frame with snapping paused, the same
+    way SwipeDeck does it - a smooth scrollTo into a snapping row is what
+    overshot and bounced on an iPhone in the psychology section.
+  */
+  const pick = (i: number) => {
+    const el = rowRef.current;
+    setPicked(i);
+    if (!el) return;
+    const target = Math.min(i * stepOf(el), el.scrollWidth - el.clientWidth);
+    const from = el.scrollLeft;
+    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const duration = reduced ? 0 : 450;
+    const began = performance.now();
+    sliding.current = true;
+    el.style.scrollSnapType = 'none';
+    const finish = () => {
+      el.scrollLeft = target;
+      el.style.scrollSnapType = '';
+      sliding.current = false;
+    };
+    if (duration === 0) return finish();
+    const frame = (now: number) => {
+      const t = Math.min(1, (now - began) / duration);
+      el.scrollLeft = from + (target - from) * (1 - Math.pow(1 - t, 3));
+      if (t < 1) requestAnimationFrame(frame);
+      else finish();
+    };
+    requestAnimationFrame(frame);
+  };
+
+  const spacer = (
+    <span aria-hidden="true" className="flex-shrink-0" style={{ flexBasis: `calc(${SIDE}% - ${GAP}px)` }} />
+  );
 
   return (
     <div>
-      {/* Phone: a switch over one card. */}
+      {/* Phone: a switch over a row of cards. */}
       <div className="md:hidden">
         <div role="tablist" aria-label="Plans" className="grid grid-cols-3 gap-1 rounded-xl border border-white/[0.08] bg-brand-surface p-1">
           {TIERS.map((t, i) => (
@@ -110,7 +163,7 @@ export default function PricingPlans({ launched }: { launched: boolean }) {
               type="button"
               role="tab"
               aria-selected={picked === i}
-              onClick={() => setPicked(i)}
+              onClick={() => pick(i)}
               className={`rounded-lg py-2 text-center transition-colors duration-300 ${
                 picked === i ? 'bg-white/[0.08] text-white' : 'text-gray-500'
               }`}
@@ -120,11 +173,32 @@ export default function PricingPlans({ launched }: { launched: boolean }) {
             </button>
           ))}
         </div>
-        <div className="mt-5">
-          {/* Keyed, so the swap fades in rather than the text changing under the reader's thumb. */}
-          <div key={picked} className="animate-plan-in motion-reduce:animate-none">
-            <PlanCard tier={TIERS[picked]} launched={launched} />
-          </div>
+
+        {/*
+          Bleeds to the screen edges so the neighbouring cards peek in from
+          the sides - the cue that there is something to swipe to. pt-3 is
+          room for the Most popular badge, which sits above its card's edge
+          and would otherwise be clipped by the row's overflow.
+        */}
+        <div
+          ref={rowRef}
+          className="-mx-5 mt-3 pt-3 pb-2 flex items-stretch gap-3 overflow-x-auto snap-x snap-mandatory
+            [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {spacer}
+          {TIERS.map((t, i) => (
+            <div
+              key={t.name}
+              data-plan
+              style={{ width: `${CARD_W}%` }}
+              className={`flex-shrink-0 snap-center flex transition-opacity duration-300 ${
+                picked === i ? 'opacity-100' : 'opacity-50'
+              }`}
+            >
+              <PlanCard tier={t} launched={launched} className="w-full" />
+            </div>
+          ))}
+          {spacer}
         </div>
       </div>
 
