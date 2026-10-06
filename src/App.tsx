@@ -45,7 +45,6 @@ const TermsOfService = lazyWithReload('TermsOfService', () => import('./pages/Te
 const PrivacyPolicy = lazyWithReload('PrivacyPolicy', () => import('./pages/PrivacyPolicy'));
 const RiskDisclaimer = lazyWithReload('RiskDisclaimer', () => import('./pages/RiskDisclaimer'));
 const Pricing = lazyWithReload('Pricing', () => import('./pages/Pricing'));
-const FilmFrames = lazyWithReload('FilmFrames', () => import('./pages/FilmFrames')); /* TEMP-FILM */
 const Features = lazyWithReload('Features', () => import('./pages/Features'));
 const Security = lazyWithReload('Security', () => import('./pages/Security'));
 const Integrations = lazyWithReload('Integrations', () => import('./pages/Integrations'));
@@ -67,7 +66,6 @@ const PUBLIC_PATHS = [
   '/', '/auth', '/sales', '/terms', '/privacy', '/risk-disclaimer', '/payment', '/affiliates',
   '/pricing', '/features', '/security', '/nova-ai', '/for-prop-firm-traders', '/about', '/faq',
   '/audit', '/integrations',
-  '/film-frames', /* TEMP-FILM */
 ];
 
 function PublicLayout() {
@@ -85,7 +83,6 @@ function PublicLayout() {
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/risk-disclaimer" element={<RiskDisclaimer />} />
             <Route path="/pricing" element={<Pricing />} />
-            {/* TEMP-FILM */}<Route path="/film-frames" element={<FilmFrames />} />
             <Route path="/audit" element={<Audit />} />
             <Route path="/features" element={<Features />} />
             <Route path="/integrations" element={<Integrations />} />
