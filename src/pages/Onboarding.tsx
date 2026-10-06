@@ -9,6 +9,7 @@ import {
 import { STRUGGLE_CARD } from '../lib/onboardingPreview';
 import {
   PROFILE_QUESTIONS, buildPlan, type ProfileAnswers,
+  WHY_OPTIONS, MINUTES_OPTIONS, COMMIT_OPTIONS, commitmentLine, type ChoiceOption,
 } from '../lib/onboardingPlan';
 import { trackEvent } from '../lib/productAnalytics';
 import { emphasise } from '../lib/emphasise';
@@ -59,23 +60,30 @@ import type { VoiceJournalData } from '../services/voiceJournal';
 type Step =
   | 'welcome'
   | 'thegap'
+  | 'why'
   | 'instrument'
   | 'experience'
   | 'struggles'
   | { profile: number }
+  | 'minutes'
+  | 'commit'
   | 'thinking'
   | 'pattern'
   | 'gap'
   | 'plan'
   | 'entry';
 
-const QUESTION_COUNT = 3 + PROFILE_QUESTIONS.length;
+/* Why, three about them, the behavioural ones, then daily time and the goal. */
+const QUESTION_COUNT = 6 + PROFILE_QUESTIONS.length;
 
 function questionIndex(step: Step): number | null {
-  if (step === 'instrument') return 0;
-  if (step === 'experience') return 1;
-  if (step === 'struggles') return 2;
-  if (typeof step === 'object') return 3 + step.profile;
+  if (step === 'why') return 0;
+  if (step === 'instrument') return 1;
+  if (step === 'experience') return 2;
+  if (step === 'struggles') return 3;
+  if (typeof step === 'object') return 4 + step.profile;
+  if (step === 'minutes') return 4 + PROFILE_QUESTIONS.length;
+  if (step === 'commit') return 5 + PROFILE_QUESTIONS.length;
   return null;
 }
 
@@ -199,11 +207,13 @@ function Progress({ step }: { step: Step }) {
   rows are large and there is nothing else on screen to hit by mistake.
 */
 function Choice({
-  label, onClick, selected = false,
+  label, onClick, selected = false, tag, recommended = false,
 }: {
   label: string;
   onClick: () => void;
   selected?: boolean;
+  tag?: string;
+  recommended?: boolean;
 }) {
   return (
     <button
@@ -219,6 +229,9 @@ function Choice({
     >
       <span>{label}</span>
       {selected && <Check size={17} className="flex-shrink-0 text-brand-blue-light" strokeWidth={2.5} />}
+      {!selected && tag && (
+        <span className={`text-[12px] ${recommended ? 'text-brand-blue-light' : 'text-gray-500'}`}>{tag}</span>
+      )}
     </button>
   );
 }
@@ -229,7 +242,7 @@ function Question({
   step: Step;
   title: string;
   subtitle?: string;
-  options: { value: string; label: string }[];
+  options: ChoiceOption[];
   onChoose: (value: string) => void;
 }) {
   return (
@@ -244,7 +257,7 @@ function Question({
       )}
       <div className={`flex flex-col gap-2.5 ${subtitle ? '' : 'mt-5'}`}>
         {options.map((o) => (
-          <Choice key={o.value} label={o.label} onClick={() => onChoose(o.value)} />
+          <Choice key={o.value} label={o.label} tag={o.tag} recommended={o.recommended} onClick={() => onChoose(o.value)} />
         ))}
       </div>
     </>
@@ -317,6 +330,30 @@ export default function Onboarding({
   const primaryStruggle: Struggle = struggles[0] ?? 'not_sure';
   const card = STRUGGLE_CARD[primaryStruggle];
 
+  /*
+    The commitment answers live in the same profile object as the
+    behavioural ones - see the note on WHY_OPTIONS - and are written with it.
+  */
+  const answerWhy = (value: string) => {
+    setProfile((prev) => ({ ...prev, goal: value }));
+    trackEvent('onboarding_goal', { goal: value });
+    setStep('instrument');
+  };
+
+  const answerMinutes = (value: string) => {
+    setProfile((prev) => ({ ...prev, daily_minutes: value }));
+    trackEvent('onboarding_daily_minutes', { minutes: Number(value) });
+    setStep('commit');
+  };
+
+  const answerCommit = (value: string) => {
+    const next: ProfileAnswers = { ...profile, commit_days: value };
+    setProfile(next);
+    void saveProfileAnswers(next);
+    trackEvent('onboarding_commit', { days: Number(value), minutes: Number(next.daily_minutes ?? 0) });
+    setStep('thinking');
+  };
+
   const answerInstrument = (value: string) => {
     const v = value as Instrument;
     setInstrument(v);
@@ -362,7 +399,7 @@ export default function Onboarding({
     */
     void saveProfileAnswers(next);
     trackEvent('onboarding_profile_complete', { answered: Object.keys(next).length });
-    setStep('thinking');
+    setStep('minutes');
   };
 
   /*
@@ -490,7 +527,7 @@ export default function Onboarding({
                       Show me
                       <ArrowRight size={17} />
                     </button>
-                    <p className="mt-3 text-[12.5px] text-gray-500">Eight questions &middot; about a minute</p>
+                    <p className="mt-3 text-[12.5px] text-gray-500">Eleven taps &middot; about a minute</p>
                   </div>,
                 ].map((node, i) => (
                   <div
@@ -543,7 +580,7 @@ export default function Onboarding({
 
                 <button
                   type="button"
-                  onClick={() => setStep('instrument')}
+                  onClick={() => setStep('why')}
                   className="mt-8 inline-flex items-center justify-center gap-2 px-8 py-3.5
                     rounded-full bg-white text-black text-[15px] font-medium
                     hover:bg-gray-200 transition-colors"
@@ -552,6 +589,21 @@ export default function Onboarding({
                   <ArrowRight size={17} />
                 </button>
               </div>
+            )}
+
+            {/*
+              Duolingo's first question is why you are learning. Asked here,
+              before anything about their trading, it frames the rest of the
+              flow as being about something they want rather than something
+              wrong with them.
+            */}
+            {step === 'why' && (
+              <Question
+                step={step}
+                title="What do you want journaling to get you?"
+                options={WHY_OPTIONS}
+                onChoose={answerWhy}
+              />
             )}
 
             {step === 'instrument' && (
@@ -623,6 +675,27 @@ export default function Onboarding({
                 title={PROFILE_QUESTIONS[profileIndex].title}
                 options={PROFILE_QUESTIONS[profileIndex].options}
                 onChoose={(v) => answerProfile(profileIndex, v)}
+              />
+            )}
+
+            {step === 'minutes' && (
+              <Question
+                step={step}
+                title="How long can you give it on a trading day?"
+                subtitle="Most entries take two minutes out loud."
+                options={MINUTES_OPTIONS}
+                onChoose={answerMinutes}
+              />
+            )}
+
+            {/* Nothing preselected - choosing it is the point. See COMMIT_OPTIONS. */}
+            {step === 'commit' && (
+              <Question
+                step={step}
+                title="Pick your first goal."
+                subtitle="Journal every trading day for…"
+                options={COMMIT_OPTIONS}
+                onChoose={answerCommit}
               />
             )}
 
@@ -719,6 +792,21 @@ export default function Onboarding({
                   max-w-sm mx-auto">
                   {emphasise(plan.promise)}
                 </p>
+
+                {/*
+                  Their own goal, handed back in their own numbers, above the
+                  three points - the line that turns a plan written for them
+                  into one they agreed to.
+                */}
+                {commitmentLine(profile) && (
+                  <p className="mt-7 mx-auto max-w-sm rounded-xl border border-brand-blue-light/25
+                    bg-brand-blue/[0.07] px-4 py-3 text-[13.5px] leading-relaxed text-gray-300">
+                    <span className="block text-[10.5px] uppercase tracking-[0.14em] text-brand-blue-light mb-1">
+                      Your goal
+                    </span>
+                    {emphasise(commitmentLine(profile)!)}
+                  </p>
+                )}
 
                 <div className="mt-9 flex flex-col gap-3.5 max-w-sm mx-auto">
                   {plan.points.map((point) => (

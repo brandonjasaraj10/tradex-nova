@@ -112,6 +112,75 @@ export const PROFILE_QUESTIONS: ProfileQuestion[] = [
 
 export type ProfileAnswers = Record<string, string>;
 
+/*
+  THE COMMITMENT: why, how long a day, and for how many days.
+
+  Taken from Duolingo, which asks all three before a single lesson - why
+  you are learning, how much time a day, and later a streak goal - and found
+  the act of choosing is what does the work: its streak-goal test kept users
+  better weeks later even though the app never used the number they picked,
+  and a version with nothing preselected did better still. So nothing here is
+  preselected either; each is one tap that advances on its own.
+
+  WHY 7 / 14 / 30 / 66 DAYS AND NOT MONTHS
+
+  A first goal has to be close enough to feel reachable. Duolingo's own
+  streak goals stop at weeks, not months, and the best-known study of how
+  long a habit takes to stick (Lally et al., 2010) put the median at 66
+  days - with a range so wide that "three months" or "a year" would be a
+  number nobody can picture hitting. 14 is marked recommended because it is
+  exactly the free trial: the promise and the trial end on the same day,
+  which is when they decide whether to pay. 66 is there for the ambitious,
+  with the honest reason attached.
+
+  Stored in onboarding_profile alongside the behavioural answers - keys
+  goal, daily_minutes and commit_days - so this needed no migration.
+*/
+export interface ChoiceOption {
+  value: string;
+  label: string;
+  /* Right-aligned word, Duolingo's Casual / Regular / Serious. */
+  tag?: string;
+  recommended?: boolean;
+}
+
+export const WHY_OPTIONS: ChoiceOption[] = [
+  { value: 'pass_challenge', label: 'Pass a prop firm challenge' },
+  { value: 'stop_blowing', label: 'Stop blowing accounts' },
+  { value: 'consistent', label: 'Trade the same way every day' },
+  { value: 'understand', label: 'Understand why I do what I do' },
+];
+
+export const MINUTES_OPTIONS: ChoiceOption[] = [
+  { value: '2', label: '2 minutes', tag: 'Quick' },
+  { value: '5', label: '5 minutes', tag: 'Regular' },
+  { value: '10', label: '10 minutes', tag: 'Serious' },
+  { value: '15', label: '15 minutes', tag: 'All in' },
+];
+
+export const COMMIT_OPTIONS: ChoiceOption[] = [
+  { value: '7', label: '7 days', tag: 'A start' },
+  { value: '14', label: '14 days', tag: 'Recommended', recommended: true },
+  { value: '30', label: '30 days', tag: 'Serious' },
+  { value: '66', label: '66 days', tag: 'Habit-forming' },
+];
+
+const GOAL_PHRASE: Record<string, string> = {
+  pass_challenge: 'to pass your challenge',
+  stop_blowing: 'to stop blowing accounts',
+  consistent: 'to trade the same way every day',
+  understand: 'to see why you do what you do',
+};
+
+/* "14 trading days, 5 minutes each - to pass your challenge." Null until both numbers are picked. */
+export function commitmentLine(profile: ProfileAnswers): string | null {
+  const days = profile.commit_days;
+  const minutes = profile.daily_minutes;
+  if (!days || !minutes) return null;
+  const why = GOAL_PHRASE[profile.goal ?? ''];
+  return `*${days} trading days, ${minutes} minutes each*${why ? ` \u2014 ${why}` : ''}.`;
+}
+
 export interface Plan {
   /* The line that names their pattern back to them. */
   headline: string;
