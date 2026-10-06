@@ -35,24 +35,24 @@ const PEEK = 13; /* px each card behind shows above the one in front */
 
 export default function ShotStack({ shots, className = '' }: { shots: StackShot[]; className?: string }) {
   const [active, setActive] = useState(0);
-  const [leaving, setLeaving] = useState<number | null>(null);
   const start = useRef<{ x: number; y: number } | null>(null);
   const n = shots.length;
 
+  /*
+    One move, not two.
+
+    The first version flicked the front card off to the left, waited for it,
+    then closed the pile up - and the flicked card then slid all the way back
+    in from the left to take its place at the back, fading as it went.
+    Brandon's word for that on his phone was "glitching", and it was: two
+    animations in sequence with a visible seam, plus a card crossing the
+    whole pile. Now every card simply moves to its new place in the pile at
+    once - the one in front drops behind, the next rises to meet you - and
+    only transform and opacity change, which a phone can do on the GPU
+    without repainting the screenshots.
+  */
   const go = (next: number) => {
-    if (leaving !== null || next === active) return;
-    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    if (reduced) { setActive(next); return; }
-    /*
-      The front card flicks off to the side first, then the pile closes up.
-      Sending it straight to the back made it shrink in place behind the next
-      one, which read as the image breaking rather than as a card moving.
-    */
-    setLeaving(active);
-    window.setTimeout(() => {
-      setActive(next);
-      setLeaving(null);
-    }, 260);
+    if (next !== active) setActive(next);
   };
 
   const onUp = (e: React.PointerEvent) => {
@@ -80,21 +80,17 @@ export default function ShotStack({ shots, className = '' }: { shots: StackShot[
       >
         {shots.map((s, i) => {
           const depth = (i - active + n) % n;
-          const isLeaving = leaving === i;
-          const transform = isLeaving
-            ? 'translateX(-112%) rotate(-7deg)'
-            : `translateY(${-depth * PEEK}px) scale(${1 - depth * 0.06})`;
           return (
             <div
               key={s.id}
               aria-hidden={depth !== 0}
-              className="[grid-area:1/1] origin-top transition-[transform,opacity] duration-500 ease-[cubic-bezier(.2,.8,.2,1)]
+              className="[grid-area:1/1] origin-top [will-change:transform,opacity]
+                transition-[transform,opacity] duration-[420ms] ease-[cubic-bezier(.2,.8,.2,1)]
                 motion-reduce:transition-none"
               style={{
-                transform,
-                opacity: isLeaving ? 0 : depth === 0 ? 1 : depth === 1 ? 0.55 : 0.28,
-                zIndex: isLeaving ? 40 : 30 - depth * 10,
-                transitionDuration: isLeaving ? '260ms' : undefined,
+                transform: `translate3d(0, ${-depth * PEEK}px, 0) scale(${1 - depth * 0.06})`,
+                opacity: depth === 0 ? 1 : depth === 1 ? 0.55 : 0.28,
+                zIndex: 30 - depth * 10,
               }}
             >
               <ProductShot
@@ -103,7 +99,7 @@ export default function ShotStack({ shots, className = '' }: { shots: StackShot[
                 alt={s.alt}
                 zooms={s.zoom ? [s.zoom] : undefined}
                 zoomSpace="mb-12"
-                zoomsVisible={depth === 0 && !isLeaving}
+                zoomsVisible={depth === 0}
               />
             </div>
           );
