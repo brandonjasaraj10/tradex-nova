@@ -1,5 +1,6 @@
 import PageShell from '../components/layout/PageShell';
 import { Section, Card, CardGrid, QA, ClosingCta } from '../components/marketing/blocks';
+import ProductShot from '../components/sales/ProductShot';
 
 /*
   The ICP page.
@@ -27,6 +28,25 @@ export default function PropFirmTraders() {
       title="You did not fail the challenge on strategy"
       subtitle="You failed it on a rule you already knew. TradeX is built around the part of trading that actually costs you the account."
     >
+      {/*
+        The evidence for the claim in the title, stated before the four ways
+        it happens. It is a prop-firm statistic and it only existed on the
+        landing page, where it has to be introduced; here the reader already
+        knows what a drawdown breach is, so it can simply be said.
+
+        Caveated in the same breath, as it is everywhere else it appears.
+      */}
+      <p className="mb-10 sm:mb-12 rounded-2xl border border-white/[0.07]
+        bg-gradient-to-b from-white/[0.03] to-transparent p-5 sm:p-6
+        text-[14px] sm:text-[15px] leading-relaxed text-gray-400">
+        <span className="text-white">
+          71% of traders who fail a funded account do it on a drawdown limit,
+          not a bad strategy
+        </span>{' '}
+        &mdash; most inside the first week, and usually across one to three
+        trades. Self-reported industry figures, not independently audited.
+      </p>
+
       <Section
         title="The way a challenge really ends"
         lead="Almost never a bad system. Almost always a bad twenty minutes."
@@ -81,6 +101,27 @@ export default function PropFirmTraders() {
             reason the habit survives a bad week.
           </Card>
         </div>
+
+        {/*
+          The claim above, photographed.
+
+          This page was four hundred words of argument with nothing to look at,
+          which is a strange way to sell software to somebody who has already
+          agreed with the argument. The psychology view of the calendar is the
+          right one to show here rather than the P&L view: it is a month
+          coloured by how the trader was rather than by what they earned,
+          which is the entire thesis of the page in one image.
+        */}
+        <figure className="mt-8">
+          <ProductShot
+            src="/product/calendar-psych.jpg"
+            label="Calendar"
+            alt="A month in the psychology view: each day carries a NOVA score rather than a profit figure, with average mental state and a count of peak, good and challenging days alongside."
+          />
+          <figcaption className="mt-3 text-[12.5px] text-gray-500">
+            A month scored by how you traded it, not by what it paid.
+          </figcaption>
+        </figure>
       </Section>
 
       <Section
@@ -93,6 +134,22 @@ export default function PropFirmTraders() {
           funded account&rsquo;s discipline is never quietly averaged in with the
           demo you are messing about on.
         </Card>
+
+        {/*
+          The account selector is in the top right of this shot, reading "100K
+          Challenge", which is the detail that makes the paragraph above
+          checkable rather than a promise.
+        */}
+        <figure className="mt-6">
+          <ProductShot
+            src="/product/dashboard.jpg"
+            label="Dashboard"
+            alt="The dashboard with a 100K Challenge account selected: balance, return, NOVA Score, win rate and a panel showing how closely the trader followed their own plan."
+          />
+          <figcaption className="mt-3 text-[12.5px] text-gray-500">
+            One account selected. Every number on the page follows it.
+          </figcaption>
+        </figure>
       </Section>
 
       <Section title="The questions prop traders ask">
