@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Mic, Loader2, Check, X } from 'lucide-react';
 import { processVoiceJournalEntry, type VoiceJournalData } from '../../services/voiceJournal';
@@ -43,6 +43,55 @@ import type { StarterItem } from '../../lib/onboardingChecklist';
 
 const PLACEHOLDER =
   'Shorted euro dollar half a lot, got stopped out for about a hundred and eighty bucks. Moved my stop twice again, same as Tuesday.';
+
+/*
+  THEIR OWN THREE RATINGS, ONE TAP EACH, BEFORE THEY SAY ANYTHING.
+
+  Nova used to infer these from the text, which meant most first entries had
+  none - people describe what the trade did, not how they felt going in - and
+  the ones it did fill were Nova's guess rather than the trader's answer.
+  The ratings are the part of this product nobody else has, so the first
+  entry should have them, and they should be the trader's own.
+
+  One per screen and auto-advancing on the tap, the way Duolingo asks
+  everything: no "next" button, nothing to read twice, a large target. Each
+  option carries its own word as well as its number, so nobody has to
+  remember which end of a 1-5 scale is good. The dots beside each row are the
+  same dots the journal uses, so the control they meet inside is already
+  familiar.
+
+  Same three scales, same keys, same 1-5 range as the journal's
+  PreTradeScales - these land in the same columns.
+*/
+type RatingKey = 'pre_trade_emotional_state' | 'pre_trade_focus' | 'pre_trade_confidence';
+
+const RATINGS: { key: RatingKey; question: string; words: [string, string, string, string, string] }[] = [
+  { key: 'pre_trade_emotional_state', question: 'Going in, how steady were you?', words: ['Rattled', 'Uneasy', 'Okay', 'Calm', 'Steady'] },
+  { key: 'pre_trade_focus', question: 'How focused were you?', words: ['Scattered', 'Distracted', 'Okay', 'Focused', 'Sharp'] },
+  { key: 'pre_trade_confidence', question: 'How sure were you about it?', words: ['Unsure', 'Doubtful', 'Okay', 'Confident', 'Certain'] },
+];
+
+function RatingRow({ n, word, picked, onPick }: { n: number; word: string; picked: boolean; onPick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onPick}
+      className={`w-full px-5 py-3.5 rounded-xl border text-[15px] transition-colors flex items-center justify-between gap-3
+        focus-visible:outline-none focus-visible:border-brand-blue-light/60 ${
+        picked
+          ? 'border-brand-blue-light/60 bg-brand-blue/[0.12] text-white'
+          : 'border-white/10 bg-brand-surface text-gray-200 hover:border-brand-blue-light/40 hover:bg-brand-blue/[0.07] hover:text-white'
+      }`}
+    >
+      <span>{word}</span>
+      <span className="flex items-center gap-1.5" aria-hidden="true">
+        {[1, 2, 3, 4, 5].map((d) => (
+          <span key={d} className={`w-2.5 h-2.5 rounded-full ${d <= n ? 'bg-blue-400' : 'bg-white/10'}`} />
+        ))}
+      </span>
+    </button>
+  );
+}
 
 /*
   Nova returns formatted HTML. Rendering it with dangerouslySetInnerHTML
@@ -137,6 +186,10 @@ export default function FirstEntry({
   rules: StarterItem[];
   psychChecks: StarterItem[];
 }) {
+  /* 0-2 are the three ratings, 3 is the text box. */
+  const [phase, setPhase] = useState(0);
+  const advancing = useRef(false);
+  const [ratings, setRatings] = useState<Partial<Record<RatingKey, number>>>({});
   const [text, setText] = useState('');
   const [writing, setWriting] = useState(false);
   const [entry, setEntry] = useState<VoiceJournalData | null>(null);
@@ -175,9 +228,11 @@ export default function FirstEntry({
         undefined,
         psychChecks,
         'trade',
-        (partial) => setEntry((prev) => ({ ...(prev ?? {}), ...partial })),
+        (partial) => setEntry((prev) => ({ ...(prev ?? {}), ...partial, ...ratings })),
       );
-      setEntry(result);
+      /* What they tapped beats anything Nova read into the text. */
+      const merged = { ...result, ...ratings };
+      setEntry(merged);
       trackEvent('onboarding_entry_written', {
         symbol: result.symbol ?? null,
         hasPnl: result.manual_pnl !== undefined && result.manual_pnl !== null,
@@ -368,15 +423,67 @@ export default function FirstEntry({
   /* The ask                                                           */
   /* ---------------------------------------------------------------- */
 
+  if (phase < RATINGS.length) {
+    const r = RATINGS[phase];
+    const pick = (n: number) => {
+      /* A double tap would otherwise skip the next question unseen. */
+      if (advancing.current) return;
+      advancing.current = true;
+      setRatings((prev) => ({ ...prev, [r.key]: n }));
+      trackEvent('onboarding_entry_rating', { scale: r.key, value: n });
+      /* Long enough to see the row light up, short enough not to feel like waiting. */
+      window.setTimeout(() => {
+        advancing.current = false;
+        setPhase((p) => p + 1);
+      }, 220);
+    };
+    return (
+      <div>
+        {phase === 0 && (
+          <MascotSays pose="lean" height={80} side="above" className="mb-6">
+            Think of your last losing trade.
+          </MascotSays>
+        )}
+        <p className="text-center text-[11px] uppercase tracking-[0.14em] text-gray-500 mb-3">
+          Your first entry &middot; {phase + 1} of {RATINGS.length + 1}
+        </p>
+        <h1 className="text-[26px] sm:text-[31px] leading-[1.15] font-semibold tracking-[-0.032em]
+          text-white text-center text-balance mb-6">
+          {r.question}
+        </h1>
+        <div key={r.key} className="flex flex-col gap-2.5">
+          {r.words.map((word, i) => (
+            <RatingRow key={word} n={i + 1} word={word} picked={ratings[r.key] === i + 1} onPick={() => pick(i + 1)} />
+          ))}
+        </div>
+        {/* Skippable from the first question too - see SKIPPABLE ON PURPOSE above. */}
+        <button
+          type="button"
+          onClick={() => {
+            if (phase > 0) return setPhase((p) => p - 1);
+            trackEvent('onboarding_entry_skipped', { at: 'ratings' });
+            onDone(null, '');
+          }}
+          className="mt-4 w-full text-center text-[13px] text-gray-500 hover:text-gray-300 transition-colors"
+        >
+          {phase > 0 ? 'Back' : 'Skip for now'}
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div>
       <MascotSays pose="lean" height={80} side="above" className="mb-6">
-        {writing ? 'Reading it now…' : 'One trade. However you’d say it out loud.'}
+        {writing ? 'Reading it now…' : 'However you’d say it out loud.'}
       </MascotSays>
 
+      <p className="text-center text-[11px] uppercase tracking-[0.14em] text-gray-500 mb-3">
+        Your first entry &middot; {RATINGS.length + 1} of {RATINGS.length + 1}
+      </p>
       <h1 className="text-[26px] sm:text-[31px] leading-[1.15] font-semibold tracking-[-0.032em]
         text-white text-center text-balance mb-2">
-        Think of your last losing trade.
+        Now tell Nova what happened.
       </h1>
       <p className="text-center text-[13.5px] text-gray-500 mb-6">
         A sentence or two is plenty. Rambling is fine.
