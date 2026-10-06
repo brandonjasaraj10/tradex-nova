@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import Wordmark from '../shared/Wordmark';
+import HeaderNav from '../sales/HeaderNav';
 import Footer from './Footer';
 
 /*
@@ -49,6 +50,19 @@ export default function PageShell({
           <Link to="/" aria-label="TradeX home" className="flex items-center">
             <Wordmark className="text-lg" />
           </Link>
+
+          {/*
+            The same nav as the landing page.
+
+            Without it, this shell was a dead end: a visitor who used the
+            landing page's new navigation to reach Features arrived on a page
+            with no navigation at all, and the only route onward was the
+            wordmark back to the start. Adding links on one page and not the
+            next is worse than having none, because it teaches somebody the
+            site is navigable and then takes it away.
+          */}
+          <HeaderNav />
+
           <div className="flex items-center gap-4 sm:gap-5">
             <Link
               to="/auth?mode=signin"
@@ -59,7 +73,7 @@ export default function PageShell({
             <Link
               to="/auth?mode=signup"
               className="inline-flex items-center justify-center whitespace-nowrap
-                px-4 py-1.5 rounded-full bg-white text-black text-[13px] font-medium
+                px-4 py-1.5 rounded-lg bg-white text-black text-[13px] font-medium
                 hover:bg-gray-200 transition-colors"
             >
               Start journaling

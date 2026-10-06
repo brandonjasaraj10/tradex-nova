@@ -12,6 +12,7 @@ import PsychologySwipe from '../components/sales/PsychologySwipe';
 import SwipeDeck from '../components/sales/SwipeDeck';
 import FaqList, { type FaqItem } from '../components/sales/FaqList';
 import SectionHeader from '../components/sales/SectionHeader';
+import HeaderNav from '../components/sales/HeaderNav';
 import SignupOrWaitlist from '../components/shared/SignupOrWaitlist';
 import { useHasLaunched } from '../lib/launch';
 import { useState, useEffect, useRef } from 'react';
@@ -209,63 +210,13 @@ export default function Sales() {
           </div>
 
           {/*
-            THE NAV, AND WHY IT IS LINKS RATHER THAN A MENU.
+            THE NAV. See HeaderNav for the ordering and what is missing.
 
-            The header carried no navigation at all: a wordmark on the left,
-            sign-in and the CTA on the right, nothing in between. Seven public
-            pages were reachable only through inline links buried in sections,
-            and /audit - a free psychology quiz that asks for no account - was
-            linked from nowhere in the entire codebase.
-
-            Two arguments pull in opposite directions here and both are real.
-            Removing navigation from a landing page lifts conversion, because
-            every link is an exit, and this page's traffic is a cold tap from
-            an Instagram reel. Against that: a site with no navigation at all
-            reads as thin, and an unknown brand asking $29.99 a month cannot
-            afford to look like it might not be a company.
-
-            Three links is where those meet. Enough to look like a business,
-            few enough that the button still wins.
-
-            NOT A DROPDOWN
-
-            Pricing is the page visitors reach last before signing up and the
-            one they actively hunt for, so putting it behind a hover and a
-            click is the opposite of what the evidence asks for. TradeZella
-            and Tradespad both agree in practice - both carry Pricing as a top
-            level link and keep their menus for the pages nobody is urgently
-            looking for. If this ever needs more than four items, the dropdown
-            holds About and Affiliates, never this.
-
-            The order is the order the questions get asked: what does it do,
-            what does it cost, what is stopping me.
-
-            Shown from sm up rather than md. The md breakpoint was a guess at
-            where three links stop fitting and it was too cautious by about
-            130px - measured at 640px the header still has room, and a 726px
-            browser pane was hiding the nav entirely, which is a common enough
-            laptop-with-a-sidebar width to matter.
-
-            Still hidden on phones. Three links will not fit beside a wordmark
-            and a button at 375px, and the phone is where the no-exits
-            argument is strongest anyway; the footer carries every page for
-            anybody who wants one.
+            Four items here, which with the wordmark and the CTA puts the
+            whole header at six - the top of the five to seven the research
+            asks for, and the reason there is no fifth link.
           */}
-          <nav className="hidden sm:flex items-center gap-5 md:gap-7" aria-label="Main">
-            {[
-              { to: '/features', label: 'Features' },
-              { to: '/pricing', label: 'Pricing' },
-              { to: '/faq', label: 'FAQ' },
-            ].map((item) => (
-              <Link
-                key={item.to}
-                to={item.to}
-                className="text-[13.5px] text-gray-400 hover:text-white transition-colors"
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
+          <HeaderNav />
 
           {/*
             The way back in for people who already have an account.
