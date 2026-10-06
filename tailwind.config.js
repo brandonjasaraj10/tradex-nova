@@ -39,9 +39,20 @@ export default {
           '0%': { transform: 'translateX(-100%)' },
           '100%': { transform: 'translateX(350%)' },
         },
+        /* The phone review wall - see ReviewWall. Each track holds its cards twice, so -50% is one full loop. */
+        'review-up': {
+          '0%': { transform: 'translateY(0)' },
+          '100%': { transform: 'translateY(-50%)' },
+        },
+        'review-down': {
+          '0%': { transform: 'translateY(-50%)' },
+          '100%': { transform: 'translateY(0)' },
+        },
       },
       animation: {
         'loader-sweep': 'loader-sweep 1.2s ease-in-out infinite',
+        'review-up': 'review-up 46s linear infinite',
+        'review-down': 'review-down 52s linear infinite',
       },
     },
   },

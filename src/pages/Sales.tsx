@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Check, Star } from 'lucide-react';
+import { ArrowRight, Check } from 'lucide-react';
 import Footer from '../components/layout/Footer';
 import Mascot from '../components/shared/Mascot';
 import { TIERS } from '../lib/pricingTiers';
@@ -11,6 +11,7 @@ import ProductShot from '../components/sales/ProductShot';
 import PsychologySwipe from '../components/sales/PsychologySwipe';
 import SwipeDeck from '../components/sales/SwipeDeck';
 import ShotStack from '../components/sales/ShotStack';
+import ReviewWall, { ReviewCard, type Review } from '../components/sales/ReviewWall';
 import FaqList, { type FaqItem } from '../components/sales/FaqList';
 import SectionHeader from '../components/sales/SectionHeader';
 import HeaderNav from '../components/sales/HeaderNav';
@@ -30,12 +31,7 @@ import { useState, useEffect, useRef } from 'react';
   were named - no surnames, no photographs, no company affiliations, nothing
   that points at a real identifiable person.
 */
-const TESTIMONIALS: Array<{
-  quote: string;
-  name: string;
-  role: string;
-  stars?: boolean;
-}> = [
+const TESTIMONIALS: Review[] = [
   {
     quote:
       "The pre-trade thing is what got me. I'd never once written down how I felt before clicking. Turns out every account I've blown started on a day I'd have rated myself a 2.",
@@ -1118,52 +1114,16 @@ export default function Sales() {
           </p>
 
           {/*
-            ON A PHONE, A ROW YOU SWIPE - NOT NINE CARDS STACKED.
-
-            Stacked, nine quotes were 1,700px of identical cards at 390px wide:
-            more than two full screens of the same shape, sitting directly
-            before the price. TradeZella's phone page runs this exact kind of
-            content as a horizontal deck, and so does every review section
-            built for thumbs - the vertical page keeps moving down, and the
-            proof moves sideways underneath it.
-
-            Each card is 82% of the screen so the next one is always visibly
-            waiting at the edge, which is the whole cue to swipe; the row
-            bleeds to the screen edges so it reads as a strip rather than a
-            box. The quotes keep their natural lengths and the row aligns to
-            the top, so a one-liner is not stretched to match a paragraph.
-
-            From sm up this is untouched: the same three-column masonry.
+            On a phone, two columns drifting past each other - see ReviewWall.
+            From sm up, the same masonry columns as before.
           */}
-          <div className="mt-7 sm:mt-11 -mx-5 px-5 sm:mx-0 sm:px-0
-            flex items-start gap-3 overflow-x-auto snap-x snap-mandatory scroll-px-5
-            [scrollbar-width:none] [&::-webkit-scrollbar]:hidden
-            sm:block sm:overflow-visible sm:columns-2 lg:columns-3 sm:gap-5 [column-fill:_balance]">
+          <ReviewWall reviews={TESTIMONIALS} className="sm:hidden mt-7" />
+
+          <div className="max-sm:hidden mt-11 columns-2 lg:columns-3 gap-5 [column-fill:_balance]">
             {TESTIMONIALS.map((t) => (
-              <figure
-                key={t.name}
-                className="w-[82%] flex-shrink-0 snap-start sm:w-auto sm:mb-5 break-inside-avoid rounded-2xl
-                  border border-white/[0.07] bg-gradient-to-b from-white/[0.03] to-transparent p-5"
-              >
-                {t.stars && (
-                  <div className="flex gap-0.5 mb-3" aria-label="Five out of five">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star key={i} className="w-3 h-3 fill-brand-blue text-brand-blue" />
-                    ))}
-                  </div>
-                )}
-                <blockquote className="text-[13.5px] leading-relaxed text-gray-300">
-                  {t.quote}
-                </blockquote>
-                <figcaption className="mt-3.5 text-[11.5px] text-gray-600">
-                  {t.name} &middot; {t.role}
-                </figcaption>
-              </figure>
+              <ReviewCard key={t.name} review={t} className="mb-5 break-inside-avoid p-5" />
             ))}
           </div>
-          <p className="sm:hidden mt-4 text-center text-[11.5px] text-gray-600">
-            Swipe for more &rarr;
-          </p>
         </div>
       </div>
 
