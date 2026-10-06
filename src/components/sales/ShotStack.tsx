@@ -27,7 +27,8 @@ export type StackShot = {
   src: string;
   alt: string;
   window: string;
-  zoom: ShotZoom;
+  /* Optional - a screen that reads fine shrunk does not need one. */
+  zoom?: ShotZoom;
 };
 
 const PEEK = 13; /* px each card behind shows above the one in front */
@@ -100,7 +101,7 @@ export default function ShotStack({ shots, className = '' }: { shots: StackShot[
                 src={s.src}
                 label={s.window}
                 alt={s.alt}
-                zooms={[s.zoom]}
+                zooms={s.zoom ? [s.zoom] : undefined}
                 zoomSpace="mb-12"
                 zoomsVisible={depth === 0 && !isLeaving}
               />

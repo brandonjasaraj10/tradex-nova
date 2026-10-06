@@ -16,12 +16,12 @@
 
   THE FIGURES IN THEM ARE A DEMO ACCOUNT
 
-  Not a customer, and not a claim. Every shot carries a caption saying so,
-  because a dark trading dashboard with a green number on it is exactly the
-  image this industry uses to imply earnings, and we are not implying
-  earnings. The account shown is up a few per cent over a month with eleven
-  losing trades visible in the calendar - which is the honest picture and, as
-  it happens, the more persuasive one for the person we are talking to.
+  Not a customer, and not a claim. The hero used to carry a "demo account,
+  not a customer's results" caption; Brandon took it off, judging that it
+  raised a doubt nobody had. What keeps the shots honest instead is the
+  numbers themselves: the account is up a few per cent with eleven losing
+  trades visible in the calendar, which is a believable month rather than an
+  earnings pitch - and keep it that way if these are ever reshot.
 
   ONE SCREENSHOT AT EVERY WIDTH, WITH A LENS ON A PHONE
 

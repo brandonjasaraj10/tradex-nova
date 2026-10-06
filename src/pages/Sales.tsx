@@ -517,15 +517,7 @@ export default function Sales() {
             alt="The TradeX dashboard: account balance, NOVA Score, win rate, profit factor and a panel showing how closely the trader followed their own plan."
             label="Dashboard"
             priority
-            zoomSpace="max-sm:mb-16"
-            zooms={[
-              { x: 118, y: 182, w: 340, h: 146, place: '-bottom-10 left-2.5 w-[62%]' },
-              { x: 850, y: 650, w: 214, h: 130, place: '-bottom-14 right-2.5 w-[32%]' },
-            ]}
           />
-          <p className="mt-3 text-center text-[11px] text-gray-600">
-            A demo account, not a customer&rsquo;s results
-          </p>
         </div>
       </div>
 
@@ -712,11 +704,6 @@ export default function Sales() {
                 src="/product/journal.jpg"
                 label="Journal"
                 alt="The entry TradeX wrote: symbol, direction, size and duration filled in, with the written review underneath it."
-                zoomSpace="max-sm:mt-4 max-sm:mb-16"
-                zooms={[
-                  { x: 630, y: 70, w: 350, h: 64, place: '-top-4 left-3 w-[74%]' },
-                  { x: 127, y: 770, w: 300, h: 220, place: '-bottom-16 right-3 w-[50%]' },
-                ]}
               />
             </div>
           </figure>
@@ -904,7 +891,6 @@ export default function Sales() {
                 src: '/product/analytics.jpg',
                 window: 'Analytics',
                 alt: 'The analytics page: NOVA Score, total profit and loss, win rate, profit factor, and cumulative P&L and win-rate charts.',
-                zoom: { x: 107, y: 690, w: 715, h: 310, place: '-bottom-10 left-3 w-[64%]' },
               },
             ]}
           />
