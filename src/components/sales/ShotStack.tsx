@@ -51,6 +51,15 @@ export default function ShotStack({ shots, className = '' }: { shots: StackShot[
     only transform and opacity change, which a phone can do on the GPU
     without repainting the screenshots.
   */
+  /*
+    And slowly. At 420ms with a fast-out curve the flip landed hard - Brandon:
+    "scrolls a little too hard", not on theme for a page that is otherwise
+    unhurried. It is now 750ms on a curve that eases in as well as out, and
+    z-index transitions with everything else: z-index animates as a whole
+    number, so the card leaving the front stays on top for the first part of
+    the move, fading as the next one rises behind it, instead of vanishing
+    behind it on the first frame.
+  */
   const go = (next: number) => {
     if (next !== active) setActive(next);
   };
@@ -85,7 +94,7 @@ export default function ShotStack({ shots, className = '' }: { shots: StackShot[
               key={s.id}
               aria-hidden={depth !== 0}
               className="[grid-area:1/1] origin-top [will-change:transform,opacity]
-                transition-[transform,opacity] duration-[420ms] ease-[cubic-bezier(.2,.8,.2,1)]
+                transition-[transform,opacity,z-index] duration-[750ms] ease-[cubic-bezier(.45,0,.2,1)]
                 motion-reduce:transition-none"
               style={{
                 transform: `translate3d(0, ${-depth * PEEK}px, 0) scale(${1 - depth * 0.06})`,
