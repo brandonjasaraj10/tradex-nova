@@ -54,11 +54,11 @@ const GROUPS: {
       },
       {
         q: 'How is this different from a spreadsheet?',
-        a: 'A spreadsheet holds what you type into it. TradeX writes the entry for you from what you said, then reads every entry together and tells you the thing you keep doing — you moved your stop on four of your last six losers, and none of your winners. No spreadsheet has ever told anybody that, and the numbers one does give you are numbers you had to key in by hand first.',
+        a: 'A spreadsheet holds what you type into it, and only after the fact. TradeX writes the entry for you from what you said, keeps your own rules and confluences on a checklist you tick on the way into a trade, and takes three ratings on how you are going in — calm or rattled, sharp or scattered, sure or not. Then it reads every entry together and tells you the thing you keep doing: you moved your stop on four of your last six losers, and none of your winners. A spreadsheet has never told anybody that, and it has never once been in front of somebody at the moment it would have mattered.',
       },
       {
         q: 'Will it make me profitable?',
-        a: 'Nothing can promise you that, and anything that does is selling you something. What TradeX gives you is the specific habit costing you money, named, with the dates and the figures attached. Most traders have never once seen that written down about themselves — and it is genuinely hard to keep doing a thing after you have read it back. That part is yours to act on; the trading is still trading.',
+        a: 'Nothing can promise you that, and anything that does is selling you something. What TradeX changes is how much of your own trading you can actually see: your rules and confluences in front of you before you click rather than judged afterwards, three honest ratings on the state you are entering in, a score that moves when your discipline does, and the specific habit costing you money named with the dates and figures attached. Most traders have never once seen that written down about themselves, and it is genuinely hard to keep doing a thing after you have read it back. The trading stays yours — what changes is that you are doing it with the evidence in front of you instead of behind you.',
       },
     ],
   },
