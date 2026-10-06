@@ -1,6 +1,8 @@
 import PageShell from '../components/layout/PageShell';
 import { Section, Card, QA, ClosingCta } from '../components/marketing/blocks';
 import ProductShot from '../components/sales/ProductShot';
+import { Fragment } from 'react';
+import { ArrowRight } from 'lucide-react';
 import { WORKS_TODAY, NOT_YET } from '../lib/integrations';
 
 /*
@@ -74,6 +76,69 @@ export default function Integrations() {
         ))}
       </div>
 
+      {/*
+        THE MECHANISM, DRAWN.
+
+        The one genuinely non-obvious thing on this page is that TradeX has no
+        relationship with your firm at all - it reads MetaTrader, and your
+        firm happens to hand you a MetaTrader login. Every consequence on this
+        page follows from that: why a firm not on the list still works, why no
+        firm has to approve anything, why there is no partnership to claim.
+
+        It was a sentence in the subtitle, which is the wrong form for a
+        thing with a shape. Three nodes and the relationship that does NOT
+        exist, struck through underneath, because the absent connection is the
+        half people get wrong.
+      */}
+      <div className="mt-4 rounded-2xl border border-white/[0.07] bg-brand-surface p-6 sm:p-8">
+        {/*
+          A flat row of node, arrow, node, arrow, node - not a row of wrappers
+          that each stack internally, which is what the first attempt did and
+          why every arrow rendered underneath its box instead of between two.
+        */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0">
+          {[
+            { label: 'Your firm or broker', sub: 'Prop firm, broker, or both' },
+            { label: 'MetaTrader 4 or 5', sub: 'The login they give you' },
+            { label: 'TradeX', sub: 'Reads it, never writes' },
+          ].map((node, i, all) => (
+            <Fragment key={node.label}>
+              <div className="flex-1 min-w-0 rounded-xl border border-white/[0.08]
+                bg-gradient-to-b from-white/[0.04] to-transparent px-4 py-4 text-center">
+                <p className="text-[13.5px] font-medium text-white">{node.label}</p>
+                <p className="mt-1 text-[12px] text-gray-500 leading-relaxed">{node.sub}</p>
+              </div>
+              {i < all.length - 1 && (
+                <span
+                  aria-hidden="true"
+                  className="flex items-center justify-center flex-shrink-0 text-gray-600
+                    rotate-90 sm:rotate-0 py-1 sm:py-0 sm:px-3"
+                >
+                  <ArrowRight className="w-4 h-4" />
+                </span>
+              )}
+            </Fragment>
+          ))}
+        </div>
+
+        {/*
+          The connection that is not there. Stated as plainly as the ones that
+          are, because "we have no arrangement with your firm" is reassurance
+          on this page rather than an admission.
+        */}
+        <p className="mt-6 pt-5 border-t border-white/[0.07] flex items-center gap-3
+          text-[12.5px] leading-relaxed text-gray-500">
+          <span className="inline-flex items-center gap-2 text-gray-600 whitespace-nowrap">
+            <span className="line-through decoration-white/25">TradeX</span>
+            <span className="line-through decoration-white/25">your firm</span>
+          </span>
+          <span>
+            No connection, no arrangement, nothing for them to approve. They
+            never know TradeX exists.
+          </span>
+        </p>
+      </div>
+
       <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         {[
           ['Read-only', 'It can never place, close or modify a trade, and it never touches your money.'],
@@ -91,25 +156,37 @@ export default function Integrations() {
         title="Firms and brokers that work today"
         lead="Not partnerships — there is no arrangement with any of these. Their accounts simply run on a platform TradeX can read."
       >
-        <p className="text-[10px] tracking-[0.16em] uppercase text-gray-600">Prop firms</p>
+        <p className="flex items-center gap-2.5 text-[10px] tracking-[0.16em] uppercase text-gray-600">
+          Prop firms
+          <span className="h-px flex-1 bg-white/[0.07]" aria-hidden="true" />
+          <span className="tabular-nums text-gray-500">{props.length}</span>
+        </p>
         <ul className="mt-4 flex flex-wrap gap-2">
           {props.map((f) => (
             <li
               key={f.name}
-              className="rounded-lg border border-white/[0.08] bg-brand-surface px-3 py-1.5 text-[13px] text-gray-300"
+              className="inline-flex items-center gap-2 rounded-lg border border-white/[0.08]
+                bg-brand-surface px-3 py-1.5 text-[13px] text-gray-300"
             >
+              <span className="h-1.5 w-1.5 rounded-full bg-brand-blue/80" aria-hidden="true" />
               {f.name}
             </li>
           ))}
         </ul>
 
-        <p className="mt-8 text-[10px] tracking-[0.16em] uppercase text-gray-600">Brokers</p>
+        <p className="mt-8 flex items-center gap-2.5 text-[10px] tracking-[0.16em] uppercase text-gray-600">
+          Brokers
+          <span className="h-px flex-1 bg-white/[0.07]" aria-hidden="true" />
+          <span className="tabular-nums text-gray-500">{brokers.length}</span>
+        </p>
         <ul className="mt-4 flex flex-wrap gap-2">
           {brokers.map((f) => (
             <li
               key={f.name}
-              className="rounded-lg border border-white/[0.08] bg-brand-surface px-3 py-1.5 text-[13px] text-gray-300"
+              className="inline-flex items-center gap-2 rounded-lg border border-white/[0.08]
+                bg-brand-surface px-3 py-1.5 text-[13px] text-gray-300"
             >
+              <span className="h-1.5 w-1.5 rounded-full bg-brand-blue/80" aria-hidden="true" />
               {f.name}
             </li>
           ))}
@@ -134,7 +211,12 @@ export default function Integrations() {
               className="rounded-2xl border border-white/[0.07] bg-brand-surface p-5
                 sm:flex sm:items-baseline sm:gap-6"
             >
-              <p className="text-[14px] font-medium text-white sm:w-[230px] sm:flex-shrink-0">
+              <p className="flex items-center gap-2 text-[14px] font-medium text-white
+                sm:w-[260px] sm:flex-shrink-0">
+                <span
+                  className="h-1.5 w-1.5 rounded-full border border-white/25"
+                  aria-hidden="true"
+                />
                 {item.name}
               </p>
               <p className="mt-1.5 sm:mt-0 text-[13px] leading-relaxed text-gray-500">{item.who}</p>
