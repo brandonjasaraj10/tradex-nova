@@ -80,6 +80,20 @@ export default function SwipeDeck({
     layout is exactly what it was.
   */
   const [heights, setHeights] = useState<number[]>([]);
+  /*
+    The panel the track has actually come to rest on, which is not the same as
+    the one the rail is highlighting mid-slide.
+
+    The first version of the phone height-follow sized the track from `index`,
+    which changes the instant a button is tapped - so the track's height
+    started animating at the same moment as the horizontal slide. Changing
+    layout under a scroll in progress makes the browser abandon it: in Chrome
+    the slide simply never happened (every sampled frame read scrollLeft 0),
+    and on an iPhone it overshot and left the second panel cut off at the left
+    edge. Height now waits for the slide to land.
+  */
+  const [settled, setSettled] = useState(0);
+  const settleTimer = useRef<number | null>(null);
   const [isPhone, setIsPhone] = useState(false);
 
   useEffect(() => {
@@ -116,6 +130,8 @@ export default function SwipeDeck({
           return;
         }
         setIndex(at);
+        if (settleTimer.current) window.clearTimeout(settleTimer.current);
+        settleTimer.current = window.setTimeout(() => setSettled(at), 140);
       });
     };
     el.addEventListener('scroll', onScroll, { passive: true });
@@ -130,10 +146,50 @@ export default function SwipeDeck({
     if (!el) return;
     const panel = el.querySelector<HTMLElement>('[data-panel]');
     const step = panel ? panel.offsetWidth + GAP : el.clientWidth;
+    const target = Math.min(i * step, el.scrollWidth - el.clientWidth);
     animatingTo.current = i;
     setIndex(i);
-    el.scrollTo({ left: i * step, behavior: 'smooth' });
-    window.setTimeout(() => { animatingTo.current = null; }, 700);
+
+    /*
+      Snapping off for the trip, back on once it has arrived.
+
+      A smooth programmatic scroll into a mandatory snap container is where
+      Safari overshoots and then bounces back to the snap point - the "goes
+      too far and comes back to the middle" reported from an iPhone. With
+      snapping suspended there is nothing to bounce against; the scroll just
+      stops where it was sent, which is already the snap point.
+    */
+    el.style.scrollSnapType = 'none';
+
+    /*
+      The slide is animated here, frame by frame, rather than handed to
+      scrollTo({ behavior: 'smooth' }) - because that call does not behave the
+      same in any two browsers once scroll-snap is involved. Measured: in
+      Chrome's phone emulation a smooth scrollTo on this track did nothing at
+      all (an instant one moved it fine), and on a real iPhone the same call
+      ran, overshot, and bounced back. Driving scrollLeft directly with an
+      ease-out curve is identical everywhere and has nothing to overshoot.
+    */
+    const from = el.scrollLeft;
+    const distance = target - from;
+    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const duration = reduced ? 0 : 420;
+    const began = performance.now();
+    const finish = () => {
+      el.scrollLeft = target;
+      el.style.scrollSnapType = '';
+      animatingTo.current = null;
+      setSettled(i);
+    };
+    if (duration === 0 || Math.abs(distance) < 1) { finish(); return; }
+    const frame = (now: number) => {
+      const t = Math.min(1, (now - began) / duration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      el.scrollLeft = from + distance * eased;
+      if (t < 1) requestAnimationFrame(frame);
+      else finish();
+    };
+    requestAnimationFrame(frame);
   };
 
   const spacer = (
@@ -148,11 +204,11 @@ export default function SwipeDeck({
     <div>
       <div
         ref={trackRef}
-        className={`flex gap-6 overflow-x-auto snap-x snap-mandatory scroll-smooth motion-reduce:scroll-auto
+        className={`flex gap-6 overflow-x-auto snap-x snap-mandatory
           [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden
           max-sm:items-start max-sm:overflow-y-hidden max-sm:transition-[height] max-sm:duration-300 max-sm:ease-out
           ${equalHeight ? '' : 'items-start'}`}
-        style={isPhone && heights[index] ? { height: heights[index] } : undefined}
+        style={isPhone && heights[settled] ? { height: heights[settled] } : undefined}
       >
         {spacer}
         {panels.map((p, i) => (
