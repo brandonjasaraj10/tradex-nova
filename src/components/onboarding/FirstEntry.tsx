@@ -1,10 +1,11 @@
 import { useState, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, Mic, Loader2, Check, X } from 'lucide-react';
+import { ArrowRight, Mic, Loader2, Check, X, Trophy } from 'lucide-react';
 import { processVoiceJournalEntry, type VoiceJournalData } from '../../services/voiceJournal';
 import { useVoice } from '../../hooks/useVoice';
 import { trackEvent } from '../../lib/productAnalytics';
 import MascotSays from '../shared/MascotSays';
+import Mascot from '../shared/Mascot';
 import type { StarterItem } from '../../lib/onboardingChecklist';
 
 /*
@@ -165,6 +166,7 @@ export default function FirstEntry({
   onDone,
   rules,
   psychChecks,
+  goalDays = null,
 }: {
   /* Hands back whatever Nova produced, or null if they skipped or it failed. */
   onDone: (entry: VoiceJournalData | null, transcript: string) => void;
@@ -176,6 +178,8 @@ export default function FirstEntry({
   */
   rules: StarterItem[];
   psychChecks: StarterItem[];
+  /* The 7 / 14 / 30 / 66 they committed to, for the celebration's "1 of N". */
+  goalDays?: number | null;
 }) {
   /* 0-2 are the three ratings, 3 is the text box. */
   const [phase, setPhase] = useState(0);
@@ -185,6 +189,7 @@ export default function FirstEntry({
   const [writing, setWriting] = useState(false);
   const [entry, setEntry] = useState<VoiceJournalData | null>(null);
   const [failed, setFailed] = useState(false);
+  const [celebrated, setCelebrated] = useState(false);
 
   const { isSupported, isListening, startListening, stopListening } = useVoice({
     onTranscript: (t: string) => setText((prev) => (prev ? `${prev} ${t}` : t)),
@@ -241,6 +246,93 @@ export default function FirstEntry({
   /* The result                                                        */
   /* ---------------------------------------------------------------- */
 
+  /*
+    DAY ONE, CELEBRATED - BEFORE THE ENTRY IS SHOWN.
+
+    Duolingo ends every lesson on a celebration screen, and the research
+    behind it is solid: small wins that are noticed are the strongest
+    day-to-day motivator people report (Amabile & Kramer's progress
+    principle), and a goal that already shows progress gets finished faster
+    than one starting from zero - the coffee-card study where two free
+    stamps made people fill the card sooner (Kivetz, Urminsky & Zheng's
+    goal-gradient effect). So the screen says the first entry is done and
+    puts it on their own goal as day 1 of N, already filled in.
+  */
+  if (entry && !writing && !celebrated) {
+    const target = goalDays && goalDays > 0 ? goalDays : null;
+    return (
+      <div className="text-center">
+        <div className="relative mx-auto mb-2 w-fit">
+          <Mascot pose="arms" height={110} className="mx-auto" />
+          {/* A small burst behind the trophy - drawn, not an emoji. */}
+          <motion.div
+            initial={{ scale: 0, rotate: -20 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: 'spring', stiffness: 260, damping: 14, delay: 0.15 }}
+            className="absolute -right-16 top-6 w-12 h-12 rounded-full bg-blue-500/15 border border-blue-400/40
+              flex items-center justify-center"
+          >
+            <Trophy size={22} className="text-blue-400" strokeWidth={2} />
+          </motion.div>
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <motion.span
+              key={i}
+              aria-hidden="true"
+              className="absolute -right-[42px] top-[46px] w-1.5 h-1.5 rounded-full bg-blue-400"
+              initial={{ opacity: 0, x: 0, y: 0 }}
+              animate={{
+                opacity: [0, 1, 0],
+                x: Math.cos((i / 6) * Math.PI * 2) * 38,
+                y: Math.sin((i / 6) * Math.PI * 2) * 38,
+              }}
+              transition={{ duration: 0.9, delay: 0.25, ease: 'easeOut' }}
+            />
+          ))}
+        </div>
+
+        <h1 className="text-[28px] sm:text-[34px] leading-[1.12] font-semibold tracking-[-0.035em] text-white">
+          Day one, done.
+        </h1>
+        <p className="mt-3 text-[14.5px] leading-relaxed text-gray-400 max-w-xs mx-auto">
+          Your first entry is written. That&rsquo;s the hardest one.
+        </p>
+
+        {target && (
+          <div className="mt-7 max-w-xs mx-auto">
+            <div className="flex gap-1" aria-hidden="true">
+              {Array.from({ length: Math.min(target, 30) }).map((_, i) => (
+                <motion.span
+                  key={i}
+                  className={`h-1.5 flex-1 rounded-full ${i === 0 ? 'bg-blue-400' : 'bg-white/10'}`}
+                  initial={i === 0 ? { scaleX: 0 } : false}
+                  animate={{ scaleX: 1 }}
+                  transition={{ duration: 0.5, delay: 0.4 }}
+                  style={{ originX: 0 }}
+                />
+              ))}
+            </div>
+            <p className="mt-2.5 text-[12.5px] text-gray-500">
+              <span className="text-white font-medium">1</span> of your {target} trading days
+            </p>
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={() => {
+            trackEvent('onboarding_entry_celebrated');
+            setCelebrated(true);
+          }}
+          className="mt-8 inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full
+            bg-white text-black text-[15px] font-medium hover:bg-gray-200 transition-colors"
+        >
+          See my entry
+          <ArrowRight size={17} />
+        </button>
+      </div>
+    );
+  }
+
   if (entry && !writing) {
     const pnl = entry.manual_pnl;
     const facts = [
@@ -250,32 +342,15 @@ export default function FirstEntry({
     ].filter(Boolean) as string[];
 
     /*
-      ONE THING NOVA NOTICED, NOT THE WHOLE WRITE-UP.
+      THEIR NOTES, ORGANISED - NOT A SUMMARY OF THEM.
 
-      The first version printed every line Nova wrote - a summary, "what
-      happened", a psychology section, the rules, the checks - which on a
-      phone was three screens of grey text under a headline saying it took
-      thirty seconds. The moment this screen exists for is a single beat:
-      "it noticed something about me". So the card leads with the one line
-      Nova wrote about their behaviour, and the full write-up - which is
-      exactly what lands in their journal - sits behind a tap for anybody
-      who wants to read it.
+      An earlier version led with one "Nova noticed" sentence and hid the rest
+      behind a tap. Brandon's call: the point of this screen is that their
+      messy sentence came back as a tidy journal entry, so show the entry -
+      Nova's sections, as short headings, each line on a blue bullet - exactly
+      what lands in their journal. The first version's problem was density,
+      not content: full-width grey paragraphs. Bullets and spacing fix that.
     */
-    const bodyLines = lines.filter((l) => !l.heading);
-    const psychHeading = lines.findIndex((l) => l.heading && /psych|mind|pattern|watch|lesson|habit/i.test(l.text));
-    const noticedBlock =
-      (psychHeading >= 0 ? lines.slice(psychHeading + 1).find((l) => !l.heading)?.text : undefined) ??
-      bodyLines[bodyLines.length - 1]?.text;
-    /*
-      And within that, the one sentence that names a pattern - "this mirrors
-      Tuesday" is the line that lands; the recap of the trade before it is
-      already in the facts row above.
-    */
-    const sentences = noticedBlock?.match(/[^.!?]+[.!?]+/g)?.map((x) => x.trim()) ?? [];
-    const noticed =
-      sentences.find((x) => /pattern|again|same|habit|repeat|mirror|every time|keeps?/i.test(x)) ??
-      (noticedBlock && noticedBlock.length > 170 ? sentences.slice(0, 2).join(' ') : noticedBlock);
-
     const ratings = RATINGS.map((r) => ({ r, value: entry[r.key] })).filter(
       (x): x is { r: (typeof RATINGS)[number]; value: number } => typeof x.value === 'number',
     );
@@ -328,29 +403,21 @@ export default function FirstEntry({
               </div>
             )}
 
-            {noticed && (
-              <div className="rounded-xl border border-brand-blue-light/25 bg-brand-blue/[0.07] px-3.5 py-3">
-                <p className="text-[10px] uppercase tracking-[0.12em] text-brand-blue-light mb-1">Nova noticed</p>
-                <p className="text-[13.5px] leading-relaxed text-gray-200">{noticed}</p>
+            {lines.length > 0 && (
+              <div className="flex flex-col gap-2">
+                {lines.map((line, i) =>
+                  line.heading ? (
+                    <p key={i} className="text-[10px] uppercase tracking-[0.12em] text-blue-400 mt-2 first:mt-0">
+                      {line.text}
+                    </p>
+                  ) : (
+                    <div key={i} className="flex gap-2.5 text-[13.5px] leading-relaxed text-gray-200">
+                      <span className="flex-shrink-0 mt-[8px] w-1.5 h-1.5 rounded-full bg-blue-400" aria-hidden="true" />
+                      <span>{line.text}</span>
+                    </div>
+                  ),
+                )}
               </div>
-            )}
-
-            {bodyLines.length > 1 && (
-              <details className="group">
-                <summary className="cursor-pointer list-none text-[12.5px] text-gray-500 hover:text-gray-300 transition-colors">
-                  <span className="group-open:hidden">See the full write-up</span>
-                  <span className="hidden group-open:inline">Hide the write-up</span>
-                </summary>
-                <div className="mt-3 flex flex-col gap-2">
-                  {lines.map((line, i) =>
-                    line.heading ? (
-                      <p key={i} className="text-[10px] uppercase tracking-[0.12em] text-gray-600 mt-1">{line.text}</p>
-                    ) : (
-                      <p key={i} className="text-[13px] leading-relaxed text-gray-400">{line.text}</p>
-                    ),
-                  )}
-                </div>
-              </details>
             )}
 
             {/*
