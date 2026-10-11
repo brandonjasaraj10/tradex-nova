@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Mic, Loader2, Check, X, Trophy } from 'lucide-react';
 import { processVoiceJournalEntry, type VoiceJournalData } from '../../services/voiceJournal';
 import { useVoice } from '../../hooks/useVoice';
+import { useRecorder } from '../../hooks/useRecorder';
 import { trackEvent } from '../../lib/productAnalytics';
 import MascotSays from '../shared/MascotSays';
 import Mascot from '../shared/Mascot';
@@ -172,9 +173,23 @@ export default function FirstEntry({
   const [failed, setFailed] = useState(false);
   const [celebrated, setCelebrated] = useState(false);
 
-  const { isSupported, isListening, startListening, stopListening } = useVoice({
-    onTranscript: (t: string) => setText((prev) => (prev ? `${prev} ${t}` : t).slice(0, MAX_CHARS)),
-  });
+  const appendText = (t: string) => setText((prev) => (prev ? `${prev} ${t}` : t).slice(0, MAX_CHARS));
+  const speech = useVoice({ onTranscript: appendText });
+  /*
+    Two ways to a mic. The browser's own speech recognition where it exists
+    (live, free); otherwise record the clip and transcribe it on the server
+    (transcribe-audio) - which is what makes the mic appear in Instagram's
+    in-app browser and other places with no speech recognition at all.
+  */
+  const recorder = useRecorder(appendText);
+  const useSpeech = speech.isSupported;
+  const isSupported = useSpeech || recorder.isSupported;
+  const isListening = useSpeech ? speech.isListening : recorder.isRecording;
+  const transcribing = !useSpeech && recorder.isTranscribing;
+  const toggleMic = () => {
+    if (useSpeech) return speech.isListening ? speech.stopListening() : speech.startListening();
+    return recorder.isRecording ? recorder.stop() : void recorder.start();
+  };
 
   const lines = useMemo(() => toLines(entry?.content), [entry?.content]);
 
@@ -607,15 +622,12 @@ export default function FirstEntry({
             text-[15px] leading-relaxed text-gray-100 placeholder:text-gray-600
             focus:outline-none focus:border-brand-blue-light/50 disabled:opacity-60 resize-none"
         />
-        {/*
-          Only rendered where speech recognition genuinely exists. In the
-          Instagram in-app browser - where most of this traffic arrives - it
-          does not, and a mic that does nothing is worse than no mic.
-        */}
+        {/* Only drawn where one of the two ways to listen actually works. */}
         {isSupported && !writing && (
           <button
             type="button"
-            onClick={() => (isListening ? stopListening() : startListening())}
+            disabled={transcribing}
+            onClick={toggleMic}
             aria-label={isListening ? 'Stop recording' : 'Record instead of typing'}
             className={`absolute bottom-3 right-3 w-10 h-10 rounded-full flex items-center
               justify-center transition-colors ${
@@ -624,7 +636,9 @@ export default function FirstEntry({
                 : 'bg-white/10 text-gray-300 hover:bg-white/15'
             }`}
           >
-            {isListening ? (
+            {transcribing ? (
+              <Loader2 size={17} className="animate-spin" />
+            ) : isListening ? (
               <motion.span
                 className="block w-3 h-3 rounded-sm bg-white"
                 animate={{ opacity: [1, 0.4, 1] }}
@@ -636,6 +650,12 @@ export default function FirstEntry({
           </button>
         )}
       </div>
+
+      {isListening && !useSpeech && (
+        <p className="mt-2 text-[12.5px] text-blue-400">Recording&hellip; tap the square when you&rsquo;re done.</p>
+      )}
+      {transcribing && <p className="mt-2 text-[12.5px] text-gray-400">Turning that into text&hellip;</p>}
+      {recorder.error && !useSpeech && <p className="mt-2 text-[12.5px] text-gray-400">{recorder.error}</p>}
 
       {text.length > MAX_CHARS - 200 && (
         <p className="mt-2 text-right text-[11.5px] text-gray-500 tabular-nums">
