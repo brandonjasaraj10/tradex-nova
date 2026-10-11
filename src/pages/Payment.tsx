@@ -16,15 +16,6 @@ import { emphasise } from '../lib/emphasise';
 import { HELD_KEY } from '../services/onboardingWriteBack';
 
 /*
-  ONE REVIEW, RIGHT ABOVE THE BUTTON, CHOSEN FOR THEM.
-
-  Social proof placed immediately before the price is one of the more
-  consistent paywall findings (Timely moved it there), and a quote that
-  matches what the reader just said about themselves does more than a
-  generic five stars. Same quotes as the landing page's review wall.
-  Picked by why journaling failed them before, then by their struggle.
-*/
-/*
   The headline, by the outcome they said they want - the same line their
   plan screen opened with, so the price sits under their goal rather than
   under a description of the product. Outcomes, never promises about money.
@@ -35,14 +26,6 @@ const OUTCOME_HEADLINE: Record<string, string> = {
   stop_blowing: 'Make this the account you keep.',
   consistent: 'Trade your plan on the bad days too.',
   understand: 'Finally see why you do what you do.',
-};
-
-const PAYWALL_QUOTES: Record<string, { quote: string; who: string }> = {
-  typing: { quote: 'The first journal I have still been using after a month, and the only reason is that it does not make me type.', who: 'Priya S. · Swing trader' },
-  revenge_trading: { quote: 'Every account I’ve blown started on a day I’d have rated myself a 2.', who: 'Daniel R. · Futures' },
-  breaking_rules: { quote: 'Once I stopped giving myself 4s and 5s on days I knew were bad, the score started meaning something.', who: 'Sofia L. · FX' },
-  overtrading: { quote: 'I did stop revenge trading after seeing the same note three times in a row.', who: 'Jonas B. · Prop trader' },
-  not_sure: { quote: 'Asked it why my Fridays were bad. It told me they were not, and that my Tuesdays were. It was right.', who: 'Tom W. · Indices' },
 };
 
 /*
@@ -332,9 +315,6 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
     return () => { cancelled = true; };
   }, []);
 
-  const quote =
-    PAYWALL_QUOTES[goal?.pastJournal === 'typing' || goal?.pastJournal === 'switch_typing' ? 'typing' : profile?.onboarding_struggle ?? 'not_sure'] ??
-    PAYWALL_QUOTES.not_sure;
 
   const [isFounder, setIsFounder] = useState(false);
 
@@ -1317,20 +1297,6 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
               <CheckCircle2 className="w-5 h-5 text-brand-blue flex-shrink-0 mt-0.5" />
               <div className="text-[13px] leading-relaxed text-gray-300">{success}</div>
             </div>
-          )}
-
-          {!isFounder && (
-            <figure className="px-1 text-center">
-              <div className="flex justify-center gap-0.5 mb-1.5" aria-label="Five out of five">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <svg key={i} viewBox="0 0 20 20" className="w-3 h-3 fill-brand-blue" aria-hidden="true">
-                    <path d="M10 1.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L10 14.9l-5.2 2.7 1-5.8L1.5 7.7l5.9-.9z" />
-                  </svg>
-                ))}
-              </div>
-              <blockquote className="text-[13px] leading-relaxed text-gray-300 text-balance">&ldquo;{quote.quote}&rdquo;</blockquote>
-              <figcaption className="mt-1 text-[11.5px] text-gray-600">{quote.who}</figcaption>
-            </figure>
           )}
 
           {/* The white pill every other CTA on the site uses. */}
