@@ -13,6 +13,24 @@ import { useAuth } from '../lib/auth';
 import PaymentFailedGate from '../components/billing/PaymentFailedGate';
 import { trackEvent } from '../lib/productAnalytics';
 import { emphasise } from '../lib/emphasise';
+import { HELD_KEY } from '../services/onboardingWriteBack';
+
+/*
+  ONE REVIEW, RIGHT ABOVE THE BUTTON, CHOSEN FOR THEM.
+
+  Social proof placed immediately before the price is one of the more
+  consistent paywall findings (Timely moved it there), and a quote that
+  matches what the reader just said about themselves does more than a
+  generic five stars. Same quotes as the landing page's review wall.
+  Picked by why journaling failed them before, then by their struggle.
+*/
+const PAYWALL_QUOTES: Record<string, { quote: string; who: string }> = {
+  typing: { quote: 'The first journal I have still been using after a month, and the only reason is that it does not make me type.', who: 'Priya S. · Swing trader' },
+  revenge_trading: { quote: 'Every account I’ve blown started on a day I’d have rated myself a 2.', who: 'Daniel R. · Futures' },
+  breaking_rules: { quote: 'Once I stopped giving myself 4s and 5s on days I knew were bad, the score started meaning something.', who: 'Sofia L. · FX' },
+  overtrading: { quote: 'I did stop revenge trading after seeing the same note three times in a row.', who: 'Jonas B. · Prop trader' },
+  not_sure: { quote: 'Asked it why my Fridays were bad. It told me they were not, and that my Tuesdays were. It was right.', who: 'Tom W. · Indices' },
+};
 
 /*
   Six, not fourteen, and each one an outcome rather than a feature name.
@@ -272,6 +290,38 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
   }, [profile?.onboarding_struggle]);
 
   const [comparing, setComparing] = useState(false);
+
+  /*
+    Their own commitment, shown back at the price.
+
+    Onboarding ends with them choosing a goal and writing a first entry
+    that is held until they subscribe. Restating both here is the
+    consistency principle - people act in line with what they have just
+    committed to - and it reminds them there is something of theirs on the
+    other side of this button.
+  */
+  const [goal, setGoal] = useState<{ days: string; pastJournal?: string } | null>(null);
+  const [hasHeldEntry, setHasHeldEntry] = useState(false);
+  useEffect(() => {
+    try {
+      setHasHeldEntry(!!localStorage.getItem(HELD_KEY));
+    } catch {
+      /* storage blocked - simply no line about it */
+    }
+    let cancelled = false;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase.from('user_profiles').select('onboarding_profile').eq('user_id', user.id).maybeSingle();
+      const p = (data?.onboarding_profile ?? {}) as Record<string, string>;
+      if (!cancelled && p.commit_days) setGoal({ days: p.commit_days, pastJournal: p.past_journal });
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const quote =
+    PAYWALL_QUOTES[goal?.pastJournal === 'typing' ? 'typing' : profile?.onboarding_struggle ?? 'not_sure'] ??
+    PAYWALL_QUOTES.not_sure;
 
   const [isFounder, setIsFounder] = useState(false);
 
@@ -849,6 +899,19 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
                   </>
                 )}
             </p>
+            {!isFounder && (hasHeldEntry || goal) && (
+              <p className="mt-3 inline-flex flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-full
+                border border-brand-blue/25 bg-brand-blue/[0.07] px-3.5 py-1.5 text-[12px] text-gray-300">
+                {hasHeldEntry && (
+                  <span className="inline-flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-brand-blue" />
+                    First entry ready to save
+                  </span>
+                )}
+                {hasHeldEntry && goal && <span className="text-gray-600">&middot;</span>}
+                {goal && <span>Goal: {goal.days} days</span>}
+              </p>
+            )}
           </div>
 
           {/*
@@ -1241,6 +1304,20 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
               <CheckCircle2 className="w-5 h-5 text-brand-blue flex-shrink-0 mt-0.5" />
               <div className="text-[13px] leading-relaxed text-gray-300">{success}</div>
             </div>
+          )}
+
+          {!isFounder && (
+            <figure className="px-1 text-center">
+              <div className="flex justify-center gap-0.5 mb-1.5" aria-label="Five out of five">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <svg key={i} viewBox="0 0 20 20" className="w-3 h-3 fill-brand-blue" aria-hidden="true">
+                    <path d="M10 1.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L10 14.9l-5.2 2.7 1-5.8L1.5 7.7l5.9-.9z" />
+                  </svg>
+                ))}
+              </div>
+              <blockquote className="text-[13px] leading-relaxed text-gray-300 text-balance">&ldquo;{quote.quote}&rdquo;</blockquote>
+              <figcaption className="mt-1 text-[11.5px] text-gray-600">{quote.who}</figcaption>
+            </figure>
           )}
 
           {/* The white pill every other CTA on the site uses. */}
