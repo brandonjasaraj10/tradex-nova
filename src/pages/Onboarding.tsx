@@ -9,7 +9,7 @@ import {
 import { STRUGGLE_CARD } from '../lib/onboardingPreview';
 import {
   PROFILE_QUESTIONS, buildPlan, type ProfileAnswers,
-  WHY_OPTIONS, PAST_OPTIONS, STOPPED_OPTIONS, MINUTES_OPTIONS, COMMIT_OPTIONS, commitmentLine, pastAnswerLine,
+  WHY_OPTIONS, PAST_OPTIONS, STOPPED_OPTIONS, SWITCHING_OPTIONS, MINUTES_OPTIONS, COMMIT_OPTIONS, commitmentLine, pastAnswerLine,
   thinkingLines, type ChoiceOption,
 } from '../lib/onboardingPlan';
 import { trackEvent } from '../lib/productAnalytics';
@@ -64,6 +64,7 @@ type Step =
   | 'why'
   | 'past'
   | 'stopped'
+  | 'switching'
   | 'instrument'
   | 'experience'
   | 'struggles'
@@ -83,7 +84,7 @@ const QUESTION_COUNT = 8 + PROFILE_QUESTIONS.length;
 function questionIndex(step: Step): number | null {
   if (step === 'why') return 0;
   if (step === 'past') return 1;
-  if (step === 'stopped') return 2;
+  if (step === 'stopped' || step === 'switching') return 2;
   if (step === 'instrument') return 3;
   if (step === 'experience') return 4;
   if (step === 'struggles') return 5;
@@ -353,8 +354,8 @@ export default function Onboarding({
 
   const answerPast = (value: string) => {
     trackEvent('onboarding_past_journal', { past: value });
-    if (value === 'yes') {
-      setStep('stopped');
+    if (value === 'stopped' || value === 'current') {
+      setStep(value === 'stopped' ? 'stopped' : 'switching');
       return;
     }
     setProfile((prev) => ({ ...prev, past_journal: value }));
@@ -639,6 +640,16 @@ export default function Onboarding({
                 title="Have you kept a trading journal before?"
                 options={PAST_OPTIONS}
                 onChoose={answerPast}
+              />
+            )}
+
+            {step === 'switching' && (
+              <Question
+                step={step}
+                title="What’s your current one missing?"
+                subtitle="Your plan is built around the answer."
+                options={SWITCHING_OPTIONS}
+                onChoose={answerStopped}
               />
             )}
 

@@ -170,8 +170,22 @@ export const WHY_OPTIONS: ChoiceOption[] = [
   Stored as onboarding_profile.past_journal: the reason, or 'never'.
 */
 export const PAST_OPTIONS: ChoiceOption[] = [
-  { value: 'yes', label: 'Yes, but I stopped' },
+  { value: 'stopped', label: 'Yes, but I stopped' },
+  { value: 'current', label: 'Yes, I use one now' },
   { value: 'never', label: 'No, this is my first' },
+];
+
+/*
+  For somebody switching from another journal (TradeZella, Tradervue, a
+  spreadsheet), "why did you stop?" is the wrong question - they have not.
+  The useful one is what their current journal does not do, because that
+  is the reason they are here, and the plan can answer it by name.
+*/
+export const SWITCHING_OPTIONS: ChoiceOption[] = [
+  { value: 'switch_numbers', label: 'It tracks my numbers, not my head' },
+  { value: 'switch_typing', label: 'It takes too long to fill in' },
+  { value: 'switch_insight', label: 'It never tells me what I keep doing' },
+  { value: 'switch_trying', label: 'Just seeing if this is better' },
 ];
 
 /*
@@ -193,6 +207,10 @@ const PAST_ANSWER: Record<string, string> = {
   typing: 'You said filling it in killed it. Here a trade takes *thirty seconds, said out loud or typed messy*.',
   forgot: 'You said you kept forgetting. Your dashboard *counts every day toward your goal*, so a missed one shows.',
   no_point: 'You said you never saw what it was for. *Two numbers by the end of the trial* — that is what it is for.',
+  switch_numbers: 'You said your journal tracks your numbers, not your head. Here *every trade carries how you were going in*.',
+  switch_typing: 'You said yours takes too long to fill in. Here a trade takes *thirty seconds, said out loud or typed messy*.',
+  switch_insight: 'You said yours never tells you what you keep doing. Here *Nova reads every entry and names it*.',
+  switch_trying: 'Fair enough. *Two weeks on your real trades*, then compare it with what you use now.',
   bad_run: 'You said you stopped during a bad run. That is when it matters most — *three taps still works on your worst day*.',
   never: 'First journal? *One trade, thirty seconds* is the whole job on day one.',
 };
@@ -224,6 +242,10 @@ export function thinkingLines(struggles: string[], profile: ProfileAnswers): str
     forgot: 'Setting up your daily count',
     no_point: 'Picking the two numbers you’ll see first',
     bad_run: 'Making it work on your worst days',
+    switch_numbers: 'Adding your state to every trade',
+    switch_typing: 'Cutting each entry down to thirty seconds',
+    switch_insight: 'Setting Nova up to read every entry',
+    switch_trying: 'Setting up your two-week comparison',
     never: 'Setting up your first journal',
   };
   return [

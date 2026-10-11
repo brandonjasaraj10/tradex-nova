@@ -320,7 +320,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
   }, []);
 
   const quote =
-    PAYWALL_QUOTES[goal?.pastJournal === 'typing' ? 'typing' : profile?.onboarding_struggle ?? 'not_sure'] ??
+    PAYWALL_QUOTES[goal?.pastJournal === 'typing' || goal?.pastJournal === 'switch_typing' ? 'typing' : profile?.onboarding_struggle ?? 'not_sure'] ??
     PAYWALL_QUOTES.not_sure;
 
   const [isFounder, setIsFounder] = useState(false);
