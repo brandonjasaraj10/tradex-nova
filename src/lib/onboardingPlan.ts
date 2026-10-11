@@ -213,11 +213,11 @@ export const STOPPED_OPTIONS: ChoiceOption[] = [
 const PAST_ANSWER: Record<string, string> = {
   typing: 'You said filling it in killed it. Here a trade takes *thirty seconds, said out loud or typed messy*.',
   forgot: 'You said you kept forgetting. Your dashboard *counts every day toward your goal*, so a missed one shows.',
-  no_point: 'You said you never saw what it was for. *Two numbers by the end of the trial* — that is what it is for.',
+  no_point: 'You said you never saw what it was for. *Your own pattern, named from your own trades* — that is what it is for.',
   switch_numbers: 'You said your journal tracks your numbers, not your head. Here *every trade carries how you were going in*.',
   switch_typing: 'You said yours takes too long to fill in. Here a trade takes *thirty seconds, said out loud or typed messy*.',
   switch_insight: 'You said yours never tells you what you keep doing. Here *Nova reads every entry and names it*.',
-  switch_trying: 'Fair enough. *Two weeks on your real trades*, then compare it with what you use now.',
+  switch_trying: 'Fair enough. *Run your goal on your real trades*, then compare it with what you use now.',
   bad_run: 'You said you stopped during a bad run. That is when it matters most — *three taps still works on your worst day*.',
   never: 'First journal? *One trade, thirty seconds* is the whole job on day one.',
 };
@@ -344,6 +344,18 @@ const FIRST_NUMBER: Record<Struggle, string> = {
   What it must never become is a prediction about money. This is a trading
   product; the outcome being sold is seeing yourself clearly, not a return.
 */
+/* N trading days from today, skipping Saturdays and Sundays. */
+export function addTradingDays(from: Date, days: number): Date {
+  const d = new Date(from);
+  let left = days;
+  while (left > 0) {
+    d.setDate(d.getDate() + 1);
+    const wd = d.getDay();
+    if (wd !== 0 && wd !== 6) left -= 1;
+  }
+  return d;
+}
+
 export function buildPlan(
   struggles: Struggle[],
   profile: ProfileAnswers,
@@ -386,7 +398,16 @@ export function buildPlan(
     points.push('*See the drift before your account does* — rules, mindset and P&L on one screen.');
   }
 
-  const day = trialEnds.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+  /*
+    The date is the end of THEIR goal, counted in trading days (weekends
+    skipped) - not the end of the trial. It used to be the trial end for
+    everybody, so somebody who had just picked 7 days was told about a date
+    fourteen days out, which read as the flow not listening. Falls back to
+    the trial end only when no goal was picked.
+  */
+  const goalDays = Number(profile.commit_days);
+  const goalEnd = goalDays > 0 ? addTradingDays(new Date(), goalDays) : trialEnds;
+  const day = goalEnd.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
 
   /*
     "Enough" rather than a number of entries. We do not know how often they

@@ -555,7 +555,7 @@ export default function FirstEntry({
       <div>
         {/* No mascot here: with it this screen was 618px and scrolled on most iPhones. */}
         <p className="text-center text-[11px] uppercase tracking-[0.14em] text-gray-500 mb-3">
-          Your first entry &middot; {phase + 1} of {RATINGS.length + 1}
+          Your first entry
         </p>
         {phase === 0 && (
           <p className="text-center text-[14px] text-gray-400 mb-1.5">Think of your last losing trade.</p>
@@ -592,7 +592,7 @@ export default function FirstEntry({
       </MascotSays>
 
       <p className="text-center text-[11px] uppercase tracking-[0.14em] text-gray-500 mb-3">
-        Your first entry &middot; {RATINGS.length + 1} of {RATINGS.length + 1}
+        Your first entry
       </p>
       <h1 className="text-[26px] sm:text-[31px] leading-[1.15] font-semibold tracking-[-0.032em]
         text-white text-center text-balance mb-2">

@@ -15,6 +15,7 @@ import {
 import { trackEvent } from '../lib/productAnalytics';
 import { emphasise } from '../lib/emphasise';
 import MascotSays from '../components/shared/MascotSays';
+import Mascot from '../components/shared/Mascot';
 import { HELD_KEY } from '../services/onboardingWriteBack';
 import FirstEntry from '../components/onboarding/FirstEntry';
 import { buildStarterRules, buildStarterPsychChecks } from '../lib/onboardingChecklist';
@@ -204,10 +205,43 @@ function Progress({ step }: { step: Step }) {
           transition={{ duration: 0.3, ease: 'easeOut' }}
         />
       </div>
-      <p className="mt-2.5 text-[11px] uppercase tracking-[0.14em] text-gray-500 text-center">
-        {index + 1} of {QUESTION_COUNT}
-      </p>
+      {/*
+        No "3 of 13". Brandon: the count made it feel like a test - every
+        screen a reminder of how many were left. Duolingo shows only the bar,
+        and the bar alone still says "you are moving" without the arithmetic.
+      */}
     </div>
+  );
+}
+
+/*
+  NOVA ASKS THE QUESTION.
+
+  Duolingo's onboarding never shows a form heading - Duo asks each question
+  in a speech bubble, so a run of questions reads as a conversation with a
+  character rather than a survey. Same here: Nova beside a bubble holding the
+  question, the pose changing as it goes so it feels alive rather than
+  pasted in.
+*/
+const ASK_POSES = ['idle', 'lean', 'present', 'arms'] as const;
+
+function Ask({ step, title, subtitle }: { step: Step; title: string; subtitle?: string }) {
+  const index = questionIndex(step) ?? 0;
+  return (
+    <>
+      <Progress step={step} />
+      <div className="flex items-end gap-3 mb-6">
+        <Mascot pose={ASK_POSES[index % ASK_POSES.length]} height={78} className="flex-shrink-0" />
+        <div className="relative mb-3 rounded-2xl border border-white/10 bg-brand-elevated px-4 py-3">
+          <p className="text-[17px] sm:text-[19px] leading-snug font-semibold text-white text-balance">{title}</p>
+          {subtitle && <p className="mt-1 text-[12.5px] text-gray-500">{subtitle}</p>}
+          <span
+            aria-hidden="true"
+            className="absolute -left-[6px] bottom-4 w-3 h-3 rotate-45 bg-brand-elevated border-l border-b border-white/10"
+          />
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -282,15 +316,8 @@ function Question({
 
   return (
     <>
-      <Progress step={step} />
-      <h1 className="text-[26px] sm:text-[32px] leading-[1.15] font-semibold tracking-[-0.03em]
-        text-white text-balance text-center mb-2">
-        {title}
-      </h1>
-      {subtitle && (
-        <p className="text-center text-[13.5px] text-gray-500 mb-6">{subtitle}</p>
-      )}
-      <div className={`flex flex-col gap-2.5 ${subtitle ? '' : 'mt-5'}`}>
+      <Ask step={step} title={title} subtitle={subtitle} />
+      <div className="flex flex-col gap-2.5">
         {options.map((o) => (
           <Choice key={o.value} label={o.label} tag={o.tag} recommended={o.recommended} selected={picked === o.value} onClick={() => choose(o.value)} />
         ))}
@@ -540,15 +567,14 @@ export default function Onboarding({
           <motion.div
             key={typeof step === 'object' ? `profile-${step.profile}` : step}
             /*
-              Each screen slides in from the right and out to the left, the
-              way a native app moves forward - a fade read as the page
-              reloading. Short and eased, so it reads as movement rather than
-              as waiting.
+              A plain, quick fade. A sideways slide was tried and gave Brandon
+              a headache going through thirty screens of it - nothing should
+              move that does not need to.
             */
-            initial={{ opacity: 0, x: 28 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -28 }}
-            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15, ease: 'easeOut' }}
           >
             {/*
               The reaffirm screen.
@@ -604,7 +630,7 @@ export default function Onboarding({
                     className="transition-all duration-500 ease-out"
                     style={{
                       opacity: revealed ? 1 : 0,
-                      transform: revealed ? 'none' : 'translateY(10px)',
+                      /* Fade only. A rise from below read as text sliding up out of the middle of the screen, half cut off. */
                       transitionDelay: `${i * 140}ms`,
                     }}
                   >
@@ -734,14 +760,7 @@ export default function Onboarding({
             */}
             {step === 'struggles' && (
               <>
-                <Progress step={step} />
-                <h1 className="text-[26px] sm:text-[32px] leading-[1.15] font-semibold
-                  tracking-[-0.03em] text-white text-balance text-center mb-2">
-                  What&rsquo;s actually costing you money?
-                </h1>
-                <p className="text-center text-[13.5px] text-gray-500 mb-6">
-                  Pick as many as are true.
-                </p>
+                <Ask step={step} title="What’s actually costing you money?" subtitle="Pick as many as are true." />
                 <div className="flex flex-col gap-2.5">
                   {STRUGGLES.map((o) => (
                     <Choice
@@ -848,7 +867,7 @@ export default function Onboarding({
               <div className="text-center">
                 <p className="text-[19px] sm:text-[23px] leading-[1.3] font-normal
                   tracking-[-0.02em] text-gray-400 text-balance max-w-lg mx-auto">
-                  {emphasise('Most traders take *three years* to find out what you are about to find out in *two weeks*.')}
+                  {emphasise(`Most traders take *three years* to find out what you are about to find out in *${profile.commit_days ? `${profile.commit_days} trading days` : 'two weeks'}*.`)}
                 </p>
                 <p className="mt-6 text-[14px] sm:text-[15px] leading-relaxed text-gray-500
                   max-w-md mx-auto">
