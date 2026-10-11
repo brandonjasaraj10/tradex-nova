@@ -40,6 +40,21 @@ const MODELS_WITH_EFFORT = new Set(['claude-sonnet-5']);
 const PER_MINUTE_LIMIT = 20;
 const DAILY_LIMIT = 300;
 
+/*
+  Accounts with no active subscription get far less.
+
+  Onboarding now ends with the trader writing a real first entry through
+  this function before they have paid - which also means any free signup
+  could call it directly, 300 times a day, at roughly two cents a call.
+  An unpaid account needs it once, plus a retry or two if the first attempt
+  fails or they want to redo it, so: 3 a day, 3 a minute, and a transcript
+  capped at about three minutes of speech. Paying lifts all three at once,
+  on the same day.
+*/
+const UNPAID_PER_MINUTE_LIMIT = 3;
+const UNPAID_DAILY_LIMIT = 3;
+const UNPAID_MAX_CHARS = 2000;
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
@@ -91,11 +106,23 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    /* Fails closed to the unpaid limits: if the check errors, nobody gets 300 free calls. */
+    const { data: subscribed, error: subError } = await supabaseClient.rpc('has_active_subscription');
+    if (subError) console.error('Subscription check failed:', subError);
+    const paid = subscribed === true;
+
+    if (!paid && String(transcript).length > UNPAID_MAX_CHARS) {
+      return new Response(
+        JSON.stringify({ error: 'That one is a bit long - keep it to a few sentences and try again.' }),
+        { status: 413, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const { data: usageCheck, error: usageError } = await supabaseClient
       .rpc('check_and_increment_nova_usage', {
         p_user_id: authUser.id,
-        p_per_minute_limit: PER_MINUTE_LIMIT,
-        p_daily_limit: DAILY_LIMIT,
+        p_per_minute_limit: paid ? PER_MINUTE_LIMIT : UNPAID_PER_MINUTE_LIMIT,
+        p_daily_limit: paid ? DAILY_LIMIT : UNPAID_DAILY_LIMIT,
         p_feature: 'voice_journal',
       })
       .single();
@@ -109,7 +136,9 @@ Deno.serve(async (req: Request) => {
       console.error('Rate limit check failed:', usageError);
     } else if (usageCheck && !(usageCheck as any).allowed) {
       const message = (usageCheck as any).reason === 'daily_limit'
-        ? "You've hit today's limit for organizing entries with Nova. It resets at midnight."
+        ? (paid
+          ? "You've hit today's limit for organizing entries with Nova. It resets at midnight."
+          : "That's the free entries used for today. Start your trial to keep journaling with Nova.")
         : "That's a lot at once - give it a few seconds and try again.";
       return new Response(
         JSON.stringify({ error: message }),
