@@ -28,6 +28,9 @@ export function useRecorder(onText: (text: string) => void) {
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /* Elapsed seconds while recording, so the screen visibly moves. */
+  const [seconds, setSeconds] = useState(0);
+  const tickRef = useRef<number | null>(null);
 
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -79,14 +82,18 @@ export function useRecorder(onText: (text: string) => void) {
       };
       recorder.onstop = () => {
         stream.getTracks().forEach((t) => t.stop());
+        if (tickRef.current) window.clearInterval(tickRef.current);
         setIsRecording(false);
         const type = recorder.mimeType || mimeType || 'audio/webm';
         const blob = new Blob(chunksRef.current, { type });
         if (blob.size > 0) void transcribe(blob, type);
       };
       recorderRef.current = recorder;
-      recorder.start();
+      /* A timeslice, so data arrives in pieces and a long clip never sits in one huge buffer. */
+      recorder.start(1000);
       setIsRecording(true);
+      setSeconds(0);
+      tickRef.current = window.setInterval(() => setSeconds((n) => n + 1), 1000);
       timerRef.current = window.setTimeout(stop, MAX_MS);
     } catch (err) {
       console.error('Microphone unavailable:', err);
@@ -97,8 +104,9 @@ export function useRecorder(onText: (text: string) => void) {
 
   useEffect(() => () => {
     if (timerRef.current) window.clearTimeout(timerRef.current);
+    if (tickRef.current) window.clearInterval(tickRef.current);
     recorderRef.current?.stream.getTracks().forEach((t) => t.stop());
   }, []);
 
-  return { isSupported, isRecording, isTranscribing, error, start, stop };
+  return { isSupported, isRecording, isTranscribing, error, seconds, start, stop };
 }

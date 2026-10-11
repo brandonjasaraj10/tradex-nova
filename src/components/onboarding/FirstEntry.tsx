@@ -176,13 +176,17 @@ export default function FirstEntry({
   const appendText = (t: string) => setText((prev) => (prev ? `${prev} ${t}` : t).slice(0, MAX_CHARS));
   const speech = useVoice({ onTranscript: appendText });
   /*
-    Two ways to a mic. The browser's own speech recognition where it exists
-    (live, free); otherwise record the clip and transcribe it on the server
-    (transcribe-audio) - which is what makes the mic appear in Instagram's
-    in-app browser and other places with no speech recognition at all.
+    Recording first, browser speech recognition only as a fallback.
+
+    It was the other way round, and on an iPhone it froze the page right
+    after the microphone prompt - Safari's continuous speech recognition is
+    unreliable on iOS, and even when it works it shows nothing until three
+    seconds of silence, which looks exactly like a freeze. Recording the clip
+    and transcribing it (transcribe-audio) behaves the same in every browser,
+    including Instagram's, and shows a running timer the whole time.
   */
   const recorder = useRecorder(appendText);
-  const useSpeech = speech.isSupported;
+  const useSpeech = !recorder.isSupported && speech.isSupported;
   const isSupported = useSpeech || recorder.isSupported;
   const isListening = useSpeech ? speech.isListening : recorder.isRecording;
   const transcribing = !useSpeech && recorder.isTranscribing;
@@ -652,7 +656,10 @@ export default function FirstEntry({
       </div>
 
       {isListening && !useSpeech && (
-        <p className="mt-2 text-[12.5px] text-blue-400">Recording&hellip; tap the square when you&rsquo;re done.</p>
+        <p className="mt-2 text-[12.5px] text-blue-400 tabular-nums">
+          Recording {Math.floor(recorder.seconds / 60)}:{String(recorder.seconds % 60).padStart(2, '0')}
+          &nbsp;&middot; tap the square when you&rsquo;re done
+        </p>
       )}
       {transcribing && <p className="mt-2 text-[12.5px] text-gray-400">Turning that into text&hellip;</p>}
       {recorder.error && !useSpeech && <p className="mt-2 text-[12.5px] text-gray-400">{recorder.error}</p>}
