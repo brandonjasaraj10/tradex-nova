@@ -8,6 +8,7 @@ import AccountSelector from '../components/shared/AccountSelector';
 import OpenPositions from '../components/trades/OpenPositions';
 import { BROKER_SYNC_ENABLED } from '../lib/featureFlags';
 import BalanceCard from '../components/dashboard/BalanceCard';
+import GoalCounter from '../components/dashboard/GoalCounter';
 import { useAccount } from '../lib/accountContext';
 import { useDateRange } from '../lib/dateRangeContext';
 import { useNavigate } from 'react-router-dom';
@@ -925,6 +926,11 @@ export default function Dashboard() {
               />
             </div>
           </div>
+        </motion.div>
+
+        {/* The goal they set in onboarding, counted - renders nothing for anybody who never set one. */}
+        <motion.div variants={fadeInUp} className="mt-4 empty:hidden">
+          <GoalCounter />
         </motion.div>
 
         <motion.div variants={fadeInUp} className="mt-4">
