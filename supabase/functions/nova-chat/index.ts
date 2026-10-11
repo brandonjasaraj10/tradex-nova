@@ -852,6 +852,95 @@ function formatMemoriesForAI(memories: { content: string }[]): string {
   return `\n\nThings you remember about this user from past conversations:\n${list}\n\nUse these naturally when relevant - don't just recite them back.`;
 }
 
+/*
+  What they told us in onboarding, in plain sentences.
+
+  Onboarding asks twelve questions - their goal, why journaling failed them
+  before, what they trade, how long, what is costing them, how they behave
+  after a loss or on a green day, and the goal they committed to - and until
+  now Nova saw none of it, so the first conversation started from zero with
+  somebody who had just described themselves in detail. Henry's churn went
+  from 16% to 6% when everything after signup was built from these answers;
+  this is the most direct place to spend them.
+
+  Kept to what the answers literally say. Nova is told not to recite them,
+  only to let them shape what it notices and asks.
+*/
+const ONBOARDING_TEXT: Record<string, Record<string, string>> = {
+  goal: {
+    pass_challenge: 'Their goal is to pass a prop firm challenge.',
+    stop_blowing: 'Their goal is to stop blowing accounts.',
+    consistent: 'Their goal is to trade the same way every day.',
+    understand: 'Their goal is to understand why they do what they do.',
+  },
+  past_journal: {
+    typing: 'They have journaled before and quit because filling it in took too long - keep anything you ask of them short.',
+    forgot: 'They have journaled before and quit because they kept forgetting.',
+    no_point: 'They have journaled before and quit because they never saw what it was for - show them what their entries reveal.',
+    never: 'This is their first trading journal.',
+  },
+  rules_live: {
+    written: 'Their rules are written down.',
+    head: 'Their rules live in their head.',
+    none: 'They do not really have a set of rules.',
+  },
+  green_day: {
+    stop: 'When up on the day, they say they stop.',
+    keep_going: 'When up on the day, they say they keep trading.',
+    depends: 'When up on the day, whether they stop depends how far up they are.',
+  },
+  after_loss: {
+    same: 'After a loss, they say the next position is the same size.',
+    bigger: 'After a loss, they say the next position is bigger because they want it back.',
+    none: 'After a loss, they say they walk away.',
+  },
+  notice_when: {
+    during: 'They notice a broken rule while they are doing it.',
+    after: 'They notice a broken rule right after closing the trade.',
+    later: 'They notice a broken rule days later, if at all.',
+  },
+  what_ended_it: {
+    one_day: 'Their last lost account ended in one bad day.',
+    slow_bleed: 'Their last lost account was a slow bleed over weeks.',
+    never: 'They have not lost an account.',
+  },
+};
+
+const STRUGGLE_TEXT: Record<string, string> = {
+  revenge_trading: 'revenge trading after a loss',
+  overtrading: 'overtrading',
+  breaking_rules: 'breaking their own rules',
+  not_sure: 'not knowing what is costing them',
+};
+
+function formatOnboardingForAI(row: {
+  onboarding_instrument?: string | null;
+  onboarding_experience?: string | null;
+  onboarding_struggles?: string[] | null;
+  onboarding_struggle?: string | null;
+  onboarding_profile?: Record<string, string> | null;
+} | null): string {
+  if (!row) return '';
+  const lines: string[] = [];
+  const p = row.onboarding_profile ?? {};
+
+  if (row.onboarding_instrument) lines.push(`They trade ${row.onboarding_instrument}.`);
+  if (row.onboarding_experience) lines.push(`Experience: ${row.onboarding_experience.replace(/_/g, ' ')}.`);
+  const struggles = (row.onboarding_struggles?.length ? row.onboarding_struggles : row.onboarding_struggle ? [row.onboarding_struggle] : [])
+    .map((s) => STRUGGLE_TEXT[s]).filter(Boolean);
+  if (struggles.length) lines.push(`What they say is costing them: ${struggles.join(', ')}.`);
+  for (const key of Object.keys(ONBOARDING_TEXT)) {
+    const text = ONBOARDING_TEXT[key][p[key] ?? ''];
+    if (text) lines.push(text);
+  }
+  if (p.commit_days) {
+    lines.push(`They committed to journaling ${p.commit_days} trading days${p.daily_minutes ? `, ${p.daily_minutes} minutes a day` : ''}.`);
+  }
+
+  if (!lines.length) return '';
+  return `\n\nWhat this user told you about themselves when they signed up:\n${lines.map((l) => `- ${l}`).join('\n')}\n\nLet this shape what you notice and what you ask - especially their goal and what they said is costing them. Do not recite it back or mention the signup questions; just behave like someone who already knows it. Where their own entries contradict what they said, that gap is worth pointing out gently.`;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
@@ -1045,7 +1134,19 @@ Deno.serve(async (req: Request) => {
       console.error('Error fetching user memories:', error);
     }
 
-    const profileContext = formatProfileForAI(userProfile);
+    let onboardingContext = '';
+    try {
+      const { data: signupAnswers } = await supabaseClient
+        .from('user_profiles')
+        .select('onboarding_instrument, onboarding_experience, onboarding_struggle, onboarding_struggles, onboarding_profile')
+        .eq('user_id', userId)
+        .maybeSingle();
+      onboardingContext = formatOnboardingForAI(signupAnswers);
+    } catch (error) {
+      console.error('Error fetching onboarding answers:', error);
+    }
+
+    const profileContext = formatProfileForAI(userProfile) + onboardingContext;
     const memoryContext = formatMemoriesForAI(userMemories);
     // The server's own clock is not the user's - without this, "today" or
     // an omitted entry_date silently defaults to server/UTC time, which
