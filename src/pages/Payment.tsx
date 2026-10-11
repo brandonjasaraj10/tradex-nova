@@ -24,6 +24,19 @@ import { HELD_KEY } from '../services/onboardingWriteBack';
   generic five stars. Same quotes as the landing page's review wall.
   Picked by why journaling failed them before, then by their struggle.
 */
+/*
+  The headline, by the outcome they said they want - the same line their
+  plan screen opened with, so the price sits under their goal rather than
+  under a description of the product. Outcomes, never promises about money.
+*/
+const OUTCOME_HEADLINE: Record<string, string> = {
+  profitable: 'Find the habit between you and consistent profit.',
+  pass_challenge: 'Stop the trade that fails your challenge.',
+  stop_blowing: 'Make this the account you keep.',
+  consistent: 'Trade your plan on the bad days too.',
+  understand: 'Finally see why you do what you do.',
+};
+
 const PAYWALL_QUOTES: Record<string, { quote: string; who: string }> = {
   typing: { quote: 'The first journal I have still been using after a month, and the only reason is that it does not make me type.', who: 'Priya S. · Swing trader' },
   revenge_trading: { quote: 'Every account I’ve blown started on a day I’d have rated myself a 2.', who: 'Daniel R. · Futures' },
@@ -300,7 +313,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
     committed to - and it reminds them there is something of theirs on the
     other side of this button.
   */
-  const [goal, setGoal] = useState<{ days: string; pastJournal?: string } | null>(null);
+  const [goal, setGoal] = useState<{ days: string; pastJournal?: string; goal?: string } | null>(null);
   const [hasHeldEntry, setHasHeldEntry] = useState(false);
   useEffect(() => {
     try {
@@ -314,7 +327,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
       if (!user) return;
       const { data } = await supabase.from('user_profiles').select('onboarding_profile').eq('user_id', user.id).maybeSingle();
       const p = (data?.onboarding_profile ?? {}) as Record<string, string>;
-      if (!cancelled && p.commit_days) setGoal({ days: p.commit_days, pastJournal: p.past_journal });
+      if (!cancelled && p.commit_days) setGoal({ days: p.commit_days, pastJournal: p.past_journal, goal: p.goal });
     })();
     return () => { cancelled = true; };
   }, []);
@@ -881,7 +894,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
             */}
             <h1 className="text-[26px] sm:text-5xl leading-[1.1] sm:leading-[1.08] font-semibold
               tracking-[-0.035em] text-white text-balance">
-              {isFounder ? 'One plan. Everything in it.' : 'Start mastering your trading psychology.'}
+              {isFounder ? 'One plan. Everything in it.' : (OUTCOME_HEADLINE[goal?.goal ?? ''] ?? 'Start mastering your trading psychology.')}
             </h1>
             <p className="mt-2.5 sm:mt-4 text-[13.5px] sm:text-base leading-relaxed text-gray-400
               max-w-sm mx-auto text-balance">

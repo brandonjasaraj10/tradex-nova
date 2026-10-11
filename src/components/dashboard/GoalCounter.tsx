@@ -32,6 +32,7 @@ import { trackEvent } from '../../lib/productAnalytics';
 */
 
 const GOAL_PHRASE: Record<string, string> = {
+  profitable: 'to become consistently profitable',
   pass_challenge: 'to pass your challenge',
   stop_blowing: 'to stop blowing accounts',
   consistent: 'to trade the same way every day',

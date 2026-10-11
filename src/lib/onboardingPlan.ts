@@ -145,6 +145,13 @@ export interface ChoiceOption {
 }
 
 export const WHY_OPTIONS: ChoiceOption[] = [
+  /*
+    First, because it is the reason most traders keep a journal at all.
+    Saying a journal helps somebody become profitable is a fair claim;
+    promising that it will, or quoting what they will make, is not - so the
+    copy that answers this goal sells the outcome without guaranteeing it.
+  */
+  { value: 'profitable', label: 'Become consistently profitable' },
   { value: 'pass_challenge', label: 'Pass a prop firm challenge' },
   { value: 'stop_blowing', label: 'Stop blowing accounts' },
   { value: 'consistent', label: 'Trade the same way every day' },
@@ -272,6 +279,7 @@ export const COMMIT_OPTIONS: ChoiceOption[] = [
 ];
 
 const GOAL_PHRASE: Record<string, string> = {
+  profitable: 'to become consistently profitable',
   pass_challenge: 'to pass your challenge',
   stop_blowing: 'to stop blowing accounts',
   consistent: 'to trade the same way every day',
@@ -290,6 +298,9 @@ export function commitmentLine(profile: ProfileAnswers): string | null {
 export interface Plan {
   /* The line that names their pattern back to them. */
   headline: string;
+  /* The plan screen's eyebrow and title: their outcome, not our features. */
+  eyebrow: string;
+  title: string;
   /* The date the trial ends, already formatted. */
   day: string;
   /* What the first fortnight produces, as a quiet line under the headline. */
@@ -346,38 +357,33 @@ export function buildPlan(
     assembled from their answers that could have been written for anybody is
     just a product tour with their name on it.
   */
+  /*
+    OUTCOME FIRST, MECHANISM SECOND.
+
+    These read as features - "a checklist you tick before entry", "every
+    trade scored" - which is what the product does, not what the trader
+    gets. Brandon: sell the outcome. So each line now leads with the change
+    in their trading, in bold, and the feature follows as the how. Still
+    built from their own answers, still nothing promised about money.
+  */
   if (profile.rules_live === 'head' || profile.rules_live === 'none') {
-    points.push(
-      'Your rules come out of your head and onto *a checklist you tick before entry*.',
-    );
+    points.push('*Stop breaking rules you never wrote down* — they come out of your head onto a checklist you tick before entry.');
   } else {
-    points.push(
-      '*A checklist you tick before entry*, and every entry records which ones you kept.',
-    );
+    points.push('*Actually keep the rules you wrote* — every entry records which ones you kept, and which you didn’t.');
   }
 
   if (profile.after_loss === 'bigger') {
-    points.push(
-      'Every trade scored against *what you were like going in* — starting with the ones after a loss.',
-    );
+    points.push('*Catch the revenge trade before you place it* — three taps tell you when you’re rattled going in.');
   } else if (profile.green_day === 'keep_going') {
-    points.push(
-      'Every trade scored against *what you were like going in* — including the ones after the day was won.',
-    );
+    points.push('*Keep your green days green* — you’ll see exactly where the giving-back starts.');
   } else {
-    points.push(
-      'Every trade scored against *what you were like going in*, not just what it paid.',
-    );
+    points.push('*Know which state you trade best in* — every trade scored on how you were going in, not just what it paid.');
   }
 
   if (profile.notice_when === 'later') {
-    points.push(
-      '*Adherence, psychology and P&L on one screen* — the same week, not months later.',
-    );
+    points.push('*Spot a slipping habit the same week*, not months later — rules, mindset and P&L on one screen.');
   } else {
-    points.push(
-      '*Adherence, psychology and P&L on one screen* — something you look at, not something you are told.',
-    );
+    points.push('*See the drift before your account does* — rules, mindset and P&L on one screen.');
   }
 
   const day = trialEnds.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
@@ -388,10 +394,54 @@ export function buildPlan(
     screen immediately before a price, which is the worst possible place for
     one.
   */
-  const promise = 'A *rule-adherence number* and a *psychology score*. Yours, not an average.';
+  /*
+    The promise, by the goal they chose - an outcome with a date on it.
+
+    Still never a promise about money. "You will pass" or "you will be
+    profitable" is a claim nobody can stand behind for a trader they have
+    never met, and exactly what gets a trading product's ads and accounts
+    flagged. What can be promised, and is the thing that stands between
+    them and the outcome, is seeing what costs them it - by a date.
+  */
+  const goal = profile.goal ?? '';
+  const OUTCOME: Record<string, { eyebrow: string; title: string; promise: string }> = {
+    profitable: {
+      eyebrow: 'Your plan to become consistently profitable',
+      title: 'Find the habit between you and consistent profit.',
+      promise: `By *${day}* you’ll know which habit costs you the most money — and have a checklist that stops it before you click.`,
+    },
+    pass_challenge: {
+      eyebrow: 'Your plan to pass your challenge',
+      title: 'Stop the trade that fails your challenge.',
+      promise: `By *${day}* you’ll know exactly which habit is costing you the challenge — and have a checklist that stops it before you click. Pass it, and that’s a funded account.`,
+    },
+    stop_blowing: {
+      eyebrow: 'Your plan to keep the next account',
+      title: 'Make this the account you keep.',
+      promise: `By *${day}* you’ll see the pattern that ends your accounts — while there’s still money in this one.`,
+    },
+    consistent: {
+      eyebrow: 'Your plan to trade the same way every day',
+      title: 'Trade your plan on the bad days too.',
+      promise: `By *${day}* you’ll have a number that shows whether you followed your plan — on every day, not just the good ones.`,
+    },
+    understand: {
+      eyebrow: 'Your plan to see what drives your trades',
+      title: 'Finally see why you do what you do.',
+      promise: `By *${day}* Nova will name the pattern behind your losing trades — from your own entries, not a textbook.`,
+    },
+  };
+  const outcome = OUTCOME[goal] ?? {
+    eyebrow: 'Your first two weeks',
+    title: 'Find the habit that’s costing you money.',
+    promise: `By *${day}* you’ll know which one it is — from your own trades, not a guess.`,
+  };
+  const promise = outcome.promise;
 
   return {
     headline: HEADLINE[primary],
+    eyebrow: outcome.eyebrow,
+    title: outcome.title,
     day,
     promise,
     points,

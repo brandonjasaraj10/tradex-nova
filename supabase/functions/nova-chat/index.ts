@@ -868,6 +868,7 @@ function formatMemoriesForAI(memories: { content: string }[]): string {
 */
 const ONBOARDING_TEXT: Record<string, Record<string, string>> = {
   goal: {
+    profitable: 'Their goal is to become consistently profitable.',
     pass_challenge: 'Their goal is to pass a prop firm challenge.',
     stop_blowing: 'Their goal is to stop blowing accounts.',
     consistent: 'Their goal is to trade the same way every day.',

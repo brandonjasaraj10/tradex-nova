@@ -837,13 +837,13 @@ export default function Onboarding({
             */}
             {step === 'plan' && (
               <div className="text-center">
-                <p className="text-[11px] uppercase tracking-[0.16em] text-gray-600 mb-5">
-                  Your first two weeks
+                <p className="text-[11px] uppercase tracking-[0.16em] text-blue-400 mb-5">
+                  {plan.eyebrow}
                 </p>
 
                 <h1 className="text-[27px] sm:text-[34px] leading-[1.13] font-semibold
                   tracking-[-0.038em] text-white text-balance">
-                  By {plan.day} you&rsquo;ll have two numbers.
+                  {plan.title}
                 </h1>
 
                 <p className="mt-4 text-[15px] sm:text-[16.5px] leading-relaxed text-gray-300
