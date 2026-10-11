@@ -7,6 +7,7 @@ import { trackEvent } from '../../lib/productAnalytics';
 import MascotSays from '../shared/MascotSays';
 import Mascot from '../shared/Mascot';
 import type { StarterItem } from '../../lib/onboardingChecklist';
+import { calculateChecklistScore, combinePsychologyScores } from '../../services/psychologyScore';
 
 /*
   The aha, and the only screen in onboarding where the product actually runs.
@@ -41,6 +42,14 @@ import type { StarterItem } from '../../lib/onboardingChecklist';
   price anyway rather than be stuck behind a textarea, and the skip rate is
   worth measuring in its own right.
 */
+
+/*
+  About three minutes of talking. The server refuses more than 2,000
+  characters from an account that has not paid (process-voice-journal);
+  this keeps the box under that so nobody types a paragraph only to be told
+  it is too long.
+*/
+const MAX_CHARS = 1500;
 
 const PLACEHOLDER =
   'Shorted euro dollar half a lot, got stopped out for about a hundred and eighty bucks. Moved my stop twice again, same as Tuesday.';
@@ -192,7 +201,7 @@ export default function FirstEntry({
   const [celebrated, setCelebrated] = useState(false);
 
   const { isSupported, isListening, startListening, stopListening } = useVoice({
-    onTranscript: (t: string) => setText((prev) => (prev ? `${prev} ${t}` : t)),
+    onTranscript: (t: string) => setText((prev) => (prev ? `${prev} ${t}` : t).slice(0, MAX_CHARS)),
   });
 
   const lines = useMemo(() => toLines(entry?.content), [entry?.content]);
@@ -356,6 +365,19 @@ export default function FirstEntry({
     );
 
     /* Their starter checklist, with whatever Nova could tell about this trade. */
+    /*
+      The trade's psychology score - the same calculation the journal runs
+      on a saved entry (calculateChecklistScore, then combinePsychologyScores
+      with no written template yet), from the same inputs: their three
+      ratings and whichever pre-trade checks Nova could answer. So the number
+      shown here is the number they find on this entry inside the app.
+    */
+    const answeredChecks = (entry.psychology_status ?? []).filter((c) => c.confirmed !== null && c.confirmed !== undefined).length;
+    const psychScore = combinePsychologyScores(
+      null,
+      calculateChecklistScore(answeredChecks, [entry.pre_trade_emotional_state, entry.pre_trade_focus, entry.pre_trade_confidence]),
+    );
+
     const checklist = [
       ...rules.map((r) => ({ name: r.name, state: entry.rules_status?.find((x) => x.id === r.id)?.followed ?? null })),
       ...psychChecks.map((c) => ({ name: c.name, state: entry.psychology_status?.find((x) => x.id === c.id)?.confirmed ?? null })),
@@ -386,9 +408,34 @@ export default function FirstEntry({
           </div>
 
           <div className="p-4 flex flex-col gap-4">
-            {/* Going in - their own three taps, drawn the way the journal draws them. */}
+            {/* Going in - their own three taps, drawn the way the journal draws them, under the score they add up to. */}
             {ratings.length > 0 && (
               <div className="flex flex-col gap-2">
+                {psychScore !== null && (
+                  <div className="mb-1.5 flex items-center gap-3.5">
+                    <div className="relative w-14 h-14 flex-shrink-0" aria-hidden="true">
+                      <svg viewBox="0 0 36 36" className="w-14 h-14 -rotate-90">
+                        <circle cx="18" cy="18" r="15.5" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="3" />
+                        <motion.circle
+                          cx="18" cy="18" r="15.5" fill="none" stroke="#60A5FA" strokeWidth="3" strokeLinecap="round"
+                          strokeDasharray={97.4}
+                          initial={{ strokeDashoffset: 97.4 }}
+                          animate={{ strokeDashoffset: 97.4 * (1 - psychScore / 100) }}
+                          transition={{ duration: 1, ease: 'easeOut', delay: 0.2 }}
+                        />
+                      </svg>
+                      <span className="absolute inset-0 flex items-center justify-center text-[15px] font-semibold text-white tabular-nums">
+                        {psychScore}
+                      </span>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[10px] uppercase tracking-[0.12em] text-blue-400">Psychology score</p>
+                      <p className="mt-0.5 text-[12.5px] leading-snug text-gray-400">
+                        Out of 100, for this trade &mdash; from how you were going in.
+                      </p>
+                    </div>
+                  </div>
+                )}
                 <p className="text-[10px] uppercase tracking-[0.12em] text-gray-600">Going in</p>
                 {ratings.map(({ r, value }) => (
                   <div key={r.key} className="flex items-center justify-between gap-3">
@@ -560,7 +607,8 @@ export default function FirstEntry({
       <div className="relative">
         <textarea
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => setText(e.target.value.slice(0, MAX_CHARS))}
+          maxLength={MAX_CHARS}
           disabled={writing}
           rows={5}
           placeholder={PLACEHOLDER}
@@ -597,6 +645,12 @@ export default function FirstEntry({
           </button>
         )}
       </div>
+
+      {text.length > MAX_CHARS - 200 && (
+        <p className="mt-2 text-right text-[11.5px] text-gray-500 tabular-nums">
+          {MAX_CHARS - text.length} characters left
+        </p>
+      )}
 
       {failed && (
         <p className="mt-3 text-[13px] text-gray-400">
