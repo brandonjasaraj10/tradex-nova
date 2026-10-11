@@ -360,6 +360,38 @@ export default function FirstEntry({
       what lands in their journal. The first version's problem was density,
       not content: full-width grey paragraphs. Bullets and spacing fix that.
     */
+    /*
+      One point per bullet, not one paragraph per bullet.
+
+      Nova writes each section as a couple of full sentences, which on this
+      screen read like the transcript they had just typed. Here every
+      sentence becomes its own short bullet under its heading; the opening
+      summary line is dropped, because the facts row above already says it;
+      rule lines Nova marks with a tick or a cross get a real check or X; and
+      no section runs past three points. The full text still lands in their
+      journal untouched - this is only how the first one is shown.
+    */
+    const splitSentences = (t: string) =>
+      t.split(/(?<=[.!?])\s+(?=[A-Z"“(])/).map((x) => x.trim().replace(/[.]$/, '')).filter(Boolean);
+    type Item = { text: string; mark: 'kept' | 'broke' | null };
+    const sections: { heading: string; items: Item[] }[] = [];
+    for (const line of lines) {
+      if (line.heading) {
+        sections.push({ heading: line.text, items: [] });
+        continue;
+      }
+      if (!sections.length) continue; /* the unheaded summary - the facts row covers it */
+      const mark = /^[✓✔]/.test(line.text) ? 'kept' : /^[✗✘×]/.test(line.text) ? 'broke' : null;
+      const body = line.text.replace(/^[✓✔✗✘×]\s*/, '');
+      const current = sections[sections.length - 1];
+      for (const sentence of mark ? [body] : splitSentences(body)) {
+        if (current.items.length < 3) current.items.push({ text: sentence, mark });
+      }
+    }
+    if (!sections.length && lines.length) {
+      sections.push({ heading: 'What happened', items: lines.flatMap((l) => splitSentences(l.text)).slice(0, 3).map((text) => ({ text, mark: null })) });
+    }
+
     const ratings = RATINGS.map((r) => ({ r, value: entry[r.key] })).filter(
       (x): x is { r: (typeof RATINGS)[number]; value: number } => typeof x.value === 'number',
     );
@@ -450,20 +482,27 @@ export default function FirstEntry({
               </div>
             )}
 
-            {lines.length > 0 && (
-              <div className="flex flex-col gap-2">
-                {lines.map((line, i) =>
-                  line.heading ? (
-                    <p key={i} className="text-[10px] uppercase tracking-[0.12em] text-blue-400 mt-2 first:mt-0">
-                      {line.text}
-                    </p>
-                  ) : (
-                    <div key={i} className="flex gap-2.5 text-[13.5px] leading-relaxed text-gray-200">
-                      <span className="flex-shrink-0 mt-[8px] w-1.5 h-1.5 rounded-full bg-blue-400" aria-hidden="true" />
-                      <span>{line.text}</span>
-                    </div>
-                  ),
-                )}
+            {sections.length > 0 && (
+              <div className="flex flex-col gap-3.5">
+                {sections.map((sec, si) => (
+                  <div key={si}>
+                    <p className="text-[10px] uppercase tracking-[0.12em] text-blue-400 mb-1.5">{sec.heading}</p>
+                    <ul className="flex flex-col gap-1.5">
+                      {sec.items.map((item, ii) => (
+                        <li key={ii} className="flex gap-2.5 text-[13px] leading-snug text-gray-200">
+                          {item.mark === 'kept' ? (
+                            <Check size={14} className="flex-shrink-0 mt-[2px] text-blue-400" strokeWidth={2.75} />
+                          ) : item.mark === 'broke' ? (
+                            <X size={14} className="flex-shrink-0 mt-[2px] text-gray-500" strokeWidth={2.75} />
+                          ) : (
+                            <span className="flex-shrink-0 mt-[6px] w-1.5 h-1.5 rounded-full bg-blue-400" aria-hidden="true" />
+                          )}
+                          <span>{item.text}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
               </div>
             )}
 
