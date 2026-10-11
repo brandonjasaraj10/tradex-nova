@@ -151,6 +151,72 @@ export const WHY_OPTIONS: ChoiceOption[] = [
   { value: 'understand', label: 'Understand why I do what I do' },
 ];
 
+/*
+  WHY IT DID NOT STICK LAST TIME.
+
+  The single most predictive thing about whether somebody keeps journaling
+  is whether they already tried and stopped - and why. Asked straight after
+  their goal, it makes them name the exact thing that beat them before, and
+  the plan then answers that thing by name ("You said typing killed it.
+  Here it is thirty seconds out loud"). Naming an obstacle and pairing it
+  with a specific plan for it is the core of implementation-intention and
+  mental-contrasting research (Gollwitzer; Oettingen's WOOP), which is the
+  best-replicated finding on why some goals survive contact with real life.
+
+  Stored as onboarding_profile.past_journal.
+*/
+export const PAST_OPTIONS: ChoiceOption[] = [
+  { value: 'typing', label: 'Yes — filling it in took too long' },
+  { value: 'forgot', label: 'Yes — I kept forgetting' },
+  { value: 'no_point', label: 'Yes — I never saw what it was for' },
+  { value: 'never', label: 'No, this is my first' },
+];
+
+/* The plan's answer to whatever beat them last time. */
+const PAST_ANSWER: Record<string, string> = {
+  typing: 'You said filling it in killed it. Here a trade takes *thirty seconds, said out loud or typed messy*.',
+  forgot: 'You said you kept forgetting. Your dashboard *counts every day toward your goal*, so a missed one shows.',
+  no_point: 'You said you never saw what it was for. *Two numbers by the end of the trial* — that is what it is for.',
+  never: 'First journal? *One trade, thirty seconds* is the whole job on day one.',
+};
+
+export function pastAnswerLine(profile: ProfileAnswers): string | null {
+  return PAST_ANSWER[profile.past_journal ?? ''] ?? null;
+}
+
+/*
+  The lines on the "thinking" screen, built from what they said.
+
+  It used to be three generic lines in 1.75 seconds - too fast to read, so
+  it looked like a canned transition rather than work being done on their
+  answers. Showing labour that is visibly about the person ("operational
+  transparency", Buell & Norton, HBS) measurably raises how much people
+  value the result, provided each step is believable. Every line here
+  names something they actually answered.
+*/
+export function thinkingLines(struggles: string[], profile: ProfileAnswers): string[] {
+  const primary = struggles[0] ?? 'not_sure';
+  const struggleLine: Record<string, string> = {
+    revenge_trading: 'Looking at what happens after a loss',
+    overtrading: 'Checking what your quiet days have in common',
+    breaking_rules: 'Finding which rules slip first',
+    not_sure: 'Looking for the pattern you can’t see yet',
+  };
+  const pastLine: Record<string, string> = {
+    typing: 'Cutting each entry down to thirty seconds',
+    forgot: 'Setting up your daily count',
+    no_point: 'Picking the two numbers you’ll see first',
+    never: 'Setting up your first journal',
+  };
+  return [
+    'Reading your answers',
+    struggleLine[primary] ?? struggleLine.not_sure,
+    pastLine[profile.past_journal ?? ''] ?? 'Setting up your journal',
+    'Building your starter checklist',
+    profile.commit_days ? `Planning your first ${profile.commit_days} days` : 'Planning your first two weeks',
+  ];
+}
+
 export const MINUTES_OPTIONS: ChoiceOption[] = [
   { value: '2', label: '2 minutes', tag: 'Quick' },
   { value: '5', label: '5 minutes', tag: 'Regular' },

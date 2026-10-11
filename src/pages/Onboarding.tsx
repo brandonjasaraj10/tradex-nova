@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, ArrowRight } from 'lucide-react';
 import {
@@ -9,7 +9,8 @@ import {
 import { STRUGGLE_CARD } from '../lib/onboardingPreview';
 import {
   PROFILE_QUESTIONS, buildPlan, type ProfileAnswers,
-  WHY_OPTIONS, MINUTES_OPTIONS, COMMIT_OPTIONS, commitmentLine, type ChoiceOption,
+  WHY_OPTIONS, PAST_OPTIONS, MINUTES_OPTIONS, COMMIT_OPTIONS, commitmentLine, pastAnswerLine,
+  thinkingLines, type ChoiceOption,
 } from '../lib/onboardingPlan';
 import { trackEvent } from '../lib/productAnalytics';
 import { emphasise } from '../lib/emphasise';
@@ -61,6 +62,7 @@ type Step =
   | 'welcome'
   | 'thegap'
   | 'why'
+  | 'past'
   | 'instrument'
   | 'experience'
   | 'struggles'
@@ -73,17 +75,18 @@ type Step =
   | 'plan'
   | 'entry';
 
-/* Why, three about them, the behavioural ones, then daily time and the goal. */
-const QUESTION_COUNT = 6 + PROFILE_QUESTIONS.length;
+/* Why, what beat them before, three about them, the behavioural ones, then daily time and the goal. */
+const QUESTION_COUNT = 7 + PROFILE_QUESTIONS.length;
 
 function questionIndex(step: Step): number | null {
   if (step === 'why') return 0;
-  if (step === 'instrument') return 1;
-  if (step === 'experience') return 2;
-  if (step === 'struggles') return 3;
-  if (typeof step === 'object') return 4 + step.profile;
-  if (step === 'minutes') return 4 + PROFILE_QUESTIONS.length;
-  if (step === 'commit') return 5 + PROFILE_QUESTIONS.length;
+  if (step === 'past') return 1;
+  if (step === 'instrument') return 2;
+  if (step === 'experience') return 3;
+  if (step === 'struggles') return 4;
+  if (typeof step === 'object') return 5 + step.profile;
+  if (step === 'minutes') return 5 + PROFILE_QUESTIONS.length;
+  if (step === 'commit') return 6 + PROFILE_QUESTIONS.length;
   return null;
 }
 
@@ -113,13 +116,14 @@ const STRUGGLES: { value: Struggle; label: string }[] = [
   { value: 'not_sure', label: 'No idea. That’s the problem.' },
 ];
 
-const THINKING_LINES = [
-  'Reading your answers',
-  'Matching the pattern you picked',
-  'Building your first two weeks',
-];
+/*
+  About a second a line - slow enough to read each one, which is the point:
+  at 1.75 seconds for three generic lines it read as a loading flash, not as
+  anything being worked out for them. See thinkingLines.
+*/
+const THINKING_STEP_MS = 1000;
 
-function Thinking({ onDone }: { onDone: () => void }) {
+function Thinking({ lines, onDone }: { lines: string[]; onDone: () => void }) {
   const [line, setLine] = useState(0);
 
   useEffect(() => {
@@ -129,12 +133,13 @@ function Thinking({ onDone }: { onDone: () => void }) {
       replaced it.
     */
     const timers = [
-      window.setTimeout(() => setLine(1), 560),
-      window.setTimeout(() => setLine(2), 1120),
-      window.setTimeout(onDone, 1750),
+      ...lines.slice(1).map((_, i) => window.setTimeout(() => setLine(i + 1), (i + 1) * THINKING_STEP_MS)),
+      /* A beat on the last tick before moving on, so it lands as finished. */
+      window.setTimeout(() => setLine(lines.length), lines.length * THINKING_STEP_MS),
+      window.setTimeout(onDone, lines.length * THINKING_STEP_MS + 600),
     ];
     return () => timers.forEach(clearTimeout);
-  }, [onDone]);
+  }, [onDone, lines]);
 
   return (
     <div className="flex flex-col items-center text-center">
@@ -143,7 +148,7 @@ function Thinking({ onDone }: { onDone: () => void }) {
       </MascotSays>
 
       <ul className="flex flex-col gap-3 w-full max-w-[280px]">
-        {THINKING_LINES.map((text, i) => (
+        {lines.map((text, i) => (
           <li key={text} className="flex items-center gap-3 text-left">
             <span className="flex-shrink-0 w-4 h-4 flex items-center justify-center">
               {i < line ? (
@@ -328,6 +333,9 @@ export default function Onboarding({
   );
 
   const primaryStruggle: Struggle = struggles[0] ?? 'not_sure';
+  /* Computed once the answers are in; stable so the thinking timers are not reset by a re-render. */
+  const thinkLines = useMemo(() => thinkingLines(struggles, profile), [struggles, profile]);
+  const goToPattern = useCallback(() => setStep('pattern'), []);
   const card = STRUGGLE_CARD[primaryStruggle];
 
   /*
@@ -337,6 +345,12 @@ export default function Onboarding({
   const answerWhy = (value: string) => {
     setProfile((prev) => ({ ...prev, goal: value }));
     trackEvent('onboarding_goal', { goal: value });
+    setStep('past');
+  };
+
+  const answerPast = (value: string) => {
+    setProfile((prev) => ({ ...prev, past_journal: value }));
+    trackEvent('onboarding_past_journal', { past: value });
     setStep('instrument');
   };
 
@@ -527,7 +541,7 @@ export default function Onboarding({
                       Show me
                       <ArrowRight size={17} />
                     </button>
-                    <p className="mt-3 text-[12.5px] text-gray-500">Eleven taps &middot; about a minute</p>
+                    <p className="mt-3 text-[12.5px] text-gray-500">Twelve taps &middot; about a minute</p>
                   </div>,
                 ].map((node, i) => (
                   <div
@@ -603,6 +617,16 @@ export default function Onboarding({
                 title="What do you want journaling to get you?"
                 options={WHY_OPTIONS}
                 onChoose={answerWhy}
+              />
+            )}
+
+            {step === 'past' && (
+              <Question
+                step={step}
+                title="Have you kept a trading journal before?"
+                subtitle="Be honest — it shapes your plan."
+                options={PAST_OPTIONS}
+                onChoose={answerPast}
               />
             )}
 
@@ -682,7 +706,7 @@ export default function Onboarding({
               <Question
                 step={step}
                 title="How long can you give it on a trading day?"
-                subtitle="Most entries take two minutes out loud."
+                subtitle="One trade takes about thirty seconds. The rest is looking back."
                 options={MINUTES_OPTIONS}
                 onChoose={answerMinutes}
               />
@@ -699,7 +723,7 @@ export default function Onboarding({
               />
             )}
 
-            {step === 'thinking' && <Thinking onDone={() => setStep('pattern')} />}
+            {step === 'thinking' && <Thinking lines={thinkLines} onDone={goToPattern} />}
 
             {step === 'entry' && (
               <FirstEntry
@@ -805,6 +829,11 @@ export default function Onboarding({
                       Your goal
                     </span>
                     {emphasise(commitmentLine(profile)!)}
+                    {pastAnswerLine(profile) && (
+                      <span className="block mt-2 pt-2 border-t border-white/[0.08] text-[12.5px] text-gray-400">
+                        {emphasise(pastAnswerLine(profile)!)}
+                      </span>
+                    )}
                   </p>
                 )}
 
