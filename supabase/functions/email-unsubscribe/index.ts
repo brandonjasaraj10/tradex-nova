@@ -66,13 +66,22 @@ Deno.serve(async (req: Request) => {
     .eq('unsubscribe_token', token)
     .maybeSingle();
 
-  const { data: auditRecord } = abandonRecord ? { data: null } : await supabase
+  /* Trial tips (send-trial-emails) - an account, like the abandoned-signup email. */
+  const { data: trialRecord } = abandonRecord ? { data: null } : await supabase
+    .from('trial_emails')
+    .select('user_id')
+    .eq('unsubscribe_token', token)
+    .maybeSingle();
+
+  const accountRecord = abandonRecord ?? trialRecord;
+
+  const { data: auditRecord } = accountRecord ? { data: null } : await supabase
     .from('psychology_audits')
     .select('email')
     .eq('unsubscribe_token', token)
     .maybeSingle();
 
-  if (!abandonRecord && !auditRecord) {
+  if (!accountRecord && !auditRecord) {
     return page('Link not recognised', 'That unsubscribe link is not one of ours, or it has already been used.');
   }
 
@@ -80,11 +89,11 @@ Deno.serve(async (req: Request) => {
   let userId: string | null = null;
   let reason: string;
 
-  if (abandonRecord) {
-    const { data: user } = await supabase.auth.admin.getUserById(abandonRecord.user_id);
+  if (accountRecord) {
+    const { data: user } = await supabase.auth.admin.getUserById(accountRecord.user_id);
     email = user?.user?.email;
-    userId = abandonRecord.user_id;
-    reason = 'unsubscribed_abandon_email';
+    userId = accountRecord.user_id;
+    reason = abandonRecord ? 'unsubscribed_abandon_email' : 'unsubscribed_trial_email';
   } else {
     email = (auditRecord as { email: string | null } | null)?.email ?? undefined;
     reason = 'unsubscribed_audit_email';
