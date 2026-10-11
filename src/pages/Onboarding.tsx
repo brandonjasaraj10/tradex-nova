@@ -9,7 +9,7 @@ import {
 import { STRUGGLE_CARD } from '../lib/onboardingPreview';
 import {
   PROFILE_QUESTIONS, buildPlan, type ProfileAnswers,
-  WHY_OPTIONS, PAST_OPTIONS, MINUTES_OPTIONS, COMMIT_OPTIONS, commitmentLine, pastAnswerLine,
+  WHY_OPTIONS, PAST_OPTIONS, STOPPED_OPTIONS, MINUTES_OPTIONS, COMMIT_OPTIONS, commitmentLine, pastAnswerLine,
   thinkingLines, type ChoiceOption,
 } from '../lib/onboardingPlan';
 import { trackEvent } from '../lib/productAnalytics';
@@ -63,6 +63,7 @@ type Step =
   | 'thegap'
   | 'why'
   | 'past'
+  | 'stopped'
   | 'instrument'
   | 'experience'
   | 'struggles'
@@ -76,17 +77,19 @@ type Step =
   | 'entry';
 
 /* Why, what beat them before, three about them, the behavioural ones, then daily time and the goal. */
-const QUESTION_COUNT = 7 + PROFILE_QUESTIONS.length;
+/* "Why did you stop" only appears after a yes; a no simply jumps the bar one step. */
+const QUESTION_COUNT = 8 + PROFILE_QUESTIONS.length;
 
 function questionIndex(step: Step): number | null {
   if (step === 'why') return 0;
   if (step === 'past') return 1;
-  if (step === 'instrument') return 2;
-  if (step === 'experience') return 3;
-  if (step === 'struggles') return 4;
-  if (typeof step === 'object') return 5 + step.profile;
-  if (step === 'minutes') return 5 + PROFILE_QUESTIONS.length;
-  if (step === 'commit') return 6 + PROFILE_QUESTIONS.length;
+  if (step === 'stopped') return 2;
+  if (step === 'instrument') return 3;
+  if (step === 'experience') return 4;
+  if (step === 'struggles') return 5;
+  if (typeof step === 'object') return 6 + step.profile;
+  if (step === 'minutes') return 6 + PROFILE_QUESTIONS.length;
+  if (step === 'commit') return 7 + PROFILE_QUESTIONS.length;
   return null;
 }
 
@@ -349,8 +352,18 @@ export default function Onboarding({
   };
 
   const answerPast = (value: string) => {
-    setProfile((prev) => ({ ...prev, past_journal: value }));
     trackEvent('onboarding_past_journal', { past: value });
+    if (value === 'yes') {
+      setStep('stopped');
+      return;
+    }
+    setProfile((prev) => ({ ...prev, past_journal: value }));
+    setStep('instrument');
+  };
+
+  const answerStopped = (value: string) => {
+    setProfile((prev) => ({ ...prev, past_journal: value }));
+    trackEvent('onboarding_stopped_why', { reason: value });
     setStep('instrument');
   };
 
@@ -541,7 +554,7 @@ export default function Onboarding({
                       Show me
                       <ArrowRight size={17} />
                     </button>
-                    <p className="mt-3 text-[12.5px] text-gray-500">Twelve taps &middot; about a minute</p>
+                    <p className="mt-3 text-[12.5px] text-gray-500">About a minute of taps</p>
                   </div>,
                 ].map((node, i) => (
                   <div
@@ -624,9 +637,18 @@ export default function Onboarding({
               <Question
                 step={step}
                 title="Have you kept a trading journal before?"
-                subtitle="Be honest — it shapes your plan."
                 options={PAST_OPTIONS}
                 onChoose={answerPast}
+              />
+            )}
+
+            {step === 'stopped' && (
+              <Question
+                step={step}
+                title="Why did you stop?"
+                subtitle="Be honest — your plan is built around it."
+                options={STOPPED_OPTIONS}
+                onChoose={answerStopped}
               />
             )}
 
@@ -729,6 +751,7 @@ export default function Onboarding({
               <FirstEntry
                 rules={starterRules}
                 psychChecks={starterChecks}
+                goalDays={Number(profile.commit_days) || null}
                 onDone={(entry, transcript) => void finish(entry, transcript)}
               />
             )}

@@ -163,13 +163,29 @@ export const WHY_OPTIONS: ChoiceOption[] = [
   mental-contrasting research (Gollwitzer; Oettingen's WOOP), which is the
   best-replicated finding on why some goals survive contact with real life.
 
-  Stored as onboarding_profile.past_journal.
+  Two taps, not one: "have you?" and then, only for a yes, "why did you
+  stop?" - Brandon's split. Asking the reason on its own screen makes it a
+  question they have to actually answer rather than a clause they skim.
+
+  Stored as onboarding_profile.past_journal: the reason, or 'never'.
 */
 export const PAST_OPTIONS: ChoiceOption[] = [
-  { value: 'typing', label: 'Yes — filling it in took too long' },
-  { value: 'forgot', label: 'Yes — I kept forgetting' },
-  { value: 'no_point', label: 'Yes — I never saw what it was for' },
+  { value: 'yes', label: 'Yes, but I stopped' },
   { value: 'never', label: 'No, this is my first' },
+];
+
+/*
+  "Stopped after a bad run" is the one specific to traders: people look away
+  from their results exactly when they are losing - the ostrich effect,
+  measured in how often investors check their portfolios in down markets
+  (Karlsson, Loewenstein & Seppi). Which is precisely when a journal is
+  worth most.
+*/
+export const STOPPED_OPTIONS: ChoiceOption[] = [
+  { value: 'typing', label: 'It took too long to fill in' },
+  { value: 'forgot', label: 'I kept forgetting' },
+  { value: 'bad_run', label: 'I stopped during a bad run' },
+  { value: 'no_point', label: 'I never saw what it was for' },
 ];
 
 /* The plan's answer to whatever beat them last time. */
@@ -177,6 +193,7 @@ const PAST_ANSWER: Record<string, string> = {
   typing: 'You said filling it in killed it. Here a trade takes *thirty seconds, said out loud or typed messy*.',
   forgot: 'You said you kept forgetting. Your dashboard *counts every day toward your goal*, so a missed one shows.',
   no_point: 'You said you never saw what it was for. *Two numbers by the end of the trial* — that is what it is for.',
+  bad_run: 'You said you stopped during a bad run. That is when it matters most — *three taps still works on your worst day*.',
   never: 'First journal? *One trade, thirty seconds* is the whole job on day one.',
 };
 
@@ -206,6 +223,7 @@ export function thinkingLines(struggles: string[], profile: ProfileAnswers): str
     typing: 'Cutting each entry down to thirty seconds',
     forgot: 'Setting up your daily count',
     no_point: 'Picking the two numbers you’ll see first',
+    bad_run: 'Making it work on your worst days',
     never: 'Setting up your first journal',
   };
   return [

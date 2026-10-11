@@ -877,6 +877,7 @@ const ONBOARDING_TEXT: Record<string, Record<string, string>> = {
     typing: 'They have journaled before and quit because filling it in took too long - keep anything you ask of them short.',
     forgot: 'They have journaled before and quit because they kept forgetting.',
     no_point: 'They have journaled before and quit because they never saw what it was for - show them what their entries reveal.',
+    bad_run: 'They have journaled before and quit during a losing run - expect them to go quiet when trading badly, and make it easy to log the bad days.',
     never: 'This is their first trading journal.',
   },
   rules_live: {
