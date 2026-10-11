@@ -161,15 +161,6 @@ function CheckRow({ name, state }: { name: string; state: boolean | null }) {
   );
 }
 
-function Field({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <p className="text-[10px] uppercase tracking-[0.12em] text-gray-600">{label}</p>
-      <p className="text-[14px] text-white mt-0.5">{value}</p>
-    </div>
-  );
-}
-
 export default function FirstEntry({
   onDone,
   rules,
@@ -252,163 +243,165 @@ export default function FirstEntry({
 
   if (entry && !writing) {
     const pnl = entry.manual_pnl;
-    const mood = entry.template_data?.pre_trade_mindset?.mood_rating;
-    const scales: [string, number][] = (
-      [
-        ['Emotional state', entry.pre_trade_emotional_state],
-        ['Focus', entry.pre_trade_focus],
-        ['Confidence', entry.pre_trade_confidence],
-      ] as [string, number | null | undefined][]
-    )
-      .filter((pair) => typeof pair[1] === 'number')
-      .map((pair) => [pair[0], pair[1] as number]);
+    const facts = [
+      entry.symbol,
+      entry.direction,
+      entry.position_size,
+    ].filter(Boolean) as string[];
+
+    /*
+      ONE THING NOVA NOTICED, NOT THE WHOLE WRITE-UP.
+
+      The first version printed every line Nova wrote - a summary, "what
+      happened", a psychology section, the rules, the checks - which on a
+      phone was three screens of grey text under a headline saying it took
+      thirty seconds. The moment this screen exists for is a single beat:
+      "it noticed something about me". So the card leads with the one line
+      Nova wrote about their behaviour, and the full write-up - which is
+      exactly what lands in their journal - sits behind a tap for anybody
+      who wants to read it.
+    */
+    const bodyLines = lines.filter((l) => !l.heading);
+    const psychHeading = lines.findIndex((l) => l.heading && /psych|mind|pattern|watch|lesson|habit/i.test(l.text));
+    const noticedBlock =
+      (psychHeading >= 0 ? lines.slice(psychHeading + 1).find((l) => !l.heading)?.text : undefined) ??
+      bodyLines[bodyLines.length - 1]?.text;
+    /*
+      And within that, the one sentence that names a pattern - "this mirrors
+      Tuesday" is the line that lands; the recap of the trade before it is
+      already in the facts row above.
+    */
+    const sentences = noticedBlock?.match(/[^.!?]+[.!?]+/g)?.map((x) => x.trim()) ?? [];
+    const noticed =
+      sentences.find((x) => /pattern|again|same|habit|repeat|mirror|every time|keeps?/i.test(x)) ??
+      (noticedBlock && noticedBlock.length > 170 ? sentences.slice(0, 2).join(' ') : noticedBlock);
+
+    const ratings = RATINGS.map((r) => ({ r, value: entry[r.key] })).filter(
+      (x): x is { r: (typeof RATINGS)[number]; value: number } => typeof x.value === 'number',
+    );
+
+    /* Their starter checklist, with whatever Nova could tell about this trade. */
+    const checklist = [
+      ...rules.map((r) => ({ name: r.name, state: entry.rules_status?.find((x) => x.id === r.id)?.followed ?? null })),
+      ...psychChecks.map((c) => ({ name: c.name, state: entry.psychology_status?.find((x) => x.id === c.id)?.confirmed ?? null })),
+    ];
 
     return (
       <div>
         <h1 className="text-[26px] sm:text-[32px] leading-[1.14] font-semibold tracking-[-0.035em]
-          text-white text-center text-balance mb-3">
+          text-white text-center text-balance mb-2">
           That took you thirty seconds.
         </h1>
-        <p className="text-center text-[14.5px] text-gray-400 leading-relaxed max-w-md mx-auto mb-6">
-          Every journal you have tried would have logged the numbers. This one logged what
-          you were like.
+        <p className="text-center text-[14px] text-gray-400 leading-relaxed max-w-md mx-auto mb-6">
+          Other journals log the numbers. This one logged what you were like.
         </p>
 
         <div className="rounded-2xl border border-white/10 bg-brand-surface overflow-hidden">
-          <div className="px-4 py-3 border-b border-white/[0.06] bg-brand-elevated">
-            <p className="text-[11px] uppercase tracking-[0.12em] text-gray-600">
-              {entry.title || 'Your entry'}
+          {/* The trade, as one line of facts. */}
+          <div className="px-4 py-3.5 border-b border-white/[0.06] bg-brand-elevated flex items-center justify-between gap-3">
+            <p className="text-[13.5px] text-white font-medium truncate">
+              {facts.length ? facts.join(' · ') : entry.title || 'Your trade'}
             </p>
+            {pnl !== undefined && pnl !== null && (
+              /* Blue for a gain, grey for a loss - the app's own convention, not green/red. */
+              <p className={`text-[14px] font-medium tabular-nums flex-shrink-0 ${pnl >= 0 ? 'text-brand-blue-light' : 'text-gray-400'}`}>
+                {pnl >= 0 ? '+' : '−'}${Math.abs(pnl).toLocaleString()}
+              </p>
+            )}
           </div>
 
-          <div className="p-4 sm:p-5">
-            {(entry.symbol || entry.direction || entry.position_size || pnl !== undefined) && (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pb-4 mb-4 border-b border-white/[0.06]">
-                {entry.symbol && <Field label="Symbol" value={entry.symbol} />}
-                {entry.direction && <Field label="Direction" value={entry.direction} />}
-                {entry.position_size && <Field label="Size" value={entry.position_size} />}
-                {pnl !== undefined && pnl !== null && (
-                  <div>
-                    <p className="text-[10px] uppercase tracking-[0.12em] text-gray-600">Result</p>
-                    {/*
-                      Blue for a gain, grey for a loss - the app's own
-                      convention, deliberately not the green/red every other
-                      journal uses.
-                    */}
-                    <p className={`text-[14px] mt-0.5 ${pnl >= 0 ? 'text-brand-blue-light' : 'text-gray-400'}`}>
-                      {pnl >= 0 ? '+' : '−'}${Math.abs(pnl).toLocaleString()}
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {lines.length > 0 && (
+          <div className="p-4 flex flex-col gap-4">
+            {/* Going in - their own three taps, drawn the way the journal draws them. */}
+            {ratings.length > 0 && (
               <div className="flex flex-col gap-2">
-                {lines.map((line, i) =>
-                  line.heading ? (
-                    <p
-                      key={i}
-                      className="text-[10px] uppercase tracking-[0.12em] text-gray-600 mt-2 first:mt-0"
-                    >
-                      {line.text}
-                    </p>
-                  ) : (
-                    <div key={i} className="flex gap-2.5 text-[13.5px] leading-relaxed text-gray-300">
-                      <span className="flex-shrink-0 mt-[7px] w-1 h-1 rounded-full bg-brand-blue-light" />
-                      <span>{line.text}</span>
-                    </div>
-                  ),
-                )}
+                <p className="text-[10px] uppercase tracking-[0.12em] text-gray-600">Going in</p>
+                {ratings.map(({ r, value }) => (
+                  <div key={r.key} className="flex items-center justify-between gap-3">
+                    <span className="text-[13px] text-gray-300">{r.words[value - 1]}</span>
+                    <span className="flex items-center gap-1.5" aria-label={`${value} of 5`}>
+                      {[1, 2, 3, 4, 5].map((d) => (
+                        <span key={d} className={`w-2 h-2 rounded-full ${d <= value ? 'bg-blue-400' : 'bg-white/10'}`} />
+                      ))}
+                    </span>
+                  </div>
+                ))}
               </div>
             )}
 
-            {(rules.length > 0 || psychChecks.length > 0) && (
-              <div className="mt-4 pt-4 border-t border-white/[0.06] grid sm:grid-cols-2 gap-5">
-                {rules.length > 0 && (
-                  <div>
-                    <p className="text-[10px] uppercase tracking-[0.12em] text-gray-600 mb-2.5">
-                      Your rules
-                    </p>
-                    <ul className="flex flex-col gap-2">
-                      {rules.map((r) => (
-                        <CheckRow
-                          key={r.id}
-                          name={r.name}
-                          state={entry.rules_status?.find((x) => x.id === r.id)?.followed ?? null}
-                        />
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {psychChecks.length > 0 && (
-                  <div>
-                    {/*
-                      Forward-looking, not a verdict.
-
-                      These are ticked BEFORE a trade, and this trade already
-                      happened - so Nova has nothing to judge them against and
-                      every one of them rendered blank, which read as three
-                      failures rather than as three things that did not exist
-                      yet. They are what the next entry starts with, so that
-                      is what the label says.
-                    */}
-                    <p className="text-[10px] uppercase tracking-[0.12em] text-gray-600 mb-2.5">
-                      Before your next one
-                    </p>
-                    <ul className="flex flex-col gap-2">
-                      {psychChecks.map((c) => (
-                        <CheckRow
-                          key={c.id}
-                          name={c.name}
-                          state={entry.psychology_status?.find((x) => x.id === c.id)?.confirmed ?? null}
-                        />
-                      ))}
-                    </ul>
-                  </div>
-                )}
+            {noticed && (
+              <div className="rounded-xl border border-brand-blue-light/25 bg-brand-blue/[0.07] px-3.5 py-3">
+                <p className="text-[10px] uppercase tracking-[0.12em] text-brand-blue-light mb-1">Nova noticed</p>
+                <p className="text-[13.5px] leading-relaxed text-gray-200">{noticed}</p>
               </div>
+            )}
+
+            {bodyLines.length > 1 && (
+              <details className="group">
+                <summary className="cursor-pointer list-none text-[12.5px] text-gray-500 hover:text-gray-300 transition-colors">
+                  <span className="group-open:hidden">See the full write-up</span>
+                  <span className="hidden group-open:inline">Hide the write-up</span>
+                </summary>
+                <div className="mt-3 flex flex-col gap-2">
+                  {lines.map((line, i) =>
+                    line.heading ? (
+                      <p key={i} className="text-[10px] uppercase tracking-[0.12em] text-gray-600 mt-1">{line.text}</p>
+                    ) : (
+                      <p key={i} className="text-[13px] leading-relaxed text-gray-400">{line.text}</p>
+                    ),
+                  )}
+                </div>
+              </details>
             )}
 
             {/*
-              The three scales, as the real control shows them. Nova returns
-              these only when the trader actually said something about how
-              they felt, so an omitted one stays omitted rather than being
-              drawn as a zero.
+              "Your checklist, built from your answers" rather than "Your
+              rules": they never wrote these. The answers they gave picked
+              them (see onboardingChecklist), there is always at least one of
+              each, and they arrive in the journal ready to edit.
             */}
-            {(scales.length > 0 || (mood !== undefined && mood !== null)) && (
-              <div className="mt-4 pt-3.5 border-t border-white/[0.06] flex flex-wrap gap-x-6 gap-y-2">
-                {scales.map(([label, value]) => (
-                  <div key={label} className="flex items-center gap-2">
-                    <p className="text-[10px] uppercase tracking-[0.12em] text-gray-600">{label}</p>
-                    <p className="text-[13px] text-gray-300">{value} / 5</p>
-                  </div>
-                ))}
-                {scales.length === 0 && mood !== undefined && mood !== null && (
-                  <div className="flex items-center gap-2">
-                    <p className="text-[10px] uppercase tracking-[0.12em] text-gray-600">Going in</p>
-                    <p className="text-[13px] text-gray-300">{mood} / 5</p>
-                  </div>
+            {checklist.length > 0 && (
+              <div className="pt-3.5 border-t border-white/[0.06]">
+                <p className="text-[10px] uppercase tracking-[0.12em] text-gray-600 mb-2.5">
+                  Your checklist &middot; built from your answers
+                </p>
+                <ul className="flex flex-col gap-2">
+                  {checklist.slice(0, 4).map((c) => (
+                    <CheckRow key={c.name} name={c.name} state={c.state} />
+                  ))}
+                </ul>
+                {checklist.length > 4 && (
+                  <p className="mt-2 text-[12px] text-gray-600">+{checklist.length - 4} more, ready in your journal</p>
                 )}
               </div>
             )}
           </div>
         </div>
 
-        <p className="mt-5 text-center text-[15px] sm:text-[16px] leading-[1.5] text-white
-          text-balance max-w-lg mx-auto">
-          That is one. The pattern needs thirty.
+        {/*
+          THE HAND-OFF TO THE PRICE.
+
+          Was "That is one. The pattern needs thirty." over "Start 14 days
+          free" - true, but it pointed at the twenty-nine entries still to
+          write rather than at the one they just made. People value what
+          they have just built far above what it would cost to get (the
+          endowment and IKEA effects - Kahneman, Knetsch & Thaler; Norton,
+          Mochon & Ariely), and this entry genuinely is held until they
+          subscribe (see onboardingWriteBack). So the button offers to keep
+          it, in their own voice: "my", which in Aagaard's widely cited CTA
+          test beat "your" on the same free-trial button.
+        */}
+        <p className="mt-6 text-center text-[15px] sm:text-[16px] leading-[1.5] text-white text-balance max-w-lg mx-auto">
+          Your first entry is ready to save.
         </p>
 
-        <div className="mt-6 text-center">
+        <div className="mt-5 text-center">
           <button
             type="button"
             onClick={() => onDone(entry, text.trim())}
-            className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full
               bg-white text-black text-[15px] font-medium hover:bg-gray-200 transition-colors"
           >
-            Start 14 days free
+            Save it &amp; start my 14 days free
             <ArrowRight size={17} />
           </button>
           <p className="mt-3 text-[12.5px] text-gray-500">
@@ -475,7 +468,7 @@ export default function FirstEntry({
   return (
     <div>
       <MascotSays pose="lean" height={80} side="above" className="mb-6">
-        {writing ? 'Reading it now…' : 'However you’d say it out loud.'}
+        {writing ? 'Reading it now…' : 'Messy is fine. I’ll sort it out.'}
       </MascotSays>
 
       <p className="text-center text-[11px] uppercase tracking-[0.14em] text-gray-500 mb-3">
@@ -485,8 +478,16 @@ export default function FirstEntry({
         text-white text-center text-balance mb-2">
         Now tell Nova what happened.
       </h1>
+      {/*
+        Says "type" first on purpose. Most of this traffic arrives in
+        Instagram's in-app browser, where there is no mic at all - so the
+        box is the main way in, and somebody who only saw "tell" and "say"
+        would go looking for a record button that is not there.
+      */}
       <p className="text-center text-[13.5px] text-gray-500 mb-6">
-        A sentence or two is plenty. Rambling is fine.
+        {isSupported
+          ? 'Type it or tap the mic. A sentence or two, messy is fine.'
+          : 'Type it like you’d text a friend. A sentence or two, messy is fine.'}
       </p>
 
       <div className="relative">
