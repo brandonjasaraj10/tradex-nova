@@ -75,6 +75,8 @@ type Step =
   | 'pattern'
   | 'gap'
   | 'plan'
+  | 'planwhen'
+  | 'planhow'
   | 'entry';
 
 /* Why, what beat them before, three about them, the behavioural ones, then daily time and the goal. */
@@ -225,9 +227,12 @@ function Choice({
   recommended?: boolean;
 }) {
   return (
-    <button
+    <motion.button
       type="button"
       onClick={onClick}
+      whileTap={{ scale: 0.98 }}
+      animate={selected ? { scale: [1, 1.015, 1] } : undefined}
+      transition={{ duration: 0.22 }}
       className={`w-full text-left px-5 py-4 rounded-xl border text-[15px] transition-colors
         flex items-center justify-between gap-3
         focus-visible:outline-none focus-visible:border-brand-blue-light/60 ${
@@ -241,7 +246,7 @@ function Choice({
       {!selected && tag && (
         <span className={`text-[12px] ${recommended ? 'text-brand-blue-light' : 'text-gray-500'}`}>{tag}</span>
       )}
-    </button>
+    </motion.button>
   );
 }
 
@@ -254,6 +259,27 @@ function Question({
   options: ChoiceOption[];
   onChoose: (value: string) => void;
 }) {
+  /*
+    The tapped answer lights up and ticks before the screen moves on.
+
+    It used to jump the instant it was touched, so the tap had no visible
+    result of its own - the screen just changed. Duolingo confirms every
+    answer before moving, and a quarter of a second of "yes, that one" is
+    what makes a run of questions feel like it is responding to you rather
+    than flicking past. A short haptic tick where the phone supports it.
+  */
+  const [picked, setPicked] = useState<string | null>(null);
+  const choose = (value: string) => {
+    if (picked) return;
+    setPicked(value);
+    try {
+      navigator.vibrate?.(8);
+    } catch {
+      /* no haptics here */
+    }
+    window.setTimeout(() => onChoose(value), 260);
+  };
+
   return (
     <>
       <Progress step={step} />
@@ -266,7 +292,7 @@ function Question({
       )}
       <div className={`flex flex-col gap-2.5 ${subtitle ? '' : 'mt-5'}`}>
         {options.map((o) => (
-          <Choice key={o.value} label={o.label} tag={o.tag} recommended={o.recommended} onClick={() => onChoose(o.value)} />
+          <Choice key={o.value} label={o.label} tag={o.tag} recommended={o.recommended} selected={picked === o.value} onClick={() => choose(o.value)} />
         ))}
       </div>
     </>
@@ -499,15 +525,30 @@ export default function Onboarding({
   const profileIndex = typeof step === 'object' ? step.profile : null;
 
   return (
-    <div className="min-h-screen bg-brand-bg text-white flex items-center justify-center px-5 py-10">
+    /*
+      Exactly the visible screen, not 100vh.
+
+      min-h-screen is 100vh, which on an iPhone includes the strip behind
+      Safari's address bar - so every screen, however short, was a few dozen
+      pixels taller than what could be seen and scrolled. 100dvh is the
+      height actually visible. Screens that fit sit centred and still; the
+      one or two that genuinely need more (the written entry) still scroll.
+    */
+    <div className="min-h-[100dvh] bg-brand-bg text-white flex items-center justify-center px-5 py-6 sm:py-10">
       <div className={step === 'entry' ? 'w-full max-w-2xl' : 'w-full max-w-md'}>
         <AnimatePresence mode="wait">
           <motion.div
             key={typeof step === 'object' ? `profile-${step.profile}` : step}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.18, ease: 'easeOut' }}
+            /*
+              Each screen slides in from the right and out to the left, the
+              way a native app moves forward - a fade read as the page
+              reloading. Short and eased, so it reads as movement rather than
+              as waiting.
+            */
+            initial={{ opacity: 0, x: 28 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -28 }}
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
           >
             {/*
               The reaffirm screen.
@@ -846,11 +887,6 @@ export default function Onboarding({
                   {plan.title}
                 </h1>
 
-                <p className="mt-4 text-[15px] sm:text-[16.5px] leading-relaxed text-gray-300
-                  max-w-sm mx-auto">
-                  {emphasise(plan.promise)}
-                </p>
-
                 {/*
                   Their own goal, handed back in their own numbers, above the
                   three points - the line that turns a plan written for them
@@ -863,26 +899,92 @@ export default function Onboarding({
                       Your goal
                     </span>
                     {emphasise(commitmentLine(profile)!)}
-                    {pastAnswerLine(profile) && (
-                      <span className="block mt-2 pt-2 border-t border-white/[0.08] text-[12.5px] text-gray-400">
-                        {emphasise(pastAnswerLine(profile)!)}
-                      </span>
-                    )}
                   </p>
                 )}
 
-                <div className="mt-9 flex flex-col gap-3.5 max-w-sm mx-auto">
-                  {plan.points.map((point) => (
-                    <p key={point} className="text-[13px] leading-relaxed text-gray-500">
-                      {emphasise(point)}
-                    </p>
-                  ))}
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setStep('planwhen')}
+                  className="mt-8 inline-flex items-center justify-center gap-2 px-8 py-3.5
+                    rounded-full bg-white text-black text-[15px] font-medium
+                    hover:bg-gray-200 transition-colors"
+                >
+                  Continue
+                  <ArrowRight size={17} />
+                </button>
+              </div>
+            )}
 
+            {/*
+              The plan, three screens of one idea each - Brandon found the
+              single plan screen too heavy on his phone. Here: the date and
+              what they will know by it, and the line answering why their last
+              journal failed them.
+            */}
+            {step === 'planwhen' && (
+              <div className="text-center">
+                <p className="text-[11px] uppercase tracking-[0.16em] text-blue-400 mb-5">
+                  By {plan.day}
+                </p>
+                <p className="text-[22px] sm:text-[27px] leading-[1.3] font-semibold tracking-[-0.03em]
+                  text-white text-balance max-w-sm mx-auto">
+                  {emphasise(plan.promise.replace(/^By \*[^*]+\* /, '').replace(/^./, (c) => c.toUpperCase()))}
+                </p>
+                {pastAnswerLine(profile) && (
+                  <p className="mt-7 mx-auto max-w-sm rounded-xl border border-brand-blue-light/25
+                    bg-brand-blue/[0.07] px-4 py-3 text-[13.5px] leading-relaxed text-gray-300">
+                    {emphasise(pastAnswerLine(profile)!)}
+                  </p>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setStep('planhow')}
+                  className="mt-8 inline-flex items-center justify-center gap-2 px-8 py-3.5
+                    rounded-full bg-white text-black text-[15px] font-medium
+                    hover:bg-gray-200 transition-colors"
+                >
+                  How I get there
+                  <ArrowRight size={17} />
+                </button>
+              </div>
+            )}
+
+            {/*
+              The plan's "how", on its own screen.
+
+              It was the bottom half of the plan screen - 716px tall on a
+              390px phone, so it scrolled on every iPhone. Split in two, each
+              half fits and each has one job: the outcome and their goal,
+              then what changes from the next trade.
+            */}
+            {step === 'planhow' && (
+              <div className="text-center">
+                <p className="text-[11px] uppercase tracking-[0.16em] text-blue-400 mb-5">
+                  How you get there
+                </p>
+                <h1 className="text-[26px] sm:text-[32px] leading-[1.14] font-semibold
+                  tracking-[-0.035em] text-white text-balance">
+                  Three things change from your next trade.
+                </h1>
+                <ul className="mt-7 flex flex-col gap-3 max-w-sm mx-auto text-left">
+                  {plan.points.map((point, i) => (
+                    <motion.li
+                      key={point}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.15 + i * 0.12, duration: 0.3 }}
+                      className="flex gap-3 rounded-xl border border-white/[0.08] bg-brand-surface px-4 py-3
+                        text-[13.5px] leading-snug text-gray-400"
+                    >
+                      <Check size={16} className="flex-shrink-0 mt-[1px] text-blue-400" strokeWidth={2.5} />
+                      <span>{emphasise(point)}</span>
+                    </motion.li>
+                  ))}
+                </ul>
                 <button
                   type="button"
                   onClick={() => setStep('entry')}
-                  className="mt-9 inline-flex items-center justify-center gap-2 px-8 py-3.5
+                  className="mt-8 inline-flex items-center justify-center gap-2 px-8 py-3.5
                     rounded-full bg-white text-black text-[15px] font-medium
                     hover:bg-gray-200 transition-colors"
                 >

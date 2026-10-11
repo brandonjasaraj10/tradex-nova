@@ -143,34 +143,6 @@ function toLines(html: string | undefined): Line[] {
   }
 }
 
-/*
-  One checklist line, in the two states that matter.
-
-  Kept is a blue tick and broken is a grey cross, which is the app's own
-  convention everywhere else - deliberately not the green/red every other
-  journal uses. A rule Nova said nothing about is neither: it renders unmarked
-  rather than being quietly counted as kept, because "not mentioned" and
-  "followed" are not the same claim and only one of them is true.
-*/
-function CheckRow({ name, state }: { name: string; state: boolean | null }) {
-  return (
-    <li className="flex items-start gap-2.5">
-      <span className="flex-shrink-0 w-4 h-4 mt-[2px] flex items-center justify-center">
-        {state === true ? (
-          <Check size={14} className="text-brand-blue-light" strokeWidth={2.5} />
-        ) : state === false ? (
-          <X size={14} className="text-gray-500" strokeWidth={2.5} />
-        ) : (
-          <span className="block w-1.5 h-1.5 rounded-full bg-white/15" />
-        )}
-      </span>
-      <span className={`text-[13px] leading-relaxed ${state === false ? 'text-white' : 'text-gray-400'}`}>
-        {name}
-      </span>
-    </li>
-  );
-}
-
 export default function FirstEntry({
   onDone,
   rules,
@@ -368,7 +340,7 @@ export default function FirstEntry({
       sentence becomes its own short bullet under its heading; the opening
       summary line is dropped, because the facts row above already says it;
       rule lines Nova marks with a tick or a cross get a real check or X; and
-      no section runs past three points. The full text still lands in their
+      no section runs past two points. The full text still lands in their
       journal untouched - this is only how the first one is shown.
     */
     const splitSentences = (t: string) =>
@@ -385,7 +357,7 @@ export default function FirstEntry({
       const body = line.text.replace(/^[✓✔✗✘×]\s*/, '');
       const current = sections[sections.length - 1];
       for (const sentence of mark ? [body] : splitSentences(body)) {
-        if (current.items.length < 3) current.items.push({ text: sentence, mark });
+        if (current.items.length < 2) current.items.push({ text: sentence, mark });
       }
     }
     if (!sections.length && lines.length) {
@@ -396,7 +368,7 @@ export default function FirstEntry({
       (x): x is { r: (typeof RATINGS)[number]; value: number } => typeof x.value === 'number',
     );
 
-    /* Their starter checklist, with whatever Nova could tell about this trade. */
+
     /*
       The trade's psychology score - the same calculation the journal runs
       on a saved entry (calculateChecklistScore, then combinePsychologyScores
@@ -409,11 +381,6 @@ export default function FirstEntry({
       null,
       calculateChecklistScore(answeredChecks, [entry.pre_trade_emotional_state, entry.pre_trade_focus, entry.pre_trade_confidence]),
     );
-
-    const checklist = [
-      ...rules.map((r) => ({ name: r.name, state: entry.rules_status?.find((x) => x.id === r.id)?.followed ?? null })),
-      ...psychChecks.map((c) => ({ name: c.name, state: entry.psychology_status?.find((x) => x.id === c.id)?.confirmed ?? null })),
-    ];
 
     return (
       <div>
@@ -484,7 +451,8 @@ export default function FirstEntry({
 
             {sections.length > 0 && (
               <div className="flex flex-col gap-3.5">
-                {sections.map((sec, si) => (
+                {/* Two sections, two points each: this screen has to fit one phone screen. */}
+                {sections.filter((sec) => sec.items.length > 0).slice(0, 2).map((sec, si) => (
                   <div key={si}>
                     <p className="text-[10px] uppercase tracking-[0.12em] text-blue-400 mb-1.5">{sec.heading}</p>
                     <ul className="flex flex-col gap-1.5">
@@ -507,26 +475,11 @@ export default function FirstEntry({
             )}
 
             {/*
-              "Your checklist, built from your answers" rather than "Your
-              rules": they never wrote these. The answers they gave picked
-              them (see onboardingChecklist), there is always at least one of
-              each, and they arrive in the journal ready to edit.
+              The starter checklist used to be listed here too. Dropped to keep
+              this screen to one phone screen - it is still created in their
+              journal (onboardingWriteBack), and the plan screens already
+              told them what it is for.
             */}
-            {checklist.length > 0 && (
-              <div className="pt-3.5 border-t border-white/[0.06]">
-                <p className="text-[10px] uppercase tracking-[0.12em] text-gray-600 mb-2.5">
-                  Your checklist &middot; built from your answers
-                </p>
-                <ul className="flex flex-col gap-2">
-                  {checklist.slice(0, 4).map((c) => (
-                    <CheckRow key={c.name} name={c.name} state={c.state} />
-                  ))}
-                </ul>
-                {checklist.length > 4 && (
-                  <p className="mt-2 text-[12px] text-gray-600">+{checklist.length - 4} more, ready in your journal</p>
-                )}
-              </div>
-            )}
           </div>
         </div>
 
@@ -585,14 +538,13 @@ export default function FirstEntry({
     };
     return (
       <div>
-        {phase === 0 && (
-          <MascotSays pose="lean" height={80} side="above" className="mb-6">
-            Think of your last losing trade.
-          </MascotSays>
-        )}
+        {/* No mascot here: with it this screen was 618px and scrolled on most iPhones. */}
         <p className="text-center text-[11px] uppercase tracking-[0.14em] text-gray-500 mb-3">
           Your first entry &middot; {phase + 1} of {RATINGS.length + 1}
         </p>
+        {phase === 0 && (
+          <p className="text-center text-[14px] text-gray-400 mb-1.5">Think of your last losing trade.</p>
+        )}
         <h1 className="text-[26px] sm:text-[31px] leading-[1.15] font-semibold tracking-[-0.032em]
           text-white text-center text-balance mb-6">
           {r.question}
@@ -620,7 +572,7 @@ export default function FirstEntry({
 
   return (
     <div>
-      <MascotSays pose="lean" height={80} side="above" className="mb-6">
+      <MascotSays pose="lean" height={56} side="above" className="mb-4">
         {writing ? 'Reading it now…' : 'Messy is fine. I’ll sort it out.'}
       </MascotSays>
 
@@ -649,7 +601,7 @@ export default function FirstEntry({
           onChange={(e) => setText(e.target.value.slice(0, MAX_CHARS))}
           maxLength={MAX_CHARS}
           disabled={writing}
-          rows={5}
+          rows={4}
           placeholder={PLACEHOLDER}
           className="w-full rounded-xl border border-white/10 bg-brand-surface px-4 py-3.5
             text-[15px] leading-relaxed text-gray-100 placeholder:text-gray-600
