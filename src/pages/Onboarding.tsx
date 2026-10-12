@@ -780,7 +780,7 @@ export default function Onboarding({
 
                 <p className="text-[16px] sm:text-[19px] leading-[1.4] text-gray-300 text-balance
                   max-w-sm mx-auto">
-                  Every account you have lost died in that gap. Not in the strategy.
+                  Every account you have lost died in that gap.
                 </p>
 
                 <button
