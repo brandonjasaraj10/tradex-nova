@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Check } from 'lucide-react';
+import { ArrowRight, Check, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useDataSync } from '../../lib/dataSync';
 import { trackEvent } from '../../lib/productAnalytics';
@@ -64,6 +64,8 @@ function localDate(d: Date) {
 interface State {
   userId: string;
   target: number;
+  /* What they picked in onboarding - 30 or 66 can be more than the card counts to. */
+  picked: number;
   profile: Record<string, string>;
   minutes: number | null;
   done: number;
@@ -81,6 +83,7 @@ export default function GoalCounter() {
   const [state, setState] = useState<State | null>(null);
   const [celebrating, setCelebrating] = useState<Milestone | null>(null);
   const [celebrationOpen, setCelebrationOpen] = useState(false);
+  const [justHidden, setJustHidden] = useState(false);
 
   const load = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -111,6 +114,7 @@ export default function GoalCounter() {
     setState({
       userId: user.id,
       target,
+      picked: Number(profile.commit_days),
       profile,
       minutes: profile.daily_minutes ? Number(profile.daily_minutes) : null,
       done,
@@ -132,8 +136,22 @@ export default function GoalCounter() {
 
   if (!state) return null;
 
-  const { target, done, today, minutes, profile } = state;
+  const { target, picked, done, today, minutes, profile } = state;
   const why = GOAL_PHRASE[profile.goal ?? ''];
+
+  /*
+    Hidden for good if they would rather not have it (Brandon). Only the
+    card: the milestone popups are rare enough to stay.
+  */
+  const setHidden = async (hidden: boolean) => {
+    const next = { ...profile };
+    if (hidden) next.goal_card_hidden = '1';
+    else delete next.goal_card_hidden;
+    setState({ ...state, profile: next });
+    setJustHidden(hidden);
+    trackEvent(hidden ? 'goal_card_hidden' : 'goal_card_shown', { done, target, from: 'dashboard' });
+    await supabase.from('user_profiles').update({ onboarding_profile: next }).eq('user_id', state.userId);
+  };
 
   const closeCelebration = async () => {
     const reached = celebrating;
@@ -149,18 +167,31 @@ export default function GoalCounter() {
 
   return (
     <>
-      {done < target && (
+      {done < target && !profile.goal_card_hidden && (
         <div className="rounded-2xl border border-white/[0.08] bg-[#0A0A0A] p-4 sm:p-5">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <p className="text-[10.5px] uppercase tracking-[0.14em] text-blue-400">Your goal</p>
               <p className="mt-1 text-[15px] sm:text-[16px] font-medium text-white">Journal {target} trading days</p>
+              {/* A 30- or 66-day goal: the card counts the first 14, and says so. */}
+              {picked > target && (
+                <p className="mt-0.5 text-[13px] text-gray-400">First stop on your {picked}-day goal</p>
+              )}
               {why && <p className="mt-0.5 text-[13px] text-gray-400">Working toward {why}</p>}
             </div>
             <p className="flex-shrink-0 text-[22px] sm:text-[26px] font-semibold tabular-nums text-white leading-none">
               {done}
               <span className="text-[13px] font-normal text-gray-500"> / {target}</span>
             </p>
+            <button
+              type="button"
+              onClick={() => void setHidden(true)}
+              aria-label="Hide goal"
+              title="Hide"
+              className="flex-shrink-0 -mr-1.5 -mt-1.5 p-1.5 rounded-lg text-gray-600 hover:text-gray-300 hover:bg-white/5 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
 
           {/* One segment a day up to 30; 66 would make slivers, so it is a bar. */}
@@ -200,6 +231,16 @@ export default function GoalCounter() {
             )}
           </div>
         </div>
+      )}
+
+      {/* Right after hiding: where it went, and a way back without hunting for it. */}
+      {justHidden && profile.goal_card_hidden && (
+        <p className="text-[12.5px] text-gray-500">
+          Goal hidden. You can bring it back in Settings &rsaquo; Preferences.{' '}
+          <button type="button" onClick={() => void setHidden(false)} className="text-blue-400 hover:text-blue-300">
+            Undo
+          </button>
+        </p>
       )}
 
       {celebrating && (

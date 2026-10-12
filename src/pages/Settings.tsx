@@ -26,6 +26,7 @@ import { useToast } from '../lib/toastContext';
 import PasswordStrengthIndicator, { isPasswordValid } from '../components/auth/PasswordStrengthIndicator';
 import { usePreferences } from '../lib/preferencesContext';
 import { useTour } from '../lib/tourContext';
+import GoalCardSetting from '../components/dashboard/GoalCardSetting';
 /*
   Settings used to declare its own three-field Subscription type and query the
   table by hand. That is how it drifted: the local copy had no
@@ -1062,6 +1063,8 @@ export default function Settings() {
                       Replay tour
                     </Button>
                   </div>
+
+                  <GoalCardSetting />
                 </div>
               )}
 
