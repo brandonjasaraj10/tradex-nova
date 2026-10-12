@@ -963,7 +963,8 @@ export default function Onboarding({
                   {card.outcome}
                 </p>
                 <p className="mt-5 text-[14px] sm:text-[15px] leading-relaxed text-gray-500 max-w-md mx-auto">
-                  {emphasise(`Most traders take *three years* to find out what you are about to find out in *${profile.commit_days ? `${profile.commit_days} trading days` : 'two weeks'}*.`)}
+                  {/* Always the first 7 trading days, not the goal length - 30 or 66 made the payoff sound far away. */}
+                  {emphasise('Most traders take *three years* to find out what you’ll see in *your first 7 trading days*.')}
                 </p>
                 <button
                   type="button"

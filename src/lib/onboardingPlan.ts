@@ -341,6 +341,9 @@ const FIRST_NUMBER: Record<Struggle, string> = {
   product; the outcome being sold is seeing yourself clearly, not a return.
 */
 /* N trading days from today, skipping Saturdays and Sundays. */
+/* When the first real pattern can be shown, whatever the length of the goal. */
+export const FIRST_LOOK_DAYS = 7;
+
 export function addTradingDays(from: Date, days: number): Date {
   const d = new Date(from);
   let left = days;
@@ -401,8 +404,15 @@ export function buildPlan(
     fourteen days out, which read as the flow not listening. Falls back to
     the trial end only when no goal was picked.
   */
+  /*
+    ...and then capped at the first 7 trading days. Somebody who picked 30
+    or 66 days was told they would find out "by" a date two or three months
+    away, which made the payoff feel far off (Brandon). The answer comes
+    early; the longer goal is what turns it into a habit. So the date is the
+    first look, never later than 7 trading days, and inside the trial.
+  */
   const goalDays = Number(profile.commit_days);
-  const goalEnd = goalDays > 0 ? addTradingDays(new Date(), goalDays) : trialEnds;
+  const goalEnd = goalDays > 0 ? addTradingDays(new Date(), Math.min(goalDays, FIRST_LOOK_DAYS)) : trialEnds;
   const day = goalEnd.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
 
   /*
