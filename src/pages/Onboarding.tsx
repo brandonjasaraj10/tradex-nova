@@ -199,10 +199,10 @@ function Progress({ step }: { step: Step }) {
     <div className="mb-8">
       <div className="h-1 rounded-full bg-white/10 overflow-hidden">
         <motion.div
-          className="h-full rounded-full bg-brand-blue-light"
+          className="h-full rounded-full bg-brand-blue-light shadow-[0_0_10px_rgba(96,165,250,0.8)]"
           initial={false}
           animate={{ width: `${pct}%` }}
-          transition={{ duration: 0.3, ease: 'easeOut' }}
+          transition={{ type: 'spring', stiffness: 160, damping: 22 }}
         />
       </div>
       {/*
@@ -225,15 +225,163 @@ function Progress({ step }: { step: Step }) {
 */
 const ASK_POSES = ['idle', 'lean', 'present', 'arms'] as const;
 
-function Ask({ step, title, subtitle }: { step: Step; title: string; subtitle?: string }) {
+const GOAL_REPLY: Record<string, string> = {
+  profitable: 'That’s exactly what this is built for.',
+  pass_challenge: 'Good. Most challenges are lost to one habit. Let’s find yours.',
+  stop_blowing: 'Then the next account is the one we protect.',
+  consistent: 'Consistency is a habit. Habits can be tracked.',
+  understand: 'That’s the right place to start.',
+};
+
+const PAST_REPLY: Record<string, string> = {
+  typing: 'Fair. Here it takes thirty seconds.',
+  forgot: 'Then I’ll keep count for you.',
+  bad_run: 'That’s exactly when it matters most.',
+  no_point: 'You’ll see the point within a week.',
+  switch_numbers: 'That’s the gap I fill.',
+  switch_typing: 'Here it takes thirty seconds.',
+  switch_insight: 'Naming it is my whole job.',
+  switch_trying: 'Fair. Let me show you.',
+};
+
+/*
+  Types the line in, a few characters at a time, the way Duo's bubble does -
+  so the question arrives as something Nova is saying rather than a heading
+  that was already there. Fast (about a second for a long question) and
+  skipped entirely under reduced motion.
+*/
+function useTyped(text: string) {
+  const [shown, setShown] = useState(text);
+  /* 'dots' while Nova is "typing", 'typing' while the words come in, then 'done'. */
+  const [phase, setPhase] = useState<'dots' | 'typing' | 'done'>('done');
+  useEffect(() => {
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      setShown(text);
+      setPhase('done');
+      return;
+    }
+    setShown('');
+    setPhase('dots');
+    let i = 0;
+    let id = 0;
+    const startTyping = window.setTimeout(() => {
+      setPhase('typing');
+      id = window.setInterval(() => {
+        i += 2;
+        setShown(text.slice(0, i));
+        if (i >= text.length) {
+          window.clearInterval(id);
+          setPhase('done');
+        }
+      }, 22);
+    }, 380);
+    return () => {
+      window.clearTimeout(startTyping);
+      window.clearInterval(id);
+    };
+  }, [text]);
+  return { shown, phase };
+}
+
+/*
+  Nova and the bubble STAY on screen between questions - only the words in
+  the bubble and the answers underneath change. Duolingo keeps Duo in place
+  for the whole run of questions, and it is a large part of why theirs feels
+  like one conversation instead of a stack of screens: nothing jumps, the
+  same character is still there, it just says the next thing. A very slow
+  float keeps him from looking pasted in without anything moving that the
+  eye has to follow.
+*/
+function Ask({ step, title, subtitle, reacting = false }: { step: Step; title: string; subtitle?: string; reacting?: boolean }) {
   const index = questionIndex(step) ?? 0;
+  const { shown: typed, phase } = useTyped(title);
+  const pose = reacting ? 'arms' : ASK_POSES[index % ASK_POSES.length];
   return (
     <>
       <Progress step={step} />
       <div className="flex items-end gap-3 mb-6">
-        <Mascot pose={ASK_POSES[index % ASK_POSES.length]} height={78} className="flex-shrink-0" />
-        <div className="relative mb-3 rounded-2xl border border-white/10 bg-brand-elevated px-4 py-3">
-          <p className="text-[17px] sm:text-[19px] leading-snug font-semibold text-white text-balance">{title}</p>
+        {/*
+          NOVA IS ANIMATED, THE SCREEN IS NOT.
+
+          The page transitions that slid whole screens sideways gave Brandon a
+          headache; a character moving is a different thing, and it is most
+          of what makes Duo feel alive. So the motion lives on Nova alone:
+          a slow sway while waiting, a springy hop in a new pose each time a
+          question arrives, and a happy bounce when he answers back.
+        */}
+        <motion.div
+          className="flex-shrink-0 origin-bottom"
+          animate={{ y: [0, -3, 0], rotate: [-1.5, 1.5, -1.5] }}
+          transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
+        >
+          {/* Talking: a quick small bob while the words are coming in. */}
+          <motion.div
+            className="origin-bottom"
+            animate={phase === 'typing' ? { y: [0, -2.5, 0] } : { y: 0 }}
+            transition={phase === 'typing' ? { duration: 0.28, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.2 }}
+          >
+          <motion.div
+            key={`${pose}-${index}-${reacting}`}
+            className="origin-bottom relative"
+            initial={{ y: 10, scale: 0.9, rotate: -6, opacity: 0.6 }}
+            animate={
+              reacting
+                ? { y: [10, -14, 0, -6, 0], scale: [0.9, 1.06, 1, 1.02, 1], rotate: [-6, 6, 0, 3, 0], opacity: 1 }
+                : { y: 0, scale: 1, rotate: 0, opacity: 1 }
+            }
+            transition={reacting ? { duration: 0.8, ease: 'easeOut' } : { type: 'spring', stiffness: 420, damping: 18 }}
+          >
+            <Mascot pose={pose} height={78} />
+            {/* A burst when he answers back. */}
+            {reacting && [0, 1, 2, 3, 4, 5, 6].map((i) => (
+              <motion.span
+                key={i}
+                aria-hidden="true"
+                className="absolute left-1/2 top-3 w-1.5 h-1.5 rounded-full bg-blue-400"
+                initial={{ opacity: 0, x: 0, y: 0, scale: 0.6 }}
+                animate={{
+                  opacity: [0, 1, 0],
+                  x: Math.cos((i / 7) * Math.PI * 2) * 34,
+                  y: Math.sin((i / 7) * Math.PI * 2) * 30 - 6,
+                  scale: [0.6, 1.2, 0.8],
+                }}
+                transition={{ duration: 0.75, delay: 0.1, ease: 'easeOut' }}
+              />
+            ))}
+          </motion.div>
+          </motion.div>
+          {/* The ground: a soft shadow that squashes as he lands. */}
+          <motion.div
+            key={`shadow-${pose}-${index}-${reacting}`}
+            aria-hidden="true"
+            className="mx-auto -mt-1 h-1.5 w-12 rounded-full bg-blue-400/20 blur-[3px]"
+            initial={{ scaleX: 0.6, opacity: 0.3 }}
+            animate={reacting ? { scaleX: [0.6, 0.5, 1.15, 1], opacity: [0.3, 0.2, 0.6, 0.45] } : { scaleX: [0.6, 1.15, 1], opacity: [0.3, 0.6, 0.45] }}
+            transition={{ duration: reacting ? 0.8 : 0.45, ease: 'easeOut' }}
+          />
+        </motion.div>
+        <div className="relative mb-3 flex-1 rounded-2xl border border-white/10 bg-brand-elevated px-4 py-3">
+          {/* The full line sets the bubble's size up front, so it does not grow as the text types in. */}
+          <p className="text-[17px] sm:text-[19px] leading-snug font-semibold text-balance invisible" aria-hidden="true">
+            {title}
+          </p>
+          <p className="absolute inset-x-4 top-3 text-[17px] sm:text-[19px] leading-snug font-semibold text-white text-balance">
+            {phase === 'dots' ? (
+              <span className="inline-flex items-center gap-1 h-[1.4em]" aria-hidden="true">
+                {[0, 1, 2].map((i) => (
+                  <motion.span
+                    key={i}
+                    className="w-1.5 h-1.5 rounded-full bg-gray-400"
+                    animate={{ opacity: [0.3, 1, 0.3], y: [0, -2, 0] }}
+                    transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.12 }}
+                  />
+                ))}
+              </span>
+            ) : (
+              typed
+            )}
+          </p>
+          <span className="sr-only">{title}</span>
           {subtitle && <p className="mt-1 text-[12.5px] text-gray-500">{subtitle}</p>}
           <span
             aria-hidden="true"
@@ -285,7 +433,7 @@ function Choice({
 }
 
 function Question({
-  step, title, subtitle, options, onChoose,
+  title, subtitle, options, onChoose,
 }: {
   step: Step;
   title: string;
@@ -316,10 +464,17 @@ function Question({
 
   return (
     <>
-      <Ask step={step} title={title} subtitle={subtitle} />
-      <div className="flex flex-col gap-2.5">
-        {options.map((o) => (
-          <Choice key={o.value} label={o.label} tag={o.tag} recommended={o.recommended} selected={picked === o.value} onClick={() => choose(o.value)} />
+      {/* The question itself is said by Nova in the header above, which stays put. */}
+      <div className="flex flex-col gap-2.5" aria-label={subtitle ? `${title} ${subtitle}` : title}>
+        {options.map((o, i) => (
+          <motion.div
+            key={o.value}
+            initial={{ opacity: 0, scale: 0.97 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.25 + i * 0.05, duration: 0.2, ease: 'easeOut' }}
+          >
+            <Choice label={o.label} tag={o.tag} recommended={o.recommended} selected={picked === o.value} onClick={() => choose(o.value)} />
+          </motion.div>
         ))}
       </div>
     </>
@@ -399,10 +554,29 @@ export default function Onboarding({
     The commitment answers live in the same profile object as the
     behavioural ones - see the note on WHY_OPTIONS - and are written with it.
   */
+  /*
+    NOVA ANSWERS BACK, ON THE TWO QUESTIONS THAT ARE ABOUT THEM.
+
+    Duolingo has Duo reply to "why are you learning?" with a line that
+    affirms that specific reason before moving on - the moment the flow
+    stops feeling like a form. Same here, for their goal and for why their
+    last journal did not stick: the bubble says something back to the
+    answer for a beat, then the next question types in.
+  */
+  const [reply, setReply] = useState<string | null>(null);
+  const replyThen = (line: string | undefined, next: () => void) => {
+    if (!line) return next();
+    setReply(line);
+    window.setTimeout(() => {
+      setReply(null);
+      next();
+    }, 2200); /* ~1s for the dots and typing, ~1s to actually read it */
+  };
+
   const answerWhy = (value: string) => {
     setProfile((prev) => ({ ...prev, goal: value }));
     trackEvent('onboarding_goal', { goal: value });
-    setStep('past');
+    replyThen(GOAL_REPLY[value], () => setStep('past'));
   };
 
   const answerPast = (value: string) => {
@@ -418,8 +592,22 @@ export default function Onboarding({
   const answerStopped = (value: string) => {
     setProfile((prev) => ({ ...prev, past_journal: value }));
     trackEvent('onboarding_stopped_why', { reason: value });
-    setStep('instrument');
+    replyThen(PAST_REPLY[value], () => setStep('instrument'));
   };
+
+  /* What Nova is asking on the current screen, for the header that stays put. */
+  const ask: { title: string; subtitle?: string } | null =
+    step === 'why' ? { title: 'What do you want journaling to get you?' }
+    : step === 'past' ? { title: 'Have you kept a trading journal before?' }
+    : step === 'switching' ? { title: 'What’s your current one missing?', subtitle: 'Your plan is built around the answer.' }
+    : step === 'stopped' ? { title: 'Why did you stop?', subtitle: 'Be honest — your plan is built around it.' }
+    : step === 'instrument' ? { title: 'What do you trade?' }
+    : step === 'experience' ? { title: 'How long have you been at it?' }
+    : step === 'struggles' ? { title: 'What’s actually costing you money?', subtitle: 'Pick as many as are true.' }
+    : typeof step === 'object' ? { title: PROFILE_QUESTIONS[step.profile].title }
+    : step === 'minutes' ? { title: 'How long can you give it on a trading day?', subtitle: 'One trade takes about thirty seconds. The rest is looking back.' }
+    : step === 'commit' ? { title: 'Pick your first goal.', subtitle: 'Journal every trading day for…' }
+    : null;
 
   const answerMinutes = (value: string) => {
     setProfile((prev) => ({ ...prev, daily_minutes: value }));
@@ -563,6 +751,9 @@ export default function Onboarding({
     */
     <div className="min-h-[100dvh] bg-brand-bg text-white flex items-center justify-center px-5 py-6 sm:py-10">
       <div className={step === 'entry' ? 'w-full max-w-2xl' : 'w-full max-w-md'}>
+        {/* Outside the transition, so Nova and the bubble stay still while the answers change. */}
+        {ask && <Ask step={step} title={reply ?? ask.title} subtitle={reply ? undefined : ask.subtitle} reacting={!!reply} />}
+
         <AnimatePresence mode="wait">
           <motion.div
             key={typeof step === 'object' ? `profile-${step.profile}` : step}
@@ -760,7 +951,7 @@ export default function Onboarding({
             */}
             {step === 'struggles' && (
               <>
-                <Ask step={step} title="What’s actually costing you money?" subtitle="Pick as many as are true." />
+
                 <div className="flex flex-col gap-2.5">
                   {STRUGGLES.map((o) => (
                     <Choice
