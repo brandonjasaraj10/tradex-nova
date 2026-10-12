@@ -36,12 +36,14 @@ import { calculateChecklistScore, combinePsychologyScores } from '../../services
   does nothing for most of the people who see it. So the box is the default
   and the mic appears only when the browser actually supports it.
 
-  SKIPPABLE ON PURPOSE
+  NO SKIP - UNLESS IT BREAKS
 
-  This is the one screen that asks somebody to type, which makes it the most
-  expensive screen in the flow. Somebody who will not type should reach the
-  price anyway rather than be stuck behind a textarea, and the skip rate is
-  worth measuring in its own right.
+  It used to be skippable, on the reasoning that someone who will not type
+  should still reach the price. Then the numbers came in (Oct 12, the night
+  a reel took off): of 35 people who finished onboarding, 8 wrote an entry.
+  This is the one moment the product proves itself before the price, so
+  Brandon took the skip out. The only way past without writing is when
+  Nova fails - an error or a limit - so nobody is ever stuck behind it.
 */
 
 /*
@@ -809,18 +811,16 @@ export default function FirstEntry({
             ))}
           </motion.div>
         </AnimatePresence>
-        {/* Skippable from the first question too - see SKIPPABLE ON PURPOSE above. */}
-        <button
-          type="button"
-          onClick={() => {
-            if (phase > 0) return setPhase((p) => p - 1);
-            trackEvent('onboarding_entry_skipped', { at: 'ratings' });
-            onDone(null, '');
-          }}
-          className="mt-4 w-full text-center text-[13px] text-gray-500 hover:text-gray-300 transition-colors"
-        >
-          {phase > 0 ? 'Back' : 'Skip for now'}
-        </button>
+        {/* Back only - no skip (see NO SKIP above). */}
+        {phase > 0 && (
+          <button
+            type="button"
+            onClick={() => setPhase((p) => p - 1)}
+            className="mt-4 w-full text-center text-[13px] text-gray-500 hover:text-gray-300 transition-colors"
+          >
+            Back
+          </button>
+        )}
       </div>
     );
   }
@@ -901,7 +901,7 @@ export default function FirstEntry({
 
       {failed && (
         <p className="mt-3 text-[13px] text-gray-400">
-          That did not go through. Try again, or skip and do it inside.
+          That did not go through. Try again, or skip it for now.
         </p>
       )}
 
@@ -933,11 +933,12 @@ export default function FirstEntry({
         </motion.div>
       )}
 
-      {!busy && !isListening && (
+      {/* The escape hatch exists only once Nova has failed - see NO SKIP above. */}
+      {failed && !busy && !isListening && (
         <button
           type="button"
           onClick={() => {
-            trackEvent('onboarding_entry_skipped');
+            trackEvent('onboarding_entry_skipped', { at: 'after_failure' });
             onDone(null, '');
           }}
           className="mt-3 w-full text-center text-[13px] text-gray-500 hover:text-gray-300
