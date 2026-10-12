@@ -84,12 +84,11 @@ const PUBLIC_FILES = [
   'product/calendar-psych.jpg',
   /* The founder portrait in the band above the price. */
   'founder.jpg',
-  /* Nova's animated clips - see components/shared/NovaClip. */
-  'nova/nova-idle.mp4',
-  'nova/nova-idle-loop.mp4',
-  'nova/nova-wave.mp4',
-  'nova/nova-celebrate.mp4',
-  'nova/nova-nod.mp4'
+  /* Nova's animations - see components/shared/NovaClip. */
+  'nova/nova-idle-loop.webp',
+  'nova/nova-wave.webp',
+  'nova/nova-celebrate.webp',
+  'nova/nova-nod.webp'
 ];
 
 export default defineConfig({

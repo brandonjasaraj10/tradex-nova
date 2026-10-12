@@ -440,7 +440,10 @@ export default function FirstEntry({
           ))}
         </div>
         <div className="relative mx-auto mb-2 w-fit">
-          <NovaClip action="celebrate" height={130} className="mx-auto" />
+          {/* The same Nova, gliding from beside the question to centre stage for the celebration. */}
+          <motion.div layoutId="nova-figure" layout transition={{ duration: 1.1, ease: [0.4, 0, 0.2, 1] }}>
+            <NovaClip action="celebrate" height={130} className="mx-auto" />
+          </motion.div>
           {/* A small burst behind the trophy - drawn, not an emoji. */}
           <motion.div
             initial={{ scale: 0, rotate: -20 }}

@@ -222,6 +222,13 @@ function Progress({ step }: { step: Step }) {
   pasted in.
 */
 
+/*
+  Where Nova stands. Centre stage for the story beats - hello, the gap,
+  thinking it over, naming the pattern - and beside the question for the
+  run of questions and the plan. He glides between the two (NovaTalk).
+*/
+const HERO_STEPS = new Set(['welcome', 'thegap', 'thinking', 'pattern']);
+
 const GOAL_REPLY: Record<string, string> = {
   profitable: 'That’s exactly what this is built for.',
   pass_challenge: 'Good. Most challenges are lost to one habit. Let’s find yours.',
@@ -327,7 +334,7 @@ function Question({
     } catch {
       /* no haptics here */
     }
-    window.setTimeout(() => onChoose(value), 420);
+    window.setTimeout(() => onChoose(value), 550);
   };
 
   return (
@@ -339,7 +346,7 @@ function Question({
             key={o.value}
             initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.45 + i * 0.08, duration: 0.4, ease: 'easeOut' }}
+            transition={{ delay: 0.7 + i * 0.1, duration: 0.5, ease: 'easeOut' }}
           >
             <Choice label={o.label} tag={o.tag} recommended={o.recommended} selected={picked === o.value} onClick={() => choose(o.value)} />
           </motion.div>
@@ -648,6 +655,7 @@ export default function Onboarding({
               action={reply ? 'nod' : step === 'welcome' ? 'wave' : undefined}
               actionKey={reply ? `reply-${reply}` : step === 'welcome' ? 'welcome' : undefined}
               reacting={!!reply}
+              variant={HERO_STEPS.has(typeof step === 'string' ? step : '') ? 'hero' : 'side'}
             />
           </>
         )}
@@ -663,7 +671,7 @@ export default function Onboarding({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.35, ease: 'easeInOut' }}
+            transition={{ duration: 0.5, ease: 'easeInOut' }}
           >
             {/*
               The reaffirm screen.

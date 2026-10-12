@@ -154,7 +154,7 @@ export default function ProfileSetup({ user, onComplete }: ProfileSetupProps) {
           transition={{ delay: 0.1, duration: 0.4 }}
         >
           {/* The same Nova-and-bubble layout as every onboarding question, so the first screen matches the rest. */}
-          <NovaTalk text="Hey, I’m Nova. What’s your first name?" action="wave" actionKey="name" />
+          <NovaTalk text="Hey, I’m Nova. What’s your first name?" action="wave" actionKey="name" variant="hero" entrance="walk" />
         </motion.div>
 
         <motion.form

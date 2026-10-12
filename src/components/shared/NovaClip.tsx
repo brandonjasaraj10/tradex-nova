@@ -2,31 +2,35 @@ import { useEffect, useRef, useState } from 'react';
 import Mascot from './Mascot';
 
 /*
-  Nova, actually animated - and never standing still, never visibly
-  restarting.
+  Nova, animated - as animated IMAGES, not video.
 
-  Clips generated on Higgsfield (Kling 2.6, image-to-video) from the existing
-  pose renders on pure black, so Nova stays on-model. Two layers:
+  The first version used <video>, and on Brandon's iPhone Nova disappeared
+  for most of the flow. Video autoplay is not guaranteed on iOS (Low Power
+  Mode refuses it outright), and because the clips were blended into the
+  black page, a clip that never started simply vanished. Animated WebP is
+  an image: it plays everywhere an image shows, needs no autoplay
+  permission, and its black is true #000, so it sits on the page with no
+  blending at all.
 
-  - IDLE, always running underneath: nova-idle-loop.mp4 is the idle clip
-    played forwards then backwards, so its last frame IS its first frame and
-    it loops for ever with no jump. Brandon's two notes, together: a still
-    Nova "looks stupid", and a looping clip that snaps back to its start
-    looks like it is restarting. A palindrome does neither.
-  - ACTIONS on top - wave, nod, celebrate - each played once when asked
-    (change actionKey to play again), then faded out over the idle that was
-    running the whole time, so the hand-back is a blend, not a cut.
+  All four are cut from the Higgsfield renders with the SAME crop, so Nova
+  is in exactly the same place and size in every one and never jumps when
+  they change. Two layers:
 
-  Video has no transparency, which is why these were made on black: on this
-  app's black screens the frame edge is invisible, and mix-blend-mode:
-  screen drops any near-black box an encoder leaves behind. Black
-  backgrounds only.
+  - IDLE underneath, always: nova-idle-loop.webp is the idle clip forwards
+    then backwards, so it loops for ever without a visible restart.
+  - ACTIONS on top - wave, nod, celebrate - played once (change actionKey to
+    play again) and faded back into the idle that was running underneath.
+    Each play gets a fresh object URL from the cached file, which is what
+    makes an animated image start again from its first frame.
 
-  Falls back to the still pose under reduced motion or if the idle loop
-  cannot play.
+  Black backgrounds only - the frames are not transparent.
 */
 
 export type NovaAction = 'wave' | 'nod' | 'celebrate';
+
+const ACTION_MS = 5000; /* every action clip is 5 seconds */
+const blobs: Partial<Record<NovaAction, Promise<Blob>>> = {};
+const loadAction = (a: NovaAction) => (blobs[a] ??= fetch(`/nova/nova-${a}.webp`).then((r) => r.blob()));
 
 export default function NovaClip({
   action,
@@ -34,86 +38,68 @@ export default function NovaClip({
   height = 90,
   className = '',
 }: {
-  /* A one-off movement to play over the idle; omit for idle only. */
   action?: NovaAction;
-  /* Change to play the action again. Defaults to playing it once on mount. */
   actionKey?: string | number;
-  /* Roughly Nova's body height in px, to sit beside the still poses at the same size. */
+  /* Roughly Nova's body height in px. */
   height?: number;
   className?: string;
 }) {
-  const [failed, setFailed] = useState(false);
-  const [idleReady, setIdleReady] = useState(false);
-  const [acting, setActing] = useState(false);
   const [reduced, setReduced] = useState(false);
-  const actionRef = useRef<HTMLVideoElement | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [actionUrl, setActionUrl] = useState<string | null>(null);
+  const [acting, setActing] = useState(false);
+  const timer = useRef<number | null>(null);
 
   useEffect(() => {
     setReduced(!!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
   }, []);
 
-  /* Play the action once, from the start, whenever it (or its key) changes. */
   useEffect(() => {
-    const v = actionRef.current;
-    if (!action || !v) return;
-    /*
-      Whether he is "acting" follows the video's own play / ended events, not
-      this promise. React runs this twice in development, and the second
-      play() cancels the first with an AbortError - which, read as failure,
-      hid the action while it was in fact playing.
-    */
-    try {
-      v.currentTime = 0;
-      void v.play().catch(() => {});
-    } catch {
-      /* not loaded yet - it plays once it can */
-    }
-  }, [action, actionKey]);
+    if (!action || reduced) return;
+    let cancelled = false;
+    let url: string | null = null;
+    loadAction(action)
+      .then((blob) => {
+        if (cancelled) return;
+        url = URL.createObjectURL(blob);
+        setActionUrl(url);
+        setActing(true);
+        if (timer.current) window.clearTimeout(timer.current);
+        timer.current = window.setTimeout(() => setActing(false), ACTION_MS - 300);
+      })
+      .catch(() => setActing(false));
+    return () => {
+      cancelled = true;
+      if (timer.current) window.clearTimeout(timer.current);
+      /* Let the fade-out finish before the URL goes. */
+      if (url) window.setTimeout(() => URL.revokeObjectURL(url!), 1500);
+    };
+  }, [action, actionKey, reduced]);
 
-  /* The clip's square frame is a little bigger than Nova himself. */
-  const box = Math.round(height * 1.12);
-  const screen = { mixBlendMode: 'screen' as const };
+  /* The animation's square frame is a little bigger than Nova himself. */
+  const box = Math.round(height * 1.25);
 
-  if (failed || reduced) return <Mascot pose="idle" height={height} className={className} />;
+  if (reduced || failed) return <Mascot pose="idle" height={height} className={className} />;
 
   return (
     <div className={`relative ${className}`} style={{ width: box, height: box }} aria-hidden="true">
-      {!idleReady && (
-        <div className="absolute inset-0 flex items-end justify-center">
-          <Mascot pose="idle" height={height} />
-        </div>
-      )}
-      <video
-        src="/nova/nova-idle-loop.mp4"
-        autoPlay
-        muted
-        loop
-        playsInline
-        preload="auto"
-        onCanPlay={() => setIdleReady(true)}
-        onLoadedData={() => setIdleReady(true)}
-        onPlaying={() => setIdleReady(true)}
+      <img
+        src="/nova/nova-idle-loop.webp"
+        alt=""
+        draggable={false}
         onError={() => setFailed(true)}
-        className={`absolute inset-0 w-full h-full object-contain pointer-events-none transition-opacity duration-500 ${
-          idleReady && !acting ? 'opacity-100' : 'opacity-0'
+        className={`absolute inset-0 w-full h-full object-contain select-none transition-opacity duration-700 ${
+          acting ? 'opacity-0' : 'opacity-100'
         }`}
-        style={screen}
       />
-      {action && (
-        <video
-          ref={actionRef}
-          key={action}
-          src={`/nova/nova-${action}.mp4`}
-          muted
-          playsInline
-          preload="auto"
-          onPlaying={() => setActing(true)}
-          onEnded={() => setActing(false)}
-          onError={() => setActing(false)}
-          className={`absolute inset-0 w-full h-full object-contain pointer-events-none transition-opacity duration-500 ${
+      {actionUrl && (
+        <img
+          src={actionUrl}
+          alt=""
+          draggable={false}
+          className={`absolute inset-0 w-full h-full object-contain select-none transition-opacity duration-700 ${
             acting ? 'opacity-100' : 'opacity-0'
           }`}
-          style={screen}
         />
       )}
     </div>
