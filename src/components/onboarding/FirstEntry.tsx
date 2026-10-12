@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, Mic, Loader2, Check, Trophy } from 'lucide-react';
 import { processVoiceJournalEntry, type VoiceJournalData } from '../../services/voiceJournal';
@@ -92,8 +92,12 @@ const PLACEHOLDER =
 */
 type RatingKey = 'pre_trade_emotional_state' | 'pre_trade_focus' | 'pre_trade_confidence';
 
+/* Nova's first line on the entry screens - the onboarding shows it before this screen mounts. */
+export const FIRST_ENTRY_QUESTION = 'Going in, how steady were you?';
+export const FIRST_ENTRY_SUBTITLE = 'Think of your last losing trade — they teach the most.';
+
 const RATINGS: { key: RatingKey; question: string; words: [string, string, string, string, string] }[] = [
-  { key: 'pre_trade_emotional_state', question: 'Going in, how steady were you?', words: ['Rattled', 'Uneasy', 'Okay', 'Calm', 'Steady'] },
+  { key: 'pre_trade_emotional_state', question: FIRST_ENTRY_QUESTION, words: ['Rattled', 'Uneasy', 'Okay', 'Calm', 'Steady'] },
   { key: 'pre_trade_focus', question: 'How focused were you?', words: ['Scattered', 'Distracted', 'Okay', 'Focused', 'Sharp'] },
   { key: 'pre_trade_confidence', question: 'How sure were you about it?', words: ['Unsure', 'Doubtful', 'Okay', 'Confident', 'Certain'] },
 ];
@@ -183,6 +187,7 @@ export default function FirstEntry({
   rules,
   psychChecks,
   goalDays = null,
+  onTalk,
 }: {
   /* Hands back whatever Nova produced, or null if they skipped or it failed. */
   onDone: (entry: VoiceJournalData | null, transcript: string) => void;
@@ -196,6 +201,14 @@ export default function FirstEntry({
   psychChecks: StarterItem[];
   /* The 7 / 14 / 30 / 66 they committed to, for the celebration's "1 of N". */
   goalDays?: number | null;
+  /*
+    When given, the onboarding's own Nova says these lines instead of this
+    screen drawing a second one. Swapping Nova for a new one between the
+    plan and the first question is what made him vanish for a moment
+    (Brandon: "Nova disappears and it's just the 3 benefits for a second").
+    Null means no line: the celebration and the finished entry.
+  */
+  onTalk?: (t: { text: string; subtitle?: string } | null) => void;
 }) {
   /* 0-2 are the three ratings, 3 is the text box. */
   const [phase, setPhase] = useState(0);
@@ -411,6 +424,23 @@ export default function FirstEntry({
   */
   const busy = writing || finishing;
 
+  const talkText =
+    phase < RATINGS.length
+      ? RATINGS[phase].question
+      : busy ? 'Finishing up your entry…' : isListening ? 'I’m listening. Keep going.' : 'Now tell me what happened.';
+  const talkSubtitle =
+    phase < RATINGS.length
+      ? phase === 0 ? FIRST_ENTRY_SUBTITLE : undefined
+      : busy || isListening
+        ? undefined
+        : isSupported
+          ? 'Type it or tap the mic. Messy is fine.'
+          : 'Type it like you’d text a friend. Messy is fine.';
+  const talking = !(entry && !busy);
+  useEffect(() => {
+    onTalk?.(talking ? { text: talkText, subtitle: talkSubtitle } : null);
+  }, [onTalk, talking, talkText, talkSubtitle]);
+
   if (entry && !busy && !celebrated) {
     const target = goalDays && goalDays > 0 ? goalDays : null;
     /* This week, Sunday first, the way Duolingo's streak row reads. */
@@ -442,7 +472,7 @@ export default function FirstEntry({
         <div className="relative mx-auto mb-2 w-fit">
           {/* The same Nova, gliding from beside the question to centre stage for the celebration. */}
           <motion.div layoutId="nova-figure" layout transition={{ duration: 1.1, ease: [0.4, 0, 0.2, 1] }}>
-            <NovaClip action="celebrate" height={130} className="mx-auto" />
+            <NovaClip action="celebrate" height={104} className="mx-auto" />
           </motion.div>
           {/* A small burst behind the trophy - drawn, not an emoji. */}
           <motion.div
@@ -701,24 +731,7 @@ export default function FirstEntry({
     React keeps the same Nova from question to question and his idle
     animation carries on rather than restarting.
   */
-  const header =
-    phase < RATINGS.length ? (
-      <NovaTalk
-        text={RATINGS[phase].question}
-        subtitle={phase === 0 ? 'Think of your last losing trade — they teach the most.' : undefined}
-      />
-    ) : (
-      <NovaTalk
-        text={busy ? 'Finishing up your entry…' : isListening ? 'I’m listening. Keep going.' : 'Now tell me what happened.'}
-        subtitle={
-          busy || isListening
-            ? undefined
-            : isSupported
-              ? 'Type it or tap the mic. Messy is fine.'
-              : 'Type it like you’d text a friend. Messy is fine.'
-        }
-      />
-    );
+  const header = onTalk ? null : <NovaTalk text={talkText} subtitle={talkSubtitle} />;
 
   if (phase < RATINGS.length) {
     const r = RATINGS[phase];

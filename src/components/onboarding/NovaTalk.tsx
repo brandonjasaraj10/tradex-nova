@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { motion, useAnimationControls } from 'framer-motion';
 import NovaClip, { type NovaAction } from '../shared/NovaClip';
 
@@ -100,7 +100,19 @@ export default function NovaTalk({
   }, [walking]);
   const { shown, phase } = useTyped(text, walked ? WALK_MS : 0);
   const hero = variant === 'hero';
-  const size = hero ? 136 : 96;
+  /*
+    Smaller than before. The animation frames are 320px; drawn much bigger
+    than that they soften, and Brandon noticed Nova looking low-quality at
+    the larger sizes. At these sizes every frame is shown sharper than 1:1.
+  */
+  const size = hero ? 104 : 72;
+
+  /* The bubble glides with Nova only when he changes places; otherwise it just grows with the words. */
+  const prevVariant = useRef(variant);
+  const changedPlace = prevVariant.current !== variant;
+  useEffect(() => {
+    prevVariant.current = variant;
+  }, [variant]);
 
   /* A slow settle when he says something new; a gentle bounce when he replies. */
   const body = useAnimationControls();
@@ -147,9 +159,19 @@ export default function NovaTalk({
     <motion.div
       layoutId="nova-bubble"
       layout
-      transition={GLIDE}
-      className={`relative z-10 rounded-2xl border border-white/10 bg-brand-elevated px-4 py-3 ${
-        hero ? 'w-full max-w-sm min-h-[88px] text-center mb-3' : 'mt-2 flex-1 min-h-[108px]'
+      /*
+        The bubble GROWS with the words. It used to be a fixed-size box that
+        appeared empty and was then filled - Brandon found that odd. Now it
+        starts as a small bubble holding the typing dots and expands line
+        by line as the text types, the way a chat message does; when Nova
+        moves to a new line it shrinks back to the dots first.
+      */
+      transition={{ layout: changedPlace ? GLIDE : { duration: 0.22, ease: 'easeOut' } }}
+      initial={{ opacity: 0, scale: 0.85 }}
+      animate={{ opacity: 1, scale: 1 }}
+      style={{ originX: hero ? 0.5 : 0, originY: hero ? 1 : 0.5 }}
+      className={`relative z-10 rounded-2xl border border-white/10 bg-brand-elevated px-4 py-3 w-fit ${
+        hero ? 'max-w-sm text-center mb-3' : 'mt-3 max-w-[calc(100%-6rem)]'
       }`}
     >
       <p className="text-[16px] sm:text-[18px] leading-snug font-semibold text-white" aria-hidden="true">
@@ -169,11 +191,16 @@ export default function NovaTalk({
         )}
       </p>
       <span className="sr-only">{text}</span>
-      {subtitle && (
+      {/*
+        Added once the line has typed, not there-but-invisible from the start:
+        a hidden subtitle still takes its space, and it held the bubble at
+        full size around the typing dots - the "preloaded bubble" look.
+      */}
+      {subtitle && phase === 'done' && (
         <motion.p
           initial={{ opacity: 0 }}
-          animate={{ opacity: phase === 'done' ? 1 : 0 }}
-          transition={{ duration: 0.6 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.15 }}
           className="mt-1.5 text-[12.5px] text-gray-500"
         >
           {subtitle}
@@ -199,7 +226,8 @@ export default function NovaTalk({
   return (
     <motion.div
       layout
-      transition={GLIDE}
+      /* Slow only when he is changing places; a new line on the same spot just resizes. */
+      transition={changedPlace ? GLIDE : { duration: 0.22, ease: 'easeOut' }}
       className={hero ? 'flex flex-col items-center mb-6' : 'flex items-start gap-3 mb-6'}
     >
       {hero ? [<Fragment key="bubble">{bubble}</Fragment>, <Fragment key="figure">{figure}</Fragment>]

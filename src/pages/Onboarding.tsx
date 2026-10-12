@@ -16,7 +16,7 @@ import { trackEvent } from '../lib/productAnalytics';
 import { emphasise } from '../lib/emphasise';
 import NovaTalk, { replyHoldMs } from '../components/onboarding/NovaTalk';
 import { HELD_KEY } from '../services/onboardingWriteBack';
-import FirstEntry from '../components/onboarding/FirstEntry';
+import FirstEntry, { FIRST_ENTRY_QUESTION, FIRST_ENTRY_SUBTITLE } from '../components/onboarding/FirstEntry';
 import { buildStarterRules, buildStarterPsychChecks } from '../lib/onboardingChecklist';
 import type { VoiceJournalData } from '../services/voiceJournal';
 
@@ -492,6 +492,8 @@ export default function Onboarding({
     screen underneath carries the detail. The first-entry screens have
     their own Nova (FirstEntry).
   */
+  /* What Nova says on the entry screens; undefined until FirstEntry first reports. */
+  const [entryTalk, setEntryTalk] = useState<{ text: string; subtitle?: string } | null | undefined>(undefined);
   const talk: { text: string; subtitle?: string } | null =
     ask ? { text: ask.title, subtitle: ask.subtitle }
     : step === 'welcome' ? { text: firstName ? `Hey ${firstName}, I’m Nova. A minute of quick taps and I’ll build your plan.` : 'Hey, I’m Nova. A minute of quick taps and I’ll build your plan.' }
@@ -501,6 +503,8 @@ export default function Onboarding({
     : step === 'plan' ? { text: plan.title }
     : step === 'planwhen' ? { text: `Here’s what you’ll have by ${plan.day}.` }
     : step === 'planhow' ? { text: 'Three things change from your next trade.' }
+    /* The same Nova carries on into the first entry, saying its lines (see FirstEntry onTalk). */
+    : step === 'entry' ? (entryTalk === undefined ? { text: FIRST_ENTRY_QUESTION, subtitle: FIRST_ENTRY_SUBTITLE } : entryTalk)
     : null;
 
   const answerMinutes = (value: string) => {
@@ -929,6 +933,7 @@ export default function Onboarding({
                 rules={starterRules}
                 psychChecks={starterChecks}
                 goalDays={Number(profile.commit_days) || null}
+                onTalk={setEntryTalk}
                 onDone={(entry, transcript) => void finish(entry, transcript)}
               />
             )}
