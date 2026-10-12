@@ -168,7 +168,7 @@ export default function Pricing() {
       <div className="my-12 sm:my-16">
         <StatBand
           items={[
-            { value: '3', label: 'Days free before anything is charged' },
+            { value: '14', label: 'Days free before anything is charged' },
             { value: '2', label: 'Clicks to cancel, from Settings' },
             { value: '$0', label: 'Of your card ever stored by us' },
           ]}
@@ -198,7 +198,7 @@ export default function Pricing() {
       </Section>
 
       <PullQuote>
-        Three days is longer than most people last with a journal. That is
+        Fourteen days is longer than most people last with a journal. That is
         rather the point.
       </PullQuote>
 
@@ -238,8 +238,8 @@ export default function Pricing() {
       </Section>
 
       <ClosingCta
-        title="Three days to decide"
-        body="Three days free. Cancel in two clicks and you are never charged."
+        title="Fourteen days to decide"
+        body="Fourteen days free. Cancel in two clicks and you are never charged."
       />
     </PageShell>
   );
