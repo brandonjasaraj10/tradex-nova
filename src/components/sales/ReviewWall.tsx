@@ -58,7 +58,14 @@ export default function ReviewWall({ reviews, className = '' }: { reviews: Revie
       {columns.map((col, c) => (
         <div
           key={c}
-          className={`flex flex-col ${c === 0 ? 'animate-review-up' : 'animate-review-down'} motion-reduce:animate-none`}
+          /*
+            self-start: each column must be exactly as tall as its own cards.
+            As a grid item it was stretched to the taller column's height, so
+            "slide half your height" slid the shorter column past the end of
+            its cards - a blank gap that came and went, on either side
+            (Brandon, on his phone).
+          */
+          className={`flex flex-col self-start ${c === 0 ? 'animate-review-up' : 'animate-review-down'} motion-reduce:animate-none`}
           style={{ animationPlayState: held ? 'paused' : 'running' }}
         >
           {[0, 1].map((copy) => (
