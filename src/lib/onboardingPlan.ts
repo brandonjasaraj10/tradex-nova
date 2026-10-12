@@ -278,21 +278,17 @@ export const COMMIT_OPTIONS: ChoiceOption[] = [
   { value: '66', label: '66 days', tag: 'Habit-forming' },
 ];
 
-const GOAL_PHRASE: Record<string, string> = {
-  profitable: 'to become consistently profitable',
-  pass_challenge: 'to pass your challenge',
-  stop_blowing: 'to stop blowing accounts',
-  consistent: 'to trade the same way every day',
-  understand: 'to see why you do what you do',
-};
-
-/* "14 trading days, 5 minutes each - to pass your challenge." Null until both numbers are picked. */
+/* "14 trading days, 5 minutes each." Null until both numbers are picked. */
 export function commitmentLine(profile: ProfileAnswers): string | null {
   const days = profile.commit_days;
   const minutes = profile.daily_minutes;
   if (!days || !minutes) return null;
-  const why = GOAL_PHRASE[profile.goal ?? ''];
-  return `*${days} trading days, ${minutes} minutes each*${why ? ` \u2014 ${why}` : ''}.`;
+  /*
+    Just the numbers. It used to add "- to become consistently profitable",
+    but the same screen already says the outcome in Nova's line, and saying
+    it twice more read as repetitive (Brandon).
+  */
+  return `*${days} trading days, ${minutes} minutes each*.`;
 }
 
 export interface Plan {

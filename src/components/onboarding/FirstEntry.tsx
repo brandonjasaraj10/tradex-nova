@@ -182,6 +182,22 @@ function NotesList({ lines }: { lines: Line[] }) {
   );
 }
 
+/* Five bars moving while the mic is on - so it plainly looks like it is hearing you. */
+function Waveform() {
+  return (
+    <span className="flex items-center gap-[3px] h-4" aria-hidden="true">
+      {[0.9, 0.6, 1.1, 0.7, 0.95].map((d, i) => (
+        <motion.span
+          key={i}
+          className="block w-[3px] rounded-full bg-brand-blue-light"
+          animate={{ height: [4, 14, 6, 12, 4] }}
+          transition={{ duration: d, repeat: Infinity, ease: 'easeInOut', delay: i * 0.08 }}
+        />
+      ))}
+    </span>
+  );
+}
+
 export default function FirstEntry({
   onDone,
   rules,
@@ -427,14 +443,19 @@ export default function FirstEntry({
   const talkText =
     phase < RATINGS.length
       ? RATINGS[phase].question
-      : busy ? 'Finishing up your entry…' : isListening ? 'I’m listening. Keep going.' : 'Now tell me what happened.';
+      : busy
+        ? 'Finishing up your entry…'
+        : isListening
+          ? 'Keep going. What were you thinking?'
+          : isSupported ? 'Now talk me through what happened.' : 'Now tell me what happened.';
   const talkSubtitle =
     phase < RATINGS.length
       ? phase === 0 ? FIRST_ENTRY_SUBTITLE : undefined
       : busy || isListening
         ? undefined
         : isSupported
-          ? 'Type it or tap the mic. Messy is fine.'
+          /* Voice first: people say far more than they type, and more is what Nova needs. */
+          ? 'Tap the mic and just talk. The more you say, the more I spot.'
           : 'Type it like you’d text a friend. Messy is fine.';
   const talking = !(entry && !busy);
   useEffect(() => {
@@ -451,7 +472,12 @@ export default function FirstEntry({
       tomorrow: i === (now.getDay() + 1) % 7,
     }));
     return (
-      <div className="relative text-center">
+      <motion.div
+        className="relative text-center"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
+      >
         {/*
           Confetti, once, in the brand's blues and white - Duolingo throws
           confetti at exactly this moment. Small rectangles that fall and
@@ -470,8 +496,15 @@ export default function FirstEntry({
           ))}
         </div>
         <div className="relative mx-auto mb-2 w-fit">
-          {/* The same Nova, gliding from beside the question to centre stage for the celebration. */}
-          <motion.div layoutId="nova-figure" layout transition={{ duration: 1.1, ease: [0.4, 0, 0.2, 1] }}>
+          {/*
+            Nova appears here and celebrates - no glide in from the screen
+            before; Brandon preferred him simply showing up.
+          */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.92, y: 8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.15, ease: [0.25, 0.8, 0.3, 1] }}
+          >
             <NovaClip action="celebrate" height={104} className="mx-auto" />
           </motion.div>
           {/* A small burst behind the trophy - drawn, not an emoji. */}
@@ -550,7 +583,7 @@ export default function FirstEntry({
           See my entry
           <ArrowRight size={17} />
         </button>
-      </div>
+      </motion.div>
     );
   }
 
@@ -796,60 +829,68 @@ export default function FirstEntry({
     <div>
       {header}
 
-      <div className="relative">
-        <textarea
-          value={text}
-          onChange={(e) => {
-            spokenRef.current = false;
-            setText(e.target.value.slice(0, MAX_CHARS));
-          }}
-          maxLength={MAX_CHARS}
-          disabled={busy || isListening}
-          rows={4}
-          placeholder={PLACEHOLDER}
-          className="w-full rounded-xl border border-white/10 bg-brand-surface px-4 py-3.5
-            text-[15px] leading-relaxed text-gray-100 placeholder:text-gray-600
-            focus:outline-none focus:border-brand-blue-light/50 disabled:opacity-60 resize-none"
-        />
-        {/* Only drawn where one of the two ways to listen actually works. */}
-        {isSupported && !busy && (
+      {/*
+        VOICE FIRST. Brandon wanted people talking rather than typing - they
+        say far more out loud, which is what Nova needs to spot anything -
+        and the old mic was a small grey circle in the corner of the box that
+        read as a text tool. Now it is the main control: a big blue mic, a
+        live waveform while it listens. Typing still works, underneath.
+      */}
+      {isSupported && !busy && (
+        <div className="flex flex-col items-center mb-5">
           <button
             type="button"
             disabled={transcribing}
             onClick={toggleMic}
-            aria-label={isListening ? 'Stop recording' : 'Record instead of typing'}
-            className={`absolute bottom-3 right-3 w-10 h-10 rounded-full flex items-center
-              justify-center transition-colors ${
+            aria-label={isListening ? 'Stop recording' : 'Tap to talk'}
+            className={`w-[72px] h-[72px] rounded-full flex items-center justify-center transition-all duration-300 ${
               isListening
-                ? 'bg-brand-blue text-white'
-                : 'bg-white/10 text-gray-300 hover:bg-white/15'
+                ? 'bg-white text-black'
+                : 'bg-brand-blue text-white shadow-[0_0_28px_rgba(59,130,246,0.45)] hover:bg-brand-blue-light'
             }`}
           >
             {transcribing ? (
-              <Loader2 size={17} className="animate-spin" />
+              <Loader2 size={26} className="animate-spin" />
             ) : isListening ? (
-              <motion.span
-                className="block w-3 h-3 rounded-sm bg-white"
-                animate={{ opacity: [1, 0.4, 1] }}
-                transition={{ duration: 1.1, repeat: Infinity }}
-              />
+              <span className="block w-5 h-5 rounded-[5px] bg-black" />
             ) : (
-              <Mic size={17} />
+              <Mic size={28} strokeWidth={2.2} />
             )}
           </button>
-        )}
-      </div>
+          <div className="mt-3 h-5 flex items-center gap-2.5 text-[13px]">
+            {isListening ? (
+              <>
+                <Waveform />
+                <span className="text-gray-300 tabular-nums">
+                  {useSpeech
+                    ? 'Listening, keep talking'
+                    : `Recording ${Math.floor(recorder.seconds / 60)}:${String(recorder.seconds % 60).padStart(2, '0')}`}
+                </span>
+              </>
+            ) : transcribing ? (
+              <span className="text-gray-400">Turning that into text…</span>
+            ) : (
+              <span className="text-gray-400">Tap and talk it through</span>
+            )}
+          </div>
+        </div>
+      )}
 
-      {isListening && useSpeech && (
-        <p className="mt-2 text-[12.5px] text-blue-400">Listening&hellip; pause or tap the square when you&rsquo;re done.</p>
-      )}
-      {isListening && !useSpeech && (
-        <p className="mt-2 text-[12.5px] text-blue-400 tabular-nums">
-          Recording {Math.floor(recorder.seconds / 60)}:{String(recorder.seconds % 60).padStart(2, '0')}
-          &nbsp;&middot; tap the square when you&rsquo;re done
-        </p>
-      )}
-      {transcribing && <p className="mt-2 text-[12.5px] text-gray-400">Turning that into text&hellip;</p>}
+      <textarea
+        value={text}
+        onChange={(e) => {
+          spokenRef.current = false;
+          setText(e.target.value.slice(0, MAX_CHARS));
+        }}
+        maxLength={MAX_CHARS}
+        disabled={busy || isListening}
+        rows={isSupported ? 3 : 4}
+        placeholder={isSupported ? 'Or type it here. Messy is fine.' : PLACEHOLDER}
+        className="w-full rounded-xl border border-white/10 bg-brand-surface px-4 py-3.5
+          text-[15px] leading-relaxed text-gray-100 placeholder:text-gray-600
+          focus:outline-none focus:border-brand-blue-light/50 disabled:opacity-60 resize-none"
+      />
+
       {recorder.error && !useSpeech && <p className="mt-2 text-[12.5px] text-gray-400">{recorder.error}</p>}
 
       {text.length > MAX_CHARS - 200 && (

@@ -188,15 +188,36 @@ export default function NovaTalk({
           {subtitle}
         </motion.p>
       )}
-      {/* The tail points at Nova: down when he is below the bubble, left when he is beside it. */}
-      <span
-        aria-hidden="true"
-        className={`absolute w-3 h-3 rotate-45 bg-brand-elevated ${
-          hero
-            ? 'left-1/2 -ml-1.5 -bottom-[6px] border-r border-b border-white/10'
-            : '-left-[6px] top-8 border-l border-b border-white/10'
-        }`}
-      />
+      {/*
+        The tail points at Nova: down when he is below the bubble, left when
+        he is beside it. Drawn as one shape, filled with the bubble's own
+        colour and outlined on its two outside edges only, so it joins the
+        bubble cleanly. It was a rotated square with a border, which showed
+        its own corner and edge inside the bubble on Brandon's phone.
+      */}
+      {hero ? (
+        <svg
+          aria-hidden="true"
+          width="18"
+          height="10"
+          viewBox="0 0 18 10"
+          className="absolute left-1/2 -ml-[9px] -bottom-[9px] overflow-visible"
+        >
+          <path d="M0 -1.5 L9 8.5 L18 -1.5 Z" fill="#111111" />
+          <path d="M0.5 0 L9 8.5 L17.5 0" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1" strokeLinejoin="round" />
+        </svg>
+      ) : (
+        <svg
+          aria-hidden="true"
+          width="10"
+          height="18"
+          viewBox="0 0 10 18"
+          className="absolute -left-[9px] top-[15px] overflow-visible"
+        >
+          <path d="M11.5 0 L1.5 9 L11.5 18 Z" fill="#111111" />
+          <path d="M10 0.5 L1.5 9 L10 17.5" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1" strokeLinejoin="round" />
+        </svg>
+      )}
     </motion.div>
   );
 

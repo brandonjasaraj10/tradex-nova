@@ -990,9 +990,7 @@ export default function Onboarding({
             */}
             {step === 'plan' && (
               <div className="text-center">
-                <p className="text-[11px] uppercase tracking-[0.16em] text-blue-400">
-                  {plan.eyebrow}
-                </p>
+                {/* No eyebrow: Nova's line above already names their outcome. */}
 
                 {/*
                   Their own goal, handed back in their own numbers, above the
@@ -1000,7 +998,7 @@ export default function Onboarding({
                   into one they agreed to.
                 */}
                 {commitmentLine(profile) && (
-                  <p className="mt-7 mx-auto max-w-sm rounded-xl border border-brand-blue-light/25
+                  <p className="mx-auto max-w-sm rounded-xl border border-brand-blue-light/25
                     bg-brand-blue/[0.07] px-4 py-3 text-[13.5px] leading-relaxed text-gray-300">
                     <span className="block text-[10.5px] uppercase tracking-[0.14em] text-brand-blue-light mb-1">
                       Your goal
