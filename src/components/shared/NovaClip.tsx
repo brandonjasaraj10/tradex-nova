@@ -88,7 +88,31 @@ export default function NovaClip({
   if (reduced || failed) return <Mascot pose="idle" height={height} className={className} />;
 
   return (
-    <div className={`relative ${className}`} style={{ width: box, height: box }} aria-hidden="true">
+    /*
+      Screen blending makes the frames' black see-through: over the black page
+      it changes nothing, but when Nova glides past text or the speech bubble
+      it no longer drags a black square across them - which is what showed
+      as a box cutting into the text. Reliable on images (it was video that
+      iOS would not blend), and the wrapper sits below text in the stacking
+      order as well.
+    */
+    <div
+      className={`relative z-0 ${className}`}
+      style={{
+        width: box,
+        height: box,
+        /*
+          Soft edges, too. Blending is not enough on its own: while Nova is
+          gliding the browser puts him on his own layer, which blends only
+          with itself, and the black square comes back. A radial mask fades
+          the frame's edges away whatever layer he is on, so there is never
+          a hard box - just Nova.
+        */
+        WebkitMaskImage: 'radial-gradient(ellipse 50% 52% at 50% 52%, #000 74%, transparent 100%)',
+        maskImage: 'radial-gradient(ellipse 50% 52% at 50% 52%, #000 74%, transparent 100%)',
+      }}
+      aria-hidden="true"
+    >
       <img
         src="/nova/nova-idle-loop.webp"
         alt=""
@@ -97,6 +121,7 @@ export default function NovaClip({
         className={`absolute inset-0 w-full h-full object-contain select-none transition-opacity duration-700 ${
           acting ? 'opacity-0' : 'opacity-100'
         }`}
+        style={{ mixBlendMode: 'screen' }}
       />
       {actionUrl && (
         <img
@@ -106,6 +131,7 @@ export default function NovaClip({
           className={`absolute inset-0 w-full h-full object-contain select-none transition-opacity duration-700 ${
             acting ? 'opacity-100' : 'opacity-0'
           }`}
+          style={{ mixBlendMode: 'screen' }}
         />
       )}
     </div>

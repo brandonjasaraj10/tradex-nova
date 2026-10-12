@@ -68,7 +68,7 @@ export function replyHoldMs(text: string) {
 }
 
 /* How long the walk-in takes, so the bubble can wait for it. */
-const WALK_MS = 1900;
+const WALK_MS = 1100;
 
 export default function NovaTalk({
   text,
@@ -115,14 +115,18 @@ export default function NovaTalk({
   const figure = (
     <motion.div layoutId="nova-figure" layout transition={GLIDE} className="relative flex-shrink-0">
       {/* The walk: in from the left, a step-bob as he comes, then settled. */}
+      {/*
+        'walk' is now a soft appear: Brandon found the walk in from the side
+        looked bad. He fades up in place with a slight rise, then speaks.
+      */}
       <motion.div
-        initial={walked ? { x: -240, opacity: 0 } : false}
-        animate={{ x: 0, opacity: 1 }}
+        initial={walked ? { opacity: 0, scale: 0.92, y: 8 } : false}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: WALK_MS / 1000, ease: [0.25, 0.8, 0.3, 1] }}
       >
         <motion.div
           initial={false}
-          animate={walking ? { y: [0, -7, 0, -7, 0, -7, 0, -4, 0], rotate: [0, -3, 0, 3, 0, -3, 0, 1, 0] } : { y: 0, rotate: 0 }}
+          animate={{ y: 0, rotate: 0 }}
           transition={{ duration: WALK_MS / 1000, ease: 'easeInOut' }}
         >
           <motion.div
@@ -144,7 +148,7 @@ export default function NovaTalk({
       layoutId="nova-bubble"
       layout
       transition={GLIDE}
-      className={`relative rounded-2xl border border-white/10 bg-brand-elevated px-4 py-3 ${
+      className={`relative z-10 rounded-2xl border border-white/10 bg-brand-elevated px-4 py-3 ${
         hero ? 'w-full max-w-sm min-h-[88px] text-center mb-3' : 'mt-2 flex-1 min-h-[108px]'
       }`}
     >

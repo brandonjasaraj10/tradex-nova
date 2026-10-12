@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, Mic, Loader2, Check, Trophy } from 'lucide-react';
 import { processVoiceJournalEntry, type VoiceJournalData } from '../../services/voiceJournal';
 import { useVoice } from '../../hooks/useVoice';
@@ -732,16 +732,37 @@ export default function FirstEntry({
       window.setTimeout(() => {
         advancing.current = false;
         setPhase((p) => p + 1);
-      }, 220);
+      }, 550);
     };
     return (
       <div>
         {header}
-        <div key={r.key} className="flex flex-col gap-2.5">
-          {r.words.map((word, i) => (
-            <RatingRow key={word} n={i + 1} word={word} picked={ratings[r.key] === i + 1} onPick={() => pick(i + 1)} />
-          ))}
-        </div>
+        {/*
+          Best at the top, 5 down to 1 - Brandon's call; it reads like a
+          scale you go down rather than a list.
+
+          And the three questions look alike, so the change has to be seen:
+          the answers fade down and out, Nova bounces as he asks the next one,
+          and the new set comes in one row at a time.
+        */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={r.key}
+            className="flex flex-col gap-2.5"
+            exit={{ opacity: 0, y: 10, transition: { duration: 0.35, ease: 'easeIn' } }}
+          >
+            {r.words.map((word, i) => ({ word, n: i + 1 })).reverse().map(({ word, n }, row) => (
+              <motion.div
+                key={word}
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.9 + row * 0.1, duration: 0.45, ease: 'easeOut' }}
+              >
+                <RatingRow n={n} word={word} picked={ratings[r.key] === n} onPick={() => pick(n)} />
+              </motion.div>
+            ))}
+          </motion.div>
+        </AnimatePresence>
         {/* Skippable from the first question too - see SKIPPABLE ON PURPOSE above. */}
         <button
           type="button"

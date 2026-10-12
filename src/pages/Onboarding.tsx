@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, ArrowRight } from 'lucide-react';
 import {
@@ -633,6 +633,18 @@ export default function Onboarding({
 
   const profileIndex = typeof step === 'object' ? step.profile : null;
 
+  /*
+    Did Nova just change places (centre stage <-> beside the question)? If so
+    the new screen's content waits until he has landed, so he never glides
+    across text on his way.
+  */
+  const novaVariant = HERO_STEPS.has(typeof step === 'string' ? step : '') ? 'hero' : 'side';
+  const prevVariantRef = useRef(novaVariant);
+  const glided = prevVariantRef.current !== novaVariant;
+  useEffect(() => {
+    prevVariantRef.current = novaVariant;
+  }, [novaVariant]);
+
   return (
     /*
       Exactly the visible screen, not 100vh.
@@ -669,7 +681,7 @@ export default function Onboarding({
               move that does not need to.
             */
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            animate={{ opacity: 1, transition: { duration: 0.5, ease: 'easeInOut', delay: glided ? 1.0 : 0 } }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.5, ease: 'easeInOut' }}
           >
