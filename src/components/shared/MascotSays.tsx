@@ -1,3 +1,4 @@
+import NovaClip, { type NovaClipName } from './NovaClip';
 import Mascot, { type MascotPose } from './Mascot';
 
 /*
@@ -30,6 +31,8 @@ interface MascotSaysProps {
   tone?: 'quiet' | 'loud';
   /* Which side of the mascot the bubble sits on. */
   side?: 'right' | 'above';
+  /* Play an animated clip instead of the still pose - black backgrounds only. */
+  clip?: NovaClipName;
   className?: string;
 }
 
@@ -39,8 +42,10 @@ export default function MascotSays({
   height = 120,
   tone = 'quiet',
   side = 'right',
+  clip,
   className = '',
 }: MascotSaysProps) {
+  const figure = clip ? <NovaClip clip={clip} height={height} /> : <Mascot pose={pose} height={height} />;
   const loud = tone === 'loud';
 
   const bubble = (
@@ -87,14 +92,14 @@ export default function MascotSays({
     return (
       <div className={`flex flex-col items-center gap-2.5 ${className}`}>
         {bubble}
-        <Mascot pose={pose} height={height} />
+        {figure}
       </div>
     );
   }
 
   return (
     <div className={`flex items-start gap-3 ${className}`}>
-      <Mascot pose={pose} height={height} className="flex-shrink-0" />
+      <div className="flex-shrink-0">{figure}</div>
       <div className="pt-3">{bubble}</div>
     </div>
   );

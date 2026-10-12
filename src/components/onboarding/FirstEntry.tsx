@@ -6,7 +6,7 @@ import { useVoice } from '../../hooks/useVoice';
 import { useRecorder } from '../../hooks/useRecorder';
 import { trackEvent } from '../../lib/productAnalytics';
 import MascotSays from '../shared/MascotSays';
-import Mascot from '../shared/Mascot';
+import NovaClip from '../shared/NovaClip';
 import type { StarterItem } from '../../lib/onboardingChecklist';
 import { calculateChecklistScore, combinePsychologyScores } from '../../services/psychologyScore';
 
@@ -287,7 +287,7 @@ export default function FirstEntry({
     return (
       <div className="text-center">
         <div className="relative mx-auto mb-2 w-fit">
-          <Mascot pose="arms" height={110} className="mx-auto" />
+          <NovaClip clip="celebrate" height={120} className="mx-auto" />
           {/* A small burst behind the trophy - drawn, not an emoji. */}
           <motion.div
             initial={{ scale: 0, rotate: -20 }}

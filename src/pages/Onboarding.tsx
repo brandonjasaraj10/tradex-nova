@@ -15,7 +15,7 @@ import {
 import { trackEvent } from '../lib/productAnalytics';
 import { emphasise } from '../lib/emphasise';
 import MascotSays from '../components/shared/MascotSays';
-import Mascot from '../components/shared/Mascot';
+import NovaClip from '../components/shared/NovaClip';
 import { HELD_KEY } from '../services/onboardingWriteBack';
 import FirstEntry from '../components/onboarding/FirstEntry';
 import { buildStarterRules, buildStarterPsychChecks } from '../lib/onboardingChecklist';
@@ -331,7 +331,8 @@ function Ask({ step, title, subtitle, reacting = false }: { step: Step; title: s
             }
             transition={reacting ? { duration: 0.8, ease: 'easeOut' } : { type: 'spring', stiffness: 420, damping: 18 }}
           >
-            <Mascot pose={pose} height={78} />
+            {/* The real animation now: idle breathing and blinking, a nod when he answers back. */}
+            <NovaClip clip={reacting ? 'nod' : 'idle'} height={96} />
             {/* A burst when he answers back. */}
             {reacting && [0, 1, 2, 3, 4, 5, 6].map((i) => (
               <motion.span
@@ -778,7 +779,7 @@ export default function Onboarding({
             {step === 'welcome' && (
               <div className="text-center">
                 {[
-                  <MascotSays key="m" pose="wave" height={92} side="above" className="mb-7">
+                  <MascotSays key="m" pose="wave" clip="wave" height={110} side="above" className="mb-7">
                     {firstName ? `Right, ${firstName}. Let\u2019s find out what\u2019s costing you.`
                                : 'Let\u2019s find out what\u2019s actually costing you.'}
                   </MascotSays>,
