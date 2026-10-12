@@ -173,32 +173,54 @@ export default function FirstEntry({
   const [failed, setFailed] = useState(false);
   const [celebrated, setCelebrated] = useState(false);
 
-  const appendText = (t: string) => setText((prev) => (prev ? `${prev} ${t}` : t).slice(0, MAX_CHARS));
-  const speech = useVoice({ onTranscript: appendText });
   /*
-    Recording first, browser speech recognition only as a fallback.
+    VOICE THAT WORKS LIKE NOVA'S VOICE INPUT IN THE APP.
 
-    It was the other way round, and on an iPhone it froze the page right
-    after the microphone prompt - Safari's continuous speech recognition is
-    unreliable on iOS, and even when it works it shows nothing until three
-    seconds of silence, which looks exactly like a freeze. Recording the clip
-    and transcribing it (transcribe-audio) behaves the same in every browser,
-    including Instagram's, and shows a running timer the whole time.
+    Brandon: the whole point is that you tap the mic and watch it come up as
+    you talk. So, as in the journal: the browser's own speech recognition,
+    with every word shown live in the box as it is heard (onInterim), and the
+    moment they stop - by tapping, or by pausing for three seconds - Nova
+    starts writing it up with no extra tap, the notes building on screen as
+    they stream in.
+
+    Where the browser has no speech recognition at all (Instagram's in-app
+    browser, most notably) it falls back to recording the clip and
+    transcribing it on the server (transcribe-audio), then writes it up the
+    same way.
+
+    The text already in the box when they start talking is kept: live words
+    are added after it rather than replacing it.
   */
-  const recorder = useRecorder(appendText);
-  const useSpeech = !recorder.isSupported && speech.isSupported;
+  const runRef = useRef<(override?: string) => void>(() => {});
+  const baseTextRef = useRef('');
+  const join = (a: string, b: string) => `${a} ${b}`.trim().slice(0, MAX_CHARS);
+  const speech = useVoice({
+    onInterim: (t: string) => setText(join(baseTextRef.current, t)),
+    onTranscript: (t: string) => {
+      const full = join(baseTextRef.current, t);
+      setText(full);
+      runRef.current(full);
+    },
+  });
+  const recorder = useRecorder((t: string) => {
+    const full = join(baseTextRef.current, t);
+    setText(full);
+    runRef.current(full);
+  });
+  const useSpeech = speech.isSupported;
   const isSupported = useSpeech || recorder.isSupported;
   const isListening = useSpeech ? speech.isListening : recorder.isRecording;
   const transcribing = !useSpeech && recorder.isTranscribing;
   const toggleMic = () => {
-    if (useSpeech) return speech.isListening ? speech.stopListening() : speech.startListening();
-    return recorder.isRecording ? recorder.stop() : void recorder.start();
+    if (isListening) return useSpeech ? speech.stopListening() : recorder.stop();
+    baseTextRef.current = text;
+    return useSpeech ? speech.startListening() : void recorder.start();
   };
 
   const lines = useMemo(() => toLines(entry?.content), [entry?.content]);
 
-  const run = async () => {
-    const transcript = text.trim();
+  const run = async (override?: string) => {
+    const transcript = (override ?? text).trim();
     if (!transcript || writing) return;
 
     setWriting(true);
@@ -245,6 +267,8 @@ export default function FirstEntry({
   /* ---------------------------------------------------------------- */
   /* The result                                                        */
   /* ---------------------------------------------------------------- */
+
+  runRef.current = (override?: string) => void run(override);
 
   /*
     DAY ONE, CELEBRATED - BEFORE THE ENTRY IS SHOWN.
@@ -655,6 +679,9 @@ export default function FirstEntry({
         )}
       </div>
 
+      {isListening && useSpeech && (
+        <p className="mt-2 text-[12.5px] text-blue-400">Listening&hellip; pause or tap the square when you&rsquo;re done.</p>
+      )}
       {isListening && !useSpeech && (
         <p className="mt-2 text-[12.5px] text-blue-400 tabular-nums">
           Recording {Math.floor(recorder.seconds / 60)}:{String(recorder.seconds % 60).padStart(2, '0')}
@@ -696,6 +723,26 @@ export default function FirstEntry({
           </>
         )}
       </button>
+
+      {/* Nova's notes building as they stream in - the same moment as the app's live organize. */}
+      {writing && lines.some((l) => !l.heading) && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="mt-4 rounded-xl border border-white/10 bg-brand-surface px-4 py-3.5 flex flex-col gap-1.5"
+        >
+          {lines.slice(-6).map((line, i) =>
+            line.heading ? (
+              <p key={i} className="text-[10px] uppercase tracking-[0.12em] text-blue-400 mt-1 first:mt-0">{line.text}</p>
+            ) : (
+              <p key={i} className="flex gap-2.5 text-[13px] leading-snug text-gray-300">
+                <span className="flex-shrink-0 mt-[6px] w-1.5 h-1.5 rounded-full bg-blue-400" aria-hidden="true" />
+                <span>{line.text}</span>
+              </p>
+            ),
+          )}
+        </motion.div>
+      )}
 
       {!writing && (
         <button
