@@ -6,7 +6,14 @@ import App from './App';
 import { initAnalytics } from './lib/analytics';
 import { initProductAnalytics } from './lib/productAnalytics';
 import { hasAnalyticsConsent } from './lib/consent';
+import { guardAgainstPageTranslation } from './lib/translationGuard';
 import './index.css';
+
+/*
+  Before anything renders: a browser-translated page must not be able to
+  crash React. See translationGuard.
+*/
+guardAgainstPageTranslation();
 
 /*
   Production only.
