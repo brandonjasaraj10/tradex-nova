@@ -31,12 +31,18 @@ import { trackEvent } from '../../lib/productAnalytics';
   who never set one - every account older than this feature.
 */
 
+/*
+  Framed as working TOWARD the outcome, never as the outcome. "Journal 7
+  trading days to pass your challenge" read as if a week of journaling
+  would pass it - Brandon flagged it as misleading. The journaling is the
+  step; the challenge is where it leads.
+*/
 const GOAL_PHRASE: Record<string, string> = {
-  profitable: 'to become consistently profitable',
-  pass_challenge: 'to pass your challenge',
-  stop_blowing: 'to stop blowing accounts',
-  consistent: 'to trade the same way every day',
-  understand: 'to see why you do what you do',
+  profitable: 'becoming consistently profitable',
+  pass_challenge: 'passing your challenge',
+  stop_blowing: 'keeping your next account',
+  consistent: 'trading the same way every day',
+  understand: 'seeing why you do what you do',
 };
 
 const NEXT_GOALS = [30, 66];
@@ -123,8 +129,10 @@ export default function GoalCounter() {
           <p className="text-[10.5px] uppercase tracking-[0.14em] text-blue-400">Your goal</p>
           <p className="mt-1 text-[15px] sm:text-[16px] font-medium text-white">
             {reached ? `You hit ${target} days.` : `Journal ${target} trading days`}
-            {!reached && why && <span className="text-gray-400 font-normal"> {why}</span>}
           </p>
+          {!reached && why && (
+            <p className="mt-0.5 text-[13px] text-gray-400">Working toward {why}</p>
+          )}
         </div>
         <p className="flex-shrink-0 text-[22px] sm:text-[26px] font-semibold tabular-nums text-white leading-none">
           {Math.min(done, target)}
