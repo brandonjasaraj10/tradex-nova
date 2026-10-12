@@ -284,6 +284,13 @@ export default function FirstEntry({
   */
   if (entry && !writing && !celebrated) {
     const target = goalDays && goalDays > 0 ? goalDays : null;
+    /* This week, Sunday first, the way Duolingo's streak row reads. */
+    const now = new Date();
+    const weekDays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((label, i) => ({
+      label,
+      today: i === now.getDay(),
+      tomorrow: i === (now.getDay() + 1) % 7,
+    }));
     return (
       <div className="text-center">
         <div className="relative mx-auto mb-2 w-fit">
@@ -321,25 +328,36 @@ export default function FirstEntry({
           Your first entry is written. That&rsquo;s the hardest one.
         </p>
 
-        {target && (
-          <div className="mt-7 max-w-xs mx-auto">
-            <div className="flex gap-1" aria-hidden="true">
-              {Array.from({ length: Math.min(target, 30) }).map((_, i) => (
-                <motion.span
-                  key={i}
-                  className={`h-1.5 flex-1 rounded-full ${i === 0 ? 'bg-blue-400' : 'bg-white/10'}`}
-                  initial={i === 0 ? { scaleX: 0 } : false}
-                  animate={{ scaleX: 1 }}
-                  transition={{ duration: 0.5, delay: 0.4 }}
-                  style={{ originX: 0 }}
-                />
-              ))}
-            </div>
-            <p className="mt-2.5 text-[12.5px] text-gray-500">
-              <span className="text-white font-medium">1</span> of your {target} trading days
-            </p>
+        {/*
+          "Tomorrow is day 2", Duolingo's streak screen: this week, today
+          ticked, tomorrow waiting. It turns one entry into the start of a
+          run and gives them a reason to come back tomorrow specifically.
+        */}
+        <div className="mt-7 max-w-xs mx-auto">
+          <p className="text-[15px] font-semibold text-white">Tomorrow is day 2{target ? ` of ${target}` : ''}.</p>
+          <div className="mt-3.5 flex justify-between" aria-hidden="true">
+            {weekDays.map((d, i) => (
+              <div key={i} className="flex flex-col items-center gap-1.5">
+                <span className="text-[10.5px] text-gray-500">{d.label}</span>
+                {d.today ? (
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 15, delay: 0.5 }}
+                    className="w-7 h-7 rounded-full bg-blue-500 flex items-center justify-center"
+                  >
+                    <Check size={15} className="text-white" strokeWidth={3} />
+                  </motion.span>
+                ) : d.tomorrow ? (
+                  <span className="w-7 h-7 rounded-full border-2 border-dashed border-blue-400/60" />
+                ) : (
+                  <span className="w-7 h-7 rounded-full bg-white/[0.07]" />
+                )}
+              </div>
+            ))}
           </div>
-        )}
+          <p className="mt-3 text-[12.5px] text-gray-500">Journal your next trade to keep it going.</p>
+        </div>
 
         <button
           type="button"
@@ -586,7 +604,7 @@ export default function FirstEntry({
           Your first entry
         </p>
         {phase === 0 && (
-          <p className="text-center text-[14px] text-gray-400 mb-1.5">Think of your last losing trade.</p>
+          <p className="text-center text-[14px] text-gray-400 mb-1.5">Think of your last losing trade &mdash; they teach the most.</p>
         )}
         <h1 className="text-[26px] sm:text-[31px] leading-[1.15] font-semibold tracking-[-0.032em]
           text-white text-center text-balance mb-6">

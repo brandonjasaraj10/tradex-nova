@@ -233,6 +233,25 @@ const GOAL_REPLY: Record<string, string> = {
   understand: 'That’s the right place to start.',
 };
 
+/*
+  Replies with a projected result, the way Duo answers "5 min/day" with
+  "That'd be 25 words in your first week!" - the choice they just made,
+  turned into what it gets them.
+*/
+const MINUTES_REPLY: Record<string, string> = {
+  '2': 'That’s enough to log every trade you take.',
+  '5': 'That’s every trade logged and rated, every day.',
+  '10': 'Room for a quick look back each day too.',
+  '15': 'That’s a full daily review. Serious.',
+};
+
+const COMMIT_REPLY: Record<string, string> = {
+  '7': 'One week. Enough for your first pattern to show.',
+  '14': 'Two weeks, the same length as your free trial.',
+  '30': 'A month. That’s when it turns into routine.',
+  '66': 'Sixty-six days. That’s habit territory.',
+};
+
 const PAST_REPLY: Record<string, string> = {
   typing: 'Fair. Here it takes thirty seconds.',
   forgot: 'Then I’ll keep count for you.',
@@ -613,7 +632,7 @@ export default function Onboarding({
   const answerMinutes = (value: string) => {
     setProfile((prev) => ({ ...prev, daily_minutes: value }));
     trackEvent('onboarding_daily_minutes', { minutes: Number(value) });
-    setStep('commit');
+    replyThen(MINUTES_REPLY[value], () => setStep('commit'));
   };
 
   const answerCommit = (value: string) => {
@@ -621,7 +640,7 @@ export default function Onboarding({
     setProfile(next);
     void saveProfileAnswers(next);
     trackEvent('onboarding_commit', { days: Number(value), minutes: Number(next.daily_minutes ?? 0) });
-    setStep('thinking');
+    replyThen(COMMIT_REPLY[value], () => setStep('thinking'));
   };
 
   const answerInstrument = (value: string) => {
@@ -780,8 +799,9 @@ export default function Onboarding({
               <div className="text-center">
                 {[
                   <MascotSays key="m" pose="wave" clip="wave" height={110} side="above" className="mb-7">
-                    {firstName ? `Right, ${firstName}. Let\u2019s find out what\u2019s costing you.`
-                               : 'Let\u2019s find out what\u2019s actually costing you.'}
+                    {/* Nova introduces himself and says how short it is, the way Duo opens with "Just 7 quick questions". */}
+                    {firstName ? `Hey ${firstName}, I\u2019m Nova. A minute of quick taps and I\u2019ll build your plan.`
+                               : 'Hey, I\u2019m Nova. A minute of quick taps and I\u2019ll build your plan.'}
                   </MascotSays>,
                   /*
                     The same sentence the landing page opens with, and for the
