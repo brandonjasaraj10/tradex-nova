@@ -93,7 +93,12 @@ export default function GoalCounter() {
 
     /* No goal set - every account from before the new onboarding. Nothing shows. */
     const profile = (row?.onboarding_profile ?? {}) as Record<string, string>;
-    const target = Number(profile.commit_days);
+    /*
+      Capped at 14 on the dashboard (Brandon): a 30- or 66-day counter would
+      sit there for months. Past 14 the card is gone and the milestone
+      popups carry on at 30 and 66.
+    */
+    const target = Math.min(Number(profile.commit_days) || 0, 14);
     if (!target) {
       setState(null);
       return;
