@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import Wordmark from '../shared/Wordmark';
-import HeaderNav from '../sales/HeaderNav';
+import HeaderNav, { MobileNav } from '../sales/HeaderNav';
 import Footer from './Footer';
 
 /*
@@ -78,6 +78,7 @@ export default function PageShell({
             >
               Start journaling
             </Link>
+            <MobileNav />
           </div>
         </div>
       </header>

@@ -14,7 +14,7 @@ import ReviewWall, { ReviewCard, type Review } from '../components/sales/ReviewW
 import FaqList, { type FaqItem } from '../components/sales/FaqList';
 import SectionHeader from '../components/sales/SectionHeader';
 import PricingPlans from '../components/sales/PricingPlans';
-import HeaderNav from '../components/sales/HeaderNav';
+import HeaderNav, { MobileNav } from '../components/sales/HeaderNav';
 import SignupOrWaitlist from '../components/shared/SignupOrWaitlist';
 import { useHasLaunched } from '../lib/launch';
 import { useState, useEffect, useRef } from 'react';
@@ -259,6 +259,7 @@ export default function Sales() {
             >
               Start journaling
             </Link>
+            <MobileNav />
           </div>
         </div>
       </motion.div>

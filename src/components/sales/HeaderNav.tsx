@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { ChevronDown } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Link, useLocation } from 'react-router-dom';
+import { ChevronDown, Menu, X } from 'lucide-react';
 
 /*
   The header navigation.
@@ -157,5 +158,110 @@ export default function HeaderNav() {
         </div>
       </div>
     </nav>
+  );
+}
+
+/*
+  The same links on a phone.
+
+  Below md the bar has room for the wordmark, "Sign in" and the button and
+  nothing else, so the nav above is hidden there - which left phones, where
+  most visitors are, with no way to Features, Pricing or anything else from
+  the header (Brandon). A menu button at the far right opens them all.
+
+  Drawn into <body> rather than inside the header: the header has a
+  backdrop blur, and a blurred parent becomes the frame its fixed children
+  are positioned in, so a full-screen layer inside it would be clipped to
+  the 56px bar.
+*/
+export function MobileNav() {
+  const [open, setOpen] = useState(false);
+  const { pathname } = useLocation();
+
+  /* Closed on every navigation, so the next page never opens under a menu. */
+  useEffect(() => setOpen(false), [pathname]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [open]);
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-label={open ? 'Close menu' : 'Open menu'}
+        className="md:hidden ml-3 -mr-1.5 p-1.5 rounded-lg text-gray-300 hover:text-white hover:bg-white/5 transition-colors"
+      >
+        {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+      </button>
+
+      {createPortal(
+        <div
+          className={`md:hidden fixed inset-x-0 top-14 bottom-0 z-40 transition-opacity duration-200 ${
+            open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+          }`}
+          aria-hidden={!open}
+        >
+          {/* Tap anywhere off the menu to close it. */}
+          <button
+            type="button"
+            tabIndex={-1}
+            aria-label="Close menu"
+            onClick={() => setOpen(false)}
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+          />
+          <nav
+            aria-label="Main"
+            className={`relative border-b border-white/10 bg-black px-5 pt-3 pb-6 transition-transform duration-200 ${
+              open ? 'translate-y-0' : '-translate-y-2'
+            }`}
+          >
+            <ul>
+              {PRODUCT_LINKS.map((item) => (
+                <li key={item.to}>
+                  <Link
+                    to={item.to}
+                    tabIndex={open ? 0 : -1}
+                    onClick={() => setOpen(false)}
+                    className="block py-3 text-[16px] text-white border-b border-white/[0.06]"
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-5 mb-1 text-[10.5px] uppercase tracking-[0.14em] text-gray-500">Resources</p>
+            <ul className="grid grid-cols-2 gap-x-4">
+              {RESOURCE_LINKS.map((item) => (
+                <li key={item.to}>
+                  <Link
+                    to={item.to}
+                    tabIndex={open ? 0 : -1}
+                    onClick={() => setOpen(false)}
+                    className="block py-2.5 text-[14px] text-gray-300 hover:text-white"
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <Link
+              to="/auth?mode=signup"
+              tabIndex={open ? 0 : -1}
+              onClick={() => setOpen(false)}
+              className="mt-6 flex items-center justify-center w-full py-3 rounded-full bg-white text-black text-[15px] font-medium hover:bg-gray-200 transition-colors"
+            >
+              Start journaling
+            </Link>
+          </nav>
+        </div>,
+        document.body,
+      )}
+    </>
   );
 }
