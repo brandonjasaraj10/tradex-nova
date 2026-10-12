@@ -1,11 +1,11 @@
 import { useState, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, Mic, Loader2, Check, X, Trophy } from 'lucide-react';
+import { ArrowRight, Mic, Loader2, Check, Trophy } from 'lucide-react';
 import { processVoiceJournalEntry, type VoiceJournalData } from '../../services/voiceJournal';
 import { useVoice } from '../../hooks/useVoice';
 import { useRecorder } from '../../hooks/useRecorder';
 import { trackEvent } from '../../lib/productAnalytics';
-import MascotSays from '../shared/MascotSays';
+import NovaTalk from './NovaTalk';
 import NovaClip from '../shared/NovaClip';
 import type { StarterItem } from '../../lib/onboardingChecklist';
 import { calculateChecklistScore, combinePsychologyScores } from '../../services/psychologyScore';
@@ -160,6 +160,24 @@ function toLines(html: string | undefined): Line[] {
   }
 }
 
+/* Nova's write-up as notes: short blue headings, every line on a blue bullet. Used live and on the result. */
+function NotesList({ lines }: { lines: Line[] }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      {lines.map((line, i) =>
+        line.heading ? (
+          <p key={i} className="text-[10px] uppercase tracking-[0.12em] text-blue-400 mt-1.5 first:mt-0">{line.text}</p>
+        ) : (
+          <p key={i} className="flex gap-2.5 text-[13px] leading-snug text-gray-200">
+            <span className="flex-shrink-0 mt-[6px] w-1.5 h-1.5 rounded-full bg-blue-400" aria-hidden="true" />
+            <span>{line.text}</span>
+          </p>
+        ),
+      )}
+    </div>
+  );
+}
+
 export default function FirstEntry({
   onDone,
   rules,
@@ -251,7 +269,14 @@ export default function FirstEntry({
       undefined,
       psychChecks,
       'trade',
-      (partial) => setLive((prev) => ({ ...(prev ?? {}), ...partial })),
+      /*
+        Partial results are NOT painted. A new pass streams its write-up from
+        the start, so showing it meant the notes on screen blanked and
+        rebuilt every few sentences - and once more on finishing, which is
+        what Brandon saw as the notes disappearing and coming back. The last
+        finished version stays up until the next one has fully landed.
+      */
+      undefined,
     )
       .then((result) => {
         lastResultRef.current = result;
@@ -273,15 +298,21 @@ export default function FirstEntry({
   };
 
   /* End of speaking: let the running pass land, run one more only if words were added since, then move on. */
+  const finishingRef = useRef(false);
   const finishSpoken = async (transcript: string) => {
-    if (!transcript.trim()) return;
+    /* Once only: the pause and a tap on the button can both ask to finish. */
+    if (!transcript.trim() || finishingRef.current) return;
+    finishingRef.current = true;
     setFinishing(true);
     setFailed(false);
     trackEvent('onboarding_entry_started', { chars: transcript.length, via: 'voice' });
     try {
       if (inflightRef.current) await inflightRef.current;
       pendingRef.current = null;
-      let result = organizedTextRef.current === transcript ? lastResultRef.current : null;
+      /* Within a few characters (punctuation, a trailing word) the last pass already IS the entry. */
+      const covered = lastResultRef.current && transcript.length - organizedTextRef.current.length <= 25
+        && transcript.startsWith(organizedTextRef.current.slice(0, Math.max(0, organizedTextRef.current.length - 5)));
+      let result = covered ? lastResultRef.current : null;
       if (!result) result = await organize(transcript);
       if (!result) throw new Error('no entry');
       const merged = { ...result, ...ratings };
@@ -293,6 +324,7 @@ export default function FirstEntry({
       trackEvent('onboarding_entry_failed');
     } finally {
       setFinishing(false);
+      finishingRef.current = false;
     }
   };
 
@@ -320,8 +352,11 @@ export default function FirstEntry({
   const isSupported = useSpeech || recorder.isSupported;
   const isListening = useSpeech ? speech.isListening : recorder.isRecording;
   const transcribing = !useSpeech && recorder.isTranscribing;
+  /* True once they have spoken; typing into the box clears it. */
+  const spokenRef = useRef(false);
   const toggleMic = () => {
     if (isListening) return useSpeech ? speech.stopListening() : recorder.stop();
+    spokenRef.current = true;
     baseTextRef.current = text;
     setLive(null);
     organizedTextRef.current = '';
@@ -336,6 +371,8 @@ export default function FirstEntry({
   const run = async () => {
     const transcript = text.trim();
     if (!transcript || writing || finishing) return;
+    /* Spoken, then the button tapped before the pause ended it: finish the spoken entry, never redo it. */
+    if (spokenRef.current) return void finishSpoken(transcript);
     setWriting(true);
     setFailed(false);
     trackEvent('onboarding_entry_started', { chars: transcript.length, via: 'typed' });
@@ -344,6 +381,7 @@ export default function FirstEntry({
         transcript, undefined, [], rules, undefined, psychChecks, 'trade',
         (partial) => setLive((prev) => ({ ...(prev ?? {}), ...partial })),
       );
+      setLive(result);
       setEntry({ ...result, ...ratings });
       trackEvent('onboarding_entry_written', { symbol: result.symbol ?? null, via: 'typed' });
     } catch (err) {
@@ -402,7 +440,7 @@ export default function FirstEntry({
           ))}
         </div>
         <div className="relative mx-auto mb-2 w-fit">
-          <NovaClip clip="celebrate" height={130} className="mx-auto" />
+          <NovaClip action="celebrate" height={130} className="mx-auto" />
           {/* A small burst behind the trophy - drawn, not an emoji. */}
           <motion.div
             initial={{ scale: 0, rotate: -20 }}
@@ -512,27 +550,6 @@ export default function FirstEntry({
       no section runs past two points. The full text still lands in their
       journal untouched - this is only how the first one is shown.
     */
-    const splitSentences = (t: string) =>
-      t.split(/(?<=[.!?])\s+(?=[A-Z"“(])/).map((x) => x.trim().replace(/[.]$/, '')).filter(Boolean);
-    type Item = { text: string; mark: 'kept' | 'broke' | null };
-    const sections: { heading: string; items: Item[] }[] = [];
-    for (const line of lines) {
-      if (line.heading) {
-        sections.push({ heading: line.text, items: [] });
-        continue;
-      }
-      if (!sections.length) continue; /* the unheaded summary - the facts row covers it */
-      const mark = /^[✓✔]/.test(line.text) ? 'kept' : /^[✗✘×]/.test(line.text) ? 'broke' : null;
-      const body = line.text.replace(/^[✓✔✗✘×]\s*/, '');
-      const current = sections[sections.length - 1];
-      for (const sentence of mark ? [body] : splitSentences(body)) {
-        if (current.items.length < 2) current.items.push({ text: sentence, mark });
-      }
-    }
-    if (!sections.length && lines.length) {
-      sections.push({ heading: 'What happened', items: lines.flatMap((l) => splitSentences(l.text)).slice(0, 3).map((text) => ({ text, mark: null })) });
-    }
-
     const ratings = RATINGS.map((r) => ({ r, value: entry[r.key] })).filter(
       (x): x is { r: (typeof RATINGS)[number]; value: number } => typeof x.value === 'number',
     );
@@ -618,30 +635,14 @@ export default function FirstEntry({
               </div>
             )}
 
-            {sections.length > 0 && (
-              <div className="flex flex-col gap-3.5">
-                {/* Two sections, two points each: this screen has to fit one phone screen. */}
-                {sections.filter((sec) => sec.items.length > 0).slice(0, 2).map((sec, si) => (
-                  <div key={si}>
-                    <p className="text-[10px] uppercase tracking-[0.12em] text-blue-400 mb-1.5">{sec.heading}</p>
-                    <ul className="flex flex-col gap-1.5">
-                      {sec.items.map((item, ii) => (
-                        <li key={ii} className="flex gap-2.5 text-[13px] leading-snug text-gray-200">
-                          {item.mark === 'kept' ? (
-                            <Check size={14} className="flex-shrink-0 mt-[2px] text-blue-400" strokeWidth={2.75} />
-                          ) : item.mark === 'broke' ? (
-                            <X size={14} className="flex-shrink-0 mt-[2px] text-gray-500" strokeWidth={2.75} />
-                          ) : (
-                            <span className="flex-shrink-0 mt-[6px] w-1.5 h-1.5 rounded-full bg-blue-400" aria-hidden="true" />
-                          )}
-                          <span>{item.text}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-            )}
+            {/*
+              The notes exactly as they looked while they were talking - same
+              headings, same blue bullets. Brandon noticed this breakdown used
+              to look less clean than the live version, because it re-cut
+              Nova's text into sentence fragments; it now shows what Nova
+              wrote, which is also exactly what lands in their journal.
+            */}
+            {lines.length > 0 && <NotesList lines={lines} />}
 
             {/*
               The starter checklist used to be listed here too. Dropped to keep
@@ -691,6 +692,31 @@ export default function FirstEntry({
   /* The ask                                                           */
   /* ---------------------------------------------------------------- */
 
+  /*
+    Nova asks every question on these screens too, in the same layout as the
+    rest of onboarding - and as the first child of each screen below, so
+    React keeps the same Nova from question to question and his idle
+    animation carries on rather than restarting.
+  */
+  const header =
+    phase < RATINGS.length ? (
+      <NovaTalk
+        text={RATINGS[phase].question}
+        subtitle={phase === 0 ? 'Think of your last losing trade — they teach the most.' : undefined}
+      />
+    ) : (
+      <NovaTalk
+        text={busy ? 'Finishing up your entry…' : isListening ? 'I’m listening. Keep going.' : 'Now tell me what happened.'}
+        subtitle={
+          busy || isListening
+            ? undefined
+            : isSupported
+              ? 'Type it or tap the mic. Messy is fine.'
+              : 'Type it like you’d text a friend. Messy is fine.'
+        }
+      />
+    );
+
   if (phase < RATINGS.length) {
     const r = RATINGS[phase];
     const pick = (n: number) => {
@@ -707,17 +733,7 @@ export default function FirstEntry({
     };
     return (
       <div>
-        {/* No mascot here: with it this screen was 618px and scrolled on most iPhones. */}
-        <p className="text-center text-[11px] uppercase tracking-[0.14em] text-gray-500 mb-3">
-          Your first entry
-        </p>
-        {phase === 0 && (
-          <p className="text-center text-[14px] text-gray-400 mb-1.5">Think of your last losing trade &mdash; they teach the most.</p>
-        )}
-        <h1 className="text-[26px] sm:text-[31px] leading-[1.15] font-semibold tracking-[-0.032em]
-          text-white text-center text-balance mb-6">
-          {r.question}
-        </h1>
+        {header}
         <div key={r.key} className="flex flex-col gap-2.5">
           {r.words.map((word, i) => (
             <RatingRow key={word} n={i + 1} word={word} picked={ratings[r.key] === i + 1} onPick={() => pick(i + 1)} />
@@ -741,33 +757,15 @@ export default function FirstEntry({
 
   return (
     <div>
-      <MascotSays pose="lean" height={56} side="above" className="mb-4">
-        {busy ? 'Finishing up…' : isListening ? 'I’m listening.' : 'Messy is fine. I’ll sort it out.'}
-      </MascotSays>
-
-      <p className="text-center text-[11px] uppercase tracking-[0.14em] text-gray-500 mb-3">
-        Your first entry
-      </p>
-      <h1 className="text-[26px] sm:text-[31px] leading-[1.15] font-semibold tracking-[-0.032em]
-        text-white text-center text-balance mb-2">
-        Now tell Nova what happened.
-      </h1>
-      {/*
-        Says "type" first on purpose. Most of this traffic arrives in
-        Instagram's in-app browser, where there is no mic at all - so the
-        box is the main way in, and somebody who only saw "tell" and "say"
-        would go looking for a record button that is not there.
-      */}
-      <p className="text-center text-[13.5px] text-gray-500 mb-6">
-        {isSupported
-          ? 'Type it or tap the mic. A sentence or two, messy is fine.'
-          : 'Type it like you’d text a friend. A sentence or two, messy is fine.'}
-      </p>
+      {header}
 
       <div className="relative">
         <textarea
           value={text}
-          onChange={(e) => setText(e.target.value.slice(0, MAX_CHARS))}
+          onChange={(e) => {
+            spokenRef.current = false;
+            setText(e.target.value.slice(0, MAX_CHARS));
+          }}
           maxLength={MAX_CHARS}
           disabled={busy || isListening}
           rows={4}
@@ -850,23 +848,10 @@ export default function FirstEntry({
         )}
       </button>
 
-      {/* Nova's notes building as they stream in - the same moment as the app's live organize. */}
+      {/* Nova's notes building as they talk - only finished passes, so they never blank and rebuild. */}
       {(isListening || busy) && liveLines.some((l) => !l.heading) && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="mt-4 rounded-xl border border-white/10 bg-brand-surface px-4 py-3.5 flex flex-col gap-1.5"
-        >
-          {liveLines.slice(-6).map((line, i) =>
-            line.heading ? (
-              <p key={i} className="text-[10px] uppercase tracking-[0.12em] text-blue-400 mt-1 first:mt-0">{line.text}</p>
-            ) : (
-              <p key={i} className="flex gap-2.5 text-[13px] leading-snug text-gray-300">
-                <span className="flex-shrink-0 mt-[6px] w-1.5 h-1.5 rounded-full bg-blue-400" aria-hidden="true" />
-                <span>{line.text}</span>
-              </p>
-            ),
-          )}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }} className="mt-4 rounded-xl border border-white/10 bg-brand-surface px-4 py-3.5">
+          <NotesList lines={liveLines} />
         </motion.div>
       )}
 

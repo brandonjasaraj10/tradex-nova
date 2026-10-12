@@ -3,7 +3,7 @@ import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { motion } from 'framer-motion';
 import { supabase } from '../../lib/supabase';
 import { User } from '@supabase/supabase-js';
-import MascotSays from '../shared/MascotSays';
+import NovaTalk from '../onboarding/NovaTalk';
 
 interface ProfileSetupProps {
   user: User;
@@ -117,7 +117,8 @@ export default function ProfileSetup({ user, onComplete }: ProfileSetupProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black">
+    /* Top-anchored at the same height as onboarding, so Nova does not jump when the next screen loads. */
+    <div className="fixed inset-0 z-[100] flex items-start justify-center bg-black px-5 pt-[9dvh] sm:pt-[12dvh]">
       {/*
         Fades only. Each piece used to rise 16-20px into place inside a
         scrolling box, which clips anything outside it - so on a phone the
@@ -128,8 +129,10 @@ export default function ProfileSetup({ user, onComplete }: ProfileSetupProps) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.4 }}
-        className="max-w-md w-full mx-4 max-h-[calc(100dvh-2rem)] overflow-y-auto"
+        className="max-w-md w-full max-h-[calc(100dvh-2rem)] overflow-y-auto"
       >
+        {/* The progress bar's space, empty here - keeps Nova level with the questions that follow. */}
+        <div className="h-1 mb-8" aria-hidden="true" />
         {/*
           He opens here, not one screen later.
 
@@ -150,9 +153,8 @@ export default function ProfileSetup({ user, onComplete }: ProfileSetupProps) {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.1, duration: 0.4 }}
         >
-          <MascotSays pose="wave" clip="wave" height={100} side="above" className="mb-7">
-            Hey, I&rsquo;m Nova. What&rsquo;s your first name?
-          </MascotSays>
+          {/* The same Nova-and-bubble layout as every onboarding question, so the first screen matches the rest. */}
+          <NovaTalk text="Hey, I’m Nova. What’s your first name?" action="wave" actionKey="name" />
         </motion.div>
 
         <motion.form

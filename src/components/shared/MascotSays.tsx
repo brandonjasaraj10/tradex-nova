@@ -1,4 +1,4 @@
-import NovaClip, { type NovaClipName } from './NovaClip';
+import NovaClip, { type NovaAction } from './NovaClip';
 import Mascot, { type MascotPose } from './Mascot';
 
 /*
@@ -32,7 +32,7 @@ interface MascotSaysProps {
   /* Which side of the mascot the bubble sits on. */
   side?: 'right' | 'above';
   /* Play an animated clip instead of the still pose - black backgrounds only. */
-  clip?: NovaClipName;
+  clip?: NovaAction;
   className?: string;
 }
 
@@ -45,7 +45,7 @@ export default function MascotSays({
   clip,
   className = '',
 }: MascotSaysProps) {
-  const figure = clip ? <NovaClip clip={clip} height={height} /> : <Mascot pose={pose} height={height} />;
+  const figure = clip ? <NovaClip action={clip} height={height} /> : <Mascot pose={pose} height={height} />;
   const loud = tone === 'loud';
 
   const bubble = (

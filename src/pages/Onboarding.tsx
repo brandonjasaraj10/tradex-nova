@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { motion, AnimatePresence, useAnimationControls } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Check, ArrowRight } from 'lucide-react';
 import {
   saveInstrument, saveExperience, saveStruggles, saveProfileAnswers,
@@ -14,8 +14,7 @@ import {
 } from '../lib/onboardingPlan';
 import { trackEvent } from '../lib/productAnalytics';
 import { emphasise } from '../lib/emphasise';
-import MascotSays from '../components/shared/MascotSays';
-import NovaClip from '../components/shared/NovaClip';
+import NovaTalk, { replyHoldMs } from '../components/onboarding/NovaTalk';
 import { HELD_KEY } from '../services/onboardingWriteBack';
 import FirstEntry from '../components/onboarding/FirstEntry';
 import { buildStarterRules, buildStarterPsychChecks } from '../lib/onboardingChecklist';
@@ -150,10 +149,6 @@ function Thinking({ lines, onDone }: { lines: string[]; onDone: () => void }) {
 
   return (
     <div className="flex flex-col items-center text-center">
-      <MascotSays pose="lean" height={84} side="above" className="mb-7">
-        Give me a second, I&rsquo;m putting this together.
-      </MascotSays>
-
       <ul className="flex flex-col gap-3 w-full max-w-[280px]">
         {lines.map((text, i) => (
           <li key={text} className="flex items-center gap-3 text-left">
@@ -192,11 +187,14 @@ function Thinking({ lines, onDone }: { lines: string[]; onDone: () => void }) {
 */
 function Progress({ step }: { step: Step }) {
   const index = questionIndex(step);
-  if (index === null) return null;
-  const pct = ((index + 1) / QUESTION_COUNT) * 100;
+  /*
+    Always takes its space, bar or not, so Nova sits at exactly the same
+    height on every screen instead of jumping when the bar comes and goes.
+  */
+  const pct = index === null ? 0 : ((index + 1) / QUESTION_COUNT) * 100;
 
   return (
-    <div className="mb-8">
+    <div className={`mb-8 ${index === null ? 'invisible' : ''}`}>
       <div className="h-1 rounded-full bg-white/10 overflow-hidden">
         <motion.div
           className="h-full rounded-full bg-brand-blue-light shadow-[0_0_10px_rgba(96,165,250,0.8)]"
@@ -262,149 +260,6 @@ const PAST_REPLY: Record<string, string> = {
   switch_trying: 'Fair. Let me show you.',
 };
 
-/*
-  Types the line in, a few characters at a time, the way Duo's bubble does -
-  so the question arrives as something Nova is saying rather than a heading
-  that was already there. Fast (about a second for a long question) and
-  skipped entirely under reduced motion.
-*/
-function useTyped(text: string) {
-  const [shown, setShown] = useState(text);
-  /* 'dots' while Nova is "typing", 'typing' while the words come in, then 'done'. */
-  const [phase, setPhase] = useState<'dots' | 'typing' | 'done'>('done');
-  useEffect(() => {
-    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
-      setShown(text);
-      setPhase('done');
-      return;
-    }
-    setShown('');
-    setPhase('dots');
-    let i = 0;
-    let id = 0;
-    const startTyping = window.setTimeout(() => {
-      setPhase('typing');
-      id = window.setInterval(() => {
-        i += 2;
-        setShown(text.slice(0, i));
-        if (i >= text.length) {
-          window.clearInterval(id);
-          setPhase('done');
-        }
-      }, 22);
-    }, 380);
-    return () => {
-      window.clearTimeout(startTyping);
-      window.clearInterval(id);
-    };
-  }, [text]);
-  return { shown, phase };
-}
-
-/*
-  Nova and the bubble STAY on screen between questions - only the words in
-  the bubble and the answers underneath change. Duolingo keeps Duo in place
-  for the whole run of questions, and it is a large part of why theirs feels
-  like one conversation instead of a stack of screens: nothing jumps, the
-  same character is still there, it just says the next thing. A very slow
-  float keeps him from looking pasted in without anything moving that the
-  eye has to follow.
-*/
-function Ask({ step, title, subtitle, reacting = false }: { step: Step; title: string; subtitle?: string; reacting?: boolean }) {
-  const index = questionIndex(step) ?? 0;
-  const { shown: typed, phase } = useTyped(title);
-
-  /*
-    NOVA IS ANIMATED, THE SCREEN IS NOT.
-
-    The page transitions that slid whole screens sideways gave Brandon a
-    headache; a character moving is a different thing, and it is most of
-    what makes Duo feel alive. So the motion is Nova's alone:
-
-    - each new question, the idle clip plays once (breathes, blinks, tilts)
-      and he settles with a small spring - then holds still, the way Duo does,
-      rather than looping;
-    - while the words type, a small talking bob;
-    - when he answers back, the nod clip plays once, he bounces gently, and
-      two soft blue rings spread from his head - "heard you" - slowly enough
-      to see.
-
-    Both clips are mounted together and swapped by opacity, so switching to
-    the nod never flashes a still pose in between.
-  */
-  const body = useAnimationControls();
-  useEffect(() => {
-    if (reacting) {
-      void body.start({ y: [0, -10, 0, -4, 0], rotate: [0, 3, 0, 1.5, 0], transition: { duration: 1.1, ease: 'easeOut' } });
-    } else {
-      void body.start({ y: [5, 0], scale: [0.96, 1], transition: { type: 'spring', stiffness: 260, damping: 16 } });
-    }
-  }, [index, reacting, body]);
-
-  return (
-    <>
-      <Progress step={step} />
-      <div className="flex items-start gap-3 mb-6">
-        <div className="relative flex-shrink-0">
-          <motion.div
-            className="origin-bottom"
-            animate={phase === 'typing' ? { y: [0, -2, 0] } : { y: 0 }}
-            transition={phase === 'typing' ? { duration: 0.3, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.2 }}
-          >
-            <motion.div animate={body} className="relative origin-bottom">
-              <div className={`transition-opacity duration-200 ${reacting ? 'opacity-0' : 'opacity-100'}`}>
-                <NovaClip clip="idle" height={96} playKey={index} />
-              </div>
-              <div className={`absolute inset-0 transition-opacity duration-200 ${reacting ? 'opacity-100' : 'opacity-0'}`}>
-                <NovaClip clip="nod" height={96} playKey={reacting ? `r-${index}` : undefined} />
-              </div>
-            </motion.div>
-          </motion.div>
-          {reacting && [0, 1].map((i) => (
-            <motion.span
-              key={i}
-              aria-hidden="true"
-              className="absolute left-1/2 top-[22%] -ml-5 w-10 h-10 rounded-full border-2 border-brand-blue-light/60 pointer-events-none"
-              initial={{ scale: 0.5, opacity: 0 }}
-              animate={{ scale: [0.5, 2.1], opacity: [0.8, 0] }}
-              transition={{ duration: 1.4, delay: 0.15 + i * 0.35, ease: 'easeOut' }}
-            />
-          ))}
-        </div>
-
-        {/*
-          A fixed-size bubble. It used to size itself to each question, so it
-          grew and shrank from one question to the next and read as jumpy.
-          Now every bubble is the same box and the words fill it.
-        */}
-        <div className="relative mt-2 flex-1 min-h-[108px] rounded-2xl border border-white/10 bg-brand-elevated px-4 py-3">
-          <p className="text-[16px] sm:text-[18px] leading-snug font-semibold text-white" aria-hidden="true">
-            {phase === 'dots' ? (
-              <span className="inline-flex items-center gap-1 h-[1.4em]">
-                {[0, 1, 2].map((i) => (
-                  <motion.span
-                    key={i}
-                    className="w-1.5 h-1.5 rounded-full bg-gray-400"
-                    animate={{ opacity: [0.3, 1, 0.3], y: [0, -2, 0] }}
-                    transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.12 }}
-                  />
-                ))}
-              </span>
-            ) : (
-              typed
-            )}
-          </p>
-          <span className="sr-only">{title}</span>
-          {subtitle && <p className="mt-1.5 text-[12.5px] text-gray-500">{subtitle}</p>}
-          <span
-            aria-hidden="true"
-            className="absolute -left-[6px] top-8 w-3 h-3 rotate-45 bg-brand-elevated border-l border-b border-white/10"
-          />
-        </div>
-      </div>
-    </>
-  );
-}
 
 /*
   One tap, full width, generous target.
@@ -472,7 +327,7 @@ function Question({
     } catch {
       /* no haptics here */
     }
-    window.setTimeout(() => onChoose(value), 260);
+    window.setTimeout(() => onChoose(value), 420);
   };
 
   return (
@@ -484,7 +339,7 @@ function Question({
             key={o.value}
             initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.25 + i * 0.05, duration: 0.2, ease: 'easeOut' }}
+            transition={{ delay: 0.45 + i * 0.08, duration: 0.4, ease: 'easeOut' }}
           >
             <Choice label={o.label} tag={o.tag} recommended={o.recommended} selected={picked === o.value} onClick={() => choose(o.value)} />
           </motion.div>
@@ -583,7 +438,7 @@ export default function Onboarding({
     window.setTimeout(() => {
       setReply(null);
       next();
-    }, 2200); /* ~1s for the dots and typing, ~1s to actually read it */
+    }, replyHoldMs(line)); /* the dots, the typing, then time to actually read it */
   };
 
   const answerWhy = (value: string) => {
@@ -620,6 +475,25 @@ export default function Onboarding({
     : typeof step === 'object' ? { title: PROFILE_QUESTIONS[step.profile].title }
     : step === 'minutes' ? { title: 'How long can you give it on a trading day?', subtitle: 'One trade takes about thirty seconds. The rest is looking back.' }
     : step === 'commit' ? { title: 'Pick your first goal.', subtitle: 'Journal every trading day for…' }
+    : null;
+
+  /*
+    What Nova says on EVERY screen, not just the questions - one layout for
+    the whole flow, Nova in the same place throughout, so his idle animation
+    carries on from screen to screen instead of the early screens looking
+    like a different product. Each screen's headline is now his line; the
+    screen underneath carries the detail. The first-entry screens have
+    their own Nova (FirstEntry).
+  */
+  const talk: { text: string; subtitle?: string } | null =
+    ask ? { text: ask.title, subtitle: ask.subtitle }
+    : step === 'welcome' ? { text: firstName ? `Hey ${firstName}, I’m Nova. A minute of quick taps and I’ll build your plan.` : 'Hey, I’m Nova. A minute of quick taps and I’ll build your plan.' }
+    : step === 'thegap' ? { text: 'Here’s the thing nobody tells you.' }
+    : step === 'thinking' ? { text: 'Give me a second, I’m putting this together.' }
+    : step === 'pattern' ? { text: plan.headline }
+    : step === 'plan' ? { text: plan.title }
+    : step === 'planwhen' ? { text: `Here’s what you’ll have by ${plan.day}.` }
+    : step === 'planhow' ? { text: 'Three things change from your next trade.' }
     : null;
 
   const answerMinutes = (value: string) => {
@@ -762,10 +636,21 @@ export default function Onboarding({
       height actually visible. Screens that fit sit centred and still; the
       one or two that genuinely need more (the written entry) still scroll.
     */
-    <div className="min-h-[100dvh] bg-brand-bg text-white flex items-center justify-center px-5 py-6 sm:py-10">
+    <div className="min-h-[100dvh] bg-brand-bg text-white flex justify-center px-5 pt-[9dvh] pb-8 sm:pt-[12dvh]">
       <div className={step === 'entry' ? 'w-full max-w-2xl' : 'w-full max-w-md'}>
         {/* Outside the transition, so Nova and the bubble stay still while the answers change. */}
-        {ask && <Ask step={step} title={reply ?? ask.title} subtitle={reply ? undefined : ask.subtitle} reacting={!!reply} />}
+        {talk && (
+          <>
+            <Progress step={step} />
+            <NovaTalk
+              text={reply ?? talk.text}
+              subtitle={reply ? undefined : talk.subtitle}
+              action={reply ? 'nod' : step === 'welcome' ? 'wave' : undefined}
+              actionKey={reply ? `reply-${reply}` : step === 'welcome' ? 'welcome' : undefined}
+              reacting={!!reply}
+            />
+          </>
+        )}
 
         <AnimatePresence mode="wait">
           <motion.div
@@ -778,7 +663,7 @@ export default function Onboarding({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.15, ease: 'easeOut' }}
+            transition={{ duration: 0.35, ease: 'easeInOut' }}
           >
             {/*
               The reaffirm screen.
@@ -791,11 +676,7 @@ export default function Onboarding({
             {step === 'welcome' && (
               <div className="text-center">
                 {[
-                  <MascotSays key="m" pose="wave" clip="wave" height={110} side="above" className="mb-7">
-                    {/* Nova introduces himself and says how short it is, the way Duo opens with "Just 7 quick questions". */}
-                    {firstName ? `Hey ${firstName}, I\u2019m Nova. A minute of quick taps and I\u2019ll build your plan.`
-                               : 'Hey, I\u2019m Nova. A minute of quick taps and I\u2019ll build your plan.'}
-                  </MascotSays>,
+
                   /*
                     The same sentence the landing page opens with, and for the
                     same reason it was changed there: "Nobody blows an account
@@ -1045,38 +926,19 @@ export default function Onboarding({
               across several screens measurably raised conversion for House,
               which is the same trade being made here.
             */}
+            {/*
+              The pattern screen now carries the "three years" line too. It used
+              to be followed by a second gap screen that repeated the idea of
+              the first one (Identity -> Execution) - Brandon found the flow
+              repeating itself. One screen, one beat.
+            */}
             {step === 'pattern' && (
               <div className="text-center">
-                <h1 className="text-[28px] sm:text-[36px] leading-[1.1] font-semibold
-                  tracking-[-0.04em] text-white text-balance mb-4">
-                  {plan.headline}
-                </h1>
-                <p className="text-[15px] sm:text-[16.5px] text-gray-300 leading-relaxed
-                  max-w-md mx-auto">
+                <p className="text-[17px] sm:text-[19px] text-gray-200 leading-relaxed max-w-md mx-auto">
                   {card.outcome}
                 </p>
-                <button
-                  type="button"
-                  onClick={() => setStep('gap')}
-                  className="mt-8 inline-flex items-center justify-center gap-2 px-8 py-3.5
-                    rounded-full bg-white text-black text-[15px] font-medium
-                    hover:bg-gray-200 transition-colors"
-                >
-                  Go on
-                  <ArrowRight size={17} />
-                </button>
-              </div>
-            )}
-
-            {step === 'gap' && (
-              <div className="text-center">
-                <p className="text-[19px] sm:text-[23px] leading-[1.3] font-normal
-                  tracking-[-0.02em] text-gray-400 text-balance max-w-lg mx-auto">
+                <p className="mt-5 text-[14px] sm:text-[15px] leading-relaxed text-gray-500 max-w-md mx-auto">
                   {emphasise(`Most traders take *three years* to find out what you are about to find out in *${profile.commit_days ? `${profile.commit_days} trading days` : 'two weeks'}*.`)}
-                </p>
-                <p className="mt-6 text-[14px] sm:text-[15px] leading-relaxed text-gray-500
-                  max-w-md mx-auto">
-                  {emphasise('Nobody is measuring the thing that actually decides it \u2014 *what you were like going in*. P&L only tells you what already happened.')}
                 </p>
                 <button
                   type="button"
@@ -1091,6 +953,7 @@ export default function Onboarding({
               </div>
             )}
 
+
             {/*
               Quiet, like the two screens before it.
 
@@ -1102,14 +965,9 @@ export default function Onboarding({
             */}
             {step === 'plan' && (
               <div className="text-center">
-                <p className="text-[11px] uppercase tracking-[0.16em] text-blue-400 mb-5">
+                <p className="text-[11px] uppercase tracking-[0.16em] text-blue-400">
                   {plan.eyebrow}
                 </p>
-
-                <h1 className="text-[27px] sm:text-[34px] leading-[1.13] font-semibold
-                  tracking-[-0.038em] text-white text-balance">
-                  {plan.title}
-                </h1>
 
                 {/*
                   Their own goal, handed back in their own numbers, above the
@@ -1147,10 +1005,7 @@ export default function Onboarding({
             */}
             {step === 'planwhen' && (
               <div className="text-center">
-                <p className="text-[11px] uppercase tracking-[0.16em] text-blue-400 mb-5">
-                  By {plan.day}
-                </p>
-                <p className="text-[22px] sm:text-[27px] leading-[1.3] font-semibold tracking-[-0.03em]
+                <p className="text-[19px] sm:text-[22px] leading-[1.35] font-semibold tracking-[-0.02em]
                   text-white text-balance max-w-sm mx-auto">
                   {emphasise(plan.promise.replace(/^By \*[^*]+\* /, '').replace(/^./, (c) => c.toUpperCase()))}
                 </p>
@@ -1183,14 +1038,7 @@ export default function Onboarding({
             */}
             {step === 'planhow' && (
               <div className="text-center">
-                <p className="text-[11px] uppercase tracking-[0.16em] text-blue-400 mb-5">
-                  How you get there
-                </p>
-                <h1 className="text-[26px] sm:text-[32px] leading-[1.14] font-semibold
-                  tracking-[-0.035em] text-white text-balance">
-                  Three things change from your next trade.
-                </h1>
-                <ul className="mt-7 flex flex-col gap-3 max-w-sm mx-auto text-left">
+                <ul className="flex flex-col gap-3 max-w-sm mx-auto text-left">
                   {plan.points.map((point, i) => (
                     <motion.li
                       key={point}
