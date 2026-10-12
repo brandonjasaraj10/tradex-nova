@@ -84,6 +84,8 @@ Deno.serve(async (req: Request) => {
     .single();
   if (usageError) {
     console.error('Rate limit check failed:', usageError);
+    /* Paid accounts carry on; an unpaid one never gets unlimited calls from a broken limiter. */
+    if (!paid) return json({ error: 'Could not take that just now - try again in a moment, or type it.' }, 503);
   } else if (usage && !(usage as { allowed: boolean }).allowed) {
     const daily = (usage as { reason: string }).reason === 'daily_limit';
     return json({

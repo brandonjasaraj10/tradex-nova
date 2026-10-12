@@ -139,6 +139,17 @@ Deno.serve(async (req: Request) => {
     */
     if (usageError) {
       console.error('Rate limit check failed:', usageError);
+      /*
+        ...except for accounts that have not paid. They can reach this
+        before paying (onboarding's first entry), so a broken limiter must
+        not hand them unlimited calls - they get a retry message instead.
+      */
+      if (!paid) {
+        return new Response(
+          JSON.stringify({ error: "Nova couldn't take that just now - try again in a moment." }),
+          { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     } else if (usageCheck && !(usageCheck as any).allowed) {
       const message = (usageCheck as any).reason === 'daily_limit'
         ? (paid

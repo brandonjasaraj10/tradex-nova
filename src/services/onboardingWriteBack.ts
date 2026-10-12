@@ -203,8 +203,39 @@ async function write(held: Held): Promise<void> {
   const results = await Promise.all([
     ruleRows.length ? supabase.from('journal_entry_rules').insert(ruleRows) : Promise.resolve({ error: null }),
     checkRows.length ? supabase.from('journal_entry_psychology_checks').insert(checkRows) : Promise.resolve({ error: null }),
+    /*
+      And Nova remembers it. The first entry is the one trade they chose to
+      tell her about before paying - usually the losing trade that brought
+      them here - so the first time they open Nova she should already know
+      it, not ask. Same table her remember_about_user tool writes to, so it
+      comes into every conversation with the rest of what she knows.
+    */
+    supabase.from('nova_user_memories').insert({ user_id: user.id, content: firstEntryMemory(e, held) }),
   ]);
-  for (const r of results) if (r.error) console.error('First entry saved, but a checklist tick did not:', r.error);
+  for (const r of results) if (r.error) console.error('First entry saved, but a checklist tick or Nova memory did not:', r.error);
+}
+
+/* One short line for Nova: the trade, how they were going in, and what happened in their words. */
+function firstEntryMemory(e: VoiceJournalData, held: Held): string {
+  const day = new Date(held.at || Date.now()).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  const trade = [e.symbol, e.direction?.toLowerCase(), e.position_size].filter(Boolean).join(' ');
+  const pnl = typeof e.manual_pnl === 'number' ? `, ${e.manual_pnl < 0 ? '-' : '+'}$${Math.abs(e.manual_pnl)}` : '';
+  const ratings = [
+    e.pre_trade_emotional_state != null ? `steadiness ${e.pre_trade_emotional_state}/5` : '',
+    e.pre_trade_focus != null ? `focus ${e.pre_trade_focus}/5` : '',
+    e.pre_trade_confidence != null ? `confidence ${e.pre_trade_confidence}/5` : '',
+  ].filter(Boolean).join(', ');
+  const words = (held.transcript || e.content || '')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const said = words.length > 400 ? `${words.slice(0, 400).trimEnd()}…` : words;
+  return [
+    `Their first journal entry, written with me during signup on ${day}${trade ? `: ${trade}${pnl}` : ''}.`,
+    ratings ? `Going in they rated ${ratings}.` : '',
+    said ? `In their words: "${said}"` : '',
+  ].filter(Boolean).join(' ');
 }
 
 let running: Promise<void> | null = null;
