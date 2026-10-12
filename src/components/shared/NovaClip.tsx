@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Mascot, { type MascotPose } from './Mascot';
 
 /*
@@ -31,13 +31,21 @@ const FALLBACK: Record<NovaClipName, MascotPose> = {
 export default function NovaClip({
   clip,
   height = 90,
-  loop = true,
+  loop = false,
+  playKey,
   className = '',
 }: {
   clip: NovaClipName;
   /* Roughly Nova's body height in px, to sit beside the still poses at the same size. */
   height?: number;
+  /*
+    Plays once and stops on its last frame, by default. Looping was tried
+    first and read as wrong: Duolingo's Duo does a movement and then holds
+    still, where a loop made Nova look stuck repeating himself.
+  */
   loop?: boolean;
+  /* Change this to play the clip again from the start - e.g. once per new question. */
+  playKey?: string | number;
   className?: string;
 }) {
   const [failed, setFailed] = useState(false);
@@ -50,6 +58,19 @@ export default function NovaClip({
   useEffect(() => {
     setReady(false);
   }, [clip]);
+
+  /* Replay from the start in place - swapping the element would flash the still pose in between. */
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v || playKey === undefined) return;
+    try {
+      v.currentTime = 0;
+      void v.play().catch(() => {});
+    } catch {
+      /* not ready yet - autoplay will start it */
+    }
+  }, [playKey]);
 
   /* The clip's square frame is a little bigger than Nova himself. */
   const box = Math.round(height * 1.12);
@@ -65,6 +86,7 @@ export default function NovaClip({
       )}
       <video
         key={clip}
+        ref={videoRef}
         src={`/nova/nova-${clip}.mp4`}
         autoPlay
         muted

@@ -45,7 +45,16 @@ export default function ProfileSetup({ user, onComplete }: ProfileSetupProps) {
         .from('user_profiles')
         .upsert({
           user_id: user.id,
-          first_name: firstName.trim(),
+          /*
+            The first word only. The box asks for a first name, but people
+            type their full name anyway - and Nova then greeted them as
+            "Hey Brandon Yashari". Anything after the first word is kept as
+            the last name rather than thrown away.
+          */
+          first_name: firstName.trim().split(/\s+/)[0],
+          ...(firstName.trim().split(/\s+/).length > 1
+            ? { last_name: firstName.trim().split(/\s+/).slice(1).join(' ') }
+            : {}),
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'user_id'
@@ -109,10 +118,16 @@ export default function ProfileSetup({ user, onComplete }: ProfileSetupProps) {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black">
+      {/*
+        Fades only. Each piece used to rise 16-20px into place inside a
+        scrolling box, which clips anything outside it - so on a phone the
+        text appeared to slide up out of the middle of the screen, cut off
+        halfway. Nothing here moves now except Nova.
+      */}
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.6 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.4 }}
         className="max-w-md w-full mx-4 max-h-[calc(100dvh-2rem)] overflow-y-auto"
       >
         {/*
@@ -131,19 +146,19 @@ export default function ProfileSetup({ user, onComplete }: ProfileSetupProps) {
           as one conversation rather than two designs.
         */}
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15, duration: 0.5 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.1, duration: 0.4 }}
         >
-          <MascotSays pose="wave" height={84} side="above" className="mb-7">
-            Welcome in. What should I call you?
+          <MascotSays pose="wave" clip="wave" height={100} side="above" className="mb-7">
+            Hey, I&rsquo;m Nova. What&rsquo;s your first name?
           </MascotSays>
         </motion.div>
 
         <motion.form
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.6 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3, duration: 0.4 }}
           onSubmit={handleSubmit}
           className="space-y-4"
         >

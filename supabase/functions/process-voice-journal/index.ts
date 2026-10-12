@@ -51,8 +51,13 @@ const DAILY_LIMIT = 300;
   capped at about three minutes of speech. Paying lifts all three at once,
   on the same day.
 */
-const UNPAID_PER_MINUTE_LIMIT = 3;
-const UNPAID_DAILY_LIMIT = 3;
+/*
+  10 a day, not 3: a spoken first entry now organises live as they talk,
+  which is a few passes for one entry (see FirstEntry). Still about twenty
+  cents a day at the very most for an account that never pays.
+*/
+const UNPAID_PER_MINUTE_LIMIT = 6;
+const UNPAID_DAILY_LIMIT = 10;
 const UNPAID_MAX_CHARS = 2000;
 
 const corsHeaders = {

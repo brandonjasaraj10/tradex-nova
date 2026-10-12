@@ -52,6 +52,22 @@ import { calculateChecklistScore, combinePsychologyScores } from '../../services
 */
 const MAX_CHARS = 1500;
 
+/* Confetti pieces for the day-one celebration - fixed, so every render throws the same burst. */
+const CONFETTI_COLORS = ['#3B82F6', '#60A5FA', '#93C5FD', '#FFFFFF', '#2563EB'];
+const CONFETTI = Array.from({ length: 34 }, (_, i) => {
+  const r = (n: number) => ((Math.sin(i * 12.9898 + n * 78.233) * 43758.5453) % 1 + 1) % 1;
+  return {
+    x: r(1) * 100,
+    w: 4 + r(2) * 4,
+    h: 7 + r(3) * 6,
+    color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+    spin: (r(4) - 0.5) * 720,
+    drift: (r(5) - 0.5) * 60,
+    dur: 1.6 + r(6) * 0.9,
+    delay: r(7) * 0.35,
+  };
+});
+
 const PLACEHOLDER =
   'Shorted euro dollar half a lot, got stopped out for about a hundred and eighty bucks. Moved my stop twice again, same as Tuesday.';
 
@@ -191,21 +207,114 @@ export default function FirstEntry({
     The text already in the box when they start talking is kept: live words
     are added after it rather than replacing it.
   */
-  const runRef = useRef<(override?: string) => void>(() => {});
+  /*
+    LIVE, LIKE THE REAL JOURNAL.
+
+    Talking: the words show in the box as they are heard, and every few
+    sentences Nova re-organises everything said so far into notes that
+    build underneath - the same live organise the journal does. When they
+    stop (tap, or a three-second pause) the last pass finishes and the
+    screen moves on by itself. The first version only organised after they
+    stopped, then showed a spinner and a half-drawn preview; on a phone that
+    read as laggy, and it did not always move on.
+
+    Typing still uses the button: there is no moment of "finished talking"
+    to wait for.
+
+    One pass at a time. A pass asked for while one is running is remembered,
+    and only the newest is run when the current one lands, so a fast talker
+    never stacks up requests. If the last pass already covered every word,
+    its result is the entry - no extra call.
+  */
+  const NEW_CHARS_PER_PASS = 70;
   const baseTextRef = useRef('');
   const join = (a: string, b: string) => `${a} ${b}`.trim().slice(0, MAX_CHARS);
+  const [live, setLive] = useState<VoiceJournalData | null>(null);
+  const [finishing, setFinishing] = useState(false);
+  const inflightRef = useRef<Promise<VoiceJournalData | null> | null>(null);
+  const organizedTextRef = useRef('');
+  const pendingRef = useRef<string | null>(null);
+  const lastResultRef = useRef<VoiceJournalData | null>(null);
+
+  const organize = (transcript: string): Promise<VoiceJournalData | null> => {
+    if (inflightRef.current) {
+      pendingRef.current = transcript;
+      return inflightRef.current;
+    }
+    organizedTextRef.current = transcript;
+    const p = processVoiceJournalEntry(
+      transcript,
+      undefined,
+      /* Confluences stay empty: they are the trader's own setup and nothing in onboarding asks about it. */
+      [],
+      rules,
+      undefined,
+      psychChecks,
+      'trade',
+      (partial) => setLive((prev) => ({ ...(prev ?? {}), ...partial })),
+    )
+      .then((result) => {
+        lastResultRef.current = result;
+        setLive(result);
+        return result;
+      })
+      .catch((err) => {
+        console.error('Live organise failed:', err);
+        return null;
+      })
+      .finally(() => {
+        inflightRef.current = null;
+        const next = pendingRef.current;
+        pendingRef.current = null;
+        if (next && next !== organizedTextRef.current) void organize(next);
+      });
+    inflightRef.current = p;
+    return p;
+  };
+
+  /* End of speaking: let the running pass land, run one more only if words were added since, then move on. */
+  const finishSpoken = async (transcript: string) => {
+    if (!transcript.trim()) return;
+    setFinishing(true);
+    setFailed(false);
+    trackEvent('onboarding_entry_started', { chars: transcript.length, via: 'voice' });
+    try {
+      if (inflightRef.current) await inflightRef.current;
+      pendingRef.current = null;
+      let result = organizedTextRef.current === transcript ? lastResultRef.current : null;
+      if (!result) result = await organize(transcript);
+      if (!result) throw new Error('no entry');
+      const merged = { ...result, ...ratings };
+      setEntry(merged);
+      trackEvent('onboarding_entry_written', { symbol: result.symbol ?? null, via: 'voice' });
+    } catch (err) {
+      console.error('Could not write the first entry:', err);
+      setFailed(true);
+      trackEvent('onboarding_entry_failed');
+    } finally {
+      setFinishing(false);
+    }
+  };
+
+  const onHeard = (t: string) => {
+    const full = join(baseTextRef.current, t);
+    setText(full);
+    if (full.length - organizedTextRef.current.length >= NEW_CHARS_PER_PASS) void organize(full);
+  };
+  const finishRef = useRef(finishSpoken);
+  finishRef.current = finishSpoken;
   const speech = useVoice({
-    onInterim: (t: string) => setText(join(baseTextRef.current, t)),
+    onInterim: onHeard,
     onTranscript: (t: string) => {
       const full = join(baseTextRef.current, t);
       setText(full);
-      runRef.current(full);
+      void finishRef.current(full);
     },
   });
   const recorder = useRecorder((t: string) => {
     const full = join(baseTextRef.current, t);
     setText(full);
-    runRef.current(full);
+    void finishRef.current(full);
   });
   const useSpeech = speech.isSupported;
   const isSupported = useSpeech || recorder.isSupported;
@@ -214,47 +323,29 @@ export default function FirstEntry({
   const toggleMic = () => {
     if (isListening) return useSpeech ? speech.stopListening() : recorder.stop();
     baseTextRef.current = text;
+    setLive(null);
+    organizedTextRef.current = '';
+    lastResultRef.current = null;
     return useSpeech ? speech.startListening() : void recorder.start();
   };
 
   const lines = useMemo(() => toLines(entry?.content), [entry?.content]);
+  const liveLines = useMemo(() => toLines(live?.content), [live?.content]);
 
-  const run = async (override?: string) => {
-    const transcript = (override ?? text).trim();
-    if (!transcript || writing) return;
-
+  /* Typed path: one organise, on the button. */
+  const run = async () => {
+    const transcript = text.trim();
+    if (!transcript || writing || finishing) return;
     setWriting(true);
     setFailed(false);
-    trackEvent('onboarding_entry_started', { chars: transcript.length });
-
+    trackEvent('onboarding_entry_started', { chars: transcript.length, via: 'typed' });
     try {
-      /*
-        Streamed, so the fields appear as Nova writes them rather than after
-        a spinner. The call takes eight to ten seconds whatever happens; the
-        difference is whether that time looks like work or like waiting.
-      */
       const result = await processVoiceJournalEntry(
-        transcript,
-        undefined,
-        /*
-          Confluences stay empty on purpose. They are the trader's own setup
-          and nothing in the eight questions asks about it, so there is
-          nothing honest to hand over.
-        */
-        [],
-        rules,
-        undefined,
-        psychChecks,
-        'trade',
-        (partial) => setEntry((prev) => ({ ...(prev ?? {}), ...partial, ...ratings })),
+        transcript, undefined, [], rules, undefined, psychChecks, 'trade',
+        (partial) => setLive((prev) => ({ ...(prev ?? {}), ...partial })),
       );
-      /* What they tapped beats anything Nova read into the text. */
-      const merged = { ...result, ...ratings };
-      setEntry(merged);
-      trackEvent('onboarding_entry_written', {
-        symbol: result.symbol ?? null,
-        hasPnl: result.manual_pnl !== undefined && result.manual_pnl !== null,
-      });
+      setEntry({ ...result, ...ratings });
+      trackEvent('onboarding_entry_written', { symbol: result.symbol ?? null, via: 'typed' });
     } catch (err) {
       console.error('Could not write the first entry:', err);
       setFailed(true);
@@ -268,8 +359,6 @@ export default function FirstEntry({
   /* The result                                                        */
   /* ---------------------------------------------------------------- */
 
-  runRef.current = (override?: string) => void run(override);
-
   /*
     DAY ONE, CELEBRATED - BEFORE THE ENTRY IS SHOWN.
 
@@ -282,7 +371,9 @@ export default function FirstEntry({
     goal-gradient effect). So the screen says the first entry is done and
     puts it on their own goal as day 1 of N, already filled in.
   */
-  if (entry && !writing && !celebrated) {
+  const busy = writing || finishing;
+
+  if (entry && !busy && !celebrated) {
     const target = goalDays && goalDays > 0 ? goalDays : null;
     /* This week, Sunday first, the way Duolingo's streak row reads. */
     const now = new Date();
@@ -292,9 +383,26 @@ export default function FirstEntry({
       tomorrow: i === (now.getDay() + 1) % 7,
     }));
     return (
-      <div className="text-center">
+      <div className="relative text-center">
+        {/*
+          Confetti, once, in the brand's blues and white - Duolingo throws
+          confetti at exactly this moment. Small rectangles that fall and
+          tumble over about two seconds, then are gone; nothing loops.
+        */}
+        <div className="pointer-events-none absolute inset-x-0 -top-16 h-[420px] overflow-hidden" aria-hidden="true">
+          {CONFETTI.map((c, i) => (
+            <motion.span
+              key={i}
+              className="absolute top-0 rounded-[1px]"
+              style={{ left: `${c.x}%`, width: c.w, height: c.h, backgroundColor: c.color }}
+              initial={{ y: -20, opacity: 0, rotate: 0 }}
+              animate={{ y: [ -20, 380 ], opacity: [0, 1, 1, 0], rotate: c.spin, x: [0, c.drift] }}
+              transition={{ duration: c.dur, delay: c.delay, ease: 'easeIn' }}
+            />
+          ))}
+        </div>
         <div className="relative mx-auto mb-2 w-fit">
-          <NovaClip clip="celebrate" height={120} className="mx-auto" />
+          <NovaClip clip="celebrate" height={130} className="mx-auto" />
           {/* A small burst behind the trophy - drawn, not an emoji. */}
           <motion.div
             initial={{ scale: 0, rotate: -20 }}
@@ -375,7 +483,7 @@ export default function FirstEntry({
     );
   }
 
-  if (entry && !writing) {
+  if (entry && !busy) {
     const pnl = entry.manual_pnl;
     const facts = [
       entry.symbol,
@@ -634,7 +742,7 @@ export default function FirstEntry({
   return (
     <div>
       <MascotSays pose="lean" height={56} side="above" className="mb-4">
-        {writing ? 'Reading it now…' : 'Messy is fine. I’ll sort it out.'}
+        {busy ? 'Finishing up…' : isListening ? 'I’m listening.' : 'Messy is fine. I’ll sort it out.'}
       </MascotSays>
 
       <p className="text-center text-[11px] uppercase tracking-[0.14em] text-gray-500 mb-3">
@@ -661,7 +769,7 @@ export default function FirstEntry({
           value={text}
           onChange={(e) => setText(e.target.value.slice(0, MAX_CHARS))}
           maxLength={MAX_CHARS}
-          disabled={writing}
+          disabled={busy || isListening}
           rows={4}
           placeholder={PLACEHOLDER}
           className="w-full rounded-xl border border-white/10 bg-brand-surface px-4 py-3.5
@@ -669,7 +777,7 @@ export default function FirstEntry({
             focus:outline-none focus:border-brand-blue-light/50 disabled:opacity-60 resize-none"
         />
         {/* Only drawn where one of the two ways to listen actually works. */}
-        {isSupported && !writing && (
+        {isSupported && !busy && (
           <button
             type="button"
             disabled={transcribing}
@@ -724,12 +832,12 @@ export default function FirstEntry({
       <button
         type="button"
         onClick={() => void run()}
-        disabled={!text.trim() || writing}
+        disabled={!text.trim() || busy || isListening}
         className="mt-5 w-full inline-flex items-center justify-center gap-2 px-8 py-3.5
           rounded-full bg-white text-black text-[15px] font-medium hover:bg-gray-200
           transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white"
       >
-        {writing ? (
+        {busy ? (
           <>
             <Loader2 size={17} className="animate-spin" />
             Writing it up
@@ -743,13 +851,13 @@ export default function FirstEntry({
       </button>
 
       {/* Nova's notes building as they stream in - the same moment as the app's live organize. */}
-      {writing && lines.some((l) => !l.heading) && (
+      {(isListening || busy) && liveLines.some((l) => !l.heading) && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           className="mt-4 rounded-xl border border-white/10 bg-brand-surface px-4 py-3.5 flex flex-col gap-1.5"
         >
-          {lines.slice(-6).map((line, i) =>
+          {liveLines.slice(-6).map((line, i) =>
             line.heading ? (
               <p key={i} className="text-[10px] uppercase tracking-[0.12em] text-blue-400 mt-1 first:mt-0">{line.text}</p>
             ) : (
@@ -762,7 +870,7 @@ export default function FirstEntry({
         </motion.div>
       )}
 
-      {!writing && (
+      {!busy && !isListening && (
         <button
           type="button"
           onClick={() => {

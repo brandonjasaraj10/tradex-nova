@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useAnimationControls } from 'framer-motion';
 import { Check, ArrowRight } from 'lucide-react';
 import {
   saveInstrument, saveExperience, saveStruggles, saveProfileAnswers,
@@ -223,7 +223,6 @@ function Progress({ step }: { step: Step }) {
   question, the pose changing as it goes so it feels alive rather than
   pasted in.
 */
-const ASK_POSES = ['idle', 'lean', 'present', 'arms'] as const;
 
 const GOAL_REPLY: Record<string, string> = {
   profitable: 'That’s exactly what this is built for.',
@@ -314,80 +313,74 @@ function useTyped(text: string) {
 function Ask({ step, title, subtitle, reacting = false }: { step: Step; title: string; subtitle?: string; reacting?: boolean }) {
   const index = questionIndex(step) ?? 0;
   const { shown: typed, phase } = useTyped(title);
-  const pose = reacting ? 'arms' : ASK_POSES[index % ASK_POSES.length];
+
+  /*
+    NOVA IS ANIMATED, THE SCREEN IS NOT.
+
+    The page transitions that slid whole screens sideways gave Brandon a
+    headache; a character moving is a different thing, and it is most of
+    what makes Duo feel alive. So the motion is Nova's alone:
+
+    - each new question, the idle clip plays once (breathes, blinks, tilts)
+      and he settles with a small spring - then holds still, the way Duo does,
+      rather than looping;
+    - while the words type, a small talking bob;
+    - when he answers back, the nod clip plays once, he bounces gently, and
+      two soft blue rings spread from his head - "heard you" - slowly enough
+      to see.
+
+    Both clips are mounted together and swapped by opacity, so switching to
+    the nod never flashes a still pose in between.
+  */
+  const body = useAnimationControls();
+  useEffect(() => {
+    if (reacting) {
+      void body.start({ y: [0, -10, 0, -4, 0], rotate: [0, 3, 0, 1.5, 0], transition: { duration: 1.1, ease: 'easeOut' } });
+    } else {
+      void body.start({ y: [5, 0], scale: [0.96, 1], transition: { type: 'spring', stiffness: 260, damping: 16 } });
+    }
+  }, [index, reacting, body]);
+
   return (
     <>
       <Progress step={step} />
-      <div className="flex items-end gap-3 mb-6">
-        {/*
-          NOVA IS ANIMATED, THE SCREEN IS NOT.
-
-          The page transitions that slid whole screens sideways gave Brandon a
-          headache; a character moving is a different thing, and it is most
-          of what makes Duo feel alive. So the motion lives on Nova alone:
-          a slow sway while waiting, a springy hop in a new pose each time a
-          question arrives, and a happy bounce when he answers back.
-        */}
-        <motion.div
-          className="flex-shrink-0 origin-bottom"
-          animate={{ y: [0, -3, 0], rotate: [-1.5, 1.5, -1.5] }}
-          transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
-        >
-          {/* Talking: a quick small bob while the words are coming in. */}
+      <div className="flex items-start gap-3 mb-6">
+        <div className="relative flex-shrink-0">
           <motion.div
             className="origin-bottom"
-            animate={phase === 'typing' ? { y: [0, -2.5, 0] } : { y: 0 }}
-            transition={phase === 'typing' ? { duration: 0.28, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.2 }}
+            animate={phase === 'typing' ? { y: [0, -2, 0] } : { y: 0 }}
+            transition={phase === 'typing' ? { duration: 0.3, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.2 }}
           >
-          <motion.div
-            key={`${pose}-${index}-${reacting}`}
-            className="origin-bottom relative"
-            initial={{ y: 10, scale: 0.9, rotate: -6, opacity: 0.6 }}
-            animate={
-              reacting
-                ? { y: [10, -14, 0, -6, 0], scale: [0.9, 1.06, 1, 1.02, 1], rotate: [-6, 6, 0, 3, 0], opacity: 1 }
-                : { y: 0, scale: 1, rotate: 0, opacity: 1 }
-            }
-            transition={reacting ? { duration: 0.8, ease: 'easeOut' } : { type: 'spring', stiffness: 420, damping: 18 }}
-          >
-            {/* The real animation now: idle breathing and blinking, a nod when he answers back. */}
-            <NovaClip clip={reacting ? 'nod' : 'idle'} height={96} />
-            {/* A burst when he answers back. */}
-            {reacting && [0, 1, 2, 3, 4, 5, 6].map((i) => (
-              <motion.span
-                key={i}
-                aria-hidden="true"
-                className="absolute left-1/2 top-3 w-1.5 h-1.5 rounded-full bg-blue-400"
-                initial={{ opacity: 0, x: 0, y: 0, scale: 0.6 }}
-                animate={{
-                  opacity: [0, 1, 0],
-                  x: Math.cos((i / 7) * Math.PI * 2) * 34,
-                  y: Math.sin((i / 7) * Math.PI * 2) * 30 - 6,
-                  scale: [0.6, 1.2, 0.8],
-                }}
-                transition={{ duration: 0.75, delay: 0.1, ease: 'easeOut' }}
-              />
-            ))}
+            <motion.div animate={body} className="relative origin-bottom">
+              <div className={`transition-opacity duration-200 ${reacting ? 'opacity-0' : 'opacity-100'}`}>
+                <NovaClip clip="idle" height={96} playKey={index} />
+              </div>
+              <div className={`absolute inset-0 transition-opacity duration-200 ${reacting ? 'opacity-100' : 'opacity-0'}`}>
+                <NovaClip clip="nod" height={96} playKey={reacting ? `r-${index}` : undefined} />
+              </div>
+            </motion.div>
           </motion.div>
-          </motion.div>
-          {/* The ground: a soft shadow that squashes as he lands. */}
-          <motion.div
-            key={`shadow-${pose}-${index}-${reacting}`}
-            aria-hidden="true"
-            className="mx-auto -mt-1 h-1.5 w-12 rounded-full bg-blue-400/20 blur-[3px]"
-            initial={{ scaleX: 0.6, opacity: 0.3 }}
-            animate={reacting ? { scaleX: [0.6, 0.5, 1.15, 1], opacity: [0.3, 0.2, 0.6, 0.45] } : { scaleX: [0.6, 1.15, 1], opacity: [0.3, 0.6, 0.45] }}
-            transition={{ duration: reacting ? 0.8 : 0.45, ease: 'easeOut' }}
-          />
-        </motion.div>
-        <div className="relative mb-3 flex-1 rounded-2xl border border-white/10 bg-brand-elevated px-4 py-3">
-          {/* The full line sets the bubble's size up front, so it does not grow as the text types in. */}
-          <p className="text-[17px] sm:text-[19px] leading-snug font-semibold text-balance invisible" aria-hidden="true">
-            {title}
-          </p>
-          <p className="absolute inset-x-4 top-3 text-[17px] sm:text-[19px] leading-snug font-semibold text-white text-balance">
+          {reacting && [0, 1].map((i) => (
+            <motion.span
+              key={i}
+              aria-hidden="true"
+              className="absolute left-1/2 top-[22%] -ml-5 w-10 h-10 rounded-full border-2 border-brand-blue-light/60 pointer-events-none"
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: [0.5, 2.1], opacity: [0.8, 0] }}
+              transition={{ duration: 1.4, delay: 0.15 + i * 0.35, ease: 'easeOut' }}
+            />
+          ))}
+        </div>
+
+        {/*
+          A fixed-size bubble. It used to size itself to each question, so it
+          grew and shrank from one question to the next and read as jumpy.
+          Now every bubble is the same box and the words fill it.
+        */}
+        <div className="relative mt-2 flex-1 min-h-[108px] rounded-2xl border border-white/10 bg-brand-elevated px-4 py-3">
+          <p className="text-[16px] sm:text-[18px] leading-snug font-semibold text-white" aria-hidden="true">
             {phase === 'dots' ? (
-              <span className="inline-flex items-center gap-1 h-[1.4em]" aria-hidden="true">
+              <span className="inline-flex items-center gap-1 h-[1.4em]">
                 {[0, 1, 2].map((i) => (
                   <motion.span
                     key={i}
@@ -402,10 +395,10 @@ function Ask({ step, title, subtitle, reacting = false }: { step: Step; title: s
             )}
           </p>
           <span className="sr-only">{title}</span>
-          {subtitle && <p className="mt-1 text-[12.5px] text-gray-500">{subtitle}</p>}
+          {subtitle && <p className="mt-1.5 text-[12.5px] text-gray-500">{subtitle}</p>}
           <span
             aria-hidden="true"
-            className="absolute -left-[6px] bottom-4 w-3 h-3 rotate-45 bg-brand-elevated border-l border-b border-white/10"
+            className="absolute -left-[6px] top-8 w-3 h-3 rotate-45 bg-brand-elevated border-l border-b border-white/10"
           />
         </div>
       </div>
