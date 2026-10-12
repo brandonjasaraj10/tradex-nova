@@ -8,8 +8,6 @@ const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY ?? '' });
 const MODEL = 'claude-sonnet-5';
 const PER_MINUTE_LIMIT = 10;
 const DAILY_LIMIT = 100;
-const UNPAID_PER_MINUTE_LIMIT = 3;
-const UNPAID_DAILY_LIMIT = 5;
 
 const SYSTEM_PROMPT = `You are Nova, the AI trading assistant built into TradeX -- a comprehensive trading journal and performance analytics platform. You are not a generic chatbot. You are the intelligence layer of TradeX, deeply integrated with the user's trading data, journal entries, psychology logs, performance metrics, NOVA Score, confluences, and trading rules.
 
@@ -1054,49 +1052,19 @@ Deno.serve(async (req: Request) => {
     }
     const userId = authUser.id;
 
-    /*
-      Accounts without a subscription get a handful, not the full 100.
-
-      Nothing in the app shows Nova chat before paying, but every signup has
-      a login, and with onboarding now running before the paywall there are
-      far more unpaid logins about - each of which could call this directly
-      at full price. Paid limits (per tier, nova_daily_limit) are unchanged.
-    */
-    const { data: subscribed, error: subError } = await supabaseClient.rpc('has_active_subscription');
-    if (subError) console.error('Subscription check failed:', subError);
-    const paid = subscribed === true;
-
-    const { data: usageCheck, error: usageError } = paid
-      ? await supabaseClient
-          .rpc('check_and_increment_nova_usage', {
-            p_user_id: userId,
-            p_per_minute_limit: PER_MINUTE_LIMIT,
-            p_daily_limit: DAILY_LIMIT,
-          })
-          .single()
-      : await supabaseClient
-          .rpc('check_and_increment_nova_usage', {
-            p_user_id: userId,
-            p_per_minute_limit: UNPAID_PER_MINUTE_LIMIT,
-            p_daily_limit: UNPAID_DAILY_LIMIT,
-            p_feature: 'nova_chat_unpaid',
-          })
-          .single();
+    const { data: usageCheck, error: usageError } = await supabaseClient
+      .rpc('check_and_increment_nova_usage', {
+        p_user_id: userId,
+        p_per_minute_limit: PER_MINUTE_LIMIT,
+        p_daily_limit: DAILY_LIMIT,
+      })
+      .single();
 
     if (usageError) {
       console.error('Rate limit check failed:', usageError);
-      /* A broken limiter never hands an unpaid account unlimited messages. */
-      if (!paid) {
-        return new Response(
-          JSON.stringify({ error: "Nova couldn't take that just now - try again in a moment." }),
-          { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
     } else if (usageCheck && !(usageCheck as any).allowed) {
       const limitMessage = (usageCheck as any).reason === 'daily_limit'
-        ? (paid
-          ? "You've hit today's message limit with Nova. It resets at midnight - talk soon!"
-          : "Start your free trial to keep talking with Nova.")
+        ? "You've hit today's message limit with Nova. It resets at midnight - talk soon!"
         : "Whoa, slow down a little there! Give it a few seconds and try again.";
       return new Response(
         JSON.stringify({ error: limitMessage }),
