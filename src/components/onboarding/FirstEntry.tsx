@@ -54,7 +54,7 @@ const MAX_CHARS = 1500;
 
 /* Confetti pieces for the day-one celebration - fixed, so every render throws the same burst. */
 const CONFETTI_COLORS = ['#3B82F6', '#60A5FA', '#93C5FD', '#FFFFFF', '#2563EB'];
-const CONFETTI = Array.from({ length: 34 }, (_, i) => {
+export const CONFETTI = Array.from({ length: 34 }, (_, i) => {
   const r = (n: number) => ((Math.sin(i * 12.9898 + n * 78.233) * 43758.5453) % 1 + 1) % 1;
   return {
     x: r(1) * 100,
