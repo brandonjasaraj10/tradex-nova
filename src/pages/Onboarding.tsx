@@ -652,7 +652,7 @@ export default function Onboarding({
             <NovaTalk
               text={reply ?? talk.text}
               subtitle={reply ? undefined : talk.subtitle}
-              action={reply ? 'nod' : step === 'welcome' ? 'wave' : undefined}
+              action={step === 'welcome' && !reply ? 'wave' : undefined}
               actionKey={reply ? `reply-${reply}` : step === 'welcome' ? 'welcome' : undefined}
               reacting={!!reply}
               variant={HERO_STEPS.has(typeof step === 'string' ? step : '') ? 'hero' : 'side'}

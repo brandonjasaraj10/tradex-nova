@@ -87,8 +87,7 @@ const PUBLIC_FILES = [
   /* Nova's animations - see components/shared/NovaClip. */
   'nova/nova-idle-loop.webp',
   'nova/nova-wave.webp',
-  'nova/nova-celebrate.webp',
-  'nova/nova-nod.webp'
+  'nova/nova-celebrate.webp'
 ];
 
 export default defineConfig({

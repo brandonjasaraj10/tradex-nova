@@ -26,7 +26,13 @@ import Mascot from './Mascot';
   Black backgrounds only - the frames are not transparent.
 */
 
-export type NovaAction = 'wave' | 'nod' | 'celebrate';
+/*
+  Wave and celebrate were regenerated (Kling O3, first-last-frame) to start
+  AND end on the idle loop's own first frame, so they blend in and out of
+  it with no pose change at all. A reply is a gentle bounce on the idle
+  rather than a clip - seamless by construction.
+*/
+export type NovaAction = 'wave' | 'celebrate';
 
 const ACTION_MS = 5000; /* every action clip is 5 seconds */
 const blobs: Partial<Record<NovaAction, Promise<Blob>>> = {};
