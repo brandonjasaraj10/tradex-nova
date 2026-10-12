@@ -445,7 +445,7 @@ export default function Onboarding({
     window.setTimeout(() => {
       setReply(null);
       next();
-    }, replyHoldMs(line)); /* the dots, the typing, then time to actually read it */
+    }, replyHoldMs(line)); /* the words appearing, then time to actually read it */
   };
 
   const answerWhy = (value: string) => {
@@ -496,7 +496,7 @@ export default function Onboarding({
   const [entryTalk, setEntryTalk] = useState<{ text: string; subtitle?: string } | null | undefined>(undefined);
   const talk: { text: string; subtitle?: string } | null =
     ask ? { text: ask.title, subtitle: ask.subtitle }
-    : step === 'welcome' ? { text: firstName ? `Hey ${firstName}, I’m Nova. A minute of quick taps and I’ll build your plan.` : 'Hey, I’m Nova. A minute of quick taps and I’ll build your plan.' }
+    : step === 'welcome' ? { text: firstName ? `Nice to meet you, ${firstName}. A minute of quick taps and I’ll build your plan.` : 'A minute of quick taps and I’ll build your plan.' }
     : step === 'thegap' ? { text: 'Here’s the thing nobody tells you.' }
     : step === 'thinking' ? { text: 'Give me a second, I’m putting this together.' }
     : step === 'pattern' ? { text: plan.headline }

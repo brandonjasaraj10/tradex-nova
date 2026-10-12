@@ -22,49 +22,39 @@ import NovaClip, { type NovaAction } from '../shared/NovaClip';
 
   And on the very first screen he walks in from the side before he speaks.
 
-  PACE: slower again at Brandon's request - longer typing dots, slower
-  typing, unhurried glides.
+  PACE: slow and unhurried at Brandon's request - soft word fades,
+  long glides.
 */
 
-const TYPE_STEP_MS = 40; /* per two characters */
-const DOTS_MS = 700;
+/*
+  How a line appears. Letter-by-letter typing, with the typing dots and a
+  bubble that grew as it went, looked cheap to Brandon ("way more clean,
+  simple, on brand"). Now the bubble arrives at its full size and the words
+  fade up in one soft sweep - quick, quiet, nothing jumping.
+*/
+const WORD_STEP_MS = 45;
+const WORD_FADE_S = 0.4;
 const GLIDE = { duration: 1.1, ease: [0.4, 0, 0.2, 1] as [number, number, number, number] };
 
-export function useTyped(text: string, startDelayMs = 0) {
-  const [shown, setShown] = useState(text);
-  const [phase, setPhase] = useState<'dots' | 'typing' | 'done'>('done');
-  useEffect(() => {
-    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
-      setShown(text);
-      setPhase('done');
-      return;
-    }
-    setShown('');
-    setPhase('dots');
-    let i = 0;
-    let id = 0;
-    const start = window.setTimeout(() => {
-      setPhase('typing');
-      id = window.setInterval(() => {
-        i += 2;
-        setShown(text.slice(0, i));
-        if (i >= text.length) {
-          window.clearInterval(id);
-          setPhase('done');
-        }
-      }, TYPE_STEP_MS);
-    }, DOTS_MS + startDelayMs);
-    return () => {
-      window.clearTimeout(start);
-      window.clearInterval(id);
-    };
-  }, [text, startDelayMs]);
-  return { shown, phase };
+/* How long the words take to finish appearing. */
+function revealMs(text: string) {
+  return text.split(/\s+/).length * WORD_STEP_MS + WORD_FADE_S * 1000;
 }
 
-/* How long a reply should stay up: the dots, the typing, then time to actually read it. */
+/* True once the whole line is showing, so the subtitle can follow it. */
+function useRevealed(text: string, startDelayMs = 0) {
+  const [done, setDone] = useState(false);
+  useEffect(() => {
+    setDone(false);
+    const t = window.setTimeout(() => setDone(true), startDelayMs + revealMs(text));
+    return () => window.clearTimeout(t);
+  }, [text, startDelayMs]);
+  return done;
+}
+
+/* How long a reply should stay up: the words appearing, then time to actually read it. */
 export function replyHoldMs(text: string) {
-  return DOTS_MS + (text.length / 2) * TYPE_STEP_MS + 2000;
+  return revealMs(text) + 2200;
 }
 
 /* How long the walk-in takes, so the bubble can wait for it. */
@@ -98,7 +88,8 @@ export default function NovaTalk({
     const t = window.setTimeout(() => setWalking(false), WALK_MS);
     return () => window.clearTimeout(t);
   }, [walking]);
-  const { shown, phase } = useTyped(text, walked ? WALK_MS : 0);
+  const startDelay = walked ? WALK_MS : 0;
+  const revealed = useRevealed(text, startDelay);
   const hero = variant === 'hero';
   /*
     Smaller than before. The animation frames are 320px; drawn much bigger
@@ -143,8 +134,6 @@ export default function NovaTalk({
         >
           <motion.div
             className="origin-bottom"
-            animate={phase === 'typing' ? { y: [0, -1.5, 0] } : { y: 0 }}
-            transition={phase === 'typing' ? { duration: 0.5, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.5 }}
           >
             <motion.div animate={body} className="relative origin-bottom">
               <NovaClip height={size} action={walking ? undefined : action} actionKey={actionKey} />
@@ -159,15 +148,9 @@ export default function NovaTalk({
     <motion.div
       layoutId="nova-bubble"
       layout
-      /*
-        The bubble GROWS with the words. It used to be a fixed-size box that
-        appeared empty and was then filled - Brandon found that odd. Now it
-        starts as a small bubble holding the typing dots and expands line
-        by line as the text types, the way a chat message does; when Nova
-        moves to a new line it shrinks back to the dots first.
-      */
-      transition={{ layout: changedPlace ? GLIDE : { duration: 0.22, ease: 'easeOut' } }}
-      initial={{ opacity: 0, scale: 0.85 }}
+      /* Sized to the whole line from the start; it eases to the new size when the line changes. */
+      transition={{ layout: changedPlace ? GLIDE : { duration: 0.35, ease: 'easeOut' } }}
+      initial={{ opacity: 0, scale: 0.96 }}
       animate={{ opacity: 1, scale: 1 }}
       style={{ originX: hero ? 0.5 : 0, originY: hero ? 1 : 0.5 }}
       className={`relative z-10 rounded-2xl border border-white/10 bg-brand-elevated px-4 py-3 w-fit ${
@@ -175,28 +158,27 @@ export default function NovaTalk({
       }`}
     >
       <p className="text-[16px] sm:text-[18px] leading-snug font-semibold text-white" aria-hidden="true">
-        {phase === 'dots' ? (
-          <span className="inline-flex items-center gap-1 h-[1.4em]">
-            {[0, 1, 2].map((i) => (
-              <motion.span
-                key={i}
-                className="w-1.5 h-1.5 rounded-full bg-gray-400"
-                animate={{ opacity: [0.3, 1, 0.3], y: [0, -2, 0] }}
-                transition={{ duration: 0.9, repeat: Infinity, delay: i * 0.18 }}
-              />
-            ))}
-          </span>
-        ) : (
-          shown
-        )}
+        {/* Keyed by the line, so each new line sweeps in fresh. */}
+        <span key={text}>
+          {text.split(' ').map((word, w) => (
+            <motion.span
+              key={w}
+              className="inline-block"
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: (startDelay + w * WORD_STEP_MS) / 1000, duration: WORD_FADE_S, ease: 'easeOut' }}
+            >
+              {word}
+              {w < text.split(' ').length - 1 ? '\u00a0' : ''}
+            </motion.span>
+          ))}
+        </span>
       </p>
       <span className="sr-only">{text}</span>
       {/*
-        Added once the line has typed, not there-but-invisible from the start:
-        a hidden subtitle still takes its space, and it held the bubble at
-        full size around the typing dots - the "preloaded bubble" look.
+        Follows once the line is showing - a quieter second beat.
       */}
-      {subtitle && phase === 'done' && (
+      {subtitle && revealed && (
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -227,7 +209,7 @@ export default function NovaTalk({
     <motion.div
       layout
       /* Slow only when he is changing places; a new line on the same spot just resizes. */
-      transition={changedPlace ? GLIDE : { duration: 0.22, ease: 'easeOut' }}
+      transition={changedPlace ? GLIDE : { duration: 0.35, ease: 'easeOut' }}
       className={hero ? 'flex flex-col items-center mb-6' : 'flex items-start gap-3 mb-6'}
     >
       {hero ? [<Fragment key="bubble">{bubble}</Fragment>, <Fragment key="figure">{figure}</Fragment>]
