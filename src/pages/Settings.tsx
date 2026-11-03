@@ -26,6 +26,7 @@ import { useToast } from '../lib/toastContext';
 import PasswordStrengthIndicator, { isPasswordValid } from '../components/auth/PasswordStrengthIndicator';
 import { usePreferences } from '../lib/preferencesContext';
 import { useTour } from '../lib/tourContext';
+import { useTurnstile, isCaptchaError, CAPTCHA_ERROR_MESSAGE } from '../lib/turnstile';
 import GoalCardSetting from '../components/dashboard/GoalCardSetting';
 /*
   Settings used to declare its own three-field Subscription type and query the
@@ -52,6 +53,8 @@ export default function Settings() {
   const { refreshPreferences } = usePreferences();
   const { restartTour } = useTour();
   const [activeTab, setActiveTab] = useState('personal');
+  /* Only on the tab that re-checks the password, so other Settings tabs load nothing extra. */
+  const turnstile = useTurnstile(activeTab === 'security');
   const [loading, setLoading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
@@ -355,10 +358,13 @@ export default function Settings() {
       const { error: reauthError } = await supabase.auth.signInWithPassword({
         email: user.email,
         password: passwords.current,
+        options: { captchaToken: await turnstile.getToken() },
       });
 
       if (reauthError) {
-        setPasswordError('Current password is incorrect');
+        turnstile.reset();
+        /* A refused check says nothing about the password, so it must not claim it was wrong. */
+        setPasswordError(isCaptchaError(reauthError) ? CAPTCHA_ERROR_MESSAGE : 'Current password is incorrect');
         setLoading(false);
         return;
       }
@@ -636,6 +642,8 @@ export default function Settings() {
                   {passwords.new && (
                     <PasswordStrengthIndicator password={passwords.new} />
                   )}
+
+                  <div ref={turnstile.containerRef} className="empty:hidden" />
 
                   {passwordError && (
                     <div className="text-sm text-red-400 bg-red-400/10 border border-red-400/20 p-3 rounded-lg">

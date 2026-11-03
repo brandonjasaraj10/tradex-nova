@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTurnstile, isCaptchaError, CAPTCHA_ERROR_MESSAGE } from '../lib/turnstile';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../lib/auth';
@@ -76,6 +77,7 @@ export default function Auth() {
   const [resetEmail, setResetEmail] = useState('');
   const navigate = useNavigate();
   const { signIn, signUp } = useAuth();
+  const turnstile = useTurnstile();
 
   useEffect(() => {
     const earlyAccess = localStorage.getItem('tradex_early_access');
@@ -95,7 +97,7 @@ export default function Auth() {
 
     try {
       if (authMode === 'login') {
-        await signIn(email, password);
+        await signIn(email, password, await turnstile.getToken());
         setTimeout(() => navigate('/dashboard'), 100);
       } else if (authMode === 'signup') {
         if (!isPasswordValid(password)) {
@@ -108,7 +110,7 @@ export default function Auth() {
           setLoading(false);
           return;
         }
-        await signUp(email, password);
+        await signUp(email, password, await turnstile.getToken());
         /*
           Straight to /dashboard, the same as signing in, and the gates in
           PrivateLayout take it from there: profile, then the three
@@ -127,7 +129,8 @@ export default function Auth() {
         setTimeout(() => navigate('/dashboard'), 100);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      turnstile.reset();
+      setError(isCaptchaError(err) ? CAPTCHA_ERROR_MESSAGE : err instanceof Error ? err.message : 'An error occurred');
       setLoading(false);
     }
   };
@@ -797,6 +800,9 @@ export default function Auth() {
           {authMode === 'forgot-password' && renderForgotPasswordForm()}
           {authMode === 'verify-code' && renderVerifyCodeForm()}
           {authMode === 'reset-password' && renderResetPasswordForm()}
+
+          {/* Outside the forms so it survives switching between them. Empty unless Cloudflare needs a challenge. */}
+          <div ref={turnstile.containerRef} className="flex justify-center empty:hidden [&:has(iframe)]:mt-4" />
 
           {(authMode === 'login' || authMode === 'signup') && (
             <div className="mt-6 text-center">
