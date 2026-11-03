@@ -140,13 +140,17 @@ function PrivateLayout() {
 
   useEffect(() => {
     if (!justCompletedCheckout || !user) return;
-    let cancelled = false;
+    /*
+      Not cancelled on cleanup. The check can take ten seconds and the welcome
+      animation clears ?success=true well before that, which re-runs this
+      effect - so a decline used to be dropped without a word, leaving them in
+      an app the database had just locked them out of.
+    */
     verifyTrialCard().then((result) => {
-      if (!cancelled && result.declined && result.error) {
-        showToast(result.error, 'error');
-      }
+      if (!result.declined) return;
+      if (result.error) showToast(result.error, 'error');
+      void refreshSubscription();
     });
-    return () => { cancelled = true; };
   }, [justCompletedCheckout, user]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);

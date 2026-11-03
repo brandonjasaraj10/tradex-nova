@@ -202,7 +202,7 @@ interface PaymentProps {
 }
 
 export default function Payment({ onSubscriptionComplete, isFirstTime = false }: PaymentProps) {
-  const { pastDue, profile } = useAuth();
+  const { pastDue, cardDeclined, profile } = useAuth();
 
   /*
     The headline is whatever they said was wrong thirty seconds ago.
@@ -872,6 +872,16 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
               That is a discipline, not a detector, and it is what the daily
               process score actually measures.
             */}
+            {cardDeclined && (
+              <p
+                role="alert"
+                className="mb-4 sm:mb-6 mx-auto max-w-md rounded-xl border border-red-500/20 bg-red-500/10
+                  px-4 py-3 text-[13px] leading-relaxed text-red-300 text-balance"
+              >
+                Your card didn&rsquo;t go through, so nothing was charged and your plan
+                isn&rsquo;t active. Try another card, or pick the monthly plan.
+              </p>
+            )}
             <h1 className="text-[26px] sm:text-5xl leading-[1.1] sm:leading-[1.08] font-semibold
               tracking-[-0.035em] text-white text-balance">
               {isFounder ? 'One plan. Everything in it.' : (OUTCOME_HEADLINE[goal?.goal ?? ''] ?? 'Start mastering your trading psychology.')}

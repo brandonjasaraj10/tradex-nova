@@ -57,6 +57,12 @@ type AuthContextType = {
     and charge them twice.
   */
   pastDue: boolean;
+  /*
+    True when the subscription ended because the card failed - usually the
+    card check declining a new trial. The price screen says so; without it
+    they see the plans again with no idea why, and read it as a broken app.
+  */
+  cardDeclined: boolean;
   isFirstTimeUser: boolean;
   setShowWelcome: (show: boolean) => void;
   setNeedsProfile: (needs: boolean) => void;
@@ -109,6 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const resolvedForUser = useRef<string | null>(null);
   const [needsSubscription, setNeedsSubscription] = useState(false);
   const [pastDue, setPastDue] = useState(false);
+  const [cardDeclined, setCardDeclined] = useState(false);
   const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
 
   const handleSignOut = async () => {
@@ -168,7 +175,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const { data, error } = await supabase
         .from('subscriptions')
-        .select('status, current_period_end')
+        .select('status, current_period_end, cancellation_reason')
         .eq('user_id', userId)
         .maybeSingle();
 
@@ -176,6 +183,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (!data) {
         setPastDue(false);
+        setCardDeclined(false);
         return false;
       }
 
@@ -183,12 +191,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const currentPeriodEnd = data.current_period_end ? new Date(data.current_period_end) : null;
 
       setPastDue(data.status === 'past_due');
+      setCardDeclined(data.status === 'canceled' && data.cancellation_reason === 'payment_failed');
 
       if (data.status === 'active' || data.status === 'trialing') {
         return true;
       }
 
-      if (data.status === 'canceled' && currentPeriodEnd && now < currentPeriodEnd) {
+      /*
+        Same rule as has_active_subscription() and PrivateRoute: somebody who
+        cancelled keeps the time they paid for, somebody whose card failed
+        does not. Leaving this out let them into the app shell while the
+        database refused their data and the page guard bounced every page
+        back to the price screen - which they reported as a dashboard that
+        would not load.
+      */
+      const endedForNonPayment = data.cancellation_reason === 'payment_failed' ||
+        data.cancellation_reason === 'payment_disputed';
+
+      if (data.status === 'canceled' && currentPeriodEnd && now < currentPeriodEnd && !endedForNonPayment) {
         return true;
       }
 
@@ -450,7 +470,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, profileResolved, showWelcome, needsProfile, needsSubscription, pastDue, isFirstTimeUser, setShowWelcome, setNeedsProfile, setNeedsSubscription, setIsFirstTimeUser, refreshProfile, refreshSubscription, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, profile, loading, profileResolved, showWelcome, needsProfile, needsSubscription, pastDue, cardDeclined, isFirstTimeUser, setShowWelcome, setNeedsProfile, setNeedsSubscription, setIsFirstTimeUser, refreshProfile, refreshSubscription, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );
