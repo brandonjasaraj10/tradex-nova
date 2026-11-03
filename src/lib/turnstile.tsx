@@ -14,11 +14,13 @@ import { useCallback, useEffect, useRef } from 'react';
   Mostly invisible. appearance 'interaction-only' draws nothing unless
   Cloudflare actually needs the person to do something.
 
-  No site key means no widget and no token, so a preview or local build without
-  the key behaves exactly as it did before.
+  Only tradexnova.com, www and localhost are allowed for this key. On any other
+  address, such as a Vercel preview, the widget errors and no token is sent.
 */
 
-const SITE_KEY: string | undefined = import.meta.env.VITE_TURNSTILE_SITE_KEY;
+/* Public by design: it goes to every browser. The secret half lives only in Supabase. */
+const SITE_KEY: string | undefined =
+  import.meta.env.VITE_TURNSTILE_SITE_KEY ?? '0x4AAAAAAFymx6CdOnM4L_Od';
 const SCRIPT_URL = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
 
 /* Long enough for somebody to answer a challenge if one appears. */
