@@ -60,6 +60,13 @@ const UNPAID_PER_MINUTE_LIMIT = 6;
 const UNPAID_DAILY_LIMIT = 10;
 const UNPAID_MAX_CHARS = 2000;
 
+/*
+  Total calls a day across every unpaid account combined. The biggest signup
+  day so far was 84 people at up to 10 calls each, so a viral day stays well
+  under this; at about two to five cents a call it bounds the day near $30-75.
+*/
+const UNPAID_GLOBAL_DAILY_LIMIT = 1500;
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
@@ -160,6 +167,31 @@ Deno.serve(async (req: Request) => {
         JSON.stringify({ error: message }),
         { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    /*
+      Checked after the per-account limit, so somebody already over their own
+      allowance does not use up the shared budget as well. With the service
+      role because signed-in users cannot call this - see the migration.
+
+      Fails closed like the limiter above: only unpaid accounts ever reach it,
+      and the first-entry screen offers a skip when Nova refuses.
+    */
+    if (!paid) {
+      const admin = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      );
+      const { data: withinBudget, error: budgetError } = await admin
+        .rpc('check_and_increment_unpaid_ai_budget', { p_daily_limit: UNPAID_GLOBAL_DAILY_LIMIT });
+
+      if (budgetError || withinBudget !== true) {
+        console.error('Unpaid AI budget refused:', budgetError ?? 'daily limit reached');
+        return new Response(
+          JSON.stringify({ error: "Nova couldn't take that just now - try again in a moment." }),
+          { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
     // Apply trading term corrections to transcript
