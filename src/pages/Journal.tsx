@@ -52,7 +52,8 @@ import {
   upsertJournalEntryPsychologyCheck,
   type PsychologyCheck
 } from '../services/psychologyChecks';
-import { processVoiceJournalEntry, extractVoiceFields, type VoiceJournalData } from '../services/voiceJournal';
+import { processVoiceJournalEntry, extractVoiceFields, setVoiceEntryRef, type VoiceJournalData } from '../services/voiceJournal';
+import { newUuid } from '../lib/uuid';
 import { correctTradingTerms } from '../utils/tradingVocabulary';
 import PageLoader from '../components/shared/PageLoader';
 import { useToast } from '../lib/toastContext';
@@ -130,6 +131,16 @@ export default function Journal() {
   const [dailyEntries, setDailyEntries] = useState<JournalEntry[]>([]);
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [currentEntry, setCurrentEntry] = useState<JournalEntry | null>(null);
+  /*
+    The id a new entry will be saved under. Nova's weekly count goes by entry,
+    so the draft and the saved entry have to share one id, or a redo after the
+    first autosave would count as a second voice entry.
+  */
+  const draftEntryIdRef = React.useRef(newUuid());
+  useEffect(() => {
+    setVoiceEntryRef(currentEntry?.id ?? draftEntryIdRef.current);
+    return () => setVoiceEntryRef(null);
+  }, [currentEntry?.id]);
   const [showFolderForm, setShowFolderForm] = useState(false);
   const [editingFolder, setEditingFolder] = useState<JournalFolder | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1126,6 +1137,7 @@ export default function Journal() {
         setDailyEntries(prev => prev.map(e => e.id === savedEntry.id ? savedEntry : e));
       } else {
         savedEntry = await createEntry({
+          id: draftEntryIdRef.current,
           folder_id: folder.id,
           account_id: selectedAccountIdRef.current || null,
           ...dataToSave,
@@ -1374,6 +1386,8 @@ export default function Journal() {
   const resetEntryForm = (entries?: JournalEntry[]) => {
     setCurrentEntry(null);
     currentEntryRef.current = null;
+    draftEntryIdRef.current = newUuid();
+    setVoiceEntryRef(draftEntryIdRef.current);
     // A fresh entry starts unanswered, not carrying the last trade's state.
     setPsychStatus(new Map());
     setEditingEntryId(null);

@@ -179,7 +179,7 @@ export async function getEntriesByDate(folderId: string, date: string, accountId
   return data || [];
 }
 
-export async function createEntry(entry: Omit<JournalEntry, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<JournalEntry> {
+export async function createEntry(entry: Omit<JournalEntry, 'id' | 'user_id' | 'created_at' | 'updated_at'> & { id?: string }): Promise<JournalEntry> {
   const user = await getCurrentUser();
   if (!user) throw new Error('Not authenticated');
 

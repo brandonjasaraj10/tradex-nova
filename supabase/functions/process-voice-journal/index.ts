@@ -82,7 +82,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { transcript, systemPrompt, balanceContext, existingEntry, stream, model } = await req.json();
+    const { transcript, systemPrompt, balanceContext, existingEntry, stream, model, entryRef } = await req.json();
 
     const selectedModel = typeof model === 'string' && ALLOWED_MODELS.has(model)
       ? model
@@ -182,6 +182,32 @@ Deno.serve(async (req: Request) => {
         Deno.env.get('SUPABASE_URL') ?? '',
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       );
+
+      /*
+        A free account's weekly voice entries. entryRef says which entry Nova
+        is working on, so redos on that entry stay free. A call without one
+        counts as its own entry, so leaving it out can't dodge the count.
+      */
+      const voiceRef = typeof entryRef === 'string' && entryRef.length > 0 && entryRef.length <= 64
+        ? entryRef
+        : crypto.randomUUID();
+      const { data: voiceAllowed, error: voiceError } = await admin
+        .rpc('claim_free_voice_entry', { p_user_id: authUser.id, p_ref: voiceRef });
+
+      if (voiceError) {
+        console.error('Free voice entry check failed:', voiceError);
+        return new Response(
+          JSON.stringify({ error: "Nova couldn't take that just now - try again in a moment." }),
+          { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      if (voiceAllowed !== true) {
+        return new Response(
+          JSON.stringify({ error: "That's your Nova voice entries for this week. They reset Sunday night, or upgrade for unlimited." }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       const { data: withinBudget, error: budgetError } = await admin
         .rpc('check_and_increment_unpaid_ai_budget', { p_daily_limit: UNPAID_GLOBAL_DAILY_LIMIT });
 

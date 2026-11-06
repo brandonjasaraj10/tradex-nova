@@ -1,6 +1,18 @@
 import { supabase, getCurrentUser } from '../lib/supabase';
 import { balanceService } from './balanceService';
 
+/*
+  Which entry Nova is working on. A free account's weekly voice entries are
+  counted per entry, so every call for the same entry has to carry the same
+  reference. Set by the screen that owns the entry rather than passed through
+  each call, since one recording sets off several calls.
+*/
+let voiceEntryRef: string | null = null;
+
+export function setVoiceEntryRef(ref: string | null) {
+  voiceEntryRef = ref;
+}
+
 export interface VoiceJournalData {
   // Set by the model when updating an existing entry and the new text turns
   // out to describe a different position. Lets one request answer both
@@ -262,7 +274,7 @@ export async function extractVoiceFields(
         'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ transcript, systemPrompt: prompt }),
+      body: JSON.stringify({ transcript, systemPrompt: prompt, entryRef: voiceEntryRef }),
     }
   );
 
@@ -1135,7 +1147,8 @@ CRITICAL RULES:
           transcript,
           systemPrompt: promptForMode,
           balanceContext: balanceForMode,
-          stream: !!onPartial
+          stream: !!onPartial,
+          entryRef: voiceEntryRef,
         }),
       }
     );

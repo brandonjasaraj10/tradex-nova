@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, Mic, Loader2, Check, Trophy } from 'lucide-react';
-import { processVoiceJournalEntry, type VoiceJournalData } from '../../services/voiceJournal';
+import { processVoiceJournalEntry, setVoiceEntryRef, type VoiceJournalData } from '../../services/voiceJournal';
+import { newUuid } from '../../lib/uuid';
 import { useVoice } from '../../hooks/useVoice';
 import { useRecorder } from '../../hooks/useRecorder';
 import { trackEvent } from '../../lib/productAnalytics';
@@ -277,6 +278,11 @@ export default function FirstEntry({
   */
   const NEW_CHARS_PER_PASS = 70;
   const baseTextRef = useRef('');
+  /* Every pass here is one entry, so it uses one of the week's voice entries however many passes it takes. */
+  useEffect(() => {
+    setVoiceEntryRef(newUuid());
+    return () => setVoiceEntryRef(null);
+  }, []);
   const join = (a: string, b: string) => `${a} ${b}`.trim().slice(0, MAX_CHARS);
   const [live, setLive] = useState<VoiceJournalData | null>(null);
   const [finishing, setFinishing] = useState(false);
