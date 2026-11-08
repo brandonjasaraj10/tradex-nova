@@ -13,6 +13,22 @@ export function setVoiceEntryRef(ref: string | null) {
   voiceEntryRef = ref;
 }
 
+/*
+  A refusal written for the person, such as the free plan's weekly voice
+  entries running out, so screens show its words rather than a generic error.
+*/
+export class NovaUserError extends Error {}
+
+function userFacingRefusal(status: number, body: string): NovaUserError | null {
+  if (status !== 429 && status !== 413 && status !== 503) return null;
+  try {
+    const message = JSON.parse(body)?.error;
+    return typeof message === 'string' && message ? new NovaUserError(message) : null;
+  } catch {
+    return null;
+  }
+}
+
 export interface VoiceJournalData {
   // Set by the model when updating an existing entry and the new text turns
   // out to describe a different position. Lets one request answer both
@@ -1176,7 +1192,8 @@ CRITICAL RULES:
         throw new Error('Your session has expired. Please sign in again.');
       }
 
-      throw new Error(`Failed to process voice input: ${response.status} - ${errorText}`);
+      throw userFacingRefusal(response.status, errorText)
+        ?? new Error(`Failed to process voice input: ${response.status} - ${errorText}`);
     }
 
     /*

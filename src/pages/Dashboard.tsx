@@ -1,12 +1,13 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowUpRight, ArrowDownRight, TrendingUp, DollarSign, BarChart, ChevronLeft, ChevronRight, Plus, CreditCard as Edit2, Brain, Check, TrendingDown, BookOpen, Settings, Trash2, X, Eye, EyeOff, BarChart3 } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, TrendingUp, DollarSign, BarChart, ChevronLeft, ChevronRight, Plus, CreditCard as Edit2, Brain, Check, TrendingDown, BookOpen, Settings, Trash2, X, Eye, EyeOff, BarChart3, Lock } from 'lucide-react';
 import Card from '../components/shared/Card';
 import Button from '../components/shared/Button';
 import DateRangePicker from '../components/shared/DateRangePicker';
 import AccountSelector from '../components/shared/AccountSelector';
 import OpenPositions from '../components/trades/OpenPositions';
-import { BROKER_SYNC_ENABLED } from '../lib/featureFlags';
+import { BROKER_SYNC_ENABLED, FREE_PLAN_ENABLED } from '../lib/featureFlags';
+import { useAuth } from '../lib/auth';
 import BalanceCard from '../components/dashboard/BalanceCard';
 import GoalCounter from '../components/dashboard/GoalCounter';
 import { useAccount } from '../lib/accountContext';
@@ -99,6 +100,9 @@ function WinningDaysCard({ winningDays }: { winningDays: number }) {
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { needsSubscription } = useAuth();
+  /* Free plan: NOVA Score and reports are Pro, so they offer the trial instead. */
+  const isFree = FREE_PLAN_ENABLED && needsSubscription;
   const { accounts, selectedAccount, setSelectedAccount, refreshAccounts } = useAccount();
 
   /*
@@ -165,6 +169,10 @@ export default function Dashboard() {
   const reportMenuRef = useRef<HTMLDivElement>(null);
 
   const handleGenerateReport = async (reportType: 'weekly' | 'monthly' | 'quarterly' | 'yearly') => {
+    if (isFree) {
+      navigate('/payment');
+      return;
+    }
     const user = await getCurrentUser();
     if (!user) return;
 
@@ -979,12 +987,20 @@ export default function Dashboard() {
           {/* NOVAScore Card */}
           <Card variant="gradient" className="bg-gradient-to-br from-gold-400/10 to-gold-400/5 p-3 sm:p-4 border border-gold-400/20">
             <div className="flex flex-col items-center justify-center h-full">
+              {isFree ? (
+                <button type="button" onClick={() => navigate('/payment')} className="flex flex-col items-center gap-1.5 text-center py-2">
+                  <Lock className="w-5 h-5 text-gray-500" />
+                  <span className="text-[13px] text-white">NOVA Score</span>
+                  <span className="text-[11px] text-gray-500">Pro</span>
+                </button>
+              ) : (
               <NOVAScore
                 breakdown={novaScore}
                 size="sm"
                 showBreakdown={false}
                 periodLabel={formatPeriodLabel(dateRange.startDate, dateRange.endDate)}
               />
+              )}
             </div>
           </Card>
 
@@ -1376,12 +1392,19 @@ export default function Dashboard() {
       </div>
     </div>
     <div className="w-full">
+      {isFree ? (
+        <button type="button" onClick={() => navigate('/payment')} className="w-full flex items-center gap-3 rounded-xl bg-white/[0.03] border border-white/[0.06] p-4 text-left hover:bg-white/[0.05] transition-colors">
+          <Lock className="w-5 h-5 text-gray-500 flex-shrink-0" />
+          <span className="text-[14px] text-gray-300">Your NOVA Score grades consistency, risk and discipline across your trades. Part of Pro, free for 14 days.</span>
+        </button>
+      ) : (
       <NOVAScore
         breakdown={novaScore}
         size="md"
         showBreakdown={true}
         periodLabel={formatPeriodLabel(dateRange.startDate, dateRange.endDate)}
       />
+      )}
     </div>
   </Card>
 </motion.div>

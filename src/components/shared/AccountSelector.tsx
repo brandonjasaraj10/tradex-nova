@@ -10,7 +10,9 @@ import { supabase, getCurrentUser } from '../../lib/supabase';
 import { brokerService, type BrokerFromAPI } from '../../services/brokerService';
 import { useToast } from '../../lib/toastContext';
 import { useDateRange, allTimeRange } from '../../lib/dateRangeContext';
-import { BROKER_SYNC_ENABLED } from '../../lib/featureFlags';
+import { BROKER_SYNC_ENABLED, FREE_PLAN_ENABLED } from '../../lib/featureFlags';
+import { freePlanMessage } from '../../lib/freePlan';
+import { useNavigate } from 'react-router-dom';
 import { connectMetaTraderAccount, syncMetaTraderAccount } from '../../services/metaTraderConnect';
 import { searchMtServers, type MtServerSuggestion } from '../../services/mtServers';
 import AccountLimitReached from '../broker/AccountLimitReached';
@@ -81,7 +83,10 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
     page load - so somebody who had just paid would still be told they were
     on a trial.
   */
-  const { refreshSubscription } = useAuth();
+  const { refreshSubscription, needsSubscription } = useAuth();
+  const navigate = useNavigate();
+  /* Free plan: one manual account, no CSV import, no sync. */
+  const isFree = FREE_PLAN_ENABLED && needsSubscription;
   const { setDateRange } = useDateRange();
   const [isOpen, setIsOpen] = useState(false);
   const [showAddAccount, setShowAddAccount] = useState(false);
@@ -174,7 +179,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
     Everything else - cTrader, Tradovate, TradingView - has no integration
     yet, so offering the form there would promise something we can't do.
   */
-  const canAutoSync = BROKER_SYNC_ENABLED && (platform === 'mt4' || platform === 'mt5');
+  const canAutoSync = BROKER_SYNC_ENABLED && !isFree && (platform === 'mt4' || platform === 'mt5');
 
   /*
     Syncing is opt-in by simply filling the fields in, rather than by a
@@ -445,7 +450,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
       onAccountsUpdate?.();
     } catch (error) {
       console.error('Create account error:', error);
-      showToast('Could not create that account. Please try again.', 'error');
+      showToast(freePlanMessage(error) ?? 'Could not create that account. Please try again.', 'error');
     } finally {
       setIsCreating(false);
     }
@@ -583,6 +588,10 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
                     e.stopPropagation();
                     if (!selectedAccount) return;
                     setIsOpen(false);
+                    if (isFree) {
+                      navigate('/payment');
+                      return;
+                    }
                     setShowCSVUpload(true);
                   }}
                   disabled={!selectedAccount}
@@ -601,6 +610,10 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
                   onClick={(e) => {
                     e.stopPropagation();
                     setIsOpen(false);
+                    if (isFree && accounts.length >= 1) {
+                      showToast(freePlanMessage('free_plan_account_limit')!, 'error');
+                      return;
+                    }
                     setShowAddAccount(true);
                   }}
                   className="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-2 hover:bg-white/5 text-gray-300"

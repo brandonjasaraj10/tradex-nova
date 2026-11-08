@@ -47,3 +47,15 @@ export const NOVA_VOICE_OUTPUT_ENABLED = false;
   Set to true once syncing genuinely works.
 */
 export const BROKER_SYNC_ENABLED = true;
+
+/*
+  The free plan: signed-in users without a subscription get into the journal
+  with weekly limits, and Pro screens show an upgrade card instead of the
+  paywall.
+
+  Off until launch day, and it must go live together with migration
+  20261107020000_free_plan_open_app.sql and the process-voice-journal deploy.
+  With this on and the migration not applied, free users would land in an app
+  whose database still refuses them.
+*/
+export const FREE_PLAN_ENABLED = false;

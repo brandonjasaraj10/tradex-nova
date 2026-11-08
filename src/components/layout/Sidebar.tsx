@@ -13,16 +13,18 @@ import {
   CheckSquare,
   X,
   ListOrdered,
+  Lock,
 } from 'lucide-react';
+import { FREE_PLAN_ENABLED } from '../../lib/featureFlags';
 import Wordmark, { XMark } from '../shared/Wordmark';
 
 const navigation = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
   { name: 'Journal', path: '/journal', icon: BookOpen },
   { name: 'Trade Logs', path: '/trade-logs', icon: ListOrdered },
-  { name: 'Analytics', path: '/analytics', icon: BarChart2 },
-  { name: 'Calendar', path: '/calendar', icon: CalendarIcon },
-  { name: 'NOVA AI', path: '/nova', icon: Brain },
+  { name: 'Analytics', path: '/analytics', icon: BarChart2, pro: true },
+  { name: 'Calendar', path: '/calendar', icon: CalendarIcon, pro: true },
+  { name: 'NOVA AI', path: '/nova', icon: Brain, pro: true },
   { name: 'Checklists', path: '/checklists', icon: CheckSquare },
   { name: 'Settings', path: '/settings', icon: Settings },
 ];
@@ -35,7 +37,9 @@ interface SidebarProps {
 
 export default function Sidebar({ onCollapseChange, mobileOpen = false, onMobileClose }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const { signOut } = useAuth();
+  const { signOut, needsSubscription } = useAuth();
+  /* Free plan: a small lock beside the Pro screens, which open an upgrade card. */
+  const showLocks = FREE_PLAN_ENABLED && needsSubscription;
 
   const handleToggle = () => {
     const newState = !isCollapsed;
@@ -123,6 +127,9 @@ export default function Sidebar({ onCollapseChange, mobileOpen = false, onMobile
             >
               <item.icon className="w-5 h-5 flex-shrink-0" />
               {!isCollapsed && <span>{item.name}</span>}
+              {!isCollapsed && showLocks && 'pro' in item && item.pro && (
+                <Lock className="w-3.5 h-3.5 ml-auto text-gray-500" aria-label="Pro" />
+              )}
             </NavLink>
           ))}
         </nav>

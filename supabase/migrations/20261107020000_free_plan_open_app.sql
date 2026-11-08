@@ -9,8 +9,7 @@
   What changes: on the tables below, "owns the row AND has a subscription"
   becomes "owns the row AND is signed in". Owning the row is untouched, so no
   one can see anyone else's data. Everything else stays paid-only: Nova chat,
-  memories, feedback, insights, tips, reports, NOVA Score, mentorships and the
-  old notes tables.
+  memories, feedback, insights, tips, reports, NOVA Score and mentorships.
 
   Then the free plan limits are attached: 5 entries a week (notes don't
   count), 2 screenshots an entry, 1 account. Paid access passes straight
@@ -46,7 +45,9 @@ BEGIN
         'journal_entry_psychology_checks', 'journal_entry_rules', 'journal_screenshots',
         'journal_trade_entries', 'trading_confluences', 'trading_rules',
         'psychology_checks', 'trading_plan_settings', 'broker_connections',
-        'account_balances', 'balance_adjustments', 'trades', 'user_trading_profiles'
+        'account_balances', 'balance_adjustments', 'trades', 'user_trading_profiles',
+        /* The dashboard's own notes, not the journal's Notes folder. */
+        'notes', 'notes_folders'
       ])
       AND (coalesce(qual, '') LIKE '%has_active_subscription()%'
         OR coalesce(with_check, '') LIKE '%has_active_subscription()%')

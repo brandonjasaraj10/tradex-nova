@@ -199,9 +199,11 @@ const TIER_CATALOGUE: {
 interface PaymentProps {
   onSubscriptionComplete?: () => void;
   isFirstTime?: boolean;
+  /* Free plan: shows "Continue free" as an equal choice under the trial button. */
+  onContinueFree?: () => void;
 }
 
-export default function Payment({ onSubscriptionComplete, isFirstTime = false }: PaymentProps) {
+export default function Payment({ onSubscriptionComplete, isFirstTime = false, onContinueFree }: PaymentProps) {
   const { pastDue, cardDeclined, profile } = useAuth();
 
   /*
@@ -1363,6 +1365,7 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
                 states the real charge and stops saying it twice. */}
             <>Then {chargeAmount}{isAnnual ? '/year' : '/month'} &middot; Cancel in two clicks</>
           </p>
+
           {/*
             Two lines on a phone, one everywhere else.
 
@@ -1377,6 +1380,19 @@ export default function Payment({ onSubscriptionComplete, isFirstTime = false }:
             Nothing charged today &mdash; your bank may show a brief hold.
             <span className="hidden sm:inline"> It is released straight away.</span>
           </p>
+
+          {/* Free plan: the equal choice, under everything that belongs to the trial. */}
+          {onContinueFree && (
+            <button
+              type="button"
+              onClick={onContinueFree}
+              className="w-full inline-flex items-center justify-center px-7 py-3 rounded-full
+                border border-white/15 text-white text-[14px] font-medium hover:bg-white/5
+                transition-colors"
+            >
+              Continue free
+            </button>
+          )}
 
           {/*
             Terms ride in the bar on a phone.

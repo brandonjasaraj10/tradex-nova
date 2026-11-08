@@ -52,8 +52,11 @@ import {
   upsertJournalEntryPsychologyCheck,
   type PsychologyCheck
 } from '../services/psychologyChecks';
-import { processVoiceJournalEntry, extractVoiceFields, setVoiceEntryRef, type VoiceJournalData } from '../services/voiceJournal';
+import { processVoiceJournalEntry, extractVoiceFields, setVoiceEntryRef, NovaUserError, type VoiceJournalData } from '../services/voiceJournal';
 import { newUuid } from '../lib/uuid';
+import { FREE_PLAN_ENABLED } from '../lib/featureFlags';
+import { freePlanMessage, FREE_SCREENSHOT_LIMIT } from '../lib/freePlan';
+import { useAuth } from '../lib/auth';
 import { correctTradingTerms } from '../utils/tradingVocabulary';
 import PageLoader from '../components/shared/PageLoader';
 import { useToast } from '../lib/toastContext';
@@ -118,6 +121,11 @@ const formatLocalDate = (date: Date) => {
 
 export default function Journal() {
   const { showToast } = useToast();
+  const { needsSubscription } = useAuth();
+  /* Free plan: the database enforces the limits; this only explains them. */
+  const isFree = FREE_PLAN_ENABLED && needsSubscription;
+  /* One limit message per entry, not one per autosave. */
+  const limitNoticeForRef = React.useRef<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   // Entries, the trades they link to, and the plan items ticked against them.
   const { refreshTrigger } = useDataSync(['journal_entries', 'trades', 'trading_confluences', 'trading_rules']);
@@ -1212,6 +1220,13 @@ export default function Journal() {
       }
     } catch (error) {
       console.error('Error auto-saving entry:', error);
+      /* A free plan refusal leaves the writing on screen and says why it didn't save. */
+      const limitMessage = freePlanMessage(error);
+      const noticeKey = entry?.id ?? draftEntryIdRef.current;
+      if (limitMessage && limitNoticeForRef.current !== noticeKey) {
+        limitNoticeForRef.current = noticeKey;
+        showToast(limitMessage, 'error');
+      }
     } finally {
       setIsSaving(false);
     }
@@ -1675,7 +1690,7 @@ export default function Journal() {
         overnight, which needs a different action from the user than trying
         the button again.
       */
-      const message = error instanceof Error && error.message.includes('session has expired')
+      const message = (error instanceof NovaUserError || (error instanceof Error && error.message.includes('session has expired')))
         ? error.message
         : 'Nova could not organize that. Your words are saved below - try again in a moment.';
       showToast(message, 'error');
@@ -1726,7 +1741,7 @@ export default function Journal() {
         common failure here and it needs a different action from the user -
         sign in again, not press the button again.
       */
-      const message = error instanceof Error && error.message.includes('session has expired')
+      const message = (error instanceof NovaUserError || (error instanceof Error && error.message.includes('session has expired')))
         ? error.message
         : 'Nova could not organize that note. Please try again.';
       showToast(message, 'error');
@@ -1951,7 +1966,7 @@ export default function Journal() {
         did not change and there was no way to tell whether Nova had decided
         there was nothing to add or the request had failed.
       */
-      const message = error instanceof Error && error.message.includes('session has expired')
+      const message = (error instanceof NovaUserError || (error instanceof Error && error.message.includes('session has expired')))
         ? error.message
         : 'Nova could not read that. Please try again in a moment.';
       showToast(message, 'error');
@@ -2122,7 +2137,14 @@ export default function Journal() {
     });
   };
 
+  const screenshotLimitReached = () =>
+    isFree && entryForm.before_screenshots.length + entryForm.after_screenshots.length >= FREE_SCREENSHOT_LIMIT;
+
   const handleAddScreenshot = (type: 'before' | 'after') => {
+    if (screenshotLimitReached()) {
+      showToast(freePlanMessage('free_plan_screenshot_limit')!, 'error');
+      return;
+    }
     if (type === 'before') {
       if (!beforeScreenshotUrl.trim()) return;
       setEntryForm({
@@ -2165,6 +2187,10 @@ export default function Journal() {
   const handleFileUpload = async (type: 'before' | 'after', file: File) => {
     if (!file.type.startsWith('image/')) {
       showToast('That file is not an image. Attach a PNG, JPG or WEBP.', 'error');
+      return;
+    }
+    if (screenshotLimitReached()) {
+      showToast(freePlanMessage('free_plan_screenshot_limit')!, 'error');
       return;
     }
 

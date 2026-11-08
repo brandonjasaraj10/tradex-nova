@@ -13,6 +13,8 @@ import { verifyTrialCard } from './services/trialCard';
 import Header from './components/layout/Header';
 import Sidebar from './components/layout/Sidebar';
 import PrivateRoute from './components/shared/PrivateRoute';
+import { FREE_PLAN_ENABLED } from './lib/featureFlags';
+import { hasContinuedFree, markContinuedFree } from './lib/freePlan';
 import WelcomeAnimation from './components/shared/WelcomeAnimation';
 import ProfileSetup from './components/auth/ProfileSetup';
 import TourOverlay from './components/tour/TourOverlay';
@@ -153,6 +155,8 @@ function PrivateLayout() {
     });
   }, [justCompletedCheckout, user]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  /* Set when they choose "Continue free" on the upgrade screen, so it lets them in at once. */
+  const [continuedFree, setContinuedFree] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const getFirstName = () => {
@@ -221,10 +225,18 @@ function PrivateLayout() {
     );
   }
 
-  if (needsSubscription && user && profile) {
+  /*
+    On the free plan the price screen is an offer, made once: after
+    "Continue free" they go straight to the app from then on.
+  */
+  if (needsSubscription && user && profile && !(continuedFree || hasContinuedFree(user.id))) {
     return (
       <Suspense fallback={<PageLoader fullScreen />}>
         <Payment
+          onContinueFree={FREE_PLAN_ENABLED ? () => {
+            markContinuedFree(user.id);
+            setContinuedFree(true);
+          } : undefined}
           onSubscriptionComplete={async () => {
             await refreshSubscription();
             setNeedsSubscription(false);
@@ -321,11 +333,11 @@ function PrivateLayout() {
               <Routes>
                 <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
                 <Route path="/journal" element={<PrivateRoute><Journal /></PrivateRoute>} />
-                <Route path="/analytics" element={<PrivateRoute><Analytics /></PrivateRoute>} />
-                <Route path="/calendar" element={<PrivateRoute><Calendar /></PrivateRoute>} />
+                <Route path="/analytics" element={<PrivateRoute requirePaid="analytics"><Analytics /></PrivateRoute>} />
+                <Route path="/calendar" element={<PrivateRoute requirePaid="calendar"><Calendar /></PrivateRoute>} />
                 <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
                 <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
-                <Route path="/nova" element={<PrivateRoute><NovaAssistant /></PrivateRoute>} />
+                <Route path="/nova" element={<PrivateRoute requirePaid="nova"><NovaAssistant /></PrivateRoute>} />
                 <Route path="/trade-logs" element={<PrivateRoute><TradeLogs /></PrivateRoute>} />
                 <Route path="/checklists" element={<PrivateRoute><Checklists /></PrivateRoute>} />
                 <Route path="*" element={<NotFound />} />
