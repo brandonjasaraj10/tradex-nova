@@ -185,14 +185,20 @@ Deno.serve(async (req: Request) => {
 
       /*
         A free account's weekly voice entries. entryRef says which entry Nova
-        is working on, so redos on that entry stay free. A call without one
-        counts as its own entry, so leaving it out can't dodge the count.
+        is working on, so redos on that entry stay free.
+
+        Only checked when entryRef is sent. Pages from before the free plan
+        don't send it and make several calls per entry, so counting each of
+        those as an entry would cut new signups off mid-onboarding. Leaving it
+        out still runs into the 10-a-day limit above and the shared daily
+        budget below. Once every page in use sends it, this can require it.
       */
       const voiceRef = typeof entryRef === 'string' && entryRef.length > 0 && entryRef.length <= 64
         ? entryRef
-        : crypto.randomUUID();
-      const { data: voiceAllowed, error: voiceError } = await admin
-        .rpc('claim_free_voice_entry', { p_user_id: authUser.id, p_ref: voiceRef });
+        : null;
+      const { data: voiceAllowed, error: voiceError } = voiceRef
+        ? await admin.rpc('claim_free_voice_entry', { p_user_id: authUser.id, p_ref: voiceRef })
+        : { data: true, error: null };
 
       if (voiceError) {
         console.error('Free voice entry check failed:', voiceError);
