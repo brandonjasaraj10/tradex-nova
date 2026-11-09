@@ -497,7 +497,7 @@ export default function Calendar() {
                 )}
 
                 {dayData && viewMode === 'pnl' && dayData.tradeCount > 0 && (
-                  <div className="text-center">
+                  <div className="text-center" data-veil>
                     {/*
                       leading-none throughout: a day number, a trade count and
                       a P&L at default line height need about 49px of stack in
@@ -539,7 +539,7 @@ export default function Calendar() {
                 )}
 
                 {dayData && viewMode === 'psychology' && dayData.hasJournal && (
-                  <div className="text-center relative">
+                  <div className="text-center relative" data-veil>
                     {dayData.psychologyScore !== null ? (
                       <>
                         <div className="relative">
@@ -620,7 +620,7 @@ export default function Calendar() {
               height as a day cell, and the row can no longer be stretched by
               what happens to be in the card.
             */
-            <div key={`report-${row}`} className="w-full aspect-square hidden md:block" data-tour="calendar-weekly-review">
+            <div key={`report-${row}`} className="w-full aspect-square hidden md:block" data-tour="calendar-weekly-review" data-veil>
               <WeeklySummaryCard
                 report={weekReport}
                 onClick={() => handleOpenReport(weekReport)}
@@ -793,7 +793,8 @@ export default function Calendar() {
                       than the window, the page scrolls, which is the honest
                       trade rather than crushing the cells to fit.
                     */}
-                    <ProVeil className="rounded-xl">
+                    {/* Frame mode: the day boxes and dates stay sharp; only what's inside each day is frosted. */}
+                    <ProVeil frame className="rounded-xl">
                       <div className="grid grid-cols-7 md:grid-cols-8 gap-1 lg:gap-2">
                         {renderCalendar()}
                       </div>
