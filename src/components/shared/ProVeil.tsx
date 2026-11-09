@@ -105,14 +105,21 @@ export function Veiled({ children, className = '', compact = false, frame = fals
       onMouseLeave={() => setHover(false)}
       onFocus={() => setHover(true)}
       onBlur={() => setHover(false)}
-      className={`pro-veil relative isolate overflow-hidden ${frame ? '' : 'rounded-[inherit]'} cursor-pointer outline-none
+      className={`pro-veil relative isolate ${frame ? '' : 'rounded-[inherit]'} cursor-pointer outline-none
         focus-visible:ring-2 focus-visible:ring-brand-blue/60 ${className}`}
     >
       <div aria-hidden="true" ref={(el) => el?.setAttribute('inert', '')} className={`${frame ? 'pro-veil-frame' : 'pro-veil-content'} pointer-events-none select-none`}>
         {children}
       </div>
       {!side && <div aria-hidden="true" className={`pro-veil-film absolute inset-0 ${frame ? 'opacity-60' : ''}`} />}
-      <div aria-hidden="true" className="pro-veil-sweep absolute inset-0" style={{ animationDelay: delay }} />
+      {/*
+        The sweep clips itself, so in frame mode the container doesn't have
+        to - clipping there cut the frosted numbers off with a hard edge on
+        the left, since a blur spreads a few pixels past the text.
+      */}
+      <div aria-hidden="true" className="absolute inset-0 overflow-hidden rounded-[inherit]">
+        <div className="pro-veil-sweep absolute inset-0" style={{ animationDelay: delay }} />
+      </div>
       <div className={`absolute inset-0 flex items-center ${side ? 'justify-end' : 'justify-center p-3'}`}>
         <span
           className={`inline-flex items-center gap-2 rounded-full border transition-colors duration-200
