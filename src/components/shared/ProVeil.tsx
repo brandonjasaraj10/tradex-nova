@@ -78,9 +78,20 @@ export default function ProVeil({ children, className = '', compact = false, fra
 }) {
   const locked = useProLocked();
   if (!locked) return <>{children}</>;
-  return <Veiled className={className} compact={compact || side} frame={frame} side={side}>{children}</Veiled>;
+  return <Veiled className={className} compact={compact} frame={frame} side={side}>{children}</Veiled>;
 }
 
+/*
+  Two ways to frost, both keeping the layout sharp:
+  - default: headings stay readable and everything else - figures, text,
+    charts, the score ring - is frosted (the .pro-veil-auto rule). The lock
+    sits small at the right edge. Used by Card and the Nova panels.
+  - frame: only what's marked data-veil is frosted, for layouts like the
+    calendar where the day numbers should stay. The lock sits centred over
+    the hatch film unless side is set.
+  A full blur of the whole section was tried first and read as zoomed in:
+  titles became smudges and the frosted block drew a box inside the card.
+*/
 export function Veiled({ children, className = '', compact = false, frame = false, side = false }: {
   children: ReactNode;
   className?: string;
@@ -88,6 +99,8 @@ export function Veiled({ children, className = '', compact = false, frame = fals
   frame?: boolean;
   side?: boolean;
 }) {
+  const lockAtSide = side || !frame;
+  compact = compact || lockAtSide;
   const navigate = useNavigate();
   const [hover, setHover] = useState(false);
   const label = useDecode(hover);
@@ -105,13 +118,13 @@ export function Veiled({ children, className = '', compact = false, frame = fals
       onMouseLeave={() => setHover(false)}
       onFocus={() => setHover(true)}
       onBlur={() => setHover(false)}
-      className={`pro-veil relative isolate ${frame ? '' : 'rounded-[inherit]'} cursor-pointer outline-none
+      className={`pro-veil relative isolate cursor-pointer outline-none
         focus-visible:ring-2 focus-visible:ring-brand-blue/60 ${className}`}
     >
-      <div aria-hidden="true" ref={(el) => el?.setAttribute('inert', '')} className={`${frame ? 'pro-veil-frame' : 'pro-veil-content'} pointer-events-none select-none`}>
+      <div aria-hidden="true" ref={(el) => el?.setAttribute('inert', '')} className={`${frame ? 'pro-veil-frame' : 'pro-veil-auto'} pointer-events-none select-none`}>
         {children}
       </div>
-      {!side && <div aria-hidden="true" className={`pro-veil-film absolute inset-0 ${frame ? 'opacity-60' : ''}`} />}
+      {!lockAtSide && <div aria-hidden="true" className="pro-veil-film absolute inset-0 opacity-60" />}
       {/*
         The sweep clips itself, so in frame mode the container doesn't have
         to - clipping there cut the frosted numbers off with a hard edge on
@@ -120,7 +133,7 @@ export function Veiled({ children, className = '', compact = false, frame = fals
       <div aria-hidden="true" className="absolute inset-0 overflow-hidden rounded-[inherit]">
         <div className="pro-veil-sweep absolute inset-0" style={{ animationDelay: delay }} />
       </div>
-      <div className={`absolute inset-0 flex items-center ${side ? 'justify-end' : 'justify-center p-3'}`}>
+      <div className={`absolute inset-0 flex items-center ${lockAtSide ? 'justify-end' : 'justify-center p-3'}`}>
         <span
           className={`inline-flex items-center gap-2 rounded-full border transition-colors duration-200
             ${hover ? 'border-brand-blue/60 bg-black/70' : 'border-white/15 bg-black/55'}
