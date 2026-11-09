@@ -987,7 +987,7 @@ export default function Dashboard() {
         <motion.div variants={fadeInUp} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-4" data-tour="metrics">
           {/* NOVAScore Card */}
           <Card variant="gradient" className="bg-gradient-to-br from-gold-400/10 to-gold-400/5 p-3 sm:p-4 border border-gold-400/20">
-            <div className="flex flex-col items-center justify-center h-full">
+            <div className="flex flex-col items-center justify-center h-full" data-tour="nova-score-tile">
               {/* Free plan: their real score, veiled - see ProVeil. */}
               {isFree ? (
                 <Veiled compact className="w-full rounded-xl">

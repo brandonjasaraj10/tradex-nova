@@ -3,6 +3,7 @@ import { supabase } from './supabase';
 import { useAuth } from './auth';
 import { useDataSync } from './dataSync';
 import { seedTourDemoData, cleanupTourDemoData } from './tourDemoData';
+import { FREE_PLAN_ENABLED } from './featureFlags';
 
 export type TourStep = {
   id: string;
@@ -92,6 +93,36 @@ export const TOUR_STEPS: TourStep[] = [
   },
 ];
 
+/*
+  The free plan's tour. Nova chat and the Calendar are Pro, and on the free
+  plan every section of them is veiled, so walking a free user through them
+  would point at frosted panels while promising what they can't use. They get
+  the same core loop - the journal and Organize with Nova - then one honest
+  step showing what Pro adds, then a first move they can actually make (no
+  CSV import: that's Pro too). Four steps, inside the three-to-four the
+  completion benchmarks above point to.
+*/
+export const FREE_TOUR_STEPS: TourStep[] = [
+  TOUR_STEPS[0],
+  TOUR_STEPS[1],
+  {
+    id: 'pro-preview',
+    targetSelector: '[data-tour="nova-score-tile"]',
+    title: 'Your journal builds all of this',
+    content: "Your NOVA Score, analytics, calendar and chatting with me are part of Pro. They're already reading your journal - the frosted sections show what's waiting. Tap any of them when you want it unlocked.",
+    position: 'bottom',
+    route: '/dashboard',
+  },
+  {
+    id: 'tour-complete',
+    targetSelector: '[data-tour="sidebar-logo"]',
+    title: "That's the whole tour",
+    content: "Best first move: log one trade from today, win or lose - typed or spoken. You get five entries a week free, and every one gives me more to work with.",
+    position: 'right',
+    route: '/dashboard',
+  },
+];
+
 type TourContextType = {
   isActive: boolean;
   currentStep: number;
@@ -105,6 +136,8 @@ type TourContextType = {
   tourCompleted: boolean;
   restartTour: () => void;
   navigateToStep: (route: string) => void;
+  /* Set while the app itself (sidebar, pages) is on screen - see TourNavigationSetter. */
+  setShellMounted: (mounted: boolean) => void;
 };
 
 const TourContext = createContext<TourContextType | undefined>(undefined);
@@ -118,7 +151,14 @@ export function useTour() {
 }
 
 export function TourProvider({ children }: { children: React.ReactNode }) {
-  const { user, setIsFirstTimeUser } = useAuth();
+  const { user, profile, needsSubscription, setIsFirstTimeUser } = useAuth();
+  const steps = FREE_PLAN_ENABLED && needsSubscription ? FREE_TOUR_STEPS : TOUR_STEPS;
+  /*
+    The tour only starts once the app is actually on screen. Before this it
+    started 1.5s after sign-in wherever the user was - the name screen, the
+    three questions, the price screen - none of which render the tour.
+  */
+  const [shellMounted, setShellMounted] = useState(false);
   const { forceRefresh } = useDataSync();
   const [isActive, setIsActive] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
@@ -141,11 +181,20 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
   const hasStartedRef = useRef(false);
   const hasSeededDemoDataRef = useRef(false);
 
+  /*
+    Asked again whenever the profile changes, until there's an answer.
+
+    It used to ask once, on sign-in. For a brand new account that is before
+    the profile row exists - the name screen creates it - so the answer was
+    "no row", the tour never learned it was due, and it never started. Paying
+    hid this, because Stripe's checkout reloads the page and the reload asked
+    again. "Continue free" doesn't reload, so free signups got no tour.
+  */
   useEffect(() => {
-    if (user && !hasCheckedTourStatus) {
+    if (user && profile && !tourStatusKnown) {
       checkTourStatus();
     }
-  }, [user?.id]);
+  }, [user?.id, profile, tourStatusKnown]);
 
   /*
     Seed BEFORE the tour becomes visible, not after.
@@ -195,6 +244,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
       !tourCompleted &&
       tourStatusKnown &&
       hasCheckedTourStatus &&
+      shellMounted &&
       !isActive &&
       !hasEndedRef.current &&
       !hasStartedRef.current
@@ -207,7 +257,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
       }, 1500);
       return () => clearTimeout(timer);
     }
-  }, [tourCompleted, tourStatusKnown, hasCheckedTourStatus, isActive, seedThenStart]);
+  }, [tourCompleted, tourStatusKnown, hasCheckedTourStatus, shellMounted, isActive, seedThenStart]);
 
   /*
     Sweep demo rows left behind by a tour nobody ended.
@@ -305,12 +355,12 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
   }, [markTourCompleted]);
 
   const nextStep = useCallback(() => {
-    if (currentStep < TOUR_STEPS.length - 1) {
+    if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
       endTour();
     }
-  }, [currentStep, endTour]);
+  }, [currentStep, endTour, steps.length]);
 
   const previousStep = useCallback(() => {
     if (currentStep > 0) {
@@ -337,13 +387,13 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     void seedThenStart();
   }, [seedThenStart]);
 
-  const currentStepData = isActive ? TOUR_STEPS[currentStep] : null;
+  const currentStepData = isActive ? steps[Math.min(currentStep, steps.length - 1)] : null;
 
   const contextValue = {
     isActive,
     currentStep,
     currentStepData,
-    totalSteps: TOUR_STEPS.length,
+    totalSteps: steps.length,
     startTour,
     endTour,
     nextStep,
@@ -352,6 +402,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     tourCompleted,
     restartTour,
     navigateToStep,
+    setShellMounted,
   };
 
   return (
@@ -362,9 +413,15 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function TourNavigationSetter({ navigate }: { navigate: (route: string) => void }) {
-  const { isActive, currentStepData } = useTour();
+  const { isActive, currentStepData, setShellMounted } = useTour();
   const prevRouteRef = useRef<string | null>(null);
   const [isNavigating, setIsNavigating] = useState(false);
+
+  /* This only renders inside the app itself, so its being mounted is the signal the tour waits for. */
+  useEffect(() => {
+    setShellMounted(true);
+    return () => setShellMounted(false);
+  }, [setShellMounted]);
 
   useEffect(() => {
     if (isActive && currentStepData?.route && currentStepData.route !== prevRouteRef.current) {
