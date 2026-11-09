@@ -864,13 +864,13 @@ export default function Calendar() {
               {viewMode === 'pnl' ? (
                 <>
                   <div className="bg-[#111]/80 backdrop-blur-sm border border-white/[0.05] rounded-2xl p-4">
-                    <ProVeil>
+                    <ProVeil frame side>
                     <div className="flex items-center gap-2 mb-2">
                       <DollarSign className="text-blue-400" size={16} />
                       <h3 className="text-xs font-semibold text-gray-400">Monthly P&L</h3>
                     </div>
                     {!privacyMode ? (
-                      <p className={`text-xl md:text-2xl font-bold ${
+                      <p data-veil className={`text-xl md:text-2xl font-bold ${
                         monthStats.totalPnl > 0 ? 'text-blue-400' :
                         monthStats.totalPnl < 0 ? 'text-slate-300' : 'text-slate-300'
                       }`}>
@@ -892,23 +892,23 @@ export default function Calendar() {
                   </div>
 
                   <div className="bg-[#111]/80 backdrop-blur-sm border border-white/[0.05] rounded-2xl p-4">
-                    <ProVeil>
+                    <ProVeil frame side>
                     <h3 className="text-xs font-semibold text-gray-400 mb-2">Total Trades</h3>
-                    <p className="text-xl md:text-2xl font-bold text-white">{monthStats.totalTrades}</p>
+                    <p data-veil className="text-xl md:text-2xl font-bold text-white">{monthStats.totalTrades}</p>
                     </ProVeil>
                   </div>
 
                   <div className="bg-[#111]/80 backdrop-blur-sm border border-white/[0.05] rounded-2xl p-4">
-                    <ProVeil>
+                    <ProVeil frame side>
                     <h3 className="text-xs font-semibold text-gray-400 mb-2">Win/Loss Days</h3>
                     <div className="flex items-center gap-3">
                       <div className="text-center">
-                        <p className="text-xl md:text-2xl font-bold text-blue-400">{monthStats.winningDays}</p>
+                        <p data-veil className="text-xl md:text-2xl font-bold text-blue-400">{monthStats.winningDays}</p>
                         <p className="text-xs text-gray-400">Wins</p>
                       </div>
                       <div className="text-gray-600">/</div>
                       <div className="text-center">
-                        <p className="text-xl md:text-2xl font-bold text-slate-300">{monthStats.losingDays}</p>
+                        <p data-veil className="text-xl md:text-2xl font-bold text-slate-300">{monthStats.losingDays}</p>
                         <p className="text-xs text-gray-400">Loss</p>
                       </div>
                     </div>
@@ -925,7 +925,7 @@ export default function Calendar() {
                     avgPsychScore >= 50 ? 'border-slate-500/25 shadow-lg shadow-slate-500/10' :
                     'border-white/[0.05]'
                   }`}>
-                    <ProVeil>
+                    <ProVeil frame side>
                     <div className={`absolute inset-0 transition-opacity duration-300 ${
                       avgPsychScore >= 90 ? 'bg-gradient-to-br from-blue-500/15 via-blue-400/8 to-transparent' :
                       avgPsychScore >= 80 ? 'bg-gradient-to-br from-blue-500/14 via-blue-400/7 to-transparent' :
@@ -962,7 +962,7 @@ export default function Calendar() {
                         </div>
                       </div>
 
-                      <div className="flex items-end gap-3 mb-4">
+                      <div className="flex items-end gap-3 mb-4" data-veil>
                         <p className={`text-5xl font-bold tracking-tight transition-all duration-300 ${
                           avgPsychScore >= 90 ? 'text-blue-400' :
                           avgPsychScore >= 80 ? 'text-blue-400' :
@@ -975,7 +975,7 @@ export default function Calendar() {
                         <span className="text-sm text-gray-500 mb-2">/ 100</span>
                       </div>
 
-                      <div className="h-2 bg-black/30 rounded-full overflow-hidden mb-4">
+                      <div className="h-2 bg-black/30 rounded-full overflow-hidden mb-4" data-veil>
                         <div
                           className={`h-full transition-all duration-700 rounded-full ${
                             avgPsychScore >= 90 ? 'bg-gradient-to-r from-blue-500 to-blue-400' :
@@ -990,7 +990,7 @@ export default function Calendar() {
                       </div>
 
                       {avgPsychScore > 0 && (
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between" data-veil>
                           <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg backdrop-blur-sm ${getPsychologyMood(avgPsychScore).bg} border ${
                             avgPsychScore >= 80 ? 'border-white/10' : 'border-white/5'
                           }`}>
@@ -1010,7 +1010,7 @@ export default function Calendar() {
                   </div>
 
                   <div className="bg-[#111]/80 backdrop-blur-sm border border-white/[0.05] rounded-2xl p-4">
-                    <ProVeil>
+                    <ProVeil frame side>
                     <h3 className="text-xs font-semibold text-gray-400 mb-3">Mental Performance</h3>
                     <div className="space-y-3">
                       <div className="group hover:scale-105 transition-transform">
@@ -1019,9 +1019,9 @@ export default function Calendar() {
                             <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-r from-blue-500 to-blue-400 shadow-lg shadow-blue-500/50" />
                             <span className="text-xs text-gray-300">Peak Days</span>
                           </div>
-                          <span className="text-sm font-bold text-blue-400">{monthStats.excellentDays}</span>
+                          <span data-veil className="text-sm font-bold text-blue-400">{monthStats.excellentDays}</span>
                         </div>
-                        <div className="w-full h-1.5 bg-black/50 rounded-full overflow-hidden">
+                        <div data-veil className="w-full h-1.5 bg-black/50 rounded-full overflow-hidden">
                           <div
                             className="h-full bg-gradient-to-r from-blue-500 to-blue-400 rounded-full transition-all duration-500"
                             style={{ width: `${monthStats.psychScoreCount > 0 ? (monthStats.excellentDays / monthStats.psychScoreCount) * 100 : 0}%` }}
@@ -1034,9 +1034,9 @@ export default function Calendar() {
                             <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-r from-blue-500 to-blue-400 shadow-md shadow-blue-500/50" />
                             <span className="text-xs text-gray-300">Good Days</span>
                           </div>
-                          <span className="text-sm font-bold text-blue-400">{monthStats.goodDays}</span>
+                          <span data-veil className="text-sm font-bold text-blue-400">{monthStats.goodDays}</span>
                         </div>
-                        <div className="w-full h-1.5 bg-black/50 rounded-full overflow-hidden">
+                        <div data-veil className="w-full h-1.5 bg-black/50 rounded-full overflow-hidden">
                           <div
                             className="h-full bg-gradient-to-r from-blue-500 to-blue-400 rounded-full transition-all duration-500"
                             style={{ width: `${monthStats.psychScoreCount > 0 ? (monthStats.goodDays / monthStats.psychScoreCount) * 100 : 0}%` }}
@@ -1049,9 +1049,9 @@ export default function Calendar() {
                             <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-r from-slate-500 to-gray-500 shadow-md shadow-slate-500/50" />
                             <span className="text-xs text-gray-300">Challenging Days</span>
                           </div>
-                          <span className="text-sm font-bold text-slate-300">{monthStats.challengedDays}</span>
+                          <span data-veil className="text-sm font-bold text-slate-300">{monthStats.challengedDays}</span>
                         </div>
-                        <div className="w-full h-1.5 bg-black/50 rounded-full overflow-hidden">
+                        <div data-veil className="w-full h-1.5 bg-black/50 rounded-full overflow-hidden">
                           <div
                             className="h-full bg-gradient-to-r from-slate-500 to-gray-500 rounded-full transition-all duration-500"
                             style={{ width: `${monthStats.psychScoreCount > 0 ? (monthStats.challengedDays / monthStats.psychScoreCount) * 100 : 0}%` }}
@@ -1063,19 +1063,19 @@ export default function Calendar() {
                   </div>
 
                   <div className="bg-[#111]/80 backdrop-blur-sm border border-white/[0.05] rounded-2xl p-4">
-                    <ProVeil>
+                    <ProVeil frame side>
                     <h3 className="text-xs font-semibold text-gray-400 mb-3">Tracking Consistency</h3>
-                    <div className="flex items-end gap-2 mb-2">
+                    <div className="flex items-end gap-2 mb-2" data-veil>
                       <p className="text-2xl md:text-3xl font-bold text-white">{monthStats.psychScoreCount}</p>
                       <span className="text-sm text-gray-500 mb-1">entries</span>
                     </div>
-                    <div className="w-full h-2 bg-black/50 rounded-full overflow-hidden">
+                    <div data-veil className="w-full h-2 bg-black/50 rounded-full overflow-hidden">
                       <div
                         className="h-full bg-gradient-to-r from-blue-500 via-blue-400 to-blue-500 rounded-full transition-all duration-500 shadow-lg"
                         style={{ width: `${Math.min((monthStats.psychScoreCount / daysInMonth) * 100, 100)}%` }}
                       />
                     </div>
-                    <div className="mt-2 flex justify-between text-xs text-gray-500">
+                    <div data-veil className="mt-2 flex justify-between text-xs text-gray-500">
                       <span>{Math.round((monthStats.psychScoreCount / daysInMonth) * 100)}% of month</span>
                       <span>{daysInMonth - monthStats.psychScoreCount} days left</span>
                     </div>

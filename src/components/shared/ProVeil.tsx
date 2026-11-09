@@ -58,7 +58,7 @@ function useDecode(active: boolean) {
   return text;
 }
 
-export default function ProVeil({ children, className = '', compact = false, frame = false }: {
+export default function ProVeil({ children, className = '', compact = false, frame = false, side = false }: {
   children: ReactNode;
   className?: string;
   /* Smaller lock for tight spots, like the dashboard's NOVA Score tile. */
@@ -69,17 +69,24 @@ export default function ProVeil({ children, className = '', compact = false, fra
     into one grey slab and the shape of the screen was lost.
   */
   frame?: boolean;
+  /*
+    For small stat panels: no hatch film (inside a padded panel it drew a
+    second box within the box), and the lock sits at the right edge so the
+    sharp title on the left stays clear.
+  */
+  side?: boolean;
 }) {
   const locked = useProLocked();
   if (!locked) return <>{children}</>;
-  return <Veiled className={className} compact={compact} frame={frame}>{children}</Veiled>;
+  return <Veiled className={className} compact={compact || side} frame={frame} side={side}>{children}</Veiled>;
 }
 
-export function Veiled({ children, className = '', compact = false, frame = false }: {
+export function Veiled({ children, className = '', compact = false, frame = false, side = false }: {
   children: ReactNode;
   className?: string;
   compact?: boolean;
   frame?: boolean;
+  side?: boolean;
 }) {
   const navigate = useNavigate();
   const [hover, setHover] = useState(false);
@@ -98,15 +105,15 @@ export function Veiled({ children, className = '', compact = false, frame = fals
       onMouseLeave={() => setHover(false)}
       onFocus={() => setHover(true)}
       onBlur={() => setHover(false)}
-      className={`pro-veil relative isolate overflow-hidden rounded-[inherit] cursor-pointer outline-none
+      className={`pro-veil relative isolate overflow-hidden ${frame ? '' : 'rounded-[inherit]'} cursor-pointer outline-none
         focus-visible:ring-2 focus-visible:ring-brand-blue/60 ${className}`}
     >
       <div aria-hidden="true" ref={(el) => el?.setAttribute('inert', '')} className={`${frame ? 'pro-veil-frame' : 'pro-veil-content'} pointer-events-none select-none`}>
         {children}
       </div>
-      <div aria-hidden="true" className={`pro-veil-film absolute inset-0 ${frame ? 'opacity-60' : ''}`} />
+      {!side && <div aria-hidden="true" className={`pro-veil-film absolute inset-0 ${frame ? 'opacity-60' : ''}`} />}
       <div aria-hidden="true" className="pro-veil-sweep absolute inset-0" style={{ animationDelay: delay }} />
-      <div className="absolute inset-0 flex items-center justify-center p-3">
+      <div className={`absolute inset-0 flex items-center ${side ? 'justify-end' : 'justify-center p-3'}`}>
         <span
           className={`inline-flex items-center gap-2 rounded-full border transition-colors duration-200
             ${hover ? 'border-brand-blue/60 bg-black/70' : 'border-white/15 bg-black/55'}
