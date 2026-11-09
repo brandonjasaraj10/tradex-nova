@@ -80,10 +80,6 @@ const PUBLIC_FILES = [
     list has caught something, which is the point of the warning below.
   */
   'product/nova.jpg',
-  /* Blurred behind the free plan's locked Pro screens (ProLocked). */
-  'product/locked-analytics.jpg',
-  'product/locked-calendar.jpg',
-  'product/locked-nova.jpg',
   /* The calendar's psychology view - the one no competitor has. */
   'product/calendar-psych.jpg',
   /* The founder portrait in the band above the price. */

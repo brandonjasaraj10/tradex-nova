@@ -5,12 +5,14 @@ import { checkSubscriptionAccess } from '../../services/subscriptionService';
 import PageLoader from './PageLoader';
 import { writeHeldFirstEntry } from '../../services/onboardingWriteBack';
 import { FREE_PLAN_ENABLED } from '../../lib/featureFlags';
-import ProLocked, { type ProFeature } from './ProLocked';
+import { ProLockProvider } from './ProVeil';
+
+export type ProFeature = 'analytics' | 'calendar' | 'nova';
 
 /*
   requirePaid names the Pro screen this route is. With the free plan on, a
-  free user gets that screen's upgrade card instead of the paywall; every other
-  route lets them in. With it off, nothing changes: no access means the paywall.
+  free user sees that screen with every section veiled (see ProVeil) instead of
+  the paywall; every other route lets them in. With it off, nothing changes: no access means the paywall.
 */
 export default function PrivateRoute({ children, requirePaid }: { children: React.ReactNode; requirePaid?: ProFeature }) {
   const { user, loading: authLoading } = useAuth();
@@ -55,7 +57,7 @@ export default function PrivateRoute({ children, requirePaid }: { children: Reac
 
   if (!hasAccess && location.pathname !== '/payment') {
     if (!FREE_PLAN_ENABLED) return <Navigate to="/payment" />;
-    if (requirePaid) return <ProLocked feature={requirePaid} />;
+    if (requirePaid) return <ProLockProvider locked>{children}</ProLockProvider>;
   }
 
   return <>{children}</>;

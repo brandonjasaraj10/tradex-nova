@@ -1,4 +1,5 @@
 import React, { ReactNode } from 'react';
+import ProVeil from './ProVeil';
 
 interface CardProps {
   children: ReactNode;
@@ -31,7 +32,8 @@ export default function Card({
         </div>
       )}
       
-      <div>{children}</div>
+      {/* On a Pro screen for a free user, the body is veiled; the title stays readable. */}
+      <div><ProVeil>{children}</ProVeil></div>
       
       {footer && (
         <div className="mt-4 pt-3 border-t border-dark-100">

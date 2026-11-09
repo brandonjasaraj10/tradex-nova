@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ConfirmModal from '../components/shared/ConfirmModal';
+import ProVeil, { useProLocked } from '../components/shared/ProVeil';
 import { Mic, Send, Sparkles, Trash2, RotateCw, TrendingUp, Brain, Zap, Target, Clock, LineChart, Activity, DollarSign, BarChart2, AlertCircle, CheckCircle2, Flame, Award, BookOpen, Volume2, VolumeX, Settings, History, X, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { useNova } from '../lib/novaContext';
 import { NOVA_VOICE_OUTPUT_ENABLED } from '../lib/featureFlags';
@@ -80,6 +81,7 @@ export default function NovaAssistant() {
   const { user } = useAuth();
   const { selectedAccount, accounts } = useAccount();
   const { tourCompleted } = useTour();
+  const proLocked = useProLocked();
   const { messages, isTyping, isLoading, currentSessionId, sendMessage, clearHistory, startVoiceSession, loadSession, createNewSession, deleteSession, submitFeedback } = useNova();
   const [input, setInput] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(true);
@@ -149,7 +151,7 @@ export default function NovaAssistant() {
         const profileExists = await userProfileService.hasProfile(user.id);
         setHasProfile(profileExists);
 
-        if (tourCompleted && !profileExists) {
+        if (tourCompleted && !profileExists && !proLocked) {
           const hasSeenPrompt = localStorage.getItem('hasSeenPersonalizationPrompt');
           if (!hasSeenPrompt) {
             setShowPersonalizationPrompt(true);
@@ -162,6 +164,8 @@ export default function NovaAssistant() {
 
   useEffect(() => {
     const loadInsights = async () => {
+      /* Free plan: these panels are veiled, so don't spend AI calls on them. */
+      if (proLocked) { setLoadingInsights(false); return; }
       if (user) {
         setLoadingInsights(true);
         try {
@@ -181,10 +185,11 @@ export default function NovaAssistant() {
     };
 
     loadInsights();
-  }, [user]);
+  }, [user, proLocked]);
 
   useEffect(() => {
     const loadTips = async () => {
+      if (proLocked) { setLoadingTips(false); return; }
       if (user) {
         setLoadingTips(true);
         try {
@@ -204,7 +209,7 @@ export default function NovaAssistant() {
     };
 
     loadTips();
-  }, [user]);
+  }, [user, proLocked]);
 
   useEffect(() => {
     const loadStatsAndActivity = async () => {
@@ -619,6 +624,7 @@ export default function NovaAssistant() {
                 boxShadow: '0 0 20px rgba(59, 130, 246, 0.15), inset 0 0 40px rgba(59, 130, 246, 0.05)',
               }}
             >
+              <ProVeil>
               <div className="mb-4">
                 <h3 className="text-sm font-semibold text-white flex items-center gap-2">
                   <BookOpen className="w-4 h-4 text-blue-400" />
@@ -667,6 +673,7 @@ export default function NovaAssistant() {
                   })
                 )}
               </div>
+              </ProVeil>
             </motion.div>
 
             <motion.div
@@ -678,6 +685,7 @@ export default function NovaAssistant() {
                 boxShadow: '0 0 20px rgba(59, 130, 246, 0.15), inset 0 0 40px rgba(59, 130, 246, 0.05)',
               }}
             >
+              <ProVeil>
               <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
                 <Activity className="w-4 h-4 text-blue-400" />
                 Performance Metrics
@@ -718,6 +726,7 @@ export default function NovaAssistant() {
               {!statsLoading && !scoreBreakdown && (
                 <p className="text-xs text-gray-500 mt-3">Add trades or journal entries to calculate your metrics</p>
               )}
+              </ProVeil>
             </motion.div>
 
             <motion.div
@@ -729,6 +738,7 @@ export default function NovaAssistant() {
                 boxShadow: '0 0 20px rgba(59, 130, 246, 0.15), inset 0 0 40px rgba(59, 130, 246, 0.05)',
               }}
             >
+              <ProVeil>
               <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
                 <Clock className="w-4 h-4 text-blue-400" />
                 Recent Activity
@@ -755,6 +765,7 @@ export default function NovaAssistant() {
                   </motion.div>
                 ))}
               </div>
+              </ProVeil>
             </motion.div>
           </div>
 
@@ -768,6 +779,7 @@ export default function NovaAssistant() {
                 boxShadow: '0 0 30px rgba(59, 130, 246, 0.25), inset 0 0 50px rgba(59, 130, 246, 0.05)',
               }}
             >
+              <ProVeil>
               <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
                 <div className="flex items-center gap-3">
                   <div className={`w-2 h-2 rounded-full bg-blue-400 animate-pulse`} />
@@ -981,6 +993,7 @@ export default function NovaAssistant() {
                   </motion.p>
                 )}
               </div>
+              </ProVeil>
             </motion.div>
 
             <motion.div
@@ -992,6 +1005,7 @@ export default function NovaAssistant() {
                 boxShadow: '0 0 20px rgba(59, 130, 246, 0.15), inset 0 0 40px rgba(59, 130, 246, 0.05)',
               }}
             >
+              <ProVeil>
               <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
                 <Zap className="w-4 h-4 text-blue-400" />
                 Quick Actions
@@ -1021,6 +1035,7 @@ export default function NovaAssistant() {
                   </motion.button>
                 ))}
               </div>
+              </ProVeil>
             </motion.div>
           </div>
         </div>
@@ -1035,6 +1050,7 @@ export default function NovaAssistant() {
               boxShadow: '0 0 20px rgba(59, 130, 246, 0.15), inset 0 0 40px rgba(59, 130, 246, 0.05)',
             }}
           >
+            <ProVeil>
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h3 className="text-sm font-semibold text-white flex items-center gap-2">
@@ -1126,6 +1142,7 @@ export default function NovaAssistant() {
                 </div>
               </div>
             )}
+            </ProVeil>
           </motion.div>
 
           <motion.div
@@ -1137,6 +1154,7 @@ export default function NovaAssistant() {
               boxShadow: '0 0 20px rgba(59, 130, 246, 0.15), inset 0 0 40px rgba(59, 130, 246, 0.05)',
             }}
           >
+            <ProVeil>
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-sm font-semibold text-white flex items-center gap-2">
                 <BookOpen className="w-4 h-4 text-blue-400" />
@@ -1174,6 +1192,7 @@ export default function NovaAssistant() {
                 ))}
               </div>
             )}
+            </ProVeil>
           </motion.div>
         </div>
 
@@ -1186,6 +1205,7 @@ export default function NovaAssistant() {
             boxShadow: '0 0 20px rgba(59, 130, 246, 0.15), inset 0 0 40px rgba(59, 130, 246, 0.05)',
           }}
         >
+          <ProVeil>
           <div className="mb-4">
             <h3 className="text-sm font-semibold text-white flex items-center gap-2">
               <Brain className="w-4 h-4 text-blue-400" />
@@ -1240,6 +1260,7 @@ export default function NovaAssistant() {
               })
             )}
           </div>
+          </ProVeil>
         </motion.div>
       </div>
 

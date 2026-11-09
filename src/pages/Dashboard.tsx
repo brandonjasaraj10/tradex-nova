@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowUpRight, ArrowDownRight, TrendingUp, DollarSign, BarChart, ChevronLeft, ChevronRight, Plus, CreditCard as Edit2, Brain, Check, TrendingDown, BookOpen, Settings, Trash2, X, Eye, EyeOff, BarChart3, Lock } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, TrendingUp, DollarSign, BarChart, ChevronLeft, ChevronRight, Plus, CreditCard as Edit2, Brain, Check, TrendingDown, BookOpen, Settings, Trash2, X, Eye, EyeOff, BarChart3 } from 'lucide-react';
 import Card from '../components/shared/Card';
 import Button from '../components/shared/Button';
 import DateRangePicker from '../components/shared/DateRangePicker';
@@ -14,6 +14,7 @@ import { useAccount } from '../lib/accountContext';
 import { useDateRange } from '../lib/dateRangeContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase, getCurrentUser } from '../lib/supabase';
+import { Veiled } from '../components/shared/ProVeil';
 import NOVAScore from '../components/shared/NOVAScore';
 import { calculateNOVAScore, type NOVAScoreBreakdown } from '../services/novaScore';
 import { getPsychologyAggregate } from '../services/psychologyChecks';
@@ -987,12 +988,16 @@ export default function Dashboard() {
           {/* NOVAScore Card */}
           <Card variant="gradient" className="bg-gradient-to-br from-gold-400/10 to-gold-400/5 p-3 sm:p-4 border border-gold-400/20">
             <div className="flex flex-col items-center justify-center h-full">
+              {/* Free plan: their real score, veiled - see ProVeil. */}
               {isFree ? (
-                <button type="button" onClick={() => navigate('/payment')} className="flex flex-col items-center gap-1.5 text-center py-2">
-                  <Lock className="w-5 h-5 text-gray-500" />
-                  <span className="text-[13px] text-white">NOVA Score</span>
-                  <span className="text-[11px] text-gray-500">Pro</span>
-                </button>
+                <Veiled compact className="w-full rounded-xl">
+                  <NOVAScore
+                    breakdown={novaScore}
+                    size="sm"
+                    showBreakdown={false}
+                    periodLabel={formatPeriodLabel(dateRange.startDate, dateRange.endDate)}
+                  />
+                </Veiled>
               ) : (
               <NOVAScore
                 breakdown={novaScore}
@@ -1393,10 +1398,14 @@ export default function Dashboard() {
     </div>
     <div className="w-full">
       {isFree ? (
-        <button type="button" onClick={() => navigate('/payment')} className="w-full flex items-center gap-3 rounded-xl bg-white/[0.03] border border-white/[0.06] p-4 text-left hover:bg-white/[0.05] transition-colors">
-          <Lock className="w-5 h-5 text-gray-500 flex-shrink-0" />
-          <span className="text-[14px] text-gray-300">Your NOVA Score grades consistency, risk and discipline across your trades. Part of Pro, free for 14 days.</span>
-        </button>
+        <Veiled className="rounded-xl">
+          <NOVAScore
+            breakdown={novaScore}
+            size="md"
+            showBreakdown={true}
+            periodLabel={formatPeriodLabel(dateRange.startDate, dateRange.endDate)}
+          />
+        </Veiled>
       ) : (
       <NOVAScore
         breakdown={novaScore}

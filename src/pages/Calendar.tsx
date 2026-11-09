@@ -10,6 +10,7 @@ import { generateReport, getMonthBasedWeekBounds, getMonthWeeks, type TradingRep
 import WeeklySummaryCard from '../components/reports/WeeklySummaryCard';
 import TradingReportModal from '../components/reports/TradingReportModal';
 import PageLoader from '../components/shared/PageLoader';
+import ProVeil from '../components/shared/ProVeil';
 
 interface DayData {
   date: string;
@@ -792,9 +793,11 @@ export default function Calendar() {
                       than the window, the page scrolls, which is the honest
                       trade rather than crushing the cells to fit.
                     */}
-                    <div className="grid grid-cols-7 md:grid-cols-8 gap-1 lg:gap-2">
-                      {renderCalendar()}
-                    </div>
+                    <ProVeil className="rounded-xl">
+                      <div className="grid grid-cols-7 md:grid-cols-8 gap-1 lg:gap-2">
+                        {renderCalendar()}
+                      </div>
+                    </ProVeil>
 
                     {viewMode === 'pnl' && (
                       <div className="mt-4 pt-4 border-t border-white/5">
@@ -860,6 +863,7 @@ export default function Calendar() {
               {viewMode === 'pnl' ? (
                 <>
                   <div className="bg-[#111]/80 backdrop-blur-sm border border-white/[0.05] rounded-2xl p-4">
+                    <ProVeil>
                     <div className="flex items-center gap-2 mb-2">
                       <DollarSign className="text-blue-400" size={16} />
                       <h3 className="text-xs font-semibold text-gray-400">Monthly P&L</h3>
@@ -883,14 +887,18 @@ export default function Calendar() {
                         <span className="text-gray-400 text-xs">Privacy mode</span>
                       </div>
                     )}
+                    </ProVeil>
                   </div>
 
                   <div className="bg-[#111]/80 backdrop-blur-sm border border-white/[0.05] rounded-2xl p-4">
+                    <ProVeil>
                     <h3 className="text-xs font-semibold text-gray-400 mb-2">Total Trades</h3>
                     <p className="text-xl md:text-2xl font-bold text-white">{monthStats.totalTrades}</p>
+                    </ProVeil>
                   </div>
 
                   <div className="bg-[#111]/80 backdrop-blur-sm border border-white/[0.05] rounded-2xl p-4">
+                    <ProVeil>
                     <h3 className="text-xs font-semibold text-gray-400 mb-2">Win/Loss Days</h3>
                     <div className="flex items-center gap-3">
                       <div className="text-center">
@@ -903,6 +911,7 @@ export default function Calendar() {
                         <p className="text-xs text-gray-400">Loss</p>
                       </div>
                     </div>
+                    </ProVeil>
                   </div>
                 </>
               ) : (
@@ -915,6 +924,7 @@ export default function Calendar() {
                     avgPsychScore >= 50 ? 'border-slate-500/25 shadow-lg shadow-slate-500/10' :
                     'border-white/[0.05]'
                   }`}>
+                    <ProVeil>
                     <div className={`absolute inset-0 transition-opacity duration-300 ${
                       avgPsychScore >= 90 ? 'bg-gradient-to-br from-blue-500/15 via-blue-400/8 to-transparent' :
                       avgPsychScore >= 80 ? 'bg-gradient-to-br from-blue-500/14 via-blue-400/7 to-transparent' :
@@ -995,9 +1005,11 @@ export default function Calendar() {
                         </div>
                       )}
                     </div>
+                    </ProVeil>
                   </div>
 
                   <div className="bg-[#111]/80 backdrop-blur-sm border border-white/[0.05] rounded-2xl p-4">
+                    <ProVeil>
                     <h3 className="text-xs font-semibold text-gray-400 mb-3">Mental Performance</h3>
                     <div className="space-y-3">
                       <div className="group hover:scale-105 transition-transform">
@@ -1046,9 +1058,11 @@ export default function Calendar() {
                         </div>
                       </div>
                     </div>
+                    </ProVeil>
                   </div>
 
                   <div className="bg-[#111]/80 backdrop-blur-sm border border-white/[0.05] rounded-2xl p-4">
+                    <ProVeil>
                     <h3 className="text-xs font-semibold text-gray-400 mb-3">Tracking Consistency</h3>
                     <div className="flex items-end gap-2 mb-2">
                       <p className="text-2xl md:text-3xl font-bold text-white">{monthStats.psychScoreCount}</p>
@@ -1064,6 +1078,7 @@ export default function Calendar() {
                       <span>{Math.round((monthStats.psychScoreCount / daysInMonth) * 100)}% of month</span>
                       <span>{daysInMonth - monthStats.psychScoreCount} days left</span>
                     </div>
+                    </ProVeil>
                   </div>
                 </>
               )}

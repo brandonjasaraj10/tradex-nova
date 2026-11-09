@@ -15,6 +15,7 @@ import { getPsychologyAggregate } from '../services/psychologyChecks';
 import type { TradeStats } from '../types/trade';
 import { useAuth } from '../lib/auth';
 import { generateInsights, getActiveInsights, dismissInsight, type Insight } from '../services/insights';
+import { useProLocked } from '../components/shared/ProVeil';
 import { supabase } from '../lib/supabase';
 import { toLocalDateStr } from '../utils/dateHelpers';
 import { formatPeriodLabel, formatProfitFactor, valueColorClass } from '../utils/formatMetrics';
@@ -78,6 +79,7 @@ export default function Analytics() {
   // trading rule was renamed.
   const { refreshTrigger } = useDataSync(['trades', 'journal_entries']);
   const { user } = useAuth();
+  const proLocked = useProLocked();
 
   // Shared across pages and remembered between visits - see dateRangeContext.
   // This used to be local state with a per-page default, so switching pages
@@ -111,6 +113,8 @@ export default function Analytics() {
 
   useEffect(() => {
     const loadInsights = async () => {
+      /* Free plan: the insights card is veiled, so don't spend an AI call on it. */
+      if (user && proLocked) { setLoadingInsights(false); return; }
       if (user) {
         setLoadingInsights(true);
         try {
@@ -129,7 +133,7 @@ export default function Analytics() {
       }
     };
     loadInsights();
-  }, [user, refreshTrigger]);
+  }, [user, refreshTrigger, proLocked]);
 
   useEffect(() => {
     const loadNovaScore = async () => {
