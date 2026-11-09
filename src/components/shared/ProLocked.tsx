@@ -4,7 +4,19 @@ import { Lock, Check } from 'lucide-react';
 /*
   What a free user sees on a Pro screen, in place of the paywall bouncing them
   out of the app. Says what the screen does for them and offers the trial.
+
+  Behind the card sits a blurred screenshot of the real screen (example data,
+  from the landing page's shots, cropped to the content area), so they can see
+  what they'd get without reading any numbers. A picture rather than the live
+  page on purpose: the live Nova page would call paid-only tables and AI
+  functions, and a brand-new account's analytics would blur to an empty page.
 */
+
+const PREVIEW: Record<'analytics' | 'calendar' | 'nova', string> = {
+  analytics: '/product/locked-analytics.jpg',
+  calendar: '/product/locked-calendar.jpg',
+  nova: '/product/locked-nova.jpg',
+};
 
 export type ProFeature = 'analytics' | 'calendar' | 'nova';
 
@@ -40,8 +52,16 @@ export default function ProLocked({ feature }: { feature: ProFeature }) {
   const { title, lines } = COPY[feature];
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md rounded-2xl bg-brand-surface border border-white/[0.06] p-6 sm:p-8">
+    <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden flex items-center justify-center px-4 py-12">
+      <div aria-hidden="true" className="pointer-events-none select-none absolute inset-0">
+        <img
+          src={PREVIEW[feature]}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover object-left-top blur-[5px] scale-105 opacity-100"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/25 to-black/60" />
+      </div>
+      <div className="relative w-full max-w-md rounded-2xl bg-brand-surface/95 backdrop-blur-sm border border-white/[0.08] shadow-2xl shadow-black/60 p-6 sm:p-8">
         <div className="w-11 h-11 rounded-xl bg-brand-blue/15 flex items-center justify-center mb-5">
           <Lock className="w-5 h-5 text-brand-blue-light" />
         </div>

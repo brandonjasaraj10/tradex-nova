@@ -733,6 +733,37 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
                 </p>
               </div>
 
+              {/*
+                Free plan: show sync rather than hide it - it's the main reason
+                to pay. Paid plans only (trials can't sync either), so the
+                button says "See plans", not "14 days free".
+              */}
+              {BROKER_SYNC_ENABLED && isFree && (platform === 'mt4' || platform === 'mt5') && (
+                <div className="rounded-lg border border-[#3B82F6]/30 p-4"
+                     style={{ boxShadow: '0 0 20px rgba(59,130,246,0.15), inset 0 0 40px rgba(59,130,246,0.05)' }}>
+                  <div className="flex items-start gap-2">
+                    <RefreshCw size={16} className="text-[#3B82F6] mt-0.5 shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-white flex items-center gap-2">
+                        Sync this account automatically
+                        <span className="text-[10px] uppercase tracking-[0.1em] px-1.5 py-0.5 rounded bg-[#3B82F6]/15 text-[#93C5FD]">Paid</span>
+                      </p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        Your closed trades pull in from {platform === 'mt5' ? 'MetaTrader 5' : 'MetaTrader 4'} on their own,
+                        so you never log a trade by hand again.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => { setShowAddAccount(false); navigate('/payment'); }}
+                        className="mt-3 inline-flex items-center px-4 py-2 rounded-full bg-white text-black text-xs font-medium hover:bg-gray-200 transition-colors"
+                      >
+                        See plans
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {canAutoSync && (
                 <div className="rounded-lg border border-[#3B82F6]/30 p-4"
                      style={{ boxShadow: '0 0 20px rgba(59,130,246,0.15), inset 0 0 40px rgba(59,130,246,0.05)' }}>
