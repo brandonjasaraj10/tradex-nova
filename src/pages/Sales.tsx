@@ -19,6 +19,8 @@ import SignupOrWaitlist from '../components/shared/SignupOrWaitlist';
 import { useHasLaunched } from '../lib/launch';
 import { useState, useEffect, useRef } from 'react';
 import { SIGNUP_CTA, SIGNUP_SUBLINE } from '../lib/freePlan';
+import FreePlanStrip from '../components/sales/FreePlanStrip';
+import { FREE_PLAN_ENABLED } from '../lib/featureFlags';
 
 /*
   Early-user quotes.
@@ -1141,13 +1143,18 @@ export default function Sales() {
           */}
           <SectionHeader
             eyebrow="Pricing"
-            title="Fourteen days free, then pick your size"
+            title={FREE_PLAN_ENABLED && launched ? 'Start free. Upgrade when you want more' : 'Fourteen days free, then pick your size'}
             className="mb-10 sm:mb-12"
           >
               {launched
-              ? 'Every plan has the whole journal, Nova and the psychology scoring. What changes is how many accounts sync themselves.'
+              ? (FREE_PLAN_ENABLED
+                ? 'The journal is free. Every paid plan adds analytics, the calendar and Nova chat; what changes between them is how many accounts sync themselves.'
+                : 'Every plan has the whole journal, Nova and the psychology scoring. What changes is how many accounts sync themselves.')
               : 'Join the waitlist before launch and lock in founding member pricing.'}
           </SectionHeader>
+
+          {/* Free plan: what is free and what upgrading adds, above the paid plans. */}
+          {FREE_PLAN_ENABLED && launched && <FreePlanStrip />}
 
           <PricingPlans launched={launched} />
 
