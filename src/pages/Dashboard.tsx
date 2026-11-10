@@ -15,6 +15,10 @@ import { useDateRange } from '../lib/dateRangeContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase, getCurrentUser } from '../lib/supabase';
 import { Veiled } from '../components/shared/ProVeil';
+
+function MaybeVeiled({ locked, children }: { locked: boolean; children: React.ReactNode }) {
+  return locked ? <Veiled frame className="flex-1">{children}</Veiled> : <>{children}</>;
+}
 import NOVAScore from '../components/shared/NOVAScore';
 import { calculateNOVAScore, type NOVAScoreBreakdown } from '../services/novaScore';
 import { getPsychologyAggregate } from '../services/psychologyChecks';
@@ -1288,6 +1292,8 @@ export default function Dashboard() {
                   </div>
                 </div>
 
+                {/* Free plan: the calendar is Pro, so the days' contents are frosted - same as the Calendar page. */}
+                <MaybeVeiled locked={isFree}>
                 <div className="grid grid-cols-7 gap-0.5 sm:gap-1 lg:gap-1.5 xl:gap-2 flex-1 content-start">
                   {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, i) => (
                     <div key={i} className="text-center text-[10px] sm:text-xs text-gray-400 py-1 sm:py-2 font-medium">
@@ -1330,7 +1336,7 @@ export default function Dashboard() {
                         <div className="flex flex-col justify-between min-w-0">
                           <span className="text-[8px] sm:text-[9px] lg:text-[10px] xl:text-xs font-medium">{day.day}</span>
                           {calendarViewMode === 'pnl' && !day.isEmpty && !day.future && (
-                            <div className="text-[7px] sm:text-[8px] lg:text-[9px] xl:text-[10px] font-medium mt-0.5 sm:mt-1 min-w-0 leading-tight">
+                            <div data-veil className="text-[7px] sm:text-[8px] lg:text-[9px] xl:text-[10px] font-medium mt-0.5 sm:mt-1 min-w-0 leading-tight">
                               {day.trades === 0 ? (
                                 <div className="text-center text-blue-400">Journal</div>
                               ) : !privacyMode ? (
@@ -1354,7 +1360,7 @@ export default function Dashboard() {
                             </div>
                           )}
                           {calendarViewMode === 'psychology' && hasPsychData && (
-                            <div className="text-center">
+                            <div data-veil className="text-center">
                               <div className={`text-xs font-bold ${getPsychologyTextColor(day.psychologyScore!)}`}>
                                 {day.psychologyScore}
                               </div>
@@ -1366,6 +1372,7 @@ export default function Dashboard() {
                     );
                   })}
                 </div>
+                </MaybeVeiled>
               </Card>
             </motion.div>
           </div>
