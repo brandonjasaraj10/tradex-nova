@@ -56,3 +56,21 @@ export function markContinuedFree(userId: string) {
     /* storage unavailable: they'll see the offer once more next time */
   }
 }
+
+/*
+  What a free user sees when they reach for a Pro feature that has no screen
+  of its own to veil - a second account, a statement import. An offer with a
+  way out, not an error.
+*/
+export type UpgradePromptKind = 'accounts' | 'import';
+
+export const UPGRADE_PROMPTS: Record<UpgradePromptKind, { title: string; message: string }> = {
+  accounts: {
+    title: 'Track more accounts with Pro',
+    message: 'The free plan covers 1 trading account. Start 14 days free to add more, or delete your current one in Settings to swap it.',
+  },
+  import: {
+    title: 'Import trades with Pro',
+    message: 'Importing your broker statement is part of Pro. Start 14 days free, or keep logging trades by hand for free.',
+  },
+};

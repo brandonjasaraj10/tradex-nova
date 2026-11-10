@@ -1,7 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { motion } from 'framer-motion';
-import { Link2, CheckCircle2, AlertCircle, Clock, Upload, Plus, X, RefreshCw, DollarSign, Pencil, PauseCircle } from 'lucide-react';
+import { Link2, CheckCircle2, AlertCircle, Clock, Upload, Plus, X, RefreshCw, DollarSign, Pencil, PauseCircle, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../lib/auth';
+import { FREE_PLAN_ENABLED } from '../../lib/featureFlags';
+import { UPGRADE_PROMPTS, type UpgradePromptKind } from '../../lib/freePlan';
 import Button from '../shared/Button';
 import ConfirmModal from '../shared/ConfirmModal';
 import { brokerService, type BrokerConnection, type BrokerFromAPI } from '../../services/brokerService';
@@ -17,7 +21,18 @@ export default function BrokerConnectionsList() {
     Pausing never needs to clear the selection, because the account is still
     there and still selectable - which is the whole point of the change.
   */
-  const { refreshAccounts } = useAccount();
+  const { refreshAccounts, selectedAccount, setSelectedAccount } = useAccount();
+  const navigate = useNavigate();
+  const { needsSubscription } = useAuth();
+  /* Free plan: one account and no statement import, each offering the trial instead. */
+  const isFree = FREE_PLAN_ENABLED && needsSubscription;
+  const [upgradePrompt, setUpgradePrompt] = useState<UpgradePromptKind | null>(null);
+  /*
+    Deleting for real. The server refuses while trades point at the account,
+    so this deletes them first - after a confirmation that says so in plain
+    words. Journal entries are kept (their link to the account just clears).
+  */
+  const [deleteTarget, setDeleteTarget] = useState<BrokerConnection | null>(null);
   const [connections, setConnections] = useState<BrokerConnection[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
@@ -202,6 +217,36 @@ export default function BrokerConnectionsList() {
     }
   };
 
+  const executeDelete = async (connection: BrokerConnection) => {
+    setDeleteTarget(null);
+    setDeletingIds(prev => new Set(prev).add(connection.id));
+    try {
+      const user = await getCurrentUser();
+      if (!user) throw new Error('You need to be signed in.');
+      const { error: tradesError } = await supabase
+        .from('trades')
+        .delete()
+        .eq('broker_id', connection.id)
+        .eq('user_id', user.id);
+      if (tradesError) throw new Error("Couldn't delete this account's trades, so the account was kept.");
+
+      await brokerService.deleteConnection(connection.id);
+      if (selectedAccount?.id === connection.id) await setSelectedAccount(null);
+      await loadConnections();
+      await refreshAccounts();
+      showToast(`${connection.account_name} deleted.`, 'success');
+    } catch (error) {
+      console.error('Delete account error:', error);
+      showToast(error instanceof Error ? error.message : 'Could not delete that account.', 'error');
+    } finally {
+      setDeletingIds(prev => {
+        const next = new Set(prev);
+        next.delete(connection.id);
+        return next;
+      });
+    }
+  };
+
   const handleDelete = (connectionId: string) => {
     setDisconnectConfirm({ isOpen: true, connectionId });
   };
@@ -358,7 +403,7 @@ export default function BrokerConnectionsList() {
               upload on each card below already does this correctly.
             */}
             <button
-              onClick={() => setShowAddAccount(true)}
+              onClick={() => (isFree && connections.length >= 1 ? setUpgradePrompt('accounts') : setShowAddAccount(true))}
               className="px-6 py-3 bg-gradient-to-r from-brand-blue/15 to-blue-500/20 hover:from-brand-blue/25 hover:to-blue-500/30 text-brand-blue-light rounded-lg text-sm font-medium transition-all inline-flex items-center gap-2 border border-brand-blue/25"
             >
               <Plus size={16} />
@@ -546,7 +591,7 @@ export default function BrokerConnectionsList() {
 
             <div className="flex items-center gap-2 flex-shrink-0">
               <button
-                onClick={() => fileInputRefs.current[connection.id]?.click()}
+                onClick={() => (isFree ? setUpgradePrompt('import') : fileInputRefs.current[connection.id]?.click())}
                 disabled={uploadingIds.has(connection.id)}
                 className="px-4 py-2 bg-brand-blue/10 hover:bg-brand-blue/20 text-brand-blue-light rounded-lg text-sm font-medium transition-all flex items-center gap-2 border border-brand-blue/20 disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -602,6 +647,15 @@ export default function BrokerConnectionsList() {
                   </button>
                 )
               )}
+              <button
+                onClick={() => setDeleteTarget(connection)}
+                disabled={deletingIds.has(connection.id)}
+                className="p-2 hover:bg-red-500/10 rounded-lg transition-colors group disabled:opacity-50"
+                title="Delete account"
+                aria-label={`Delete ${connection.account_name}`}
+              >
+                <Trash2 className="w-4 h-4 text-gray-500 group-hover:text-red-400 transition-colors" />
+              </button>
             </div>
           </div>
         </motion.div>
@@ -616,7 +670,7 @@ export default function BrokerConnectionsList() {
           trades ended up belonging to none.
         */}
         <button
-          onClick={() => setShowAddAccount(true)}
+          onClick={() => (isFree && connections.length >= 1 ? setUpgradePrompt('accounts') : setShowAddAccount(true))}
           className="px-6 py-3 bg-gradient-to-r from-brand-blue/15 to-blue-500/20 hover:from-brand-blue/25 hover:to-blue-500/30 text-brand-blue-light rounded-lg text-sm font-medium transition-all flex items-center gap-2 border border-brand-blue/25"
         >
           <Plus size={16} />
@@ -808,6 +862,26 @@ export default function BrokerConnectionsList() {
         variant="warning"
         onConfirm={() => executePauseSync(disconnectConfirm.connectionId)}
         onCancel={() => setDisconnectConfirm({ isOpen: false, connectionId: '' })}
+      />
+
+      <ConfirmModal
+        isOpen={deleteTarget !== null}
+        title={`Delete ${deleteTarget?.account_name ?? 'this account'}?`}
+        message="This deletes the account and every trade in it, and it can't be undone. Your journal entries stay, under All Accounts."
+        confirmLabel="Delete account"
+        variant="danger"
+        onConfirm={() => deleteTarget && executeDelete(deleteTarget)}
+        onCancel={() => setDeleteTarget(null)}
+      />
+
+      <ConfirmModal
+        isOpen={upgradePrompt !== null}
+        title={upgradePrompt ? UPGRADE_PROMPTS[upgradePrompt].title : ''}
+        message={upgradePrompt ? UPGRADE_PROMPTS[upgradePrompt].message : ''}
+        confirmLabel="Start 14 days free"
+        cancelLabel="Not now"
+        onConfirm={() => { setUpgradePrompt(null); navigate('/payment'); }}
+        onCancel={() => setUpgradePrompt(null)}
       />
     </div>
   );

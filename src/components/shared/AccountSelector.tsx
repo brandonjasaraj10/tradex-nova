@@ -11,7 +11,8 @@ import { brokerService, type BrokerFromAPI } from '../../services/brokerService'
 import { useToast } from '../../lib/toastContext';
 import { useDateRange, allTimeRange } from '../../lib/dateRangeContext';
 import { BROKER_SYNC_ENABLED, FREE_PLAN_ENABLED } from '../../lib/featureFlags';
-import { freePlanMessage } from '../../lib/freePlan';
+import { freePlanMessage, UPGRADE_PROMPTS, type UpgradePromptKind } from '../../lib/freePlan';
+import ConfirmModal from './ConfirmModal';
 import { useNavigate } from 'react-router-dom';
 import { connectMetaTraderAccount, syncMetaTraderAccount } from '../../services/metaTraderConnect';
 import { searchMtServers, type MtServerSuggestion } from '../../services/mtServers';
@@ -87,6 +88,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
   const navigate = useNavigate();
   /* Free plan: one manual account, no CSV import, no sync. */
   const isFree = FREE_PLAN_ENABLED && needsSubscription;
+  const [upgradePrompt, setUpgradePrompt] = useState<UpgradePromptKind | null>(null);
   const { setDateRange } = useDateRange();
   const [isOpen, setIsOpen] = useState(false);
   const [showAddAccount, setShowAddAccount] = useState(false);
@@ -589,7 +591,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
                     if (!selectedAccount) return;
                     setIsOpen(false);
                     if (isFree) {
-                      navigate('/payment');
+                      setUpgradePrompt('import');
                       return;
                     }
                     setShowCSVUpload(true);
@@ -611,7 +613,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
                     e.stopPropagation();
                     setIsOpen(false);
                     if (isFree && accounts.length >= 1) {
-                      showToast(freePlanMessage('free_plan_account_limit')!, 'error');
+                      setUpgradePrompt('accounts');
                       return;
                     }
                     setShowAddAccount(true);
@@ -1089,6 +1091,20 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
             }}
           />
         </div>,
+        document.body
+      )}
+
+      {/* Portalled for the same reason as the dialogs above. */}
+      {createPortal(
+        <ConfirmModal
+          isOpen={upgradePrompt !== null}
+          title={upgradePrompt ? UPGRADE_PROMPTS[upgradePrompt].title : ''}
+          message={upgradePrompt ? UPGRADE_PROMPTS[upgradePrompt].message : ''}
+          confirmLabel="Start 14 days free"
+          cancelLabel="Not now"
+          onConfirm={() => { setUpgradePrompt(null); navigate('/payment'); }}
+          onCancel={() => setUpgradePrompt(null)}
+        />,
         document.body
       )}
     </div>
