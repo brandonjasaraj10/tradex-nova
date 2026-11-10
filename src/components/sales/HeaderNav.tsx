@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useLocation } from 'react-router-dom';
 import { ChevronDown, Menu, X } from 'lucide-react';
+import { SIGNUP_CTA, SIGNUP_SUBLINE } from '../../lib/freePlan';
 
 /*
   The header navigation.
@@ -256,7 +257,7 @@ export function MobileNav() {
               onClick={() => setOpen(false)}
               className="mt-6 flex items-center justify-center w-full py-3 rounded-full bg-white text-black text-[15px] font-medium hover:bg-gray-200 transition-colors"
             >
-              Start journaling
+              {SIGNUP_CTA}
             </Link>
           </nav>
         </div>,

@@ -2,6 +2,8 @@ import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import WaitlistCapture from './WaitlistCapture';
 import { useHasLaunched } from '../../lib/launch';
+import { SIGNUP_CTA, SIGNUP_SUBLINE } from '../../lib/freePlan';
+import { FREE_PLAN_ENABLED } from '../../lib/featureFlags';
 
 /*
   One call-to-action that changes itself at launch.
@@ -86,11 +88,11 @@ export default function SignupOrWaitlist({
                    hover:from-white hover:via-white hover:to-neutral-200
                    hover:shadow-[inset_0_1px_0_rgba(255,255,255,1),0_16px_44px_-12px_rgba(255,255,255,0.7)]"
       >
-        Get Started
+        {FREE_PLAN_ENABLED ? SIGNUP_CTA : 'Get Started'}
         <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5" />
       </Link>
       <p className="mt-3 text-sm text-gray-400 text-center">
-        Full access straight away · Cancel anytime
+        {FREE_PLAN_ENABLED ? SIGNUP_SUBLINE : 'Full access straight away · Cancel anytime'}
       </p>
       {postLaunchFootnote}
     </div>

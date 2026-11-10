@@ -74,3 +74,14 @@ export const UPGRADE_PROMPTS: Record<UpgradePromptKind, { title: string; message
     message: 'Importing your broker statement is part of Pro. Start 14 days free, or keep logging trades by hand for free.',
   },
 };
+
+/*
+  The front door. With the free plan on, everyone joins free - no card - and
+  the trial moves to the upgrade buttons (locked sections, limits, plans
+  screen). With it off, the site keeps saying what is true today: a 14-day
+  trial with a card. One place, so no page can promise the other one.
+*/
+export const SIGNUP_CTA = FREE_PLAN_ENABLED ? 'Start free' : 'Start journaling';
+export const SIGNUP_SUBLINE = FREE_PLAN_ENABLED
+  ? 'Free to start \u00b7 No card needed'
+  : '14 days free \u00b7 Cancel in two clicks';

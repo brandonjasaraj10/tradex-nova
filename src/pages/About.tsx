@@ -5,6 +5,7 @@ import PreTradeScales from '../components/journal/PreTradeScales';
 import TranscriptToEntry from '../components/sales/TranscriptToEntry';
 import { Split, Section, ClosingCta } from '../components/marketing/blocks';
 import { Frame, PullQuote, ShippedTimeline, StatBand } from '../components/marketing/product';
+import { FREE_PLAN_ENABLED } from '../lib/featureFlags';
 
 /*
   The founder page.
@@ -130,7 +131,9 @@ export default function About() {
         <StatBand
           items={[
             { value: '1', label: 'Plan, with everything in it' },
-            { value: '3', label: 'Days free before anything is charged' },
+            FREE_PLAN_ENABLED
+              ? { value: '$0', label: 'To start. The journal is free' }
+              : { value: '14', label: 'Days free before anything is charged' },
             { value: '0', label: 'Compliance badges we have not earned' },
           ]}
         />

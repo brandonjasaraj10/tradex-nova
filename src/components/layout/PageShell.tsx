@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import Wordmark from '../shared/Wordmark';
 import HeaderNav, { MobileNav } from '../sales/HeaderNav';
 import Footer from './Footer';
+import { SIGNUP_CTA, SIGNUP_SUBLINE } from '../../lib/freePlan';
 
 /*
   The frame every public page outside the landing page sits in.
@@ -76,7 +77,7 @@ export default function PageShell({
                 px-4 py-1.5 rounded-lg bg-white text-black text-[13px] font-medium
                 hover:bg-gray-200 transition-colors"
             >
-              Start journaling
+              {SIGNUP_CTA}
             </Link>
             <MobileNav />
           </div>

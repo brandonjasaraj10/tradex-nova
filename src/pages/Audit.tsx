@@ -9,6 +9,7 @@ import {
 } from '../lib/auditContent';
 import { recordAudit, attachEmail } from '../services/audit';
 import { trackEvent } from '../lib/productAnalytics';
+import { SIGNUP_CTA, SIGNUP_SUBLINE } from '../lib/freePlan';
 
 /*
   The free psychology audit. No account, no email, nothing asked for until
@@ -328,7 +329,7 @@ export default function Audit() {
                     <ArrowRight size={17} />
                   </Link>
                   <p className="mt-3 text-[12px] text-gray-500">
-                    14 days free &middot; Cancel in two clicks
+                    {SIGNUP_SUBLINE}
                   </p>
                 </div>
 

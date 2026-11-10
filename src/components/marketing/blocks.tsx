@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import FaqList from '../sales/FaqList';
 import { Link } from 'react-router-dom';
 import { Check } from 'lucide-react';
+import { SIGNUP_CTA, SIGNUP_SUBLINE } from '../../lib/freePlan';
 
 /*
   The pieces every page outside the landing page is built from.
@@ -147,10 +148,10 @@ export function ClosingCta({
             px-7 py-3 rounded-full bg-white text-black text-[14px] font-medium
             hover:bg-gray-200 transition-colors"
         >
-          Start journaling
+          {SIGNUP_CTA}
         </Link>
         <p className="text-[11.5px] text-gray-500">
-          14 days free &middot; Cancel in two clicks
+          {SIGNUP_SUBLINE}
         </p>
       </div>
     </section>

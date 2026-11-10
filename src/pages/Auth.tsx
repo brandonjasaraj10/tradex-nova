@@ -8,6 +8,7 @@ import EarlyAccessModal from '../components/shared/EarlyAccessModal';
 import Wordmark from '../components/shared/Wordmark';
 import { useHasLaunched } from '../lib/launch';
 import { LogIn, UserPlus, Eye, EyeOff, Lock } from 'lucide-react';
+import { SIGNUP_CTA, SIGNUP_SUBLINE } from '../lib/freePlan';
 
 type AuthMode = 'login' | 'signup' | 'forgot-password' | 'verify-code' | 'reset-password';
 
@@ -444,7 +445,7 @@ export default function Auth() {
         nothing if it only appears after they have already committed.
       */}
       <p className="text-center text-[12px] text-gray-500">
-        14 days free &middot; Cancel in two clicks
+        {SIGNUP_SUBLINE}
       </p>
     </form>
   );

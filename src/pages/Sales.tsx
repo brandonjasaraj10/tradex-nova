@@ -18,6 +18,7 @@ import HeaderNav, { MobileNav } from '../components/sales/HeaderNav';
 import SignupOrWaitlist from '../components/shared/SignupOrWaitlist';
 import { useHasLaunched } from '../lib/launch';
 import { useState, useEffect, useRef } from 'react';
+import { SIGNUP_CTA, SIGNUP_SUBLINE } from '../lib/freePlan';
 
 /*
   Early-user quotes.
@@ -257,7 +258,7 @@ export default function Sales() {
                   ? 'opacity-100 max-w-[180px] px-4 ml-4 sm:ml-5 pointer-events-auto'
                   : 'opacity-0 max-w-0 px-0 ml-0 pointer-events-none'}`}
             >
-              Start journaling
+              {SIGNUP_CTA}
             </Link>
             <MobileNav />
           </div>
@@ -419,11 +420,11 @@ export default function Sales() {
                 px-7 py-3.5 rounded-xl bg-white text-black text-[14px] font-medium
                 hover:bg-gray-200 transition-colors"
             >
-              Start journaling
+              {SIGNUP_CTA}
               <ArrowRight className="w-4 h-4" />
             </Link>
             <p className="text-[11.5px] text-gray-500">
-              14 days free &middot; Cancel in two clicks
+              {SIGNUP_SUBLINE}
             </p>
             {/* Watched by the header - see showHeaderCta above. */}
             <div ref={heroCtaRef} aria-hidden="true" className="h-px w-full" />
@@ -1312,11 +1313,11 @@ export default function Sales() {
                   px-7 py-3.5 rounded-xl bg-white text-black text-[14px] font-medium
                   hover:bg-gray-200 transition-colors"
               >
-                Start journaling
+                {SIGNUP_CTA}
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <p className="text-[11.5px] text-gray-500">
-                14 days free &middot; Cancel in two clicks
+                {SIGNUP_SUBLINE}
               </p>
             </div>
           ) : (

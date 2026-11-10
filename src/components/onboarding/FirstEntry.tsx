@@ -10,6 +10,7 @@ import NovaTalk from './NovaTalk';
 import NovaClip from '../shared/NovaClip';
 import type { StarterItem } from '../../lib/onboardingChecklist';
 import { calculateChecklistScore, combinePsychologyScores } from '../../services/psychologyScore';
+import { FREE_PLAN_ENABLED } from '../../lib/featureFlags';
 
 /*
   The aha, and the only screen in onboarding where the product actually runs.
@@ -751,11 +752,11 @@ export default function FirstEntry({
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full
               bg-white text-black text-[15px] font-medium hover:bg-gray-200 transition-colors"
           >
-            Save it &amp; start my 14 days free
+            {FREE_PLAN_ENABLED ? 'Save my first entry' : 'Save it & start my 14 days free'}
             <ArrowRight size={17} />
           </button>
           <p className="mt-3 text-[12.5px] text-gray-500">
-            Nothing charged today &middot; Cancel in two clicks
+            {FREE_PLAN_ENABLED ? 'Free to start \u00b7 No card needed' : 'Nothing charged today \u00b7 Cancel in two clicks'}
           </p>
         </div>
       </div>
