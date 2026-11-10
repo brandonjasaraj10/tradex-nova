@@ -130,14 +130,20 @@ export function Veiled({ children, className = '', compact = false, frame = fals
       <div aria-hidden="true" className="absolute inset-0 overflow-hidden rounded-[inherit]">
         <div className="pro-veil-sweep absolute inset-0" style={{ animationDelay: delay }} />
       </div>
-      <div className="absolute inset-0 flex items-center justify-center p-3">
+      {/*
+        Centred on desktop. On a phone the cards are short and two to a row,
+        so their middle is the title line - the lock sits centred near the
+        bottom instead, over the frosted figures. Frame-mode grids (calendar)
+        stay centred at every size.
+      */}
+      <div className={`absolute inset-0 flex justify-center p-3 ${frame ? 'items-center' : 'items-end sm:items-center'}`}>
         <span
           className={`inline-flex items-center gap-2 rounded-full border transition-colors duration-200
             ${hover ? 'border-brand-blue/60 bg-black/70' : 'border-white/15 bg-black/55'}
             backdrop-blur-md shadow-lg shadow-black/40
-            ${compact ? 'px-2.5 py-1 text-[10.5px]' : 'px-3.5 py-1.5 text-[11.5px]'}`}
+            ${compact ? 'px-2.5 py-1 text-[10.5px]' : 'px-2.5 py-1 text-[10.5px] sm:px-3.5 sm:py-1.5 sm:text-[11.5px]'}`}
         >
-          <Lock className={`${compact ? 'w-3 h-3' : 'w-3.5 h-3.5'} ${hover ? 'text-brand-blue-light' : 'text-gray-300'}`} />
+          <Lock className={`${compact ? 'w-3 h-3' : 'w-3 h-3 sm:w-3.5 sm:h-3.5'} ${hover ? 'text-brand-blue-light' : 'text-gray-300'}`} />
           <span className="font-mono tracking-[0.14em] uppercase text-white whitespace-nowrap tabular-nums">{label}</span>
         </span>
       </div>

@@ -464,9 +464,10 @@ export default function Sales() {
             Social proof, sized to what is actually true.
 
             Competitors put five-figure counts here - Tradespad claims 4,000
-            traders, TradeZella 100,000. We have 801 real signups measured
-            against auth.users on 2026-10-04 (669 of them in the last thirty
-            days), so it rounds down to "800+" and stays true while it climbs.
+            traders, TradeZella 100,000. We had 801 real signups measured
+            against auth.users on 2026-10-04, and 1,032 on 2026-11-10 (1,015
+            with a profile), so it rounds down to "1,000+" and stays true while
+            it climbs.
 
             THE VERB MATTERS MORE THAN THE NUMBER
 
@@ -495,7 +496,7 @@ export default function Sales() {
             rather than like a page pretending to have testimonials.
           */}
           <p className="mt-7 flex items-baseline justify-center gap-2.5">
-            <span className="text-[15px] text-gray-200 tabular-nums tracking-tight">800+</span>
+            <span className="text-[15px] text-gray-200 tabular-nums tracking-tight">1,000+</span>
             <span className="text-[11.5px] text-gray-500">traders signed up to TradeX</span>
           </p>
 

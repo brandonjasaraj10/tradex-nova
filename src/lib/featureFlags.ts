@@ -53,9 +53,9 @@ export const BROKER_SYNC_ENABLED = true;
   with weekly limits, and Pro screens show an upgrade card instead of the
   paywall.
 
-  Off until launch day, and it must go live together with migration
-  20261107020000_free_plan_open_app.sql and the process-voice-journal deploy.
-  With this on and the migration not applied, free users would land in an app
-  whose database still refuses them.
+  Live since 10 Nov 2026. It depends on migration
+  20261107020000_free_plan_open_app.sql and process-voice-journal v29, both
+  already live. Turning it off puts the paywall back in front of the app; the
+  database would still let free users in, so revert that migration too.
 */
-export const FREE_PLAN_ENABLED = false;
+export const FREE_PLAN_ENABLED = true;
