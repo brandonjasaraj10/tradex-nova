@@ -52,12 +52,15 @@ const DAILY_LIMIT = 300;
   on the same day.
 */
 /*
-  10 a day, not 3: a spoken first entry now organises live as they talk,
-  which is a few passes for one entry (see FirstEntry). Still about twenty
-  cents a day at the very most for an account that never pays.
+  20 a day. A spoken entry organises live as they talk, which is several
+  calls for one entry, so at 10 a free user could be told "limit for today"
+  before using their 3 weekly voice entries (seen in testing). The weekly
+  allowance is what limits free use now; this is only a ceiling against a
+  runaway loop - about $1 a day at the very most for an account that never
+  pays.
 */
 const UNPAID_PER_MINUTE_LIMIT = 6;
-const UNPAID_DAILY_LIMIT = 10;
+const UNPAID_DAILY_LIMIT = 20;
 const UNPAID_MAX_CHARS = 2000;
 
 /*
