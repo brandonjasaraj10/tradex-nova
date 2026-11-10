@@ -440,11 +440,12 @@ input[type="date"]::-webkit-datetime-edit-year-field:focus {
 */
 /*
   Frost every leaf of text and every chart, but never a heading or anything
-  inside one, so each section still says what it is. Lucide icons stay sharp.
+  inside one, so each section still says what it is. Icons in a heading stay
+  sharp with it; loose ones are frosted, or they poke out beside the lock.
   Leaf divs (no children) are included because some figures are bare text in
   a div.
 */
-.pro-veil-auto :is(p, span, li, td, canvas, svg:not(.lucide), div:not(:has(*)):not([class*="blur"]), [data-veil]):not(:is(h1, h2, h3, h4, h5, h6) *) {
+.pro-veil-auto :is(p, span, li, td, canvas, svg, div:not(:has(*)):not([class*="blur"]), [data-veil]):not(:is(h1, h2, h3, h4, h5, h6) *) {
   filter: blur(7px) saturate(1.5);
 }
 .pro-veil-frame [data-veil] {

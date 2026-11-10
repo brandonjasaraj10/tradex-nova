@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle, Trash2, X } from 'lucide-react';
+import { AlertTriangle, Lock, Trash2, X } from 'lucide-react';
 
 interface ConfirmModalProps {
   isOpen: boolean;
@@ -9,7 +9,8 @@ interface ConfirmModalProps {
   message: string;
   confirmLabel?: string;
   cancelLabel?: string;
-  variant?: 'danger' | 'warning' | 'default';
+  /* upgrade: a Pro offer to a free user - a lock, and the trial button in white. */
+  variant?: 'danger' | 'warning' | 'default' | 'upgrade';
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -46,18 +47,21 @@ export default function ConfirmModal({
     danger: <Trash2 size={22} />,
     warning: <AlertTriangle size={22} />,
     default: <AlertTriangle size={22} />,
+    upgrade: <Lock size={20} />,
   };
 
   const iconBgMap = {
     danger: 'bg-white/5 text-gray-400',
     warning: 'bg-blue-500/10 text-blue-400',
     default: 'bg-blue-500/10 text-blue-400',
+    upgrade: 'bg-brand-blue/15 text-brand-blue-light',
   };
 
   const confirmBtnMap = {
     danger: 'bg-white/10 hover:bg-white/15 border border-white/10 text-white',
     warning: 'bg-blue-500 hover:bg-blue-600 text-white',
     default: 'bg-blue-500 hover:bg-blue-600 text-white',
+    upgrade: 'bg-white hover:bg-gray-200 text-black',
   };
 
   return (

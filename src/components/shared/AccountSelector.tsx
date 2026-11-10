@@ -1101,6 +1101,7 @@ export default function AccountSelector({ accounts, selectedAccount, onAccountCh
           title={upgradePrompt ? UPGRADE_PROMPTS[upgradePrompt].title : ''}
           message={upgradePrompt ? UPGRADE_PROMPTS[upgradePrompt].message : ''}
           confirmLabel="Start 14 days free"
+          variant="upgrade"
           cancelLabel="Not now"
           onConfirm={() => { setUpgradePrompt(null); navigate('/payment'); }}
           onCancel={() => setUpgradePrompt(null)}
