@@ -161,7 +161,7 @@ Deno.serve(async (req: Request) => {
       const message = (usageCheck as any).reason === 'daily_limit'
         ? (paid
           ? "You've hit today's limit for organizing entries with Nova. It resets at midnight."
-          : "That's the free entries used for today. Start your trial to keep journaling with Nova.")
+          : "That's Nova's limit for today. It resets tomorrow, or upgrade for unlimited.")
         : "That's a lot at once - give it a few seconds and try again.";
       return new Response(
         JSON.stringify({ error: message }),

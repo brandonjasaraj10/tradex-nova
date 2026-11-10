@@ -1398,6 +1398,17 @@ CRITICAL RULES:
   } catch (error) {
     console.error('Error processing voice journal:', error);
 
+    /*
+      A refusal meant for the person - the free plan's weekly voice entries,
+      a daily limit, a stale session - has to reach them. Swallowing it here
+      turned the free plan's limit into nothing at all: the typed words were
+      saved as "Voice Entry - <date>" and no message ever showed, because
+      every caller's NovaUserError handling sat behind this catch.
+    */
+    if (error instanceof NovaUserError || (error instanceof Error && error.message.includes('session has expired'))) {
+      throw error;
+    }
+
     return {
       content: transcript,
       title: `Voice Entry - ${new Date().toLocaleDateString()}`
