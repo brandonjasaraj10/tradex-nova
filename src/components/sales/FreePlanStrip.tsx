@@ -13,8 +13,9 @@ import { FREE_ENTRY_LIMIT, FREE_SCREENSHOT_LIMIT, FREE_VOICE_LIMIT, SIGNUP_CTA, 
 */
 
 const INCLUDED = [
-  'The full journal, with notes that never count',
+  'The full journal',
   `${FREE_ENTRY_LIMIT} journal entries a week`,
+  'Unlimited notes (they never use up an entry)',
   `${FREE_VOICE_LIMIT} Nova voice entries a week, organised for you`,
   `${FREE_SCREENSHOT_LIMIT} chart screenshots per entry`,
   '1 trading account, logged by hand',
