@@ -1,5 +1,6 @@
 import { useState, ReactNode } from 'react';
 import { CheckSquare, Square, X } from 'lucide-react';
+import { FREE_PLAN_ENABLED } from '../../lib/featureFlags';
 
 /*
   Real interface, not descriptions of it.
@@ -554,6 +555,42 @@ const SHIPPED: { date: string; title: string; body: string; shipped: boolean }[]
     title: 'MT4 and MT5 sync',
     body: 'Connect an account once and closed trades arrive on their own. Read-only: trade history and balance, nothing else.',
     shipped: true,
+  },
+  {
+    date: '21 Sep 2026',
+    title: 'A faster Organize with Nova',
+    body: 'Nova pulls out the facts and writes the note in one go, ticks your checklist when you say "all of them", and typed entries get the same treatment as spoken ones.',
+    shipped: true,
+  },
+  {
+    date: '26 Sep 2026',
+    title: 'A process score, not a streak',
+    body: 'Each day is scored on the rules you actually followed. The streak went: one missed day should not erase a good month.',
+    shipped: true,
+  },
+  {
+    date: '1 Oct 2026',
+    title: 'Your first entry before any price',
+    body: 'New traders write one real entry with Nova before they ever see a plan, so they know what they are getting.',
+    shipped: true,
+  },
+  {
+    date: '6 Oct 2026',
+    title: 'A goal you set on day one',
+    body: 'Pick what you are working toward and a time to journal each day. The dashboard counts the days that move you toward it.',
+    shipped: true,
+  },
+  {
+    date: '11 Oct 2026',
+    title: 'Nova, in person',
+    body: 'An animated Nova walks new traders through setup, and remembers what they said there when they talk to it later.',
+    shipped: true,
+  },
+  {
+    date: 'Nov 2026',
+    title: 'A free plan',
+    body: 'The journal, free: five entries and three Nova voice entries a week, one account. Upgrade when you want the analytics, calendar, Nova chat and sync.',
+    shipped: FREE_PLAN_ENABLED,
   },
 ];
 
